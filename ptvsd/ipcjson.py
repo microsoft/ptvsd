@@ -329,7 +329,10 @@ class IpcChannel(object):
     def on_response(self, msg):
         # TODO: docstring
         # this class is only used for server side only for now
-        raise NotImplementedError
+        if msg['type'] == 'response' and msg['command'] == 'runInTerminal':
+            pass
+        else:
+            raise NotImplementedError
 
     def on_event(self, msg):
         # TODO: docstring
