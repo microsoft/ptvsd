@@ -523,7 +523,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
 
         tid = self.thread_map.to_pydevd(tid)
         with self.stack_traces_lock:
-            xframes = self.stack_traces[tid]
+            xframes = self.stack_traces.get(tid, [])
         totalFrames = len(xframes)
 
         if levels == 0:
