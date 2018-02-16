@@ -23,6 +23,7 @@ except Exception:
 import _pydevd_bundle.pydevd_comm as pydevd_comm
 import _pydevd_bundle.pydevd_extension_api as pydevd_extapi
 import _pydevd_bundle.pydevd_extension_utils as pydevd_extutil
+import _pydevd_bundle.pydevd_breakpoints as pydevd_bp
 #from _pydevd_bundle.pydevd_comm import pydevd_log
 
 import ptvsd.ipcjson as ipcjson
@@ -38,6 +39,12 @@ __version__ = "4.0.0a1"
 #ipcjson._TRACE = ipcjson_trace
 
 ptvsd_sys_exit_code = 0
+
+
+# Setting the suspend policy for breakpoints here since pydevd does not expose this feature via CMD_SET_BREAK command
+def set_bp_suspend_policy_to_all():
+    pydevd_bp.LineBreakpoint.suspend_policy = property(fget=lambda self: 'ALL', fset=lambda self, value: None)
+set_bp_suspend_policy_to_all()
 
 
 def unquote(s):
