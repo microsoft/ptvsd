@@ -597,9 +597,11 @@ class PyDBFrame:
                         main_debugger.remove_return_values_flag = False
 
                 if stop:
+                    main_debugger.send_threads_suspending_message()
                     self.set_suspend(thread, CMD_SET_BREAK)
                     if breakpoint and breakpoint.suspend_policy == "ALL":
                         main_debugger.suspend_all_other_threads(thread)
+                    main_debugger.send_threads_suspended_message()
                 elif flag and plugin_manager is not None:
                     result = plugin_manager.suspend(main_debugger, thread, frame, bp_type)
                     if result:
