@@ -564,7 +564,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
         threads = []
         for xthread in xthreads:
             try:
-                tid = self.thread_map.to_vscode(xthread['id'], False)
+                tid = self.thread_map.to_vscode(xthread['id'], autogen=False)
             except KeyError:
                 continue
 
@@ -601,7 +601,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
                 break
             levels -= 1
             key = (pyd_tid, int(xframe['id']))
-            fid = self.frame_map.to_vscode(key, True)
+            fid = self.frame_map.to_vscode(key, autogen=True)
             name = unquote(xframe['name'])
             file = unquote(xframe['file'])
             line = int(xframe['line'])
@@ -622,7 +622,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
         vsc_fid = int(args['frameId'])
         pyd_tid, pyd_fid = self.frame_map.to_pydevd(vsc_fid)
         pyd_var = (pyd_tid, pyd_fid, 'FRAME')
-        vsc_var = self.var_map.to_vscode(pyd_var, True)
+        vsc_var = self.var_map.to_vscode(pyd_var, autogen=True)
         scope = {
             'name': 'Locals',
             'expensive': False,
@@ -658,7 +658,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
             }
             if bool(xvar['isContainer']):
                 pyd_child = pyd_var + (var['name'],)
-                var['variablesReference'] = self.var_map.to_vscode(pyd_child, True)
+                var['variablesReference'] = self.var_map.to_vscode(pyd_child, autogen=True)
             variables.append(var)
 
         self.send_response(request, variables=variables)
@@ -672,7 +672,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
         # being set, and variable name; but pydevd wants the ID
         # (or rather path) of the variable itself.
         pyd_var += (args['name'],)
-        vsc_var = self.var_map.to_vscode(pyd_var, True)
+        vsc_var = self.var_map.to_vscode(pyd_var, autogen=True)
 
         cmd_args = [str(s) for s in pyd_var] + [args['value']]
         _, _, resp_args = yield self.pydevd_request(
@@ -706,7 +706,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
         xvar = xml.var
 
         pyd_var = (pyd_tid, pyd_fid, 'EXPRESSION', expr)
-        vsc_var = self.var_map.to_vscode(pyd_var, True)
+        vsc_var = self.var_map.to_vscode(pyd_var, autogen=True)
         response = {
             'type': unquote(xvar['type']),
             'result': unquote(xvar['value']),
@@ -832,14 +832,14 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
             name = None
         if not self.is_debugger_internal_thread(name):
             pyd_tid = xml.thread['id']
-            tid = self.thread_map.to_vscode(pyd_tid, True)
+            tid = self.thread_map.to_vscode(pyd_tid, autogen=True)
             self.send_event('thread', reason='started', threadId=tid)
 
     @pydevd_events.handler(pydevd_comm.CMD_THREAD_KILL)
     def on_pydevd_thread_kill(self, seq, args):
         # TODO: docstring
         try:
-            tid = self.thread_map.to_vscode(args, False)
+            tid = self.thread_map.to_vscode(args, autogen=False)
         except KeyError:
             pass
         else:
@@ -863,7 +863,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
         with self.stack_traces_lock:
             self.stack_traces[pyd_tid] = xml.thread.frame
         try:
-            tid = self.thread_map.to_vscode(pyd_tid, False)
+            tid = self.thread_map.to_vscode(pyd_tid, autogen=False)
             with self.suspending_threads_for_bp_lock:
                 self.suspended_thread_count += 1
         except KeyError:
@@ -891,7 +891,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
         # TODO: docstring
         pyd_tid, reason = args.split('\t')
         try:
-            vsc_tid = self.thread_map.to_vscode(pyd_tid, False)
+            vsc_tid = self.thread_map.to_vscode(pyd_tid, autogen=False)
         except KeyError:
             return
 
