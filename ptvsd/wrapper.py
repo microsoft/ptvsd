@@ -21,6 +21,7 @@ except Exception:
 import _pydevd_bundle.pydevd_comm as pydevd_comm
 import _pydevd_bundle.pydevd_extension_api as pydevd_extapi
 import _pydevd_bundle.pydevd_extension_utils as pydevd_extutil
+import _pydevd_bundle.pydevd_breakpoints as pydevd_bp
 #from _pydevd_bundle.pydevd_comm import pydevd_log
 
 import ptvsd.ipcjson as ipcjson
@@ -37,6 +38,12 @@ __version__ = "4.0.0a1"
 #ipcjson._TRACE = ipcjson_trace
 
 ptvsd_sys_exit_code = 0
+
+
+# Setting the suspend policy for breakpoints here since pydevd does not expose this feature via CMD_SET_BREAK command
+def set_bp_suspend_policy_to_all():
+    pydevd_bp.LineBreakpoint.suspend_policy = property(fget=lambda self: 'ALL', fset=lambda self, value: None)
+set_bp_suspend_policy_to_all()
 
 
 def unquote(s):
@@ -115,7 +122,7 @@ class IDMap(object):
         # TODO: docstring
         return self._vscode_to_pydevd[vscode_id]
 
-    def to_vscode(self, pydevd_id, autogen=True):
+    def to_vscode(self, pydevd_id, autogen):
         # TODO: docstring
         try:
             return self._pydevd_to_vscode[pydevd_id]
@@ -389,6 +396,10 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
         self.next_var_ref = 0
         self.loop = futures.EventLoop()
         self.exceptions_mgr = ExceptionsManager(self)
+        self.suspending_threads_for_bp = False
+        self.suspending_threads_for_bp_lock = threading.Lock()
+        self.suspended_thread_count = 0
+        self.vsc_breakpoint_tid = None
 
         pydevd._vscprocessor = self
         self._closed = False
@@ -552,7 +563,11 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
 
         threads = []
         for xthread in xthreads:
-            tid = self.thread_map.to_vscode(xthread['id'])
+            try:
+                tid = self.thread_map.to_vscode(xthread['id'], autogen=False)
+            except KeyError:
+                continue
+
             try:
                 name = unquote(xthread['name'])
             except KeyError:
@@ -565,13 +580,13 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
     @async_handler
     def on_stackTrace(self, request, args):
         # TODO: docstring
-        tid = int(args['threadId'])
+        vsc_tid = int(args['threadId'])
         startFrame = int(args.get('startFrame', 0))
         levels = int(args.get('levels', 0))
 
-        tid = self.thread_map.to_pydevd(tid)
+        pyd_tid = self.thread_map.to_pydevd(vsc_tid)
         with self.stack_traces_lock:
-            xframes = self.stack_traces[tid]
+            xframes = self.stack_traces[pyd_tid]
         totalFrames = len(xframes)
 
         if levels == 0:
@@ -585,8 +600,8 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
             if levels <= 0:
                 break
             levels -= 1
-            key = (tid, int(xframe['id']))
-            fid = self.frame_map.to_vscode(key)
+            key = (pyd_tid, int(xframe['id']))
+            fid = self.frame_map.to_vscode(key, autogen=True)
             name = unquote(xframe['name'])
             file = unquote(xframe['file'])
             line = int(xframe['line'])
@@ -607,7 +622,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
         vsc_fid = int(args['frameId'])
         pyd_tid, pyd_fid = self.frame_map.to_pydevd(vsc_fid)
         pyd_var = (pyd_tid, pyd_fid, 'FRAME')
-        vsc_var = self.var_map.to_vscode(pyd_var)
+        vsc_var = self.var_map.to_vscode(pyd_var, autogen=True)
         scope = {
             'name': 'Locals',
             'expensive': False,
@@ -643,7 +658,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
             }
             if bool(xvar['isContainer']):
                 pyd_child = pyd_var + (var['name'],)
-                var['variablesReference'] = self.var_map.to_vscode(pyd_child)
+                var['variablesReference'] = self.var_map.to_vscode(pyd_child, autogen=True)
             variables.append(var)
 
         self.send_response(request, variables=variables)
@@ -657,7 +672,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
         # being set, and variable name; but pydevd wants the ID
         # (or rather path) of the variable itself.
         pyd_var += (args['name'],)
-        vsc_var = self.var_map.to_vscode(pyd_var)
+        vsc_var = self.var_map.to_vscode(pyd_var, autogen=True)
 
         cmd_args = [str(s) for s in pyd_var] + [args['value']]
         _, _, resp_args = yield self.pydevd_request(
@@ -691,7 +706,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
         xvar = xml.var
 
         pyd_var = (pyd_tid, pyd_fid, 'EXPRESSION', expr)
-        vsc_var = self.var_map.to_vscode(pyd_var)
+        vsc_var = self.var_map.to_vscode(pyd_var, autogen=True)
         response = {
             'type': unquote(xvar['type']),
             'result': unquote(xvar['value']),
@@ -715,9 +730,13 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
     @async_handler
     def on_continue(self, request, args):
         # TODO: docstring
-        tid = self.thread_map.to_pydevd(int(args['threadId']))
-        self.pydevd_notify(pydevd_comm.CMD_THREAD_RUN, tid)
-        self.send_response(request)
+        with self.suspending_threads_for_bp_lock:
+            for pyd_tid in self.thread_map.pydevd_ids():
+                self.pydevd_notify(pydevd_comm.CMD_THREAD_RUN, pyd_tid)
+            self.suspending_threads_for_bp = False
+            self.suspended_thread_count = 0
+            self.vsc_breakpoint_tid = None
+        self.send_response(request, allThreadsContinued=True)
 
     @async_handler
     def on_next(self, request, args):
@@ -811,12 +830,13 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
     def on_pydevd_thread_create(self, seq, args):
         # TODO: docstring
         xml = untangle.parse(args).xml
-        tid = self.thread_map.to_vscode(xml.thread['id'])
         try:
             name = unquote(xml.thread['name'])
         except KeyError:
             name = None
         if not self.is_debugger_internal_thread(name):
+            pyd_tid = xml.thread['id']
+            tid = self.thread_map.to_vscode(pyd_tid, autogen=True)
             self.send_event('thread', reason='started', threadId=tid)
 
     @pydevd_events.handler(pydevd_comm.CMD_THREAD_KILL)
@@ -833,7 +853,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
     def on_pydevd_thread_suspend(self, seq, args):
         # TODO: docstring
         xml = untangle.parse(args).xml
-        tid = xml.thread['id']
+        pyd_tid = xml.thread['id']
         reason = int(xml.thread['stop_reason'])
         STEP_REASONS = {
                 pydevd_comm.CMD_STEP_INTO,
@@ -844,24 +864,40 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
             pydevd_comm.CMD_STEP_CAUGHT_EXCEPTION,
             pydevd_comm.CMD_ADD_EXCEPTION_BREAK
         }
-        if reason in STEP_REASONS:
-            reason = 'step'
-        elif reason in EXCEPTION_REASONS:
-            reason = 'exception'
-        elif reason == pydevd_comm.CMD_SET_BREAK:
-            reason = 'breakpoint'
-        else:
-            reason = 'pause'
         with self.stack_traces_lock:
-            self.stack_traces[tid] = xml.thread.frame
-        tid = self.thread_map.to_vscode(tid)
-        self.send_event('stopped', reason=reason, threadId=tid)
+            self.stack_traces[pyd_tid] = xml.thread.frame
+        try:
+            tid = self.thread_map.to_vscode(pyd_tid, autogen=False)
+            with self.suspending_threads_for_bp_lock:
+                self.suspended_thread_count += 1
+        except KeyError:
+            return
+
+        if reason in STEP_REASONS:
+            self.send_event('stopped', reason='step', threadId=tid)
+        elif reason in EXCEPTION_REASONS:
+            self.send_event('stopped', reason='exception', threadId=tid)
+        elif reason == pydevd_comm.CMD_SET_BREAK:
+            self.vsc_breakpoint_tid = tid
+        else:
+            with self.suspending_threads_for_bp_lock:
+                if not self.suspending_threads_for_bp:
+                    self.send_event('stopped', reason='pause', threadId=tid)
+
+        with self.suspending_threads_for_bp_lock:
+            if self.suspending_threads_for_bp and \
+               self.vsc_breakpoint_tid and \
+               self.suspended_thread_count == len(self.thread_map.vscode_ids()):
+                self.send_event('stopped', reason='breakpoint', threadId=self.vsc_breakpoint_tid, allThreadsStopped=True)
 
     @pydevd_events.handler(pydevd_comm.CMD_THREAD_RUN)
     def on_pydevd_thread_run(self, seq, args):
         # TODO: docstring
         pyd_tid, reason = args.split('\t')
-        vsc_tid = self.thread_map.to_vscode(pyd_tid)
+        try:
+            vsc_tid = self.thread_map.to_vscode(pyd_tid, autogen=False)
+        except KeyError:
+            return
 
         # Stack trace, and all frames and variables for this thread
         # are now invalid; clear their IDs.
@@ -877,6 +913,17 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
                 self.var_map.remove(pyd_var, vsc_var)
 
         self.send_event('continued', threadId=vsc_tid)
+
+    @pydevd_events.handler(pydevd_comm.CMD_THREADS_SUSPENDING)
+    def on_pydevd_threads_suspending(self, seq, args):
+        # TODO: docstring
+        with self.suspending_threads_for_bp_lock:
+            self.suspending_threads_for_bp = True
+
+    @pydevd_events.handler(pydevd_comm.CMD_THREADS_SUSPENDED)
+    def on_pydevd_threads_suspended(self, seq, args):
+        # TODO: docstring
+        pass
 
     @pydevd_events.handler(pydevd_comm.CMD_SEND_CURR_EXCEPTION_TRACE)
     def on_pydevd_send_curr_exception_trace(self, seq, args):
