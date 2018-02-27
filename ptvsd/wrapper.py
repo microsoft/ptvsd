@@ -8,6 +8,7 @@ import atexit
 import errno
 import os
 import platform
+import signal
 import socket
 import sys
 import threading
@@ -37,7 +38,7 @@ __version__ = "4.0.0a1"
 #ipcjson._TRACE = ipcjson_trace
 
 ptvsd_sys_exit_code = 0
-
+WAIT_FOR_DISCONNECT_REQUEST_TIMEOUT = 2
 
 def unquote(s):
     if s is None:
@@ -389,7 +390,8 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
         self.next_var_ref = 0
         self.loop = futures.EventLoop()
         self.exceptions_mgr = ExceptionsManager(self)
-
+        self.disconnect_request = None
+        self.disconnect_request_event = threading.Event()
         pydevd._vscprocessor = self
         self._closed = False
 
@@ -412,6 +414,11 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
         global ptvsd_sys_exit_code
         self.send_event('exited', exitCode=ptvsd_sys_exit_code)
         self.send_event('terminated')
+
+        self.disconnect_request_event.wait(WAIT_FOR_DISCONNECT_REQUEST_TIMEOUT)
+        if self.disconnect_request is not None:
+            self.send_response(self.disconnect_request)
+            self.disconnect_request = None
 
         self.loop.stop()
 
@@ -507,7 +514,15 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
 
     def on_disconnect(self, request, args):
         # TODO: docstring
-        self.send_response(request)
+        if self.start_reason == 'launch':
+            self.disconnect_request_event.set()
+            self.disconnect_request = request
+            killProcess = not self._closed
+            self.close()
+            if killProcess:
+                os.kill(os.getpid(), signal.SIGTERM)
+        else:
+            self.send_response(request)    
 
     @async_handler
     def on_attach(self, request, args):
@@ -931,6 +946,10 @@ def _start(client, server):
 ########################
 # pydevd hooks
 
+def signal_handler(signum, frame, proc):
+    proc.close()
+    sys.exit(0)
+
 def start_server(port):
     """Return a socket to a (new) local pydevd-handling daemon.
 
@@ -943,6 +962,7 @@ def start_server(port):
     client, _ = server.accept()
     pydevd, proc, _ = _start(client, server)
     atexit.register(proc.close)
+    signal.signal(signal.SIGHUP, lambda signum, frame: signal_handler(signum, frame, proc))
     return pydevd
 
 
@@ -958,6 +978,7 @@ def start_client(host, port):
     client.connect((host, port))
     pydevd, proc, _ = _start(client, None)
     atexit.register(proc.close)
+    signal.signal(signal.SIGHUP, lambda signum, frame: signal_handler(signum, frame, proc))
     return pydevd
 
 
