@@ -8,11 +8,11 @@ import atexit
 import errno
 import os
 import platform
+import signal
 import socket
 import sys
 import threading
 import traceback
-import signal
 
 try:
     import urllib
