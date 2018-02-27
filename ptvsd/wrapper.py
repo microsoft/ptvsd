@@ -962,7 +962,8 @@ def start_server(port):
     client, _ = server.accept()
     pydevd, proc, _ = _start(client, server)
     atexit.register(proc.close)
-    signal.signal(signal.SIGHUP, lambda signum, frame: signal_handler(signum, frame, proc))
+    if platform.system() != 'Windows':
+        signal.signal(signal.SIGHUP, lambda signum, frame: signal_handler(signum, frame, proc))
     return pydevd
 
 
@@ -978,7 +979,8 @@ def start_client(host, port):
     client.connect((host, port))
     pydevd, proc, _ = _start(client, None)
     atexit.register(proc.close)
-    signal.signal(signal.SIGHUP, lambda signum, frame: signal_handler(signum, frame, proc))
+    if platform.system() != 'Windows':
+        signal.signal(signal.SIGHUP, lambda signum, frame: signal_handler(signum, frame, proc))
     return pydevd
 
 
