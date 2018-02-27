@@ -965,10 +965,16 @@ def _start(client, server):
 ########################
 # pydevd hooks
 
+<<<<<<< HEAD
 def exit_handler(proc, server_thread):
     proc.close()
     if server_thread.is_alive():
         server_thread.join(WAIT_FOR_THREAD_FINISH_TIMEOUT)
+=======
+def signal_handler(signum, frame, proc):
+    proc.close()
+    sys.exit(0)
+>>>>>>> resolve code review comments
 
 def start_server(port):
     """Return a socket to a (new) local pydevd-handling daemon.
@@ -980,12 +986,18 @@ def start_server(port):
     """
     server = _create_server(port)
     client, _ = server.accept()
+<<<<<<< HEAD
     pydevd, proc, server_thread = _start(client, server)
     atexit.register(lambda: exit_handler(proc, server_thread))
     def signal_handler(signum, frame):
         proc.close()
         sys.exit(0)
     signal.signal(signal.SIGHUP, signal_handler)
+=======
+    pydevd, proc, _ = _start(client, server)
+    atexit.register(proc.close)
+    signal.signal(signal.SIGHUP, lambda signum, frame: signal_handler(signum, frame, proc))
+>>>>>>> resolve code review comments
     return pydevd
 
 
@@ -999,12 +1011,18 @@ def start_client(host, port):
     """
     client = _create_client()
     client.connect((host, port))
+<<<<<<< HEAD
     pydevd, proc, server_thread = _start(client, None)
     atexit.register(lambda: exit_handler(proc, server_thread))
     def signal_handler(signum, frame):
         proc.close()
         sys.exit(0)
     signal.signal(signal.SIGHUP, signal_handler)
+=======
+    pydevd, proc, _ = _start(client, None)
+    atexit.register(proc.close)
+    signal.signal(signal.SIGHUP, lambda signum, frame: signal_handler(signum, frame, proc))
+>>>>>>> resolve code review comments
     return pydevd
 
 
