@@ -12,6 +12,8 @@ import socket
 import sys
 import threading
 import traceback
+import signal
+
 try:
     import urllib
     urllib.unquote
@@ -981,6 +983,10 @@ def start_server(port):
     client, _ = server.accept()
     pydevd, proc, server_thread = _start(client, server)
     atexit.register(lambda: exit_handler(proc, server_thread))
+    def signal_handler(signum, frame):
+        proc.close()
+        sys.exit(0)
+    signal.signal(signal.SIGHUP, signal_handler)
     return pydevd
 
 
@@ -996,6 +1002,10 @@ def start_client(host, port):
     client.connect((host, port))
     pydevd, proc, server_thread = _start(client, None)
     atexit.register(lambda: exit_handler(proc, server_thread))
+    def signal_handler(signum, frame):
+        proc.close()
+        sys.exit(0)
+    signal.signal(signal.SIGHUP, signal_handler)
     return pydevd
 
 
