@@ -35,9 +35,6 @@ def handle_breakpoint(frame, thread, global_debugger, breakpoint):
     if breakpoint.expression is not None:
         handle_breakpoint_expression(breakpoint, info, new_frame)
 
-    if breakpoint.suspend_policy == "ALL":
-        global_debugger.suspend_all_other_threads(thread)
-
     return True
 
 
@@ -76,8 +73,12 @@ def _pydev_stop_at_break():
             return
         if breakpoint and handle_breakpoint(frame, t, debugger, breakpoint):
             pydev_log.debug("Suspending at breakpoint in file: {} on line {}".format(frame.f_code.co_filename, line))
+            debugger.send_threads_suspending_message()
             debugger.set_suspend(t, CMD_SET_BREAK)
+            if breakpoint.suspend_policy == "ALL":
+                global_debugger.suspend_all_other_threads(thread)
             debugger.do_wait_suspend(t, frame, 'line', None, "frame_eval")
+            debugger.send_threads_suspended_message()
 
         t.additional_info.is_tracing = False
 

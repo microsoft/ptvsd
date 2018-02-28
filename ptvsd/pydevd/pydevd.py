@@ -729,6 +729,20 @@ class PyDB:
         self.writer.add_command(cmd)
 
 
+    def send_threads_suspending_message(self):
+        """Sends a message that pydev is suspending thread(s)
+        """
+        cmd = self.cmd_factory.make_threads_suspending_message()
+        self.writer.add_command(cmd)
+
+
+    def send_threads_suspended_message(self):
+        """Sends a message that pydev has finished suspending thread(s)
+        """
+        cmd = self.cmd_factory.make_threads_suspended_message()
+        self.writer.add_command(cmd)
+
+
     def do_wait_suspend(self, thread, frame, event, arg, suspend_type="trace"): #@UnusedVariable
         """ busy waits until the thread state changes to RUN
         it expects thread's state as attributes of the thread.

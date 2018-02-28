@@ -147,6 +147,9 @@ CMD_GET_DESCRIPTION = 148
 
 CMD_PROCESS_CREATED = 149
 
+CMD_THREADS_SUSPENDING = 180
+CMD_THREADS_SUSPENDED = 181
+
 CMD_VERSION = 501
 CMD_RETURN = 502
 CMD_ERROR = 901
@@ -203,6 +206,9 @@ ID_TO_MEANING = {
     '148': 'CMD_GET_DESCRIPTION',
 
     '149': 'CMD_PROCESS_CREATED',
+
+    '180': 'CMD_THREADS_SUSPENDING',
+    '181': 'CMD_THREADS_SUSPENDED',
 
     '501': 'CMD_VERSION',
     '502': 'CMD_RETURN',
@@ -587,6 +593,14 @@ class NetCommandFactory:
     def make_process_created_message(self):
         cmdText = '<process/>'
         return NetCommand(CMD_PROCESS_CREATED, 0, cmdText)
+    
+    def make_threads_suspending_message(self):
+        cmdText = '<threads_suspending/>'
+        return NetCommand(CMD_THREADS_SUSPENDING, 0, cmdText)
+    
+    def make_threads_suspended_message(self):
+        cmdText = '<threads_suspended/>'
+        return NetCommand(CMD_THREADS_SUSPENDED, 0, cmdText)
 
     def make_custom_frame_created_message(self, frameId, frameDescription):
         frameDescription = pydevd_xml.make_valid_xml_value(frameDescription)
