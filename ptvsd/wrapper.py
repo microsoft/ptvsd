@@ -539,8 +539,6 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
     def on_configurationDone(self, request, args):
         # TODO: docstring
         self.send_response(request)
-        self.pydevd_request(pydevd_comm.CMD_RUN, '')
-        self.send_process_event(self.start_reason)
 
     def on_disconnect(self, request, args):
         # TODO: docstring
@@ -565,6 +563,9 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
         # TODO: docstring
         self.start_reason = 'launch'
         self.send_response(request)
+        self.pydevd_request(pydevd_comm.CMD_REDIRECT_OUTPUT, 'STDOUT\tSTDERR')
+        self.pydevd_request(pydevd_comm.CMD_RUN, '')
+        self.send_process_event(self.start_reason)
 
     def send_process_event(self, start_method):
         # TODO: docstring
@@ -973,6 +974,15 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
             except KeyError:
                 pass
 
+    @pydevd_events.handler(pydevd_comm.CMD_WRITE_TO_CONSOLE)
+    def on_pydevd_cmd_write_to_console2(self, seq, args):
+        # TODO: docstring
+        xml = untangle.parse(args).xml
+        ctx = xml.io['ctx']
+        category = 'stdout' if ctx == '1' else 'stderr'
+        content = unquote(xml.io['s'])
+        self.send_event('output', category=category, output=content)
+        
 
 ########################
 # lifecycle
