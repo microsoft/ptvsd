@@ -681,9 +681,6 @@ def process_net_command(py_db, cmd_id, seq, text):
 
             elif cmd_id == CMD_REDIRECT_OUTPUT:
                 if text:
-                    log = open('/Users/donjayamanne/Desktop/Development/vscode/my_forked_ptvsd/log.log', 'a')
-                    log.write('CMD_REDIRECT_OUTPUT received\n')
-                    log.close()
                     py_db.enable_output_redirection('STDOUT' in text, 'STDERR' in text)
 
             else:

@@ -987,7 +987,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
 
     @pydevd_events.handler(pydevd_comm.CMD_WRITE_TO_CONSOLE)
     def on_pydevd_cmd_write_to_console2(self, seq, args):
-        # TODO: docstring
+        """Handle console output"""
         xml = untangle.parse(args).xml
         ctx = xml.io['ctx']
         category = 'stdout' if ctx == '1' else 'stderr'
