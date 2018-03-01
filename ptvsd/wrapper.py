@@ -419,7 +419,6 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
         self.loop = futures.EventLoop()
         self.exceptions_mgr = ExceptionsManager(self)
         self.disconnect_request = None
-        self.launch_arguments = None
         self.disconnect_request_event = threading.Event()
         pydevd._vscprocessor = self
         self._closed = False
@@ -540,17 +539,8 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
     def on_configurationDone(self, request, args):
         # TODO: docstring
         self.send_response(request)
-        self.process_launch_arguments()
         self.pydevd_request(pydevd_comm.CMD_RUN, '')
         self.send_process_event(self.start_reason)
-    
-    def process_launch_arguments(self):
-        """Process the launch arguments to configure the debugger"""
-        if self.launch_arguments is None:
-            return
-
-        redirect_stdout = 'STDOUT\tSTDERR' if self.launch_arguments.get('redirectOutput', False) == True else ''
-        self.pydevd_request(pydevd_comm.CMD_REDIRECT_OUTPUT, redirect_stdout)
 
     def on_disconnect(self, request, args):
         # TODO: docstring
@@ -574,7 +564,6 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
     def on_launch(self, request, args):
         # TODO: docstring
         self.start_reason = 'launch'
-        self.launch_arguments = request.get('arguments', None)
         self.send_response(request)
 
     def send_process_event(self, start_method):
@@ -861,21 +850,26 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
     def on_exceptionInfo(self, request, args):
         # TODO: docstring
         tid = self.thread_map.to_pydevd(args['threadId'])
+        name, description = self.get_exceptionInfo(tid)
+        self.send_response(
+            request,
+            exceptionId=name,
+            description=description,
+            breakMode=self.exceptions_mgr.get_break_mode(name),
+            details={'typeName': name,
+                     'message': description},
+        )
+
+    def get_exceptionInfo(self, pyd_tid):
+        """Gets the exception name and description for the given PyDev Thread id"""
         with self.active_exceptions_lock:
             try:
-                exc = self.active_exceptions[tid]
+                exc = self.active_exceptions[pyd_tid]
             except KeyError:
                 exc = ExceptionInfo('BaseException',
                                     'exception: no description')
-        self.send_response(
-            request,
-            exceptionId=exc.name,
-            description=exc.description,
-            breakMode=self.exceptions_mgr.get_break_mode(exc.name),
-            details={'typeName': exc.name,
-                     'message': exc.description},
-        )
-
+        return (exc.name, exc.description)
+        
     @pydevd_events.handler(pydevd_comm.CMD_THREAD_CREATE)
     def on_pydevd_thread_create(self, seq, args):
         # TODO: docstring
@@ -921,11 +915,14 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
             vsc_tid = self.thread_map.to_vscode(pyd_tid, autogen=False)
         except KeyError:
             return
-
+        
+        text = None
         if reason in STEP_REASONS:
             reason = 'step'
         elif reason in EXCEPTION_REASONS:
             reason = 'exception'
+            name, description = self.get_exceptionInfo(pyd_tid)
+            text = '{}, {}'.format(name, description)
         elif reason == pydevd_comm.CMD_SET_BREAK:
             reason = 'breakpoint'
         else:
@@ -934,7 +931,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
         with self.stack_traces_lock:
             self.stack_traces[pyd_tid] = xml.thread.frame
         
-        self.send_event('stopped', reason=reason, threadId=vsc_tid)
+        self.send_event('stopped', reason=reason, threadId=vsc_tid, text=text)
 
     @pydevd_events.handler(pydevd_comm.CMD_THREAD_RUN)
     def on_pydevd_thread_run(self, seq, args):
@@ -984,15 +981,6 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
             except KeyError:
                 pass
 
-    @pydevd_events.handler(pydevd_comm.CMD_WRITE_TO_CONSOLE)
-    def on_pydevd_cmd_write_to_console2(self, seq, args):
-        """Handle console output"""
-        xml = untangle.parse(args).xml
-        ctx = xml.io['ctx']
-        category = 'stdout' if ctx == '1' else 'stderr'
-        content = unquote(xml.io['s'])
-        self.send_event('output', category=category, output=content)
-        
 
 ########################
 # lifecycle
