@@ -419,6 +419,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
         self.loop = futures.EventLoop()
         self.exceptions_mgr = ExceptionsManager(self)
         self.disconnect_request = None
+        self.launch_arguments = None
         self.disconnect_request_event = threading.Event()
         pydevd._vscprocessor = self
         self._closed = False
@@ -539,9 +540,18 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
     def on_configurationDone(self, request, args):
         # TODO: docstring
         self.send_response(request)
-        self.pydevd_request(pydevd_comm.CMD_REDIRECT_OUTPUT, 'STDOUT\tSTDERR')
+        self.process_launch_arguments()
         self.pydevd_request(pydevd_comm.CMD_RUN, '')
         self.send_process_event(self.start_reason)
+    
+    def process_launch_arguments(self):
+        """Process the launch arguments to configure the debugger"""
+        if self.launch_arguments is None:
+            return
+
+        redirect_stdout = 'STDOUT' if self.launch_arguments.get('redirectStdout', False) == True else ''
+        redirect_stderr = 'STDERR' if self.launch_arguments.get('redirectStderr', False) == True else ''
+        self.pydevd_request(pydevd_comm.CMD_REDIRECT_OUTPUT, '{}\t{}'.format(redirect_stdout, redirect_stderr))
 
     def on_disconnect(self, request, args):
         # TODO: docstring
@@ -565,6 +575,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
     def on_launch(self, request, args):
         # TODO: docstring
         self.start_reason = 'launch'
+        self.launch_arguments = request.get('arguments', None)
         self.send_response(request)
 
     def send_process_event(self, start_method):
