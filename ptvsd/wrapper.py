@@ -22,7 +22,6 @@ except Exception:
 import _pydevd_bundle.pydevd_comm as pydevd_comm
 import _pydevd_bundle.pydevd_extension_api as pydevd_extapi
 import _pydevd_bundle.pydevd_extension_utils as pydevd_extutil
-import pydevd_file_utils
 #from _pydevd_bundle.pydevd_comm import pydevd_log
 
 import ptvsd.ipcjson as ipcjson
