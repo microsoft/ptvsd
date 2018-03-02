@@ -562,11 +562,11 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
         if self.launch_arguments is None:
             return
 
-        if self.launch_arguments.get('redirectOutput', False):
-            redirect_stdout = 'STDOUT\tSTDERR'
-        else:
-            redirect_stdout = ''
-        self.pydevd_request(pydevd_comm.CMD_REDIRECT_OUTPUT, redirect_stdout)
+        if self.launch_arguments.get('fixFilePathCase', False):
+            self.path_casing.enable()
+            
+        redirect_output = 'STDOUT\tSTDERR' if self.launch_arguments.get('redirectOutput', False) == True else ''
+        self.pydevd_request(pydevd_comm.CMD_REDIRECT_OUTPUT, redirect_output)
 
     def on_disconnect(self, request, args):
         # TODO: docstring
