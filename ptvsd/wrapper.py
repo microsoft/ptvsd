@@ -429,7 +429,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
                              name='ptvsd.EventLoop')
         self.event_loop_thread.daemon = True
         self.event_loop_thread.start()
-        
+
     def close(self):
         """Stop the message processor and release its resources."""
         if self._closed:
@@ -565,9 +565,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
         if self.launch_arguments.get('fixFilePathCase', False):
             self.path_casing.enable()
             
-        redirect_stdout = 'STDOUT' if self.launch_arguments.get('redirectStdout', False) == True else ''
-        redirect_stdstderr = 'STDERR' if self.launch_arguments.get('redirectStderr', False) == True else ''
-        redirect_output = '{}\t{}'.format(redirect_stdout, redirect_stdstderr)
+        redirect_output = 'STDOUT\tSTDERR' if self.launch_arguments.get('redirectOutput', False) == True else ''
         self.pydevd_request(pydevd_comm.CMD_REDIRECT_OUTPUT, redirect_output)
 
     def on_disconnect(self, request, args):
