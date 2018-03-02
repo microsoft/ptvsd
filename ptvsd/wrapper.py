@@ -848,6 +848,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
             line = src_bp['line']
             vsc_bpid = self.bp_map.add(
                     lambda vsc_bpid: (path, vsc_bpid))
+            self.path_casing.track_file_path_case(path)
             msg = msgfmt.format(vsc_bpid, path, line,
                                 src_bp.get('condition', None))
             self.pydevd_notify(cmd, msg)
