@@ -27,6 +27,7 @@ import _pydevd_bundle.pydevd_extension_utils as pydevd_extutil
 import ptvsd.ipcjson as ipcjson
 import ptvsd.futures as futures
 import ptvsd.untangle as untangle
+from ptvsd.pathutils import PathUnNormcase
 
 
 __author__ = "Microsoft Corporation <ptvshelp@microsoft.com>"
@@ -423,7 +424,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
         self.disconnect_request_event = threading.Event()
         pydevd._vscprocessor = self
         self._closed = False
-
+        self.path_casing = PathUnNormcase()
         self.event_loop_thread = threading.Thread(target=self.loop.run_forever,
                              name='ptvsd.EventLoop')
         self.event_loop_thread.daemon = True
@@ -545,12 +546,27 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
         self.send_process_event(self.start_reason)
     
     def process_launch_arguments(self):
-        """Process the launch arguments to configure the debugger"""
+        """
+        Process the launch arguments to configure the debugger.
+        Further information can be found here https://code.visualstudio.com/docs/editor/debugging#_launchjson-attributes
+        {
+            type:'python',
+            request:'launch'|'attach',
+            name:'friendly name for debug config',
+            // Custom attributes supported by PTVSD.
+            redirectStdout:true,
+            redirectStderr:true,
+            fixFilePathCase:false
+        }
+        """
         if self.launch_arguments is None:
             return
 
-        redirect_stdout = 'STDOUT\tSTDERR' if self.launch_arguments.get('redirectOutput', False) == True else ''
-        self.pydevd_request(pydevd_comm.CMD_REDIRECT_OUTPUT, redirect_stdout)
+        if self.launch_arguments.get('fixFilePathCase', False):
+            self.path_casing.enable()
+            
+        redirect_output = 'STDOUT\tSTDERR' if self.launch_arguments.get('redirectOutput', False) == True else ''
+        self.pydevd_request(pydevd_comm.CMD_REDIRECT_OUTPUT, redirect_output)
 
     def on_disconnect(self, request, args):
         # TODO: docstring
@@ -657,7 +673,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
             key = (pyd_tid, int(xframe['id']))
             fid = self.frame_map.to_vscode(key, autogen=True)
             name = unquote(xframe['name'])
-            file = unquote(xframe['file'])
+            file = self.path_casing.un_normcase(unquote(xframe['file']))
             line = int(xframe['line'])
             stackFrames.append({
                 'id': fid,
@@ -814,6 +830,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
         # TODO: docstring
         bps = []
         path = args['source']['path']
+        self.path_casing.track_file_path_case(path)
         src_bps = args.get('breakpoints', [])
 
         # First, we must delete all existing breakpoints in that source.
