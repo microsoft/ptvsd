@@ -27,6 +27,7 @@ import _pydevd_bundle.pydevd_extension_utils as pydevd_extutil
 import ptvsd.ipcjson as ipcjson
 import ptvsd.futures as futures
 import ptvsd.untangle as untangle
+from ptvsd.pathutils import PathUnNormcase
 
 
 __author__ = "Microsoft Corporation <ptvshelp@microsoft.com>"
@@ -425,7 +426,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
         self.disconnect_request_event = threading.Event()
         pydevd._vscprocessor = self
         self._closed = False
-
+        self.path_casing = PathUnNormcase()
         self.event_loop_thread = threading.Thread(target=self.loop.run_forever,
                                                   name='ptvsd.EventLoop')
         self.event_loop_thread.daemon = True
@@ -673,7 +674,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
             key = (pyd_tid, int(xframe['id']))
             fid = self.frame_map.to_vscode(key, autogen=True)
             name = unquote(xframe['name'])
-            file = unquote(xframe['file'])
+            file = self.path_casing.un_normcase(unquote(xframe['file']))
             line = int(xframe['line'])
             stackFrames.append({
                 'id': fid,
@@ -831,6 +832,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
         # TODO: docstring
         bps = []
         path = args['source']['path']
+        self.path_casing.track_file_path_case(path)
         src_bps = args.get('breakpoints', [])
 
         # First, we must delete all existing breakpoints in that source.
