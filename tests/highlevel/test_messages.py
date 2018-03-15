@@ -463,16 +463,19 @@ class VariablesTests(NormalRequestTest, unittest.TestCase):
             self.expected_response(
                 variables=[
                     {
+                        'evaluateName': 'spam.x',
                         'name': 'x',
                         'type': 'int',
                         'value': '1',
                     },
                     {
+                        'evaluateName': 'spam.y',
                         'name': 'y',
                         'type': 'int',
                         'value': '2',
                     },
                     {
+                        'evaluateName': 'spam.z',
                         'name': 'z',
                         'type': 'int',
                         'value': '3',
