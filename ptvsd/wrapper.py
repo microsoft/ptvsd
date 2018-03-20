@@ -558,7 +558,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
             try:
                 self.socket.shutdown(socket.SHUT_RDWR)
                 self.socket.close()
-            except:
+            except Exception:
                 pass
 
     def pydevd_notify(self, cmd_id, args):
