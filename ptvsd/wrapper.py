@@ -784,7 +784,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
         if self.launch_arguments.get('fixFilePathCase', False):
             self.path_casing.enable()
 
-        options = self.launch_arguments.get('options', ''):
+        options = self.launch_arguments.get('options', '')
         redirect_output = 'STDOUT\tSTDERR' if 'REDIRECT_OUTPUT=True' in options else ''
         self.pydevd_request(pydevd_comm.CMD_REDIRECT_OUTPUT, redirect_output)
 
