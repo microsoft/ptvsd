@@ -775,16 +775,17 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
             request:'launch'|'attach',
             name:'friendly name for debug config',
             // Custom attributes supported by PTVSD.
-            options: "REDIRECT_OUTPUT=True;"
+            options: "REDIRECT_OUTPUT=True;FIX_FILE_PATH_CASE=True"
         }
         """  # noqa
         if self.launch_arguments is None:
             return
 
-        if self.launch_arguments.get('fixFilePathCase', False):
+        options = self.launch_arguments.get('options', '')
+
+        if 'FIX_FILE_PATH_CASE=True' in options:
             self.path_casing.enable()
 
-        options = self.launch_arguments.get('options', '')
         redirect_output = 'STDOUT\tSTDERR' if 'REDIRECT_OUTPUT=True' in options else ''
         self.pydevd_request(pydevd_comm.CMD_REDIRECT_OUTPUT, redirect_output)
 
