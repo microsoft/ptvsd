@@ -798,9 +798,6 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
         """
         Process the launch arguments to configure the debugger.
         """  # noqa
-        if self.launch_options is None:
-            return
-
         if self.launch_options.get('FIX_FILE_PATH_CASE', False):
             self.path_casing.enable()
 
