@@ -1492,11 +1492,11 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
                 text = unquote(xml.var[1]['type'])
                 description = unquote(xml.var[1]['value'])
                 frame_data = ((
-                                unquote(f['file']),
-                                int(f['line']),
-                                unquote(f['name']),
-                                None
-                                ) for f in xframes)
+                               unquote(f['file']),
+                               int(f['line']),
+                               unquote(f['name']),
+                               None
+                               ) for f in xframes)
                 stack = ''.join(traceback.format_list(frame_data))
                 source = unquote(xframe['file'])
             except Exception:
