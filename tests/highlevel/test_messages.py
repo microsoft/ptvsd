@@ -1171,7 +1171,7 @@ class SetBreakpointsTests(NormalRequestTest, unittest.TestCase):
 
 
     def test_vsc_flask_jinja2(self):
-        with self.launched(args={'debugOptions': ['Jinja2']}):
+        with self.launched(args={'debugOptions': ['Jinja']}):
             self.send_request(
                 source={'path': 'spam.py'},
                 breakpoints=[{'line': '10'}],

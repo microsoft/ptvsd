@@ -826,7 +826,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
             'WaitOnAbnormalExit': 'WAIT_ON_ABNORMAL_EXIT=True',
             'Django': 'DJANGO_DEBUG=True',
             'Flask': 'FLASK_DEBUG=True',
-            'Jinja2': 'FLASK_DEBUG=True',
+            'Jinja': 'FLASK_DEBUG=True',
             'FixFilePathCase': 'FIX_FILE_PATH_CASE=True',
             'DebugStdLib': 'DEBUG_STD_LIB=True'
         }
