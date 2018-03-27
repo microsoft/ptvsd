@@ -798,11 +798,10 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
         """
         Process the launch arguments to configure the debugger.
         """  # noqa
-        if self.launch_options.get('FIX_FILE_PATH_CASE', False):
+        if self.debug_options.get('FIX_FILE_PATH_CASE', False):
             self.path_casing.enable()
 
-        if self.launch_arguments.get('redirectOutput', False) \
-            or self.debug_options.get('REDIRECT_OUTPUT', False):
+        if self.debug_options.get('REDIRECT_OUTPUT', False):
             redirect_output = 'STDOUT\tSTDERR'
         else:
             redirect_output = ''
