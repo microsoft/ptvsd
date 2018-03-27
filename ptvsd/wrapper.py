@@ -833,11 +833,6 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
         }
         return ';'.join(debug_option_mapping[option] for option in debug_options if option in debug_option_mapping)
 
-    def __parse_launch_option_value(self, value):
-        if value == 'True' or value == 'False':
-            return bool(value)
-        return unquote(value)
-
     def _parse_debug_options(self, debug_options):
         """Debug options semicolon separated key=value pairs
             WAIT_ON_ABNORMAL_EXIT=True|False
