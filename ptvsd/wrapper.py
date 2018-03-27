@@ -791,10 +791,10 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
     def on_configurationDone(self, request, args):
         # TODO: docstring
         self.send_response(request)
-        self.process_launch_options()
+        self.process_debug_options()
         self.pydevd_request(pydevd_comm.CMD_RUN, '')
 
-    def process_launch_options(self):
+    def process_debug_options(self):
         """
         Process the launch arguments to configure the debugger.
         """  # noqa
@@ -839,7 +839,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
         return unquote(value)
 
     def _parse_debug_options(self, debug_options):
-        """VS options semicolon separated key=value pairs
+        """Debug options semicolon separated key=value pairs
             WAIT_ON_ABNORMAL_EXIT=True|False
             WAIT_ON_NORMAL_EXIT=True|False
             REDIRECT_OUTPUT=True|False
