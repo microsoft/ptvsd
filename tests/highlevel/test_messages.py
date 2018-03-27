@@ -1131,7 +1131,6 @@ class SetBreakpointsTests(NormalRequestTest, unittest.TestCase):
                 '2\tjinja2-line\teggs.html\t17\tNone\tNone\tNone'),
         ])
 
-
     def test_vsc_flask_jinja2(self):
         with self.launched(args={'debugOptions': ['Flask']}):
             self.send_request(
@@ -1169,8 +1168,7 @@ class SetBreakpointsTests(NormalRequestTest, unittest.TestCase):
                 '2\tjinja2-line\teggs.html\t17\tNone\tNone\tNone'),
         ])
 
-
-    def test_vsc_flask_jinja2(self):
+    def test_vsc_jinja2(self):
         with self.launched(args={'debugOptions': ['Jinja']}):
             self.send_request(
                 source={'path': 'spam.py'},

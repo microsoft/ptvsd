@@ -830,7 +830,9 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
             'FixFilePathCase': 'FIX_FILE_PATH_CASE=True',
             'DebugStdLib': 'DEBUG_STD_LIB=True'
         }
-        return ';'.join(debug_option_mapping[option] for option in debug_options if option in debug_option_mapping)
+        return ';'.join(debug_option_mapping[option] 
+                        for option in debug_options 
+                        if option in debug_option_mapping)
 
     def _parse_debug_options(self, debug_options):
         """Debug options are semicolon separated key=value pairs
