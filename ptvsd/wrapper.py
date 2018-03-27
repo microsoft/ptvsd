@@ -617,7 +617,6 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
         self.exceptions_mgr = ExceptionsManager(self)
         self.modules_mgr = ModulesManager(self)
         self.disconnect_request = None
-        self.launch_arguments = None
         self.debug_options = {}
         self.disconnect_request_event = threading.Event()
         pydevd._vscprocessor = self
@@ -792,25 +791,17 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
     def on_configurationDone(self, request, args):
         # TODO: docstring
         self.send_response(request)
-        self.process_launch_arguments()
+        self.process_launch_options()
         self.pydevd_request(pydevd_comm.CMD_RUN, '')
 
-    def process_launch_arguments(self):
+    def process_launch_options(self):
         """
         Process the launch arguments to configure the debugger.
-        Further information can be found here https://code.visualstudio.com/docs/editor/debugging#_launchjson-attributes
-        {
-            type:'python',
-            request:'launch'|'attach',
-            name:'friendly name for debug config',
-            // Custom attributes supported by PTVSD.
-            redirectOutput:true|false,
-        }
         """  # noqa
-        if self.launch_arguments is None:
+        if self.launch_options is None:
             return
 
-        if self.launch_arguments.get('fixFilePathCase', False):
+        if self.launch_options.get('FIX_FILE_PATH_CASE', False):
             self.path_casing.enable()
 
         if self.launch_arguments.get('redirectOutput', False) \
@@ -820,8 +811,38 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
             redirect_output = ''
         self.pydevd_request(pydevd_comm.CMD_REDIRECT_OUTPUT, redirect_output)
 
+    def build_debug_options(self, debug_options):
+        """
+        Build string representation of debug options from launch config (as provided by VSC)
+        Further information can be found here https://code.visualstudio.com/docs/editor/debugging#_launchjson-attributes
+        {
+            type:'python',
+            request:'launch'|'attach',
+            name:'friendly name for debug config',
+            debugOptions:[
+                'RedirectOutput', 'Django'
+            ]
+        }
+        """  # noqa
+        debug_option_mapping = {
+            'RedirectOutput': 'REDIRECT_OUTPUT=True',
+            'WaitOnNormalExit': 'WAIT_ON_NORMAL_EXIT=True',
+            'WaitOnAbnormalExit': 'WAIT_ON_ABNORMAL_EXIT=True',
+            'Django': 'DJANGO_DEBUG=True',
+            'Flask': 'FLASK_DEBUG=True',
+            'Jinja2': 'FLASK_DEBUG=True',
+            'FixFilePathCase': 'FIX_FILE_PATH_CASE=True',
+            'DebugStdLib':'DEBUG_STD_LIB=True'
+        }
+        return ';'.join(debug_option_mapping[option] for option in debug_options if option in debug_option_mapping)
+
+    def __parse_launch_option_value(self, value):
+        if value == 'True' or value == 'False':
+            return bool(value)
+        return unquote(value)
+
     def _parse_debug_options(self, debug_options):
-        """Debug options are semicolon separated key=value pairs
+        """VS options semicolon separated key=value pairs
             WAIT_ON_ABNORMAL_EXIT=True|False
             WAIT_ON_NORMAL_EXIT=True|False
             REDIRECT_OUTPUT=True|False
@@ -872,9 +893,9 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
     def on_launch(self, request, args):
         # TODO: docstring
         self.start_reason = 'launch'
-        self.launch_arguments = request.get('arguments', None)
+        options = self.build_debug_options(args.get('debugOptions', []))
         self.debug_options = self._parse_debug_options(
-            args.get('options', ''))
+            args.get('options', options))
         self.send_response(request)
 
     def send_process_event(self, start_method):
@@ -1334,7 +1355,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
         for src_bp in src_bps:
             line = src_bp['line']
             vsc_bpid = self.bp_map.add(
-                    lambda vsc_bpid: (path, vsc_bpid))
+                lambda vsc_bpid: (path, vsc_bpid))
             self.path_casing.track_file_path_case(path)
             msg = msgfmt.format(vsc_bpid, bp_type, path, line,
                                 src_bp.get('condition', None))
@@ -1425,9 +1446,9 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
         pyd_tid = xml.thread['id']
         reason = int(xml.thread['stop_reason'])
         STEP_REASONS = {
-                pydevd_comm.CMD_STEP_INTO,
-                pydevd_comm.CMD_STEP_OVER,
-                pydevd_comm.CMD_STEP_RETURN,
+            pydevd_comm.CMD_STEP_INTO,
+            pydevd_comm.CMD_STEP_OVER,
+            pydevd_comm.CMD_STEP_RETURN,
         }
         EXCEPTION_REASONS = {
             pydevd_comm.CMD_STEP_CAUGHT_EXCEPTION,
@@ -1471,11 +1492,11 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
                 text = unquote(xml.var[1]['type'])
                 description = unquote(xml.var[1]['value'])
                 frame_data = ((
-                               unquote(f['file']),
-                               int(f['line']),
-                               unquote(f['name']),
-                               None
-                               ) for f in xframes)
+                    unquote(f['file']),
+                    int(f['line']),
+                    unquote(f['name']),
+                    None
+                ) for f in xframes)
                 stack = ''.join(traceback.format_list(frame_data))
                 source = unquote(xframe['file'])
             except Exception:
