@@ -34,7 +34,7 @@ import ptvsd.ipcjson as ipcjson  # noqa
 import ptvsd.futures as futures  # noqa
 import ptvsd.untangle as untangle  # noqa
 from ptvsd.pathutils import PathUnNormcase  # noqa
-from ptvsd.safe_repr import SafeRepr # noqa
+from ptvsd.safe_repr import SafeRepr  # noqa
 
 
 __author__ = "Microsoft Corporation <ptvshelp@microsoft.com>"
@@ -829,7 +829,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
             'Flask': 'FLASK_DEBUG=True',
             'Jinja2': 'FLASK_DEBUG=True',
             'FixFilePathCase': 'FIX_FILE_PATH_CASE=True',
-            'DebugStdLib':'DEBUG_STD_LIB=True'
+            'DebugStdLib': 'DEBUG_STD_LIB=True'
         }
         return ';'.join(debug_option_mapping[option] for option in debug_options if option in debug_option_mapping)
 
@@ -1214,11 +1214,11 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
             try:
                 xml2 = untangle.parse(resp_args).xml
                 xvar2 = xml2.var
-                result_type  = unquote(xvar2['type'])
+                result_type = unquote(xvar2['type'])
                 result = unquote(xvar2['value'])
             except Exception:
                 # if resp_args is not xml then it contains the error traceback
-                result_type  = unquote(xvar['type'])
+                result_type = unquote(xvar['type'])
                 result = unquote(xvar['value'])
             self.send_response(
                 request,
@@ -1352,7 +1352,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
         for src_bp in src_bps:
             line = src_bp['line']
             vsc_bpid = self.bp_map.add(
-                    lambda vsc_bpid: (path, vsc_bpid))
+                lambda vsc_bpid: (path, vsc_bpid))
             self.path_casing.track_file_path_case(path)
             msg = msgfmt.format(vsc_bpid, bp_type, path, line,
                                 src_bp.get('condition', None))
@@ -1443,9 +1443,9 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
         pyd_tid = xml.thread['id']
         reason = int(xml.thread['stop_reason'])
         STEP_REASONS = {
-                pydevd_comm.CMD_STEP_INTO,
-                pydevd_comm.CMD_STEP_OVER,
-                pydevd_comm.CMD_STEP_RETURN,
+            pydevd_comm.CMD_STEP_INTO,
+            pydevd_comm.CMD_STEP_OVER,
+            pydevd_comm.CMD_STEP_RETURN,
         }
         EXCEPTION_REASONS = {
             pydevd_comm.CMD_STEP_CAUGHT_EXCEPTION,
@@ -1489,11 +1489,11 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
                 text = unquote(xml.var[1]['type'])
                 description = unquote(xml.var[1]['value'])
                 frame_data = ((
-                               unquote(f['file']),
-                               int(f['line']),
-                               unquote(f['name']),
-                               None
-                               ) for f in xframes)
+                    unquote(f['file']),
+                    int(f['line']),
+                    unquote(f['name']),
+                    None
+                ) for f in xframes)
                 stack = ''.join(traceback.format_list(frame_data))
                 source = unquote(xframe['file'])
             except Exception:
