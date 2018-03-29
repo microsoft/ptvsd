@@ -818,6 +818,8 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
             ],
         )
         self.send_event('initialized')
+        if args.get('supportsVersionInfo', False):
+            self.send_event('versionInfo', version=__version__)
 
     @async_handler
     def on_configurationDone(self, request, args):
