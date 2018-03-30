@@ -818,8 +818,6 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
             ],
         )
         self.send_event('initialized')
-        if args.get('supportsVersionInfo', False):
-            self.send_event('versionInfo', version=__version__)
 
     @async_handler
     def on_configurationDone(self, request, args):
@@ -1437,7 +1435,11 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
                      'source': exc.source},
         )
 
-    # Custom ptvsd message
+    # Custom ptvsd message to get ptvsd version
+    def on_ptvsd_version(self, request, args):
+        self.send_response(request, version=__version__)
+
+    # Custom ptvsd message to get system info
     def on_ptvsd_systemInfo(self, request, args):
         try:
             pid = os.getpid()
