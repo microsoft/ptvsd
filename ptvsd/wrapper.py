@@ -45,9 +45,9 @@ __author__ = "Microsoft Corporation <ptvshelp@microsoft.com>"
 __version__ = "4.0.0a5"
 
 
-#def ipcjson_trace(s):
-#    print(s)
-#ipcjson._TRACE = ipcjson_trace
+# def ipcjson_trace(s):
+#     print(s)
+# ipcjson._TRACE = ipcjson_trace
 
 ptvsd_sys_exit_code = 0
 WAIT_FOR_DISCONNECT_REQUEST_TIMEOUT = 2
@@ -233,8 +233,21 @@ class ExceptionInfo(object):
         self.stack = stack
         self.source = source
 
+class Observable(object):
+    def __init__(self):
+        self._observers = []
+    
+    def register_observer(self, observer):
+        self._observers.append(observer)
+    
+    def un_register_observer(self, observer):
+        self._observers.remove(observer)
+    
+    def notify_observers(self, *args, **kwargs):
+        for observer in self._observers:
+            observer.notify(*args, **kwargs)
 
-class PydevdSocket(object):
+class PydevdSocket(Observable):
     """A dummy socket-like object for communicating with pydevd.
 
     It parses pydevd messages and redirects them to the provided handler
@@ -245,9 +258,10 @@ class PydevdSocket(object):
 
     _vscprocessor = None
 
-    def __init__(self, event_handler):
+    def __init__(self):
+        super(PydevdSocket, self).__init__()
         #self.log = open('pydevd.log', 'w')
-        self.event_handler = event_handler
+        self.event_handler = self.notify_observers
         self.lock = threading.Lock()
         self.seq = 1000000000
         self.pipe_r, self.pipe_w = os.pipe()
@@ -255,7 +269,7 @@ class PydevdSocket(object):
 
         self._closed = False
         self._closing = False
-
+    
     def close(self):
         """Mark the socket as closed and release any resources."""
         if self._closing:
@@ -621,6 +635,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
         super(VSCodeMessageProcessor, self).__init__(socket=socket,
                                                      own_socket=False,
                                                      logfile=logfile)
+        pydevd.register_observer(self)
         self.socket = socket
         self.pydevd = pydevd
         self.killonclose = killonclose
@@ -659,16 +674,18 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
 
     # closing the adapter
 
-    def close(self):
+    def close(self, exit=True):
         """Stop the message processor and release its resources."""
         if self._closed:
             return
         self._closed = True
 
-        # Stop the PyDevd message handler first.
-        self._stop_pydevd_message_loop()
-        # Treat PyDevd as effectively exited.
-        self._handle_pydevd_stopped()
+        if exit:
+            # Stop the PyDevd message handler first.
+            self._stop_pydevd_message_loop()
+            # Treat PyDevd as effectively exited.
+            self._handle_pydevd_stopped()
+
         # Close the editor-side socket.
         self._stop_vsc_message_loop()
 
@@ -688,6 +705,9 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
                 self.socket.close()
             except Exception:
                 pass
+
+    def notify(self, *args, **kwargs):
+        self._on_pydevd_event(*args)
 
     def _handle_pydevd_stopped(self):
         wait_on_normal_exit = self.debug_options.get(
@@ -792,7 +812,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
 
     pydevd_events = EventHandlers()
 
-    def on_pydevd_event(self, cmd_id, seq, args):
+    def _on_pydevd_event(self, cmd_id, seq, args):
         # TODO: docstring
         try:
             f = self.pydevd_events[cmd_id]
@@ -953,6 +973,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
         if self.start_reason == 'launch':
             self._handle_disconnect(request)
         else:
+            self.close(exit=False)
             self.send_response(request)
 
     def send_process_event(self, start_method):
@@ -1714,23 +1735,22 @@ def _new_sock():
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     return sock
 
+def _add_socket_handler(client, pydevd, name, killonclose=True, addhandlers=True):
+    proc = VSCodeMessageProcessor(client, pydevd, killonclose=killonclose)
 
-def _start(client, server, killonclose=True, addhandlers=True):
-    name = 'ptvsd.Client' if server is None else 'ptvsd.Server'
-
-    pydevd = PydevdSocket(lambda *args: proc.on_pydevd_event(*args))
-    proc = VSCodeMessageProcessor(client, pydevd,
-                                  killonclose=killonclose)
-
-    server_thread = threading.Thread(target=proc.process_messages,
-                                     name=name)
+    server_thread = threading.Thread(target=proc.process_messages, name=name)
     server_thread.daemon = True
     server_thread.start()
 
     if addhandlers:
         _add_atexit_handler(proc, server_thread)
         _set_signal_handlers(proc)
+    
+def _start(client, server, killonclose=True, addhandlers=True):
+    name = 'ptvsd.Client' if server is None else 'ptvsd.Server'
 
+    pydevd = PydevdSocket()
+    _add_socket_handler(client, pydevd, name, killonclose=killonclose, addhandlers=addhandlers)
     return pydevd
 
 
@@ -1766,6 +1786,14 @@ def start_server(port, addhandlers=True):
     server = _create_server(port)
     client, _ = server.accept()
     pydevd = _start(client, server)
+    def _wait_for_more():
+        while True:
+            client, _ = server.accept()
+            _add_socket_handler(client, pydevd, 'ptvsd.Server', killonclose=True, addhandlers=False)
+
+    connection_thread = threading.Thread(target=_wait_for_more, name='ptvsd_client_connection')
+    connection_thread.daemon = True
+    connection_thread.start()
     return pydevd
 
 
