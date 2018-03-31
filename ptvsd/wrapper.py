@@ -233,19 +233,21 @@ class ExceptionInfo(object):
         self.stack = stack
         self.source = source
 
+
 class Observable(object):
     def __init__(self):
         self._observers = []
-    
+
     def register_observer(self, observer):
         self._observers.append(observer)
-    
+
     def un_register_observer(self, observer):
         self._observers.remove(observer)
-    
+
     def notify_observers(self, *args, **kwargs):
         for observer in self._observers:
             observer.notify(*args, **kwargs)
+
 
 class PydevdSocket(Observable):
     """A dummy socket-like object for communicating with pydevd.
@@ -269,7 +271,7 @@ class PydevdSocket(Observable):
 
         self._closed = False
         self._closing = False
-    
+
     def close(self):
         """Mark the socket as closed and release any resources."""
         if self._closing:
@@ -329,7 +331,7 @@ class PydevdSocket(Observable):
             return b''
         data = os.read(pipe_r, count)
         #self.log.write('>>>[' + data.decode('utf8') + ']\n\n')
-        #self.log.flush()
+        # self.log.flush()
         return data
 
     def recv_into(self, buf):
@@ -359,7 +361,7 @@ class PydevdSocket(Observable):
         result = len(data)
         data = self._decode_and_unquote(data)
         #self.log.write('<<<[' + data + ']\n\n')
-        #self.log.flush()
+        # self.log.flush()
         cmd_id, seq, args = data.split('\t', 2)
         cmd_id = int(cmd_id)
         seq = int(seq)
@@ -554,7 +556,7 @@ class VariablesSorter(object):
         self.single_underscore.sort(key=get_sort_key)
         self.double_underscore.sort(key=get_sort_key)
         self.dunder.sort(key=get_sort_key)
-        #print('sorted')
+        # print('sorted')
         return self.variables + self.single_underscore + self.double_underscore + self.dunder  # noqa
 
 
@@ -716,7 +718,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
             'WAIT_ON_ABNORMAL_EXIT', False)
 
         if (wait_on_normal_exit and not ptvsd_sys_exit_code) \
-            or (wait_on_abnormal_exit and ptvsd_sys_exit_code):
+                or (wait_on_abnormal_exit and ptvsd_sys_exit_code):
             self.wait_on_exit_func()
         else:
             pass
@@ -1433,7 +1435,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
         for src_bp in src_bps:
             line = src_bp['line']
             vsc_bpid = self.bp_map.add(
-                    lambda vsc_bpid: (path, vsc_bpid))
+                lambda vsc_bpid: (path, vsc_bpid))
             self.path_casing.track_file_path_case(path)
             msg = msgfmt.format(vsc_bpid, bp_type, path, line,
                                 src_bp.get('condition', None))
@@ -1582,9 +1584,9 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
         pyd_tid = xml.thread['id']
         reason = int(xml.thread['stop_reason'])
         STEP_REASONS = {
-                pydevd_comm.CMD_STEP_INTO,
-                pydevd_comm.CMD_STEP_OVER,
-                pydevd_comm.CMD_STEP_RETURN,
+            pydevd_comm.CMD_STEP_INTO,
+            pydevd_comm.CMD_STEP_OVER,
+            pydevd_comm.CMD_STEP_RETURN,
         }
         EXCEPTION_REASONS = {
             pydevd_comm.CMD_STEP_CAUGHT_EXCEPTION,
@@ -1628,11 +1630,11 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
                 text = unquote(xml.var[1]['type'])
                 description = unquote(xml.var[1]['value'])
                 frame_data = ((
-                               unquote(f['file']),
-                               int(f['line']),
-                               unquote(f['name']),
-                               None
-                               ) for f in xframes)
+                    unquote(f['file']),
+                    int(f['line']),
+                    unquote(f['name']),
+                    None
+                ) for f in xframes)
                 stack = ''.join(traceback.format_list(frame_data))
                 source = unquote(xframe['file'])
             except Exception:
@@ -1735,7 +1737,8 @@ def _new_sock():
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     return sock
 
-def _add_socket_handler(client, pydevd, name, killonclose=True, addhandlers=True):
+
+def _add_pydevd_event_handler(client, pydevd, name, killonclose=True, addhandlers=True):
     proc = VSCodeMessageProcessor(client, pydevd, killonclose=killonclose)
 
     server_thread = threading.Thread(target=proc.process_messages, name=name)
@@ -1745,12 +1748,12 @@ def _add_socket_handler(client, pydevd, name, killonclose=True, addhandlers=True
     if addhandlers:
         _add_atexit_handler(proc, server_thread)
         _set_signal_handlers(proc)
-    
+
+
 def _start(client, server, killonclose=True, addhandlers=True):
     name = 'ptvsd.Client' if server is None else 'ptvsd.Server'
-
     pydevd = PydevdSocket()
-    _add_socket_handler(client, pydevd, name, killonclose=killonclose, addhandlers=addhandlers)
+    _add_pydevd_event_handler(client, pydevd, name, killonclose, addhandlers)
     return pydevd
 
 
@@ -1762,14 +1765,21 @@ def _add_atexit_handler(proc, server_thread):
     atexit.register(handler)
 
 
+signal_handler = None
+
+
 def _set_signal_handlers(proc):
     if platform.system() == 'Windows':
         return None
 
-    def handler(signum, frame):
-        proc.close()
-        sys.exit(0)
-    signal.signal(signal.SIGHUP, handler)
+    if signal_handler is None:
+        def handler(signum, frame):
+            signal_handler.notify_observers()
+            sys.exit(0)
+        signal.signal(signal.SIGHUP, handler)
+        signal_handler = Observable()
+
+    signal_handler.register_observer({notify: lambda: proc.close()})
 
 
 ########################
@@ -1786,12 +1796,14 @@ def start_server(port, addhandlers=True):
     server = _create_server(port)
     client, _ = server.accept()
     pydevd = _start(client, server)
-    def _wait_for_more():
+
+    def _wait_for_more_connections():
         while True:
             client, _ = server.accept()
-            _add_socket_handler(client, pydevd, 'ptvsd.Server', killonclose=True, addhandlers=False)
+            _add_pydevd_event_handler(client, pydevd, name='ptvsd.Server')
 
-    connection_thread = threading.Thread(target=_wait_for_more, name='ptvsd_client_connection')
+    connection_thread = threading.Thread(target=_wait_for_more_connections,
+                                         name='ptvsd_client_connection')
     connection_thread.daemon = True
     connection_thread.start()
     return pydevd
@@ -1807,7 +1819,8 @@ def start_client(host, port, addhandlers=True):
     """
     client = _create_client()
     client.connect((host, port))
-    pydevd = _start(client, None)
+    pydevd = PydevdSocket()
+    pydevd = _start(client, None, name='ptvsd.Client')
     return pydevd
 
 
