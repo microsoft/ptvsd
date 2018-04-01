@@ -248,6 +248,10 @@ class Observable(object):
         for observer in self._observers:
             observer.notify(*args, **kwargs)
 
+    @property
+    def observers_count(self):
+        return len(self._observers)
+
 
 class PydevdSocket(Observable):
     """A dummy socket-like object for communicating with pydevd.
@@ -678,6 +682,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
 
     def close(self, exit=True):
         """Stop the message processor and release its resources."""
+        self.pydevd.un_register_observer(self)
         if self._closed:
             return
         self._closed = True
@@ -955,6 +960,14 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
     @async_handler
     def on_attach(self, request, args):
         # TODO: docstring
+        if self.pydevd.observers_count > 1:
+            self.send_response(
+                request,
+                success=False,
+                message='Only one active connection is supported.',
+            )
+            return
+
         self.start_reason = 'attach'
         options = self.build_debug_options(args.get('debugOptions', []))
         self.debug_options = self._parse_debug_options(
@@ -1747,11 +1760,13 @@ def _add_pydevd_event_handler(client, pydevd, name, killonclose=True, addhandler
 
     if addhandlers:
         _add_atexit_handler(proc, server_thread)
-        _set_signal_handlers(proc)
+        _add_signal_handler(proc)
 
 
 def _start(client, server, killonclose=True, addhandlers=True):
     name = 'ptvsd.Client' if server is None else 'ptvsd.Server'
+    if addhandlers:
+        _set_signal_handler()
     pydevd = PydevdSocket()
     _add_pydevd_event_handler(client, pydevd, name, killonclose, addhandlers)
     return pydevd
@@ -1765,21 +1780,25 @@ def _add_atexit_handler(proc, server_thread):
     atexit.register(handler)
 
 
-signal_handler = None
+signal_handler = Observable()
 
 
-def _set_signal_handlers(proc):
+def _set_signal_handler():
+    if platform.system() == 'Windows':
+        return None
+    signal.signal(signal.SIGHUP, signal_sighup_handler)
+
+
+def signal_sighup_handler(signum, frame):
+    signal_handler.notify_observers()
+    sys.exit(0)
+
+
+def _add_signal_handler(proc):
     if platform.system() == 'Windows':
         return None
 
-    if signal_handler is None:
-        def handler(signum, frame):
-            signal_handler.notify_observers()
-            sys.exit(0)
-        signal.signal(signal.SIGHUP, handler)
-        signal_handler = Observable()
-
-    signal_handler.register_observer({notify: lambda: proc.close()})
+    signal_handler.register_observer({"notify": lambda: proc.close()})
 
 
 ########################
