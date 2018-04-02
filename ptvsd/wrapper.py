@@ -45,9 +45,9 @@ __author__ = "Microsoft Corporation <ptvshelp@microsoft.com>"
 __version__ = "4.0.0a5"
 
 
-# def ipcjson_trace(s):
-#     print(s)
-# ipcjson._TRACE = ipcjson_trace
+#def ipcjson_trace(s):
+#    print(s)
+#ipcjson._TRACE = ipcjson_trace
 
 ptvsd_sys_exit_code = 0
 WAIT_FOR_DISCONNECT_REQUEST_TIMEOUT = 2
