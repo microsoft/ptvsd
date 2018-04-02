@@ -249,7 +249,7 @@ class Observable(object):
             observer.notify(*args, **kwargs)
 
     @property
-    def observers_count(self):
+    def observer_count(self):
         return len(self._observers)
 
 
@@ -335,7 +335,7 @@ class PydevdSocket(Observable):
             return b''
         data = os.read(pipe_r, count)
         #self.log.write('>>>[' + data.decode('utf8') + ']\n\n')
-        # self.log.flush()
+        #self.log.flush()
         return data
 
     def recv_into(self, buf):
@@ -365,7 +365,7 @@ class PydevdSocket(Observable):
         result = len(data)
         data = self._decode_and_unquote(data)
         #self.log.write('<<<[' + data + ']\n\n')
-        # self.log.flush()
+        #self.log.flush()
         cmd_id, seq, args = data.split('\t', 2)
         cmd_id = int(cmd_id)
         seq = int(seq)
@@ -560,7 +560,7 @@ class VariablesSorter(object):
         self.single_underscore.sort(key=get_sort_key)
         self.double_underscore.sort(key=get_sort_key)
         self.dunder.sort(key=get_sort_key)
-        # print('sorted')
+        #print('sorted')
         return self.variables + self.single_underscore + self.double_underscore + self.dunder  # noqa
 
 
@@ -723,7 +723,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
             'WAIT_ON_ABNORMAL_EXIT', False)
 
         if (wait_on_normal_exit and not ptvsd_sys_exit_code) \
-                or (wait_on_abnormal_exit and ptvsd_sys_exit_code):
+            or (wait_on_abnormal_exit and ptvsd_sys_exit_code):
             self.wait_on_exit_func()
         else:
             pass
@@ -960,7 +960,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
     @async_handler
     def on_attach(self, request, args):
         # TODO: docstring
-        if self.pydevd.observers_count > 1:
+        if self.pydevd.observer_count > 1:
             self.send_response(
                 request,
                 success=False,
@@ -1643,11 +1643,11 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
                 text = unquote(xml.var[1]['type'])
                 description = unquote(xml.var[1]['value'])
                 frame_data = ((
-                    unquote(f['file']),
-                    int(f['line']),
-                    unquote(f['name']),
-                    None
-                ) for f in xframes)
+                               unquote(f['file']),
+                               int(f['line']),
+                               unquote(f['name']),
+                               None
+                               ) for f in xframes)
                 stack = ''.join(traceback.format_list(frame_data))
                 source = unquote(xframe['file'])
             except Exception:
