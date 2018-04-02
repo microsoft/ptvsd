@@ -988,8 +988,8 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
         if self.start_reason == 'launch':
             self._handle_disconnect(request)
         else:
-            self.close(exit=False)
             self.send_response(request)
+            self.close(exit=False)
 
     def send_process_event(self, start_method):
         # TODO: docstring
