@@ -1822,7 +1822,7 @@ def start_server(port, addhandlers=True):
             _add_pydevd_event_handler(client, pydevd, name='ptvsd.Server')
 
     connection_thread = threading.Thread(target=_wait_for_more_connections,
-                                         name='ptvsd_client_connection')
+                                         name='ptvsd.Client.Connection')
     connection_thread.daemon = True
     connection_thread.start()
     return pydevd
