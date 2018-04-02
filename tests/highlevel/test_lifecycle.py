@@ -54,7 +54,7 @@ class LifecycleTests(HighlevelTest, unittest.TestCase):
             # end
             req_disconnect = self.send_request('disconnect')
         finally:
-            with self._fix.wait_for_events(['exited', 'terminated']):
+            with self._fix.wait_for_events(['terminated']):
                 self.fix.close_ptvsd()
             daemon.close()
 
@@ -90,6 +90,7 @@ class LifecycleTests(HighlevelTest, unittest.TestCase):
             self.new_event('initialized'),
             self.new_response(req_attach),
             self.new_response(req_config),
+            self.new_event('terminated'),
             self.new_response(req_disconnect),
         ])
         self.assert_received(self.debugger, [
