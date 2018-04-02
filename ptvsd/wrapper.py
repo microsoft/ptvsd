@@ -1843,7 +1843,6 @@ def start_client(host, port, addhandlers=True):
     """
     client = _create_client()
     client.connect((host, port))
-    pydevd = PydevdSocket()
     pydevd = _start(client, None)
     return pydevd
 
