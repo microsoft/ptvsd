@@ -974,7 +974,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
             self.send_response(
                 request,
                 success=False,
-                message='Only one active connection is supported.',
+                message='A debugger is already attached to this process.',
             )
             return
 
