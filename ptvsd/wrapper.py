@@ -692,6 +692,11 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
             self._stop_pydevd_message_loop()
             # Treat PyDevd as effectively exited.
             self._handle_pydevd_stopped()
+        else:
+            # Notify the editor that the debugger has stopped.
+            self.send_event('terminated')
+            # The editor will send a "disconnect" request at this point.
+            self._wait_for_disconnect()
 
         # Close the editor-side socket.
         self._stop_vsc_message_loop()
@@ -750,13 +755,13 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
             self.send_response(self.disconnect_request)
             self.disconnect_request = None
 
-    def _handle_disconnect(self, request):
+    def _handle_disconnect(self, request, exit=True):
         self.disconnect_request = request
         self.disconnect_request_event.set()
         killProcess = not self._closed
-        self.close()
+        self.close(exit=exit)
         # TODO: Move killing the process to close()?
-        if killProcess and self.killonclose:
+        if exit and killProcess and self.killonclose:
             os.kill(os.getpid(), signal.SIGTERM)
 
     # async helpers
@@ -988,8 +993,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
         if self.start_reason == 'launch':
             self._handle_disconnect(request)
         else:
-            self.send_response(request)
-            self.close(exit=False)
+            self._handle_disconnect(request, exit=False)
 
     def send_process_event(self, start_method):
         # TODO: docstring
