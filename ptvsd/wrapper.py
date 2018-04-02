@@ -682,11 +682,11 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
 
     def close(self, exit=True):
         """Stop the message processor and release its resources."""
-        self.pydevd.un_register_observer(self)
         if self._closed:
             return
         self._closed = True
 
+        self.pydevd.un_register_observer(self)
         if exit:
             # Stop the PyDevd message handler first.
             self._stop_pydevd_message_loop()
