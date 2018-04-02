@@ -1756,7 +1756,11 @@ def _new_sock():
     return sock
 
 
-def _add_pydevd_event_handler(client, pydevd, name, killonclose=True, addhandlers=True):
+def _add_pydevd_event_handler(client,
+                              pydevd,
+                              name,
+                              killonclose=True,
+                              addhandlers=True):
     proc = VSCodeMessageProcessor(client, pydevd, killonclose=killonclose)
 
     server_thread = threading.Thread(target=proc.process_messages, name=name)
