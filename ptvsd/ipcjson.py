@@ -100,6 +100,7 @@ class SocketIO(object):
         try:
             self.__socket.send(headers)
             self.__socket.send(content)
+            _trace('Sent content', content)
         except BrokenPipeError:
             pass
         except OSError as exc:
@@ -191,6 +192,7 @@ class SocketIO(object):
         # read content, utf-8 encoded
         content = self._buffered_read_as_utf8(length)
         try:
+            _trace('Received content', content)
             msg = json.loads(content)
             self._receive_message(msg)
         except ValueError:
