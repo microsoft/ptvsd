@@ -14,7 +14,7 @@ DONT_DEBUG = []
 
 def debug(filename, port_num, debug_id, debug_options, run_as, **kwargs):
     # TODO: docstring
-    address = (None, port_num)
+    address = ('127.0.0.1', port_num)
     if run_as == 'module':
         run_module(address, filename, **kwargs)
     else:
