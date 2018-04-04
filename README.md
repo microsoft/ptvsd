@@ -19,7 +19,7 @@ contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additio
 ## Custom Protocol arguments
 
 ### 1. Launch request arguments
-```json
+```js
 {
     "debugOptions":  [
             "RedirectOutput",       // Whether to redirect stdout and stderr (see pydevd_comm.CMD_REDIRECT_OUTPUT)
@@ -34,7 +34,7 @@ contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additio
 ```
 
 ### 2. Attach request arguments
-```json
+```js
 {
     "debugOptions":  [
             "RedirectOutput",       // Maps to pydevd_comm.CMD_REDIRECT_OUTPUT
