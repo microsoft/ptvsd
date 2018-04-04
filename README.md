@@ -21,14 +21,14 @@ contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additio
 ### 1. Launch request arguments
 ```json
 {
-    debugOptions:  [
-            'RedirectOutput',       // Whether to redirect stdout and stderr (see pydevd_comm.CMD_REDIRECT_OUTPUT)
-            'WaitOnNormalExit',     // See WAIT_ON_NORMAL_EXIT in wrapper.py
-            'WaitOnAbnormalExit',   // See WAIT_ON_ABNORMAL_EXIT in wrapper.py
-            'Django',               // Enables Django Template debugging
-            'Jinja',                // Enables Jinja (Flask) Template debugging
-            'FixFilePathCase',      // See FIX_FILE_PATH_CASE in wrapper.py
-            'DebugStdLib'           // Whether to enable debugging of standard library functions
+    "debugOptions":  [
+            "RedirectOutput",       // Whether to redirect stdout and stderr (see pydevd_comm.CMD_REDIRECT_OUTPUT)
+            "WaitOnNormalExit",     // See WAIT_ON_NORMAL_EXIT in wrapper.py
+            "WaitOnAbnormalExit",   // See WAIT_ON_ABNORMAL_EXIT in wrapper.py
+            "Django",               // Enables Django Template debugging
+            "Jinja",                // Enables Jinja (Flask) Template debugging
+            "FixFilePathCase",      // See FIX_FILE_PATH_CASE in wrapper.py
+            "DebugStdLib"           // Whether to enable debugging of standard library functions
     ]
 }
 ```
@@ -36,19 +36,19 @@ contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additio
 ### 2. Attach request arguments
 ```json
 {
-    debugOptions:  [
-            'RedirectOutput',       // Maps to pydevd_comm.CMD_REDIRECT_OUTPUT
-            'WaitOnNormalExit',     // Maps to WAIT_ON_NORMAL_EXIT in wrapper.py
-            'WaitOnAbnormalExit',   // Maps to WAIT_ON_ABNORMAL_EXIT in wrapper.py
-            'Django',               // Enables Django Template debugging
-            'Jinja',                // Enables Jinja (Flask) Template debugging
-            'FixFilePathCase',      // Maps to FIX_FILE_PATH_CASE in wrapper.py
-            'DebugStdLib'           // Whether to enable debugging of standard library functions
+    "debugOptions":  [
+            "RedirectOutput",       // Maps to pydevd_comm.CMD_REDIRECT_OUTPUT
+            "WaitOnNormalExit",     // Maps to WAIT_ON_NORMAL_EXIT in wrapper.py
+            "WaitOnAbnormalExit",   // Maps to WAIT_ON_ABNORMAL_EXIT in wrapper.py
+            "Django",               // Enables Django Template debugging
+            "Jinja",                // Enables Jinja (Flask) Template debugging
+            "FixFilePathCase",      // Maps to FIX_FILE_PATH_CASE in wrapper.py
+            "DebugStdLib"           // Whether to enable debugging of standard library functions
     ],
-    pathMappings: [
+    "pathMappings": [
         {
-            localRoot: 'C:\\Project\src',   // Local root  (where source and debugger running)
-            remoteRoot: '/home/smith/proj'   // Remote root (where remote code is running)
+            "localRoot": "C:\\Project\\src",   // Local root  (where source and debugger running)
+            "remoteRoot": "/home/smith/proj"   // Remote root (where remote code is running)
         },
         // Add more path mappings
     ]
