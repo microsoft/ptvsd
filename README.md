@@ -34,7 +34,6 @@ contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additio
 ```
 
 ### 2. Attach request arguments
-Arguments:
 ```json
 {
     debugOptions:  [
