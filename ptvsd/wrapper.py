@@ -931,7 +931,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
             options[key] = DEBUG_OPTIONS_PARSER[key](value)
         return options
 
-    def _initialize_vsc_path_maps(self, args):
+    def _initialize_path_maps(self, args):
         pathMaps = []
         for pathMapping in args.get('pathMappings', []):
             localRoot = pathMapping.get('localRoot', '')
@@ -946,7 +946,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
     def on_attach(self, request, args):
         # TODO: docstring
         self.start_reason = 'attach'
-        self._initialize_vsc_path_maps(args)
+        self._initialize_path_maps(args)
         options = self.build_debug_options(args.get('debugOptions', []))
         self.debug_options = self._parse_debug_options(
             args.get('options', options))
