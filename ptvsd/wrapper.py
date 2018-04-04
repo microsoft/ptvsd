@@ -10,6 +10,7 @@ import errno
 import io
 import os
 import platform
+import pydevd_file_utils
 import re
 import signal
 import socket
@@ -33,7 +34,6 @@ import _pydevd_bundle.pydevd_comm as pydevd_comm  # noqa
 import _pydevd_bundle.pydevd_extension_api as pydevd_extapi  # noqa
 import _pydevd_bundle.pydevd_extension_utils as pydevd_extutil  # noqa
 #from _pydevd_bundle.pydevd_comm import pydevd_log
-import pydevd_file_utils as pydevd_file_utils
 
 import ptvsd.ipcjson as ipcjson  # noqa
 import ptvsd.futures as futures  # noqa
