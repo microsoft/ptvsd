@@ -1711,7 +1711,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
 
 def _create_server(port):
     server = _new_sock()
-    server.bind(('', port))
+    server.bind(('127.0.0.1', port))
     server.listen(1)
     return server
 
