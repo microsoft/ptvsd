@@ -37,12 +37,12 @@ contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additio
 ```js
 {
     "debugOptions":  [
-            "RedirectOutput",       // Maps to pydevd_comm.CMD_REDIRECT_OUTPUT
-            "WaitOnNormalExit",     // Maps to WAIT_ON_NORMAL_EXIT in wrapper.py
-            "WaitOnAbnormalExit",   // Maps to WAIT_ON_ABNORMAL_EXIT in wrapper.py
+            "RedirectOutput",       // Whether to redirect stdout and stderr (see pydevd_comm.CMD_REDIRECT_OUTPUT)
+            "WaitOnNormalExit",     // See WAIT_ON_NORMAL_EXIT in wrapper.py
+            "WaitOnAbnormalExit",   // See WAIT_ON_ABNORMAL_EXIT in wrapper.py
             "Django",               // Enables Django Template debugging
             "Jinja",                // Enables Jinja (Flask) Template debugging
-            "FixFilePathCase",      // Maps to FIX_FILE_PATH_CASE in wrapper.py
+            "FixFilePathCase",      // See FIX_FILE_PATH_CASE in wrapper.py
             "DebugStdLib"           // Whether to enable debugging of standard library functions
     ],
     "pathMappings": [
