@@ -1034,7 +1034,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
 
     @async_handler
     def on_source(self, request, args):
-        """Request to get the source"""        
+        """Request to get the source"""
         source_reference = args.get('sourceReference', 0)
         filename = '' if source_reference == 0 else \
             self.source_map.to_pydevd(source_reference)
@@ -1128,7 +1128,10 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
             stackFrames.append({
                 'id': fid,
                 'name': frame_name,
-                'source': {'path': norm_path, 'sourceReference': source_reference},
+                'source': {
+                    'path': norm_path,
+                    'sourceReference': source_reference
+                },
                 'line': line, 'column': 1,
             })
 
