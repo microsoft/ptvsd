@@ -1886,9 +1886,7 @@ class SourceTests(NormalRequestTest, unittest.TestCase):
             )
             received = self.vsc.received
 
-        self.assert_vsc_received(received, [
-            self.expected_failure('Unknown command'),
-        ])
+        self.assert_vsc_received(received, [])
         self.assert_received(self.debugger, [])
 
 
