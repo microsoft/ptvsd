@@ -893,7 +893,6 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
             'Jinja': 'FLASK_DEBUG=True',
             'FixFilePathCase': 'FIX_FILE_PATH_CASE=True',
             'DebugStdLib': 'DEBUG_STD_LIB=True',
-            'UseSourceReferences': 'SOURCE_REFERENCE=True'
         }
         return ';'.join(debug_option_mapping[option]
                         for option in debug_options
@@ -908,7 +907,6 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
             INTERPRETER_OPTIONS=string
             WEB_BROWSER_URL=string url
             DJANGO_DEBUG=True|False
-            SOURCE_REFERENCE=True|False
         """
         DEBUG_OPTIONS_PARSER = {
             'WAIT_ON_ABNORMAL_EXIT': bool,
@@ -920,7 +918,6 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
             'DJANGO_DEBUG': bool,
             'FLASK_DEBUG': bool,
             'FIX_FILE_PATH_CASE': bool,
-            'SOURCE_REFERENCE': bool
         }
 
         options = {}
@@ -1053,8 +1050,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
         And we know that the path returned is the same as the server path
         (i.e. path has not been translated)"""
 
-        if self.start_reason == 'launch' or \
-            not self.debug_options.get('SOURCE_REFERENCE', False):
+        if self.start_reason == 'launch':
             return 0
 
         try:
