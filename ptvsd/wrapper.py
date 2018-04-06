@@ -1039,11 +1039,13 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
         filename = '' if source_reference == 0 else \
             self.source_map.to_pydevd(source_reference)
 
-        if source_reference == 0 or not os.path.exists(filename):
+        if source_reference == 0:
             self.send_error_response(request, 'Source unavailable')
         else:
+            server_filename = pydevd_file_utils.norm_file_to_server(filename)
+
             cmd = pydevd_comm.CMD_LOAD_SOURCE
-            _, _, content = yield self.pydevd_request(cmd, filename)
+            _, _, content = yield self.pydevd_request(cmd, server_filename)
             self.send_response(request, content=content)
 
     def get_source_reference(self, filename):
@@ -1069,6 +1071,11 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
         elif platform.system() == 'Windows' and \
             server_filename.upper() == filename.upper() and \
             os.path.exists(server_filename):
+            return self.source_map.to_vscode(filename, autogen=True)
+        elif server_filename.replace('\\', '/') == filename.replace('\\', '/'):
+            # If remote is Unix and local is Windows, then PyDevD will
+            #   replace the path separator in remote with with
+            #   the os path separator of remote client
             return self.source_map.to_vscode(filename, autogen=True)
         else:
             return 0
