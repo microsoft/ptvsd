@@ -285,14 +285,14 @@ class StackTraceTests(NormalRequestTest, unittest.TestCase):
                     {
                         'id': 1,
                         'name': 'spam',
-                        'source': {'path': 'abc.py'},
+                        'source': {'path': 'abc.py', 'sourceReference': 0},
                         'line': 10,
                         'column': 1,
                     },
                     {
                         'id': 2,
                         'name': 'eggs',
-                        'source': {'path': 'xyz.py'},
+                        'source': {'path': 'xyz.py', 'sourceReference': 0},
                         'line': 2,
                         'column': 1,
                     },
@@ -329,14 +329,14 @@ class StackTraceTests(NormalRequestTest, unittest.TestCase):
                     {
                         'id': 1,
                         'name': 'abc.spam : 10',
-                        'source': {'path': 'abc.py'},
+                        'source': {'path': 'abc.py', 'sourceReference': 0},
                         'line': 10,
                         'column': 1,
                     },
                     {
                         'id': 2,
                         'name': 'xyz.eggs : 2',
-                        'source': {'path': 'xyz.py'},
+                        'source': {'path': 'xyz.py', 'sourceReference': 0},
                         'line': 2,
                         'column': 1,
                     },
