@@ -625,6 +625,8 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
         self.frame_map = IDMap()
         self.var_map = IDMap()
         self.bp_map = IDMap()
+        self.source_map = IDMap()
+        self.enable_source_references = False
         self.next_var_ref = 0
         self.exceptions_mgr = ExceptionsManager(self)
         self.modules_mgr = ModulesManager(self)
@@ -890,7 +892,8 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
             'Flask': 'FLASK_DEBUG=True',
             'Jinja': 'FLASK_DEBUG=True',
             'FixFilePathCase': 'FIX_FILE_PATH_CASE=True',
-            'DebugStdLib': 'DEBUG_STD_LIB=True'
+            'DebugStdLib': 'DEBUG_STD_LIB=True',
+            'UseSourceReferences': 'SOURCE_REFERENCE=True'
         }
         return ';'.join(debug_option_mapping[option]
                         for option in debug_options
@@ -905,6 +908,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
             INTERPRETER_OPTIONS=string
             WEB_BROWSER_URL=string url
             DJANGO_DEBUG=True|False
+            SOURCE_REFERENCE=True|False
         """
         DEBUG_OPTIONS_PARSER = {
             'WAIT_ON_ABNORMAL_EXIT': bool,
@@ -915,7 +919,8 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
             'WEB_BROWSER_URL': unquote,
             'DJANGO_DEBUG': bool,
             'FLASK_DEBUG': bool,
-            'FIX_FILE_PATH_CASE': bool
+            'FIX_FILE_PATH_CASE': bool,
+            'SOURCE_REFERENCE': bool
         }
 
         options = {}
@@ -1028,6 +1033,47 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
         self.send_response(request, threads=threads)
 
     @async_handler
+    def on_source(self, request, args):
+        """Request to get the source"""        
+        source_reference = args.get('sourceReference', 0)
+        filename = '' if source_reference == 0 else \
+            self.source_map.to_pydevd(source_reference)
+
+        if source_reference == 0 or not os.path.exists(filename):
+            self.send_error_response(request, 'Source unavailable')
+        else:
+            cmd = pydevd_comm.CMD_LOAD_SOURCE
+            _, _, content = yield self.pydevd_request(cmd, filename)
+            self.send_response(request, content=content)
+
+    def get_source_reference(self, filename):
+        """Gets the source reference only in remote debugging scenarios.
+        And we know that the path returned is the same as the server path
+        (i.e. path has not been translated)"""
+
+        if self.start_reason == 'launch' or \
+            not self.debug_options.get('SOURCE_REFERENCE', False):
+            return 0
+
+        try:
+            return self.source_map.to_vscode(filename, autogen=False)
+        except KeyError:
+            pass
+
+        server_filename = pydevd_file_utils.norm_file_to_server(filename)
+
+        # If the mapped file is the same as the file we provided,
+        # then we can generate a soure reference.
+        if server_filename == filename and os.path.exists(server_filename):
+            return self.source_map.to_vscode(filename, autogen=True)
+        elif platform.system() == 'Windows' and \
+            server_filename.upper() == filename.upper() and \
+            os.path.exists(server_filename):
+            return self.source_map.to_vscode(filename, autogen=True)
+        else:
+            return 0
+
+    @async_handler
     def on_stackTrace(self, request, args):
         # TODO: docstring
         vsc_tid = int(args['threadId'])
@@ -1062,6 +1108,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
             fid = self.frame_map.to_vscode(key, autogen=True)
             name = unquote(xframe['name'])
             norm_path = self.path_casing.un_normcase(unquote(xframe['file']))
+            source_reference = self.get_source_reference(norm_path)
             module = self.modules_mgr.add_or_get_from_path(norm_path)
             line = int(xframe['line'])
             frame_name = self._format_frame_name(
@@ -1074,7 +1121,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
             stackFrames.append({
                 'id': fid,
                 'name': frame_name,
-                'source': {'path': norm_path},
+                'source': {'path': norm_path, 'sourceReference': source_reference},
                 'line': line, 'column': 1,
             })
 
