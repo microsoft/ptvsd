@@ -913,7 +913,9 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
             DJANGO_DEBUG=True|False
             WINDOWS_CLIENT=True|False
         """
-        bool_parser = lambda str: str in ("True", "true", "1")
+        def bool_parser(str):
+            return str in ("True", "true", "1")
+
         DEBUG_OPTIONS_PARSER = {
             'WAIT_ON_ABNORMAL_EXIT': bool_parser,
             'WAIT_ON_NORMAL_EXIT': bool_parser,
@@ -956,7 +958,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
         os_id = 'WINDOWS' if windows_client else 'UNIX'
         msg = '1.1\t{}\tID'.format(os_id)
         return self.pydevd_request(cmd, msg)
-        
+
     @async_handler
     def on_attach(self, request, args):
         # TODO: docstring
