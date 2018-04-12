@@ -3,9 +3,8 @@
 # for license information.
 
 import sys
-
+from . import runner
 from ptvsd.__main__ import run_module, run_file
-
 
 # TODO: not needed?
 DONT_DEBUG = []
@@ -21,7 +20,7 @@ RUNNERS = {
 
 
 def debug(filename, port_num, debug_id, debug_options, run_as,
-          _runners=RUNNERS, _extra=None, *args, **kwargs):
+          nodebug=False, _runners=RUNNERS, _extra=None, *args, **kwargs):
     # TODO: docstring
     if _extra is None:
         _extra = sys.argv[1:]
@@ -33,4 +32,7 @@ def debug(filename, port_num, debug_id, debug_options, run_as,
         run = _runners[None]
     if _extra:
         args = _extra + list(args)
-    run(address, filename, *args, **kwargs)
+    if nodebug:
+        runner.run(address, filename, run, *args, **kwargs)
+    else:
+        run(address, filename, *args, **kwargs)
