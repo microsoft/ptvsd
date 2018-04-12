@@ -1025,7 +1025,7 @@ class PyDB:
             send_message("asyncio_event", 0, "Task", "Task", "thread", "stop", file, 1, frame=None, parent=None)
 
         try:
-            if True: #INTERACTIVE_MODE_AVAILABLE:
+            if INTERACTIVE_MODE_AVAILABLE:
                 self.init_matplotlib_support()
         except:
             sys.stderr.write("Matplotlib support in debugger failed\n")
