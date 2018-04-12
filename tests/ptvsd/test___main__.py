@@ -296,7 +296,7 @@ class ParseArgsTests(unittest.TestCase):
     def test_module_nodebug(self):
         args, extra = parse_args([
             'eggs',
-            '--nodebug'
+            '--nodebug', 
             '--port', '8888',
             '-m', 'spam',
         ])
@@ -535,7 +535,7 @@ class ParseArgsTests(unittest.TestCase):
     def test_backward_compatibility_script_nodebug(self):
         args, extra = parse_args([
             'eggs',
-            '--nodebug'
+            '--nodebug', 
             '--port', '8888',
             '--file', 'spam.py',
         ])
@@ -567,7 +567,7 @@ class ParseArgsTests(unittest.TestCase):
     def test_pseudo_backward_compatibility_nodebug(self):
         args, extra = parse_args([
             'eggs',
-            '--nodebug'
+            '--nodebug', 
             '--port', '8888',
             '--module',
             '--file', 'spam',
