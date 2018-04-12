@@ -12,6 +12,7 @@ from ptvsd.pydevd_hooks import install
 from ptvsd.version import __version__, __author__  # noqa
 from ptvsd.runner import run as no_debug_runner
 
+
 def run_module(address, modname, *extra, **kwargs):
     """Run pydevd for the given module."""
     run = kwargs.pop('_run', _run)
@@ -267,5 +268,5 @@ if __name__ == '__main__':
     args, extra = parse_args()
     if args.nodebug:
         run_main(args.address, args.name, args.kind, *extra)
-    else :
+    else:
         debug_main(args.address, args.name, args.kind, *extra)

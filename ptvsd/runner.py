@@ -11,13 +11,14 @@ import socket
 import sys
 import time
 import threading
+import traceback
 import warnings
 
 from ptvsd import ipcjson, __version__
 from ptvsd.daemon import DaemonClosedError
 from ptvsd.pydevd_hooks import start_client
 from ptvsd.socket import close_socket
-from ptvsd.wrapper import WAIT_FOR_DISCONNECT_REQUEST_TIMEOUT, WAIT_FOR_THREAD_FINISH_TIMEOUT
+from ptvsd.wrapper import WAIT_FOR_DISCONNECT_REQUEST_TIMEOUT, WAIT_FOR_THREAD_FINISH_TIMEOUT # noqa
 from pydevd import init_stdout_redirect, init_stderr_redirect
 
 HOSTNAME = 'localhost'
@@ -85,7 +86,8 @@ class OutputRedirection(object):
             time.sleep(OUTPUT_POLL_PERIOD)
 
     def _check_output(self, out, category):
-        '''Checks the output to see if we have to send some buffered output to the debug server
+        '''Checks the output to see if we have to send some buffered,
+        output to the debug server
 
         @param out: sys.stdout or sys.stderr
         @param category: stdout or stderr
@@ -96,8 +98,9 @@ class OutputRedirection(object):
 
             if v:
                 self._on_output(category, v)
-        except:
+        except Exception:
             traceback.print_exc()
+
 
 class Daemon(object):
     """The process-level manager for the VSC protocol debug adapter."""
@@ -274,7 +277,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
             try:
                 self._socket.shutdown(socket.SHUT_RDWR)
                 self._socket.close()
-            except:
+            except Exception:
                 pass
 
     def _wait_for_server_thread(self):

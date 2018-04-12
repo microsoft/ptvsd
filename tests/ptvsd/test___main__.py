@@ -289,14 +289,14 @@ class ParseArgsTests(unittest.TestCase):
             'kind': 'module',
             'name': 'spam',
             'address': (None, 8888),
-            'nodebug': False, 
+            'nodebug': False,
         })
         self.assertEqual(extra, [])
 
     def test_module_nodebug(self):
         args, extra = parse_args([
             'eggs',
-            '--nodebug', 
+            '--nodebug',
             '--port', '8888',
             '-m', 'spam',
         ])
@@ -305,7 +305,7 @@ class ParseArgsTests(unittest.TestCase):
             'kind': 'module',
             'name': 'spam',
             'address': (None, 8888),
-            'nodebug': True, 
+            'nodebug': True,
         })
         self.assertEqual(extra, [])
 
@@ -320,14 +320,14 @@ class ParseArgsTests(unittest.TestCase):
             'kind': 'script',
             'name': 'spam.py',
             'address': (None, 8888),
-            'nodebug': False, 
+            'nodebug': False,
         })
         self.assertEqual(extra, [])
 
     def test_script_nodebug(self):
         args, extra = parse_args([
             'eggs',
-            '--nodebug', 
+            '--nodebug',
             '--port', '8888',
             'spam.py',
         ])
@@ -336,7 +336,7 @@ class ParseArgsTests(unittest.TestCase):
             'kind': 'script',
             'name': 'spam.py',
             'address': (None, 8888),
-            'nodebug': True, 
+            'nodebug': True,
         })
         self.assertEqual(extra, [])
 
@@ -352,14 +352,14 @@ class ParseArgsTests(unittest.TestCase):
             'kind': 'script',
             'name': 'spam.py',
             'address': ('1.2.3.4', 8888),
-            'nodebug': False, 
+            'nodebug': False,
         })
         self.assertEqual(extra, [])
 
     def test_remote_nodebug(self):
         args, extra = parse_args([
             'eggs',
-            '--nodebug', 
+            '--nodebug',
             '--host', '1.2.3.4',
             '--port', '8888',
             'spam.py',
@@ -369,7 +369,7 @@ class ParseArgsTests(unittest.TestCase):
             'kind': 'script',
             'name': 'spam.py',
             'address': ('1.2.3.4', 8888),
-            'nodebug': True, 
+            'nodebug': True,
         })
         self.assertEqual(extra, [])
 
@@ -393,7 +393,7 @@ class ParseArgsTests(unittest.TestCase):
             'kind': 'script',
             'name': 'spam.py',
             'address': (None, 8888),
-            'nodebug': False, 
+            'nodebug': False,
         })
         self.assertEqual(extra, [
             '--DEBUG',
@@ -410,7 +410,7 @@ class ParseArgsTests(unittest.TestCase):
         args, extra = parse_args([
             'eggs',
             '--DEBUG',
-            '--nodebug', 
+            '--nodebug',
             '--port', '8888',
             '--vm_type', '???',
             'spam.py',
@@ -427,7 +427,7 @@ class ParseArgsTests(unittest.TestCase):
             'kind': 'script',
             'name': 'spam.py',
             'address': (None, 8888),
-            'nodebug': True, 
+            'nodebug': True,
         })
         self.assertEqual(extra, [
             '--DEBUG',
@@ -439,7 +439,6 @@ class ParseArgsTests(unittest.TestCase):
             '--server',
             '--bar',
         ])
-
 
     def test_unsupported_arg(self):
         with self.assertRaises(SystemExit):
@@ -463,14 +462,14 @@ class ParseArgsTests(unittest.TestCase):
             'kind': 'module',
             'name': 'spam',
             'address': ('1.2.3.4', 8888),
-            'nodebug': False, 
+            'nodebug': False,
         })
         self.assertEqual(extra, [])
 
     def test_backward_compatibility_host_nodebug(self):
         args, extra = parse_args([
             'eggs',
-            '--nodebug', 
+            '--nodebug',
             '--client', '1.2.3.4',
             '--port', '8888',
             '-m', 'spam',
@@ -480,7 +479,7 @@ class ParseArgsTests(unittest.TestCase):
             'kind': 'module',
             'name': 'spam',
             'address': ('1.2.3.4', 8888),
-            'nodebug': True, 
+            'nodebug': True,
         })
         self.assertEqual(extra, [])
 
@@ -496,14 +495,14 @@ class ParseArgsTests(unittest.TestCase):
             'kind': 'module',
             'name': 'spam',
             'address': (None, 8888),
-            'nodebug': False, 
+            'nodebug': False,
         })
         self.assertEqual(extra, [])
 
     def test_backward_compatibility_module_nodebug(self):
         args, extra = parse_args([
             'eggs',
-            '--nodebug', 
+            '--nodebug',
             '--port', '8888',
             '--module',
             '--file', 'spam:',
@@ -513,7 +512,7 @@ class ParseArgsTests(unittest.TestCase):
             'kind': 'module',
             'name': 'spam',
             'address': (None, 8888),
-            'nodebug': True, 
+            'nodebug': True,
         })
         self.assertEqual(extra, [])
 
@@ -528,14 +527,14 @@ class ParseArgsTests(unittest.TestCase):
             'kind': 'script',
             'name': 'spam.py',
             'address': (None, 8888),
-            'nodebug': False, 
+            'nodebug': False,
         })
         self.assertEqual(extra, [])
 
     def test_backward_compatibility_script_nodebug(self):
         args, extra = parse_args([
             'eggs',
-            '--nodebug', 
+            '--nodebug',
             '--port', '8888',
             '--file', 'spam.py',
         ])
@@ -544,7 +543,7 @@ class ParseArgsTests(unittest.TestCase):
             'kind': 'script',
             'name': 'spam.py',
             'address': (None, 8888),
-            'nodebug': True, 
+            'nodebug': True,
         })
         self.assertEqual(extra, [])
 
@@ -560,14 +559,14 @@ class ParseArgsTests(unittest.TestCase):
             'kind': 'script',
             'name': 'spam',
             'address': (None, 8888),
-            'nodebug': False, 
+            'nodebug': False,
         })
         self.assertEqual(extra, ['--module'])
 
     def test_pseudo_backward_compatibility_nodebug(self):
         args, extra = parse_args([
             'eggs',
-            '--nodebug', 
+            '--nodebug',
             '--port', '8888',
             '--module',
             '--file', 'spam',
@@ -577,6 +576,6 @@ class ParseArgsTests(unittest.TestCase):
             'kind': 'script',
             'name': 'spam',
             'address': (None, 8888),
-            'nodebug': True, 
+            'nodebug': True,
         })
         self.assertEqual(extra, ['--module'])
