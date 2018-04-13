@@ -49,6 +49,31 @@ from ptvsd.version import __version__  # noqa
 WAIT_FOR_DISCONNECT_REQUEST_TIMEOUT = 2
 WAIT_FOR_THREAD_FINISH_TIMEOUT = 1
 
+INITIALIZE_RESPONSE = dict(
+    supportsExceptionInfoRequest=True,
+    supportsConfigurationDoneRequest=True,
+    supportsConditionalBreakpoints=True,
+    supportsHitConditionalBreakpoints=True,
+    supportsSetVariable=True,
+    supportsExceptionOptions=True,
+    supportsEvaluateForHovers=True,
+    supportsValueFormattingOptions=True,
+    supportsSetExpression=True,
+    supportsModulesRequest=True,
+    exceptionBreakpointFilters=[
+        {
+            'filter': 'raised',
+            'label': 'Raised Exceptions',
+            'default': False
+        },
+        {
+            'filter': 'uncaught',
+            'label': 'Uncaught Exceptions',
+            'default': True
+        },
+    ],
+)
+
 
 class SafeReprPresentationProvider(pydevd_extapi.StrPresentationProvider):
     """
@@ -825,31 +850,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
     @async_handler
     def on_initialize(self, request, args):
         # TODO: docstring
-        self.send_response(
-            request,
-            supportsExceptionInfoRequest=True,
-            supportsConfigurationDoneRequest=True,
-            supportsConditionalBreakpoints=True,
-            supportsHitConditionalBreakpoints=True,
-            supportsSetVariable=True,
-            supportsExceptionOptions=True,
-            supportsEvaluateForHovers=True,
-            supportsValueFormattingOptions=True,
-            supportsSetExpression=True,
-            supportsModulesRequest=True,
-            exceptionBreakpointFilters=[
-                {
-                    'filter': 'raised',
-                    'label': 'Raised Exceptions',
-                    'default': False
-                },
-                {
-                    'filter': 'uncaught',
-                    'label': 'Uncaught Exceptions',
-                    'default': True
-                },
-            ],
-        )
+        self.send_response(request, **INITIALIZE_RESPONSE)
         self.send_event('initialized')
 
     @async_handler
