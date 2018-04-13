@@ -127,6 +127,7 @@ class LifecycleTests(TestBase, unittest.TestCase):
                 supportsExceptionInfoRequest=True,
                 supportsConfigurationDoneRequest=True,
                 supportsConditionalBreakpoints=True,
+                supportsHitConditionalBreakpoints=True,
                 supportsSetVariable=True,
                 supportsValueFormattingOptions=True,
                 supportsExceptionOptions=True,

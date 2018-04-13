@@ -325,6 +325,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
             supportsExceptionInfoRequest=True,
             supportsConfigurationDoneRequest=True,
             supportsConditionalBreakpoints=True,
+            supportsHitConditionalBreakpoints=True,
             supportsSetVariable=True,
             supportsExceptionOptions=True,
             supportsEvaluateForHovers=True,
