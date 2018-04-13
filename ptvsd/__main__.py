@@ -5,6 +5,8 @@
 import argparse
 import os.path
 import sys
+import threading
+import time
 
 import pydevd
 
@@ -12,6 +14,8 @@ from ptvsd.pydevd_hooks import install, start_server, start_client
 from ptvsd.socket import Address
 from ptvsd.version import __version__, __author__  # noqa
 from ptvsd.runner import run as no_debug_runner
+from ptvsd.socket import create_client
+from _pydevd_bundle.pydevd_comm import get_global_debugger
 
 
 def run_module(address, modname, *extra, **kwargs):
@@ -91,17 +95,64 @@ def _run(argv, addr, _pydevd=pydevd, _install=install, **kwargs):
 def enable_attach(address, redirect_output=True,
                   _pydevd=pydevd, _install=install, **kwargs):
     host, port = address
+
+    def mock_connect(self, *args):
+        pass
+    old_connect = _pydevd.PyDB.connect
+    _pydevd.PyDB.connect = mock_connect
+
+    class FakeSocket(object):
+        def __init__(self):
+            self.event = threading.Event()
+        def recv(self, *args):
+            self.event.wait()
+            return ''
+        def shutdown(self, *arg):
+            self.event.set()
+
     daemon = _install(_pydevd,
                       start_server=lambda daemon, port: start_client(daemon, host, port), # noqa
-                      start_client=lambda daemon, h, port: start_server(daemon, port), # noqa
+                      start_client=lambda daemon, h, port: FakeSocket(), # noqa
                       **kwargs)
 
+    def wait_for_connection():
+        print('waiting for connection')
+        debugger = get_global_debugger()
+        while debugger is None:
+            time.sleep(0.5)
+            debugger = get_global_debugger()
+
+        debugger.ready_to_run = True
+        print('ok we got object')
+        # daemon = _install(_pydevd,
+        #                 start_server=lambda daemon, port: start_client(daemon, host, port), # noqa
+        #                 start_client=lambda daemon, h, port: start_server(daemon, port), # noqa
+        #                 **kwargs)
+
+        # old_writer = debugger.writer
+        # old_reader = debugger.reader
+        print('waiting')
+        socket = start_server(daemon, port)
+        debugger.initialize_network(socket)
+
+        # debugger.connect(host, port)
+        print('connected')
+        # old_writer.do_kill_pydev_thread()
+        # old_reader.do_kill_pydev_thread()
+
+    connection_thread = threading.Thread(target=wait_for_connection,
+                                            name='ptvsd.listen_for_connection') # noqa
+    connection_thread.daemon = True
+    connection_thread.start()
+    print('started thread')
     try:
         _pydevd.settrace(host,
                          stdoutToServer=redirect_output,
                          stderrToServer=redirect_output,
                          port=port, suspend=False)
+
     except SystemExit as ex:
+        print('kaboom')
         daemon.exitcode = int(ex.code)
         raise
 
