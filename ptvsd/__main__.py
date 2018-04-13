@@ -96,65 +96,67 @@ def enable_attach(address, redirect_output=True,
                   _pydevd=pydevd, _install=install, **kwargs):
     host, port = address
 
-    def mock_connect(self, *args):
-        pass
-    old_connect = _pydevd.PyDB.connect
-    _pydevd.PyDB.connect = mock_connect
+    # def mock_connect(self, *args):
+    #     pass
+    # old_connect = _pydevd.PyDB.connect
+    # _pydevd.PyDB.connect = mock_connect
 
-    class FakeSocket(object):
-        def __init__(self):
-            self.event = threading.Event()
-        def recv(self, *args):
-            self.event.wait()
-            return ''
-        def shutdown(self, *arg):
-            self.event.set()
+    # class FakeSocket(object):
+    #     def __init__(self):
+    #         self.event = threading.Event()
+    #     def recv(self, *args):
+    #         self.event.wait()
+    #         return ''
+    #     def shutdown(self, *arg):
+    #         self.event.set()
 
-    daemon = _install(_pydevd,
-                      start_server=lambda daemon, port: start_client(daemon, host, port), # noqa
-                      start_client=lambda daemon, h, port: FakeSocket(), # noqa
-                      **kwargs)
+    # daemon = _install(_pydevd,
+    #                   start_server=lambda daemon, port: start_client(daemon, host, port), # noqa
+    #                   start_client=lambda daemon, h, port: FakeSocket(), # noqa
+    #                   **kwargs)
 
     def wait_for_connection():
         print('waiting for connection')
-        debugger = get_global_debugger()
-        while debugger is None:
-            time.sleep(0.5)
-            debugger = get_global_debugger()
+        # debugger = get_global_debugger()
+        # while debugger is None:
+        #     time.sleep(0.5)
+        #     debugger = get_global_debugger()
 
-        debugger.ready_to_run = True
-        print('ok we got object')
-        # daemon = _install(_pydevd,
-        #                 start_server=lambda daemon, port: start_client(daemon, host, port), # noqa
-        #                 start_client=lambda daemon, h, port: start_server(daemon, port), # noqa
-        #                 **kwargs)
+        # debugger.ready_to_run = True
+        # print('ok we got object')
+        daemon = _install(_pydevd,
+                        start_server=lambda daemon, port: start_client(daemon, host, port), # noqa
+                        start_client=lambda daemon, h, port: start_server(daemon, port), # noqa
+                        **kwargs)
 
         # old_writer = debugger.writer
         # old_reader = debugger.reader
-        print('waiting')
-        socket = start_server(daemon, port)
-        debugger.initialize_network(socket)
+        # print('waiting')
+        # socket = start_server(daemon, port)
+        # debugger.initialize_network(socket)
 
-        # debugger.connect(host, port)
-        print('connected')
+        # # debugger.connect(host, port)
+        # print('connected')
         # old_writer.do_kill_pydev_thread()
         # old_reader.do_kill_pydev_thread()
+
+        _pydevd.settrace(host,
+                         stdoutToServer=redirect_output,
+                         stderrToServer=redirect_output,
+                         port=port, suspend=False)
+        print('connected')
 
     connection_thread = threading.Thread(target=wait_for_connection,
                                             name='ptvsd.listen_for_connection') # noqa
     connection_thread.daemon = True
     connection_thread.start()
     print('started thread')
-    try:
-        _pydevd.settrace(host,
-                         stdoutToServer=redirect_output,
-                         stderrToServer=redirect_output,
-                         port=port, suspend=False)
+    # try:
 
-    except SystemExit as ex:
-        print('kaboom')
-        daemon.exitcode = int(ex.code)
-        raise
+    # except SystemExit as ex:
+    #     print('kaboom')
+    #     daemon.exitcode = int(ex.code)
+    #     raise
 
 ##################################
 # the script
