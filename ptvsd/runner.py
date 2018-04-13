@@ -48,7 +48,8 @@ def start_message_processor(host, port_num):
     launch_notification = threading.Event()
 
     daemon = Daemon(
-        notify_launch=launch_notification.set, addhandlers=True, killonclose=True)
+        notify_launch = launch_notification.set,
+        addhandlers=True, killonclose=True)
     start_client(daemon, host, port_num)
 
     return launch_notification.wait(WAIT_FOR_LAUNCH_REQUEST_TIMEOUT)
