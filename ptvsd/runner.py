@@ -47,11 +47,8 @@ def run(address, filename, is_module, *args, **kwargs):
 def start_message_processor(host, port_num):
     launch_notification = threading.Event()
 
-    def on_launch():
-        launch_notification.set()
-
     daemon = Daemon(
-        notify_launch=on_launch, addhandlers=True, killonclose=True)
+        notify_launch=launch_notification.set, addhandlers=True, killonclose=True)
     start_client(daemon, host, port_num)
 
     return launch_notification.wait(WAIT_FOR_LAUNCH_REQUEST_TIMEOUT)
