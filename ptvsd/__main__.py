@@ -8,7 +8,7 @@ import sys
 
 import pydevd
 
-from ptvsd.pydevd_hooks import install
+from ptvsd.pydevd_hooks import install, start_server, start_client
 from ptvsd.socket import Address
 from ptvsd.version import __version__, __author__  # noqa
 from ptvsd.runner import run as no_debug_runner
@@ -87,6 +87,23 @@ def _run(argv, addr, _pydevd=pydevd, _install=install, **kwargs):
         daemon.exitcode = int(ex.code)
         raise
 
+
+def enable_attach(address, redirect_output=True,
+                  _pydevd=pydevd, _install=install, **kwargs):
+    host, port = address
+    daemon = _install(_pydevd,
+                      start_server=lambda daemon, port: start_client(daemon, host, port), # noqa
+                      start_client=lambda daemon, h, port: start_server(daemon, port), # noqa
+                      **kwargs)
+
+    try:
+        _pydevd.settrace(host,
+                         stdoutToServer=redirect_output,
+                         stderrToServer=redirect_output,
+                         port=port, suspend=False)
+    except SystemExit as ex:
+        daemon.exitcode = int(ex.code)
+        raise
 
 ##################################
 # the script

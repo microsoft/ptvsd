@@ -31,7 +31,7 @@ pydevd_constants.MAXIMUM_VARIABLE_REPRESENTATION_SIZE = 2**32
 
 import _pydevd_bundle.pydevd_comm as pydevd_comm  # noqa
 import _pydevd_bundle.pydevd_extension_api as pydevd_extapi  # noqa
-import _pydevd_bundle.pydevd_extension_utils as pydevd_extutil  # noqa
+import _pydevd_bundle.pydevd_extension_utils as pydevd_extutil # noqa
 #from _pydevd_bundle.pydevd_comm import pydevd_log
 
 import ptvsd.ipcjson as ipcjson  # noqa
@@ -40,6 +40,7 @@ import ptvsd.untangle as untangle  # noqa
 from ptvsd.pathutils import PathUnNormcase  # noqa
 from ptvsd.safe_repr import SafeRepr  # noqa
 from ptvsd.version import __version__  # noqa
+from _pydevd_bundle.pydevd_additional_thread_info import PyDBAdditionalThreadInfo
 
 
 #def ipcjson_trace(s):
@@ -860,6 +861,13 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
         self.process_debug_options()
         self.pydevd_request(pydevd_comm.CMD_RUN, '')
 
+        if self.start_reason == 'attach':
+            # Send event notifying the creation of the process
+            with self.is_process_created_lock:
+                if not self.is_process_created:
+                    self.is_process_created = True
+                    self.send_process_event(self.start_reason)
+
     def process_debug_options(self):
         """
         Process the launch arguments to configure the debugger.
@@ -1086,7 +1094,6 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
                     return 0
 
         server_filename = pydevd_file_utils.norm_file_to_server(filename)
-
         # If the mapped file is the same as the file we provided,
         # then we can generate a soure reference.
         if server_filename == filename and os.path.exists(server_filename):

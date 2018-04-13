@@ -4,12 +4,12 @@
 
 import sys
 
-from ptvsd.__main__ import run_module, run_file
+from ptvsd.__main__ import run_module, run_file, enable_attach as ptvsd_enable_attach # noqa
 
 
 # TODO: not needed?
 DONT_DEBUG = []
-
+DEFAULT_PORT = 5678
 LOCALHOST = 'localhost'
 
 RUNNERS = {
@@ -34,3 +34,7 @@ def debug(filename, port_num, debug_id, debug_options, run_as,
     if _extra:
         args = _extra + list(args)
     run(address, filename, *args, **kwargs)
+
+
+def enable_attach(address=('0.0.0.0', DEFAULT_PORT), redirect_output=True):
+    ptvsd_enable_attach(address, redirect_output)
