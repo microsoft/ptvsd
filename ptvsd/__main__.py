@@ -3,11 +3,13 @@
 # for license information.
 
 import argparse
+import atexit
 import os.path
 import sys
 import threading
 import time
 
+import pydevd_tracing
 import pydevd
 
 from ptvsd.pydevd_hooks import install, start_server, start_client
@@ -15,7 +17,11 @@ from ptvsd.socket import Address
 from ptvsd.version import __version__, __author__  # noqa
 from ptvsd.runner import run as no_debug_runner
 from ptvsd.socket import create_client
-from _pydevd_bundle.pydevd_comm import get_global_debugger
+from _pydevd_bundle import pydevd_io, pydevd_vm_type
+from _pydevd_bundle.pydevd_constants import dict_iter_items, get_frame
+from _pydevd_bundle.pydevd_custom_frames import CustomFramesContainer, custom_frames_container_init
+from _pydevd_bundle.pydevd_additional_thread_info import PyDBAdditionalThreadInfo
+from _pydevd_frame_eval.pydevd_frame_eval_main import frame_eval_func
 
 
 def run_module(address, modname, *extra, **kwargs):
@@ -96,67 +102,82 @@ def enable_attach(address, redirect_output=True,
                   _pydevd=pydevd, _install=install, **kwargs):
     host, port = address
 
-    # def mock_connect(self, *args):
-    #     pass
-    # old_connect = _pydevd.PyDB.connect
-    # _pydevd.PyDB.connect = mock_connect
+    daemon = _install(
+        _pydevd,
+        start_server=lambda daemon, port: start_client(daemon, host, port),  # noqa
+        start_client=lambda daemon, h, port: start_server(daemon, port),  # noqa
+        **kwargs)
 
-    # class FakeSocket(object):
-    #     def __init__(self):
-    #         self.event = threading.Event()
-    #     def recv(self, *args):
-    #         self.event.wait()
-    #         return ''
-    #     def shutdown(self, *arg):
-    #         self.event.set()
+    try:
+        pydevd_vm_type.setup_type()
 
-    # daemon = _install(_pydevd,
-    #                   start_server=lambda daemon, port: start_client(daemon, host, port), # noqa
-    #                   start_client=lambda daemon, h, port: FakeSocket(), # noqa
-    #                   **kwargs)
+        debugger = _pydevd.PyDB()
 
-    def wait_for_connection():
-        print('waiting for connection')
-        # debugger = get_global_debugger()
-        # while debugger is None:
-        #     time.sleep(0.5)
-        #     debugger = get_global_debugger()
+        # Mark connected only if it actually succeeded.
+        _pydevd.bufferStdOutToServer = redirect_output
+        _pydevd.bufferStdErrToServer = redirect_output
 
-        # debugger.ready_to_run = True
-        # print('ok we got object')
-        daemon = _install(_pydevd,
-                        start_server=lambda daemon, port: start_client(daemon, host, port), # noqa
-                        start_client=lambda daemon, h, port: start_server(daemon, port), # noqa
-                        **kwargs)
+        debugger.set_trace_for_frame_and_parents(get_frame(), False,
+                                                overwrite_prev_trace=False)
 
-        # old_writer = debugger.writer
-        # old_reader = debugger.reader
-        # print('waiting')
-        # socket = start_server(daemon, port)
-        # debugger.initialize_network(socket)
+        CustomFramesContainer.custom_frames_lock.acquire()  # @UndefinedVariable
+        try:
+            for _frameId, custom_frame in dict_iter_items(
+                    CustomFramesContainer.custom_frames):
+                debugger.set_trace_for_frame_and_parents(custom_frame.frame, False)
+        finally:
+            CustomFramesContainer.custom_frames_lock.release()  # @UndefinedVariable
 
-        # # debugger.connect(host, port)
-        # print('connected')
-        # old_writer.do_kill_pydev_thread()
-        # old_reader.do_kill_pydev_thread()
+        t = _pydevd.threadingCurrentThread()
+        try:
+            additional_info = t.additional_info
+        except AttributeError:
+            additional_info = PyDBAdditionalThreadInfo()
+            t.additional_info = additional_info
 
-        _pydevd.settrace(host,
-                         stdoutToServer=redirect_output,
-                         stderrToServer=redirect_output,
-                         port=port, suspend=False)
-        print('connected')
+        frame_eval_for_tracing = debugger.frame_eval_func
+        if frame_eval_func is not None and not _pydevd.forked:
+            # Disable frame evaluation for Remote Debug Server
+            frame_eval_for_tracing = None
 
-    connection_thread = threading.Thread(target=wait_for_connection,
-                                            name='ptvsd.listen_for_connection') # noqa
-    connection_thread.daemon = True
-    connection_thread.start()
-    print('started thread')
-    # try:
+        # note that we do that through pydevd_tracing.SetTrace so that the tracing
+        # is not warned to the user!
+        pydevd_tracing.SetTrace(debugger.trace_dispatch, frame_eval_for_tracing,
+                                debugger.dummy_trace_dispatch)
 
-    # except SystemExit as ex:
-    #     print('kaboom')
-    #     daemon.exitcode = int(ex.code)
-    #     raise
+        # Trace future threads?
+        debugger.patch_threads()
+
+        # As this is the first connection, also set tracing for any untraced threads
+        debugger.set_tracing_for_untraced_contexts(ignore_frame=get_frame(),
+                                                    overwrite_prev_trace=False)
+
+        # Stop the tracing as the last thing before the actual shutdown for a clean exit.
+        atexit.register(_pydevd.stoptrace)
+
+        def wait_for_connection():
+            print('waiting for connection {}, {}'.format(host, port))
+            debugger.connect(host, port)  # Note: connect can raise error.
+
+            if redirect_output:
+                _pydevd.init_stdout_redirect()
+                _pydevd.init_stderr_redirect()
+
+            _pydevd.patch_stdin(debugger)
+
+            _pydevd.PyDBCommandThread(debugger).start()
+            _pydevd.CheckOutputThread(debugger).start()
+            daemon.re_build_breakpoints()
+            print('connected')
+
+        connection_thread = threading.Thread(target=wait_for_connection,
+                                            name='ptvsd.listen_for_connection')  # noqa
+        connection_thread.daemon = True
+        connection_thread.start()
+
+    except SystemExit as ex:
+        daemon.exitcode = int(ex.code)
+        raise
 
 ##################################
 # the script

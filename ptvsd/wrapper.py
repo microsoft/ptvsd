@@ -636,6 +636,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
         self.event_loop_thread = None
         self.server_thread = None
         self._closed = False
+        self.bkpoints = None
 
         # debugger state
         self.is_process_created = False
@@ -1546,9 +1547,15 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
 
         return hit_condition
 
+    def re_build_breakpoints(self):
+        if self.bkpoints is None:
+            return
+        self.on_setBreakpoints(None, self.bkpoints)
+
     @async_handler
     def on_setBreakpoints(self, request, args):
         # TODO: docstring
+        self.bkpoints = args
         bps = []
         path = args['source']['path']
         self.path_casing.track_file_path_case(path)
@@ -1587,7 +1594,9 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
                 'verified': True,
                 'line': line,
             })
-        self.send_response(request, breakpoints=bps)
+
+        if request is not None:
+            self.send_response(request, breakpoints=bps)
 
     @async_handler
     def on_setExceptionBreakpoints(self, request, args):
