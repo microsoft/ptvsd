@@ -98,10 +98,6 @@ def _enable_attach(daemon, address, redirect_output,
     # Trace future threads?
     debugger.patch_threads()
 
-    # As this is the first connection, also set tracing for any untraced threads
-    debugger.set_tracing_for_untraced_contexts(ignore_frame=get_frame(),
-                                                overwrite_prev_trace=False)
-
     # Stop the tracing as the last thing before the actual shutdown for a clean exit.
     atexit.register(_pydevd.stoptrace)
 
