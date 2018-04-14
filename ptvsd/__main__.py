@@ -97,12 +97,6 @@ def enable_attach(address, redirect_output=True,
                   on_attach=lambda: None, **kwargs):
     host, port = address
 
-    # First create a dummy socket and initialize the hooks
-    proxy_socket = ProxySocket()
-    daemon = _install(_pydevd,
-                      start_server=lambda daemon, port: start_client(daemon, host, port),  # noqa
-                      start_client=lambda daemon, h, port: proxy_socket, **kwargs) # noqa
-
     try:
         def wait_for_connection():
             debugger = get_global_debugger()
@@ -115,6 +109,11 @@ def enable_attach(address, redirect_output=True,
             proxy_socket.set_socket(socket)
             daemon.re_build_breakpoints()
             on_attach()
+
+        proxy_socket = ProxySocket()
+        daemon = _install(_pydevd,
+                        start_server=lambda daemon, port: start_client(daemon, host, port),  # noqa
+                        start_client=lambda daemon, h, port: proxy_socket, **kwargs) # noqa
 
         connection_thread = threading.Thread(target=wait_for_connection,
                                              name='ptvsd.listen_for_connection') # noqa

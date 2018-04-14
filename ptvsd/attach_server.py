@@ -11,15 +11,14 @@ from _pydevd_bundle.pydevd_custom_frames import CustomFramesContainer, custom_fr
 from _pydevd_bundle.pydevd_additional_thread_info import PyDBAdditionalThreadInfo # noqa
 from _pydevd_bundle.pydevd_comm import get_global_debugger, CMD_THREAD_SUSPEND
 
-# TODO: not needed?
-DONT_DEBUG = []
+DEFAULT_HOST = '0.0.0.0'
 DEFAULT_PORT = 5678
 
 _attached = threading.Event()
 
 
 def wait_for_attach(timeout=None):
-    """If a PTVS remote debugger is attached, returns immediately. Otherwise,
+    """If a remote debugger is attached, returns immediately. Otherwise,
     blocks until a remote debugger attaches to this process, or until the
     optional timeout occurs.
 
@@ -31,7 +30,7 @@ def wait_for_attach(timeout=None):
     _attached.wait(timeout)
 
 
-def enable_attach(address=('0.0.0.0', DEFAULT_PORT), redirect_output=True):
+def enable_attach(address=(DEFAULT_HOST, DEFAULT_PORT), redirect_output=True):
     """Enables a client to attach to this process remotely to debug Python code.
 
     Parameters
@@ -54,12 +53,6 @@ def enable_attach(address=('0.0.0.0', DEFAULT_PORT), redirect_output=True):
     is attached, call `ptvsd.wait_for_attach`. The debugger can be detached
     and re-attached multiple times after `enable_attach` is called.
 
-    This function can only be called once during the lifetime of the process.
-    On a second call, `AttachAlreadyEnabledError` is raised. In circumstances
-    where the caller does not control how many times the function will be
-    called (e.g. when a script with a single call is run more than once by
-    a hosting app or framework), the call should be wrapped in ``try..except``.
-
     Only the thread on which this function is called, and any threads that are
     created after it returns, will be visible in the debugger once it is
     attached. Any threads that are already running before this function is
@@ -77,18 +70,18 @@ def is_attached():
 
 
 def break_into_debugger():
-    """If a PTVS remote debugger is attached, pauses execution of all threads,
+    """If a remote debugger is attached, pauses execution of all threads,
     and breaks into the debugger with current thread as active.
     """
     debugger = get_global_debugger()
     if not _attached.isSet() or debugger is None:
         return
 
-    t = pydevd.threadingCurrentThread()
+    thread = pydevd.threadingCurrentThread()
     try:
-        additional_info = t.additional_info
+        additional_info = thread.additional_info
     except AttributeError:
         additional_info = PyDBAdditionalThreadInfo()
-        t.additional_info = additional_info
+        thread.additional_info = additional_info
 
-    debugger.set_suspend(t, CMD_THREAD_SUSPEND)
+    debugger.set_suspend(thread, CMD_THREAD_SUSPEND)

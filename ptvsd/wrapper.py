@@ -40,7 +40,7 @@ import ptvsd.untangle as untangle  # noqa
 from ptvsd.pathutils import PathUnNormcase  # noqa
 from ptvsd.safe_repr import SafeRepr  # noqa
 from ptvsd.version import __version__  # noqa
-from _pydevd_bundle.pydevd_additional_thread_info import PyDBAdditionalThreadInfo
+from _pydevd_bundle.pydevd_additional_thread_info import PyDBAdditionalThreadInfo # noqa
 
 
 #def ipcjson_trace(s):
