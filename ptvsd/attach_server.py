@@ -120,14 +120,13 @@ def _enable_attach(daemon, address, redirect_output, _pydevd, _install,
     debugger.set_trace_for_frame_and_parents(
         get_frame(), False, overwrite_prev_trace=False)
 
-    CustomFramesContainer.custom_frames_lock.acquire()  # @UndefinedVariable
+    CustomFramesContainer.custom_frames_lock.acquire()
     try:
         for _frameId, custom_frame in dict_iter_items(
                 CustomFramesContainer.custom_frames):
             debugger.set_trace_for_frame_and_parents(custom_frame.frame, False)
     finally:
-        CustomFramesContainer.custom_frames_lock.release(
-        )  # @UndefinedVariable
+        CustomFramesContainer.custom_frames_lock.release()
 
     t = _pydevd.threadingCurrentThread()
     try:
