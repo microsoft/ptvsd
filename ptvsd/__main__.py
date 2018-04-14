@@ -3,25 +3,15 @@
 # for license information.
 
 import argparse
-import atexit
 import os.path
 import sys
-import threading
-import time
 
-import pydevd_tracing
 import pydevd
 
 from ptvsd.pydevd_hooks import install, start_server, start_client
 from ptvsd.socket import Address
 from ptvsd.version import __version__, __author__  # noqa
 from ptvsd.runner import run as no_debug_runner
-from ptvsd.socket import create_client
-from _pydevd_bundle import pydevd_io, pydevd_vm_type
-from _pydevd_bundle.pydevd_constants import dict_iter_items, get_frame
-from _pydevd_bundle.pydevd_custom_frames import CustomFramesContainer, custom_frames_container_init
-from _pydevd_bundle.pydevd_additional_thread_info import PyDBAdditionalThreadInfo
-from _pydevd_frame_eval.pydevd_frame_eval_main import frame_eval_func
 
 
 def run_module(address, modname, *extra, **kwargs):
