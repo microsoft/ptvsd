@@ -99,8 +99,9 @@ def _run(argv, addr, _pydevd=pydevd, _install=install, **kwargs):
 
 
 def enable_attach(address, redirect_output=True,
-                  _pydevd=pydevd, _install=install, **kwargs):
-    host, port = address
+                  _pydevd=pydevd, _install=install,
+                  _enable_attach=lambda *args:None, **kwargs):
+    host, _ = address
 
     daemon = _install(
         _pydevd,
@@ -109,72 +110,9 @@ def enable_attach(address, redirect_output=True,
         **kwargs)
 
     try:
-        pydevd_vm_type.setup_type()
-
-        debugger = _pydevd.PyDB()
-
-        # Mark connected only if it actually succeeded.
-        _pydevd.bufferStdOutToServer = redirect_output
-        _pydevd.bufferStdErrToServer = redirect_output
-
-        debugger.set_trace_for_frame_and_parents(get_frame(), False,
-                                                overwrite_prev_trace=False)
-
-        CustomFramesContainer.custom_frames_lock.acquire()  # @UndefinedVariable
-        try:
-            for _frameId, custom_frame in dict_iter_items(
-                    CustomFramesContainer.custom_frames):
-                debugger.set_trace_for_frame_and_parents(custom_frame.frame, False)
-        finally:
-            CustomFramesContainer.custom_frames_lock.release()  # @UndefinedVariable
-
-        t = _pydevd.threadingCurrentThread()
-        try:
-            additional_info = t.additional_info
-        except AttributeError:
-            additional_info = PyDBAdditionalThreadInfo()
-            t.additional_info = additional_info
-
-        frame_eval_for_tracing = debugger.frame_eval_func
-        if frame_eval_func is not None and not _pydevd.forked:
-            # Disable frame evaluation for Remote Debug Server
-            frame_eval_for_tracing = None
-
-        # note that we do that through pydevd_tracing.SetTrace so that the tracing
-        # is not warned to the user!
-        pydevd_tracing.SetTrace(debugger.trace_dispatch, frame_eval_for_tracing,
-                                debugger.dummy_trace_dispatch)
-
-        # Trace future threads?
-        debugger.patch_threads()
-
-        # As this is the first connection, also set tracing for any untraced threads
-        debugger.set_tracing_for_untraced_contexts(ignore_frame=get_frame(),
-                                                    overwrite_prev_trace=False)
-
-        # Stop the tracing as the last thing before the actual shutdown for a clean exit.
-        atexit.register(_pydevd.stoptrace)
-
-        def wait_for_connection():
-            print('waiting for connection {}, {}'.format(host, port))
-            debugger.connect(host, port)  # Note: connect can raise error.
-
-            if redirect_output:
-                _pydevd.init_stdout_redirect()
-                _pydevd.init_stderr_redirect()
-
-            _pydevd.patch_stdin(debugger)
-
-            _pydevd.PyDBCommandThread(debugger).start()
-            _pydevd.CheckOutputThread(debugger).start()
-            daemon.re_build_breakpoints()
-            print('connected')
-
-        connection_thread = threading.Thread(target=wait_for_connection,
-                                            name='ptvsd.listen_for_connection')  # noqa
-        connection_thread.daemon = True
-        connection_thread.start()
-
+        _enable_attach(daemon=daemon, address=address,
+                        redirect_output=redirect_output,
+                        _pydevd=_pydevd, _install=_install)
     except SystemExit as ex:
         daemon.exitcode = int(ex.code)
         raise
