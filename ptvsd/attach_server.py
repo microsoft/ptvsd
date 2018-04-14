@@ -4,20 +4,15 @@
 
 import atexit
 import threading
-import time
 
 from ptvsd.__main__ import run_module, run_file, enable_attach as ptvsd_enable_attach  # noqa
 import pydevd_tracing
 import pydevd
 
-from ptvsd.pydevd_hooks import install, start_server, start_client
-from ptvsd.version import __version__, __author__  # noqa
-from ptvsd.runner import run as no_debug_runner
-from ptvsd.socket import create_client
-from _pydevd_bundle import pydevd_io, pydevd_vm_type
+from _pydevd_bundle import pydevd_vm_type
 from _pydevd_bundle.pydevd_constants import dict_iter_items, get_frame
-from _pydevd_bundle.pydevd_custom_frames import CustomFramesContainer, custom_frames_container_init
-from _pydevd_bundle.pydevd_additional_thread_info import PyDBAdditionalThreadInfo
+from _pydevd_bundle.pydevd_custom_frames import CustomFramesContainer, custom_frames_container_init # noqa
+from _pydevd_bundle.pydevd_additional_thread_info import PyDBAdditionalThreadInfo # noqa
 from _pydevd_frame_eval.pydevd_frame_eval_main import frame_eval_func
 from _pydevd_bundle.pydevd_comm import get_global_debugger, CMD_THREAD_SUSPEND
 
@@ -118,7 +113,7 @@ def _enable_attach(daemon, address, redirect_output, _pydevd, _install,
     _pydevd.bufferStdErrToServer = redirect_output
 
     debugger.set_trace_for_frame_and_parents(get_frame(), False,
-                                            overwrite_prev_trace=False)
+                                             overwrite_prev_trace=False)
 
     CustomFramesContainer.custom_frames_lock.acquire()
     try:
@@ -148,7 +143,7 @@ def _enable_attach(daemon, address, redirect_output, _pydevd, _install,
     # Trace future threads?
     debugger.patch_threads()
 
-    # Stop the tracing as the last thing before the actual shutdown for a clean exit.
+    # Stop the tracing as the last thing before the actual shutdown for a clean exit.  # noqa
     atexit.register(_pydevd.stoptrace)
 
     def wait_for_connection():
@@ -167,6 +162,6 @@ def _enable_attach(daemon, address, redirect_output, _pydevd, _install,
         _attached.set()
 
     connection_thread = threading.Thread(target=wait_for_connection,
-                                        name='ptvsd.listen_for_connection')
+                                         name='ptvsd.listen_for_connection')
     connection_thread.daemon = True
     connection_thread.start()

@@ -90,7 +90,7 @@ def _run(argv, addr, _pydevd=pydevd, _install=install, **kwargs):
 
 def enable_attach(address, redirect_output=True,
                   _pydevd=pydevd, _install=install,
-                  _enable_attach=lambda *args:None, **kwargs):
+                  _enable_attach=lambda *args: None, **kwargs):
     host, _ = address
 
     daemon = _install(
@@ -101,14 +101,15 @@ def enable_attach(address, redirect_output=True,
 
     try:
         _enable_attach(daemon=daemon, address=address,
-                        redirect_output=redirect_output,
-                        _pydevd=_pydevd, _install=_install)
+                       redirect_output=redirect_output,
+                       _pydevd=_pydevd, _install=_install)
     except SystemExit as ex:
         daemon.exitcode = int(ex.code)
         raise
 
 ##################################
 # the script
+
 
 """
 For the PyDevd CLI handling see:
