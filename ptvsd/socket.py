@@ -4,6 +4,7 @@ from collections import namedtuple
 import contextlib
 import errno
 import socket
+import threading
 
 
 NOT_CONNECTED = (
@@ -126,3 +127,33 @@ class Address(namedtuple('Address', 'host port')):
     @property
     def isserver(self):
         return self._isserver
+
+
+class ProxySocket(object):
+    def __init__(self, *args, **kwargs):
+        self._sock = None
+        self._socket_set = threading.Event()
+        self._data = []
+
+    def set_socket(self, sock):
+        self._sock = sock
+        if sock is None:
+            self._socket_set.clear()
+        else:
+            self._socket_set.set()
+
+    def close(self, *args, **kwargs):
+        if self._sock is not None:
+            self._sock.close(*args, **kwargs)
+
+    def shutdown(self, *args, **kwargs):
+        if self._sock is not None:
+            self._sock.shutdown(*args, **kwargs)
+
+    def send(self, *args, **kwargs):
+        if self._sock is not None:
+            self._sock.send(*args, **kwargs)
+
+    def recv(self, *args, **kwargs):
+        self._socket_set.wait()
+        return self._sock.recv(*args, **kwargs)

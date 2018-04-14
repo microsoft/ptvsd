@@ -5,6 +5,8 @@
 import argparse
 import os.path
 import sys
+import time
+import threading
 
 import pydevd
 
@@ -12,6 +14,8 @@ from ptvsd.pydevd_hooks import install, start_server, start_client
 from ptvsd.socket import Address
 from ptvsd.version import __version__, __author__  # noqa
 from ptvsd.runner import run as no_debug_runner
+from ptvsd.socket import ProxySocket
+from _pydevd_bundle.pydevd_comm import get_global_debugger
 
 
 def run_module(address, modname, *extra, **kwargs):
@@ -90,19 +94,39 @@ def _run(argv, addr, _pydevd=pydevd, _install=install, **kwargs):
 
 def enable_attach(address, redirect_output=True,
                   _pydevd=pydevd, _install=install,
-                  _enable_attach=lambda *args: None, **kwargs):
-    host, _ = address
+                  on_attach=lambda: None, **kwargs):
+    host, port = address
 
-    daemon = _install(
-        _pydevd,
-        start_server=lambda daemon, port: start_client(daemon, host, port),  # noqa
-        start_client=lambda daemon, h, port: start_server(daemon, port),  # noqa
-        **kwargs)
+    # First create a dummy socket and initialize the hooks
+    proxy_socket = ProxySocket()
+    daemon = _install(_pydevd,
+                      start_server=lambda daemon, port: start_client(daemon, host, port),  # noqa
+                      start_client=lambda daemon, h, port: proxy_socket, **kwargs) # noqa
 
     try:
-        _enable_attach(daemon=daemon, address=address,
-                       redirect_output=redirect_output,
-                       _pydevd=_pydevd, _install=_install)
+        def wait_for_connection():
+            debugger = get_global_debugger()
+            while debugger is None:
+                time.sleep(0.1)
+                debugger = get_global_debugger()
+
+            debugger.ready_to_run = True
+            socket = start_server(daemon, port)
+            proxy_socket.set_socket(socket)
+            daemon.re_build_breakpoints()
+            on_attach()
+
+        connection_thread = threading.Thread(target=wait_for_connection,
+                                             name='ptvsd.listen_for_connection') # noqa
+        connection_thread.daemon = True
+        connection_thread.start()
+
+        _pydevd.settrace(host=host,
+                         stdoutToServer=redirect_output,
+                         stderrToServer=redirect_output,
+                         port=port,
+                         suspend=False)
+
     except SystemExit as ex:
         daemon.exitcode = int(ex.code)
         raise
