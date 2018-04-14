@@ -117,8 +117,8 @@ def _enable_attach(daemon, address, redirect_output, _pydevd, _install,
     _pydevd.bufferStdOutToServer = redirect_output
     _pydevd.bufferStdErrToServer = redirect_output
 
-    debugger.set_trace_for_frame_and_parents(
-        get_frame(), False, overwrite_prev_trace=False)
+    debugger.set_trace_for_frame_and_parents(get_frame(), False,
+                                            overwrite_prev_trace=False)
 
     CustomFramesContainer.custom_frames_lock.acquire()
     try:
@@ -166,7 +166,7 @@ def _enable_attach(daemon, address, redirect_output, _pydevd, _install,
 
         _attached.set()
 
-    connection_thread = threading.Thread(
-        target=wait_for_connection, name='ptvsd.listen_for_connection')  # noqa
+    connection_thread = threading.Thread(target=wait_for_connection,
+                                        name='ptvsd.listen_for_connection')
     connection_thread.daemon = True
     connection_thread.start()
