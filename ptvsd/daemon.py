@@ -46,10 +46,8 @@ class Daemon(object):
         self._client = None
         self._adapter = None
 
-        self._signal_handlers = {
-            signal.SIGHUP: [],
-        }
-        self._atexit_handlers = []
+        self._signal_handlers = None
+        self._atexit_handlers = None
         self._handlers_installed = False
         if addhandlers:
             self.install_exit_handlers()
@@ -87,16 +85,21 @@ class Daemon(object):
 
     def install_exit_handlers(self):
         """Set the placeholder handlers."""
-        atexit.register(self._atexit_handler)
+        if self._signal_handlers is not None:
+            raise RuntimeError('exit handlers already installed')
+        self._signal_handlers = {
+            signal.SIGHUP: [],
+        }
+        self._atexit_handlers = []
 
-        if platform.system() == 'Windows':
-            return
-        try:
-            for sig in self._signal_handlers:
-                signal.signal(sig, self._signal_handler)
-        except ValueError:
-            # Wasn't called in main thread!
-            raise
+        if platform.system() != 'Windows':
+            try:
+                for sig in self._signal_handlers:
+                    signal.signal(sig, self._signal_handler)
+            except ValueError:
+                # Wasn't called in main thread!
+                raise
+        atexit.register(self._atexit_handler)
 
     def set_connection(self, client):
         """Set the client socket to use for the debug adapter.
@@ -120,8 +123,9 @@ class Daemon(object):
         )
         name = 'ptvsd.Client' if self._server is None else 'ptvsd.Server'
         self._adapter.start(name)
-        self._add_atexit_handler()
-        self._add_signal_handlers()
+        if self._signal_handlers is not None:
+            self._add_signal_handlers()
+            self._add_atexit_handler()
         return self._adapter
 
     def close(self):
