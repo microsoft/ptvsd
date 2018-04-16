@@ -36,7 +36,6 @@ class Daemon(object):
     def __init__(self, wait_on_exit=_wait_on_exit,
                  addhandlers=True, killonclose=True):
         self.wait_on_exit = wait_on_exit
-        self.addhandlers = addhandlers
         self.killonclose = killonclose
 
         self._closed = False
@@ -46,6 +45,14 @@ class Daemon(object):
         self._server = None
         self._client = None
         self._adapter = None
+
+        self._signal_handlers = {
+            signal.SIGHUP: [],
+        }
+        self._atexit_handlers = []
+        self._handlers_installed = False
+        if addhandlers:
+            self.install_exit_handlers()
 
     @property
     def pydevd(self):
@@ -78,6 +85,19 @@ class Daemon(object):
         self._server = server
         return self._pydevd
 
+    def install_exit_handlers(self):
+        """Set the placeholder handlers."""
+        atexit.register(self._atexit_handler)
+
+        if platform.system() == 'Windows':
+            return
+        try:
+            for sig in self._signal_handlers:
+                signal.signal(sig, self._signal_handler)
+        except ValueError:
+            # Wasn't called in main thread!
+            raise
+
     def set_connection(self, client):
         """Set the client socket to use for the debug adapter.
 
@@ -100,9 +120,8 @@ class Daemon(object):
         )
         name = 'ptvsd.Client' if self._server is None else 'ptvsd.Server'
         self._adapter.start(name)
-        if self.addhandlers:
-            self._add_atexit_handler()
-            self._set_signal_handlers()
+        self._add_atexit_handler()
+        self._add_signal_handlers()
         return self._adapter
 
     def close(self):
@@ -123,6 +142,14 @@ class Daemon(object):
 
     # internal methods
 
+    def _signal_handler(self, signum, frame):
+        for handle_signal in self._signal_handlers.get(signum, ()):
+            handle_signal(signum, frame)
+
+    def _atexit_handler(self):
+        for handle_atexit in self._atexit_handlers:
+            handle_atexit()
+
     def _add_atexit_handler(self):
         def handler():
             self._exiting_via_atexit_handler = True
@@ -131,17 +158,14 @@ class Daemon(object):
             if self._adapter is not None:
                 # TODO: Do this in VSCodeMessageProcessor.close()?
                 self._adapter._wait_for_server_thread()
-        atexit.register(handler)
+        self._atexit_handlers.append(handler)
 
-    def _set_signal_handlers(self):
-        if platform.system() == 'Windows':
-            return None
-
+    def _add_signal_handlers(self):
         def handler(signum, frame):
             if not self._closed:
                 self.close()
             sys.exit(0)
-        signal.signal(signal.SIGHUP, handler)
+        self._signal_handlers[signal.SIGHUP].append(handler)
 
     def _release_connection(self):
         if self._adapter is not None:
