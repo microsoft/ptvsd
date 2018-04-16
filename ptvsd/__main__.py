@@ -11,10 +11,9 @@ import threading
 import pydevd
 
 from ptvsd.pydevd_hooks import install, start_server, start_client
-from ptvsd.socket import Address
+from ptvsd.socket import Address, create_server
 from ptvsd.version import __version__, __author__  # noqa
 from ptvsd.runner import run as no_debug_runner
-from ptvsd.socket import ProxySocket
 from _pydevd_bundle.pydevd_comm import get_global_debugger
 
 
@@ -98,24 +97,25 @@ def enable_attach(address, redirect_output=True,
     host, port = address
 
     try:
-        def wait_for_connection():
+        def wait_for_connection(daemon, host, port):
             debugger = get_global_debugger()
             while debugger is None:
                 time.sleep(0.1)
                 debugger = get_global_debugger()
 
             debugger.ready_to_run = True
-            socket = start_server(daemon, port)
-            proxy_socket.set_socket(socket)
+            server = create_server(host, port)
+            client, _ = server.accept()
+            daemon.set_connection(client)
+
             daemon.re_build_breakpoints()
             on_attach()
 
-        proxy_socket = ProxySocket()
-        daemon = _install(_pydevd,
-                        start_server=lambda daemon, port: start_client(daemon, host, port),  # noqa
-                        start_client=lambda daemon, h, port: proxy_socket, **kwargs) # noqa
+        daemon = _install(_pydevd, address, start_server=None,
+                        start_client=lambda daemon, h, port: daemon.start(), **kwargs) # noqa
 
         connection_thread = threading.Thread(target=wait_for_connection,
+                                             args=(daemon, host, port),
                                              name='ptvsd.listen_for_connection') # noqa
         connection_thread.daemon = True
         connection_thread.start()
