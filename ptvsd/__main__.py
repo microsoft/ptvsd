@@ -131,7 +131,6 @@ def enable_attach(address, redirect_output=True,
                          suspend=False)
 
     except SystemExit as ex:
-        daemon.exitcode = int(ex.code)
         raise
 
 ##################################
