@@ -119,7 +119,7 @@ def enable_attach(address, redirect_output=True,
 
     connection_thread = threading.Thread(target=wait_for_connection,
                                          args=(daemon, host, port),
-                                         name='ptvsd.listen_for_connection') # noqa
+                                         name='ptvsd.listen_for_connection')
     connection_thread.daemon = True
     connection_thread.start()
 
