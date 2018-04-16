@@ -111,9 +111,12 @@ def enable_attach(address, redirect_output=True,
             daemon.re_build_breakpoints()
             on_attach()
 
-        daemon = _install(_pydevd, address, start_server=None,
-                        start_client = (lambda daemon, h, port: daemon.start()), # noqa
-                        **kwargs) # noqa
+        daemon = _install(
+            _pydevd,
+            address,
+            start_server=None,
+            start_client=(lambda daemon, h, port: daemon.start()),
+            **kwargs)
 
         connection_thread = threading.Thread(target=wait_for_connection,
                                              args=(daemon, host, port),
