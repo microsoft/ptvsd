@@ -65,6 +65,7 @@ INITIALIZE_RESPONSE = dict(
     supportsValueFormattingOptions=True,
     supportsSetExpression=True,
     supportsModulesRequest=True,
+    supportsLogPoints=True,
     exceptionBreakpointFilters=[
         {
             'filter': 'raised',
