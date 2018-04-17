@@ -238,7 +238,7 @@ class LogpointTests(TestBase, unittest.TestCase):
                             'line': '4',
                             'logMessage': '{a}+{b}=3'
                         },
-                    ],          
+                    ],
                 })
 
             req_config = self.send_request('configurationDone')

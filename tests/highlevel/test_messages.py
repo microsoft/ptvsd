@@ -1172,11 +1172,11 @@ class SetBreakpointsTests(NormalRequestTest, unittest.TestCase):
         with self.launched(args={'options': 'DJANGO_DEBUG=True'}):
             self.send_request(
                 source={'path': 'spam.py'},
-                breakpoints=[{'line': '10', 'logMessage':'Hello World'}],
+                breakpoints=[{'line': '10', 'logMessage': 'Hello World'}],
             )
             self.send_request(
                 source={'path': 'eggs.html'},
-                breakpoints=[{'line': '17', 'logMessage':'Hello Django World'}], # noqa
+                breakpoints=[{'line': '17', 'logMessage': 'Hello Django World'}], # noqa
             )
             received = self.vsc.received
 
