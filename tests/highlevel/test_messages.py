@@ -983,6 +983,54 @@ class SetBreakpointsTests(NormalRequestTest, unittest.TestCase):
                 '5\tpython-line\tspam.py\t30\tNone\tNone\tNone\tx\tNone'),
         ])
 
+    def test_with_logpoint(self):
+        with self.launched():
+            self.send_request(
+                source={'path': 'spam.py'},
+                breakpoints=[
+                    {'line': '10',
+                     'logMessage': '5'},
+                    {'line': '15',
+                     'logMessage': 'Hello World'},
+                    {'line': '20',
+                     'logMessage': '{a}'},
+                    {'line': '25',
+                     'logMessage': '{a}+{b}=Something'}
+                ],
+            )
+            received = self.vsc.received
+
+        self.assert_vsc_received(received, [
+            self.expected_response(
+                breakpoints=[
+                    {'id': 1,
+                     'verified': True,
+                     'line': '10'},
+                    {'id': 2,
+                     'verified': True,
+                     'line': '15'},
+                    {'id': 3,
+                     'verified': True,
+                     'line': '20'},
+                    {'id': 4,
+                     'verified': True,
+                     'line': '25'}
+                ],
+            ),
+            # no events
+        ])
+        self.PYDEVD_CMD = CMD_SET_BREAK
+        self.assert_received(self.debugger, [
+            self.expected_pydevd_request(
+                '1\tpython-line\tspam.py\t10\tNone\tNone\tprint("5")\tNone\tTrue'),
+            self.expected_pydevd_request(
+                '2\tpython-line\tspam.py\t15\tNone\tNone\tprint("Hello World")\tNone\tTrue'),
+            self.expected_pydevd_request(
+                '3\tpython-line\tspam.py\t20\tNone\tNone\tprint("{}".format(a))\tNone\tTrue'),
+            self.expected_pydevd_request(
+             '4\tpython-line\tspam.py\t25\tNone\tNone\tprint("{}+{}=Something".format(a, b))\tNone\tTrue'),
+        ])
+
     def test_with_existing(self):
         with self.launched():
             with self.hidden():
@@ -1120,6 +1168,43 @@ class SetBreakpointsTests(NormalRequestTest, unittest.TestCase):
                 '2\tdjango-line\teggs.html\t17\tNone\tNone\tNone\tNone\tNone'),
         ])
 
+    def test_vs_django_logpoint(self):
+        with self.launched(args={'options': 'DJANGO_DEBUG=True'}):
+            self.send_request(
+                source={'path': 'spam.py'},
+                breakpoints=[{'line': '10', 'logMessage':'Hello World'}],
+            )
+            self.send_request(
+                source={'path': 'eggs.html'},
+                breakpoints=[{'line': '17', 'logMessage':'Hello Django World'}],
+            )
+            received = self.vsc.received
+
+        self.assert_vsc_received(received, [
+            self.expected_response(
+                breakpoints=[
+                    {'id': 1,
+                     'verified': True,
+                     'line': '10'},
+                ],
+            ),
+            self.expected_response(
+                breakpoints=[
+                    {'id': 2,
+                     'verified': True,
+                     'line': '17'},
+                ],
+            ),
+        ])
+
+        self.PYDEVD_CMD = CMD_SET_BREAK
+        self.assert_received(self.debugger, [
+            self.expected_pydevd_request(
+                '1\tpython-line\tspam.py\t10\tNone\tNone\tprint("Hello World")\tNone\tTrue'),
+            self.expected_pydevd_request(
+                '2\tdjango-line\teggs.html\t17\tNone\tNone\tprint("Hello Django World")\tNone\tTrue'),
+        ])
+
     def test_vs_flask_jinja2(self):
         with self.launched(args={'options': 'FLASK_DEBUG=True'}):
             self.send_request(
@@ -1155,6 +1240,43 @@ class SetBreakpointsTests(NormalRequestTest, unittest.TestCase):
                 '1\tpython-line\tspam.py\t10\tNone\tNone\tNone\tNone\tNone'),
             self.expected_pydevd_request(
                 '2\tjinja2-line\teggs.html\t17\tNone\tNone\tNone\tNone\tNone'),
+        ])
+
+    def test_vs_flask_jinja2_logpoint(self):
+        with self.launched(args={'options': 'FLASK_DEBUG=True'}):
+            self.send_request(
+                source={'path': 'spam.py'},
+                breakpoints=[{'line': '10', 'logMessage': 'Hello World'}],
+            )
+            self.send_request(
+                source={'path': 'eggs.html'},
+                breakpoints=[{'line': '17', 'logMessage': 'Hello Jinja World'}],
+            )
+            received = self.vsc.received
+
+        self.assert_vsc_received(received, [
+            self.expected_response(
+                breakpoints=[
+                    {'id': 1,
+                     'verified': True,
+                     'line': '10'},
+                ],
+            ),
+            self.expected_response(
+                breakpoints=[
+                    {'id': 2,
+                     'verified': True,
+                     'line': '17'},
+                ],
+            ),
+        ])
+
+        self.PYDEVD_CMD = CMD_SET_BREAK
+        self.assert_received(self.debugger, [
+            self.expected_pydevd_request(
+                '1\tpython-line\tspam.py\t10\tNone\tNone\tprint("Hello World")\tNone\tTrue'),
+            self.expected_pydevd_request(
+                '2\tjinja2-line\teggs.html\t17\tNone\tNone\tprint("Hello Jinja World")\tNone\tTrue'),
         ])
 
     def test_vsc_flask_jinja2(self):
