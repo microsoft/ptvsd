@@ -249,17 +249,12 @@ def process_net_command(py_db, cmd_id, seq, text):
                 # command to add some breakpoint.
                 # text is file\tline. Add to breakpoints dictionary
                 suspend_policy = "NONE"
-                continue_execution = None
+                is_logpoint = False
                 hit_condition = None
                 if py_db._set_breakpoints_with_id:
                     try:
-                        breakpoint_id, type, file, line, func_name, condition, expression, hit_condition, continue_execution = text.split('\t', 8)
-                        if continue_execution == 'True':
-                            continue_execution = True
-                        elif continue_execution == 'False':
-                            continue_execution = False
-                        else:
-                            continue_execution = None
+                        breakpoint_id, type, file, line, func_name, condition, expression, hit_condition, is_logpoint = text.split('\t', 8)
+                        is_logpoint = is_logpoint == 'True'
                     except Exception:
                         breakpoint_id, type, file, line, func_name, condition, expression = text.split('\t', 6)
 
@@ -305,7 +300,7 @@ def process_net_command(py_db, cmd_id, seq, text):
                     expression = None
 
                 if type == 'python-line':
-                    breakpoint = LineBreakpoint(line, condition, func_name, expression, suspend_policy, hit_condition=hit_condition, continue_execution=continue_execution)
+                    breakpoint = LineBreakpoint(line, condition, func_name, expression, suspend_policy, hit_condition=hit_condition, is_logpoint=is_logpoint)
                     breakpoints = py_db.breakpoints
                     file_to_id_to_breakpoint = py_db.file_to_id_to_line_breakpoint
                     supported_type = True
@@ -313,7 +308,7 @@ def process_net_command(py_db, cmd_id, seq, text):
                     result = None
                     plugin = py_db.get_plugin_lazy_init()
                     if plugin is not None:
-                        result = plugin.add_breakpoint('add_line_breakpoint', py_db, type, file, line, condition, expression, func_name, hit_condition=hit_condition, continue_execution=continue_execution)
+                        result = plugin.add_breakpoint('add_line_breakpoint', py_db, type, file, line, condition, expression, func_name, hit_condition=hit_condition, is_logpoint=is_logpoint)
                     if result is not None:
                         supported_type = True
                         breakpoint, breakpoints = result

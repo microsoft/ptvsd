@@ -33,7 +33,7 @@ def handle_breakpoint(frame, thread, global_debugger, breakpoint):
 
     if breakpoint.expression is not None:
         handle_breakpoint_expression(breakpoint, info, new_frame)
-        if breakpoint.continue_execution == False:
+        if breakpoint.is_logpoint:
             return False
 
     if breakpoint.suspend_policy == "ALL":

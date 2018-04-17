@@ -568,7 +568,7 @@ class PyDBFrame:
 
                         if breakpoint.expression is not None:
                             handle_breakpoint_expression(breakpoint, info, new_frame)
-                            if breakpoint.continue_execution == False:
+                            if breakpoint.is_logpoint:
                                 return self.trace_dispatch
 
                         if not main_debugger.first_breakpoint_reached:
