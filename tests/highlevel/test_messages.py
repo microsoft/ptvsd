@@ -972,15 +972,15 @@ class SetBreakpointsTests(NormalRequestTest, unittest.TestCase):
         self.PYDEVD_CMD = CMD_SET_BREAK
         self.assert_received(self.debugger, [
             self.expected_pydevd_request(
-                '1\tpython-line\tspam.py\t10\tNone\tNone\tNone\t@HIT@ == 5'),
+                '1\tpython-line\tspam.py\t10\tNone\tNone\tNone\t@HIT@ == 5\tNone'),
             self.expected_pydevd_request(
-                '2\tpython-line\tspam.py\t15\tNone\tNone\tNone\t@HIT@ ==5'),
+                '2\tpython-line\tspam.py\t15\tNone\tNone\tNone\t@HIT@ ==5\tNone'),
             self.expected_pydevd_request(
-                '3\tpython-line\tspam.py\t20\tNone\tNone\tNone\t@HIT@ > 5'),
+                '3\tpython-line\tspam.py\t20\tNone\tNone\tNone\t@HIT@ > 5\tNone'),
             self.expected_pydevd_request(
-             '4\tpython-line\tspam.py\t25\tNone\tNone\tNone\t@HIT@ % 5 == 0'),
+             '4\tpython-line\tspam.py\t25\tNone\tNone\tNone\t@HIT@ % 5 == 0\tNone'),
             self.expected_pydevd_request(
-                '5\tpython-line\tspam.py\t30\tNone\tNone\tNone\tx'),
+                '5\tpython-line\tspam.py\t30\tNone\tNone\tNone\tx\tNone'),
         ])
 
     def test_with_existing(self):
@@ -988,9 +988,9 @@ class SetBreakpointsTests(NormalRequestTest, unittest.TestCase):
             with self.hidden():
                 self.PYDEVD_CMD = CMD_SET_BREAK
                 self.expected_pydevd_request(
-                    '1\tpython-line\tspam.py\t10\tNone\tNone\tNone\tNone')
+                    '1\tpython-line\tspam.py\t10\tNone\tNone\tNone\tNone\tNone')
                 self.expected_pydevd_request(
-                    '2\tpython-line\tspam.py\t17\tNone\tNone\tNone\tNone')
+                    '2\tpython-line\tspam.py\t17\tNone\tNone\tNone\tNone\tNone')
                 self.fix.send_request('setBreakpoints', dict(
                     source={'path': 'spam.py'},
                     breakpoints=[
@@ -1038,11 +1038,11 @@ class SetBreakpointsTests(NormalRequestTest, unittest.TestCase):
         self.PYDEVD_CMD = CMD_SET_BREAK
         self.assert_received(self.debugger, removed + [
             self.expected_pydevd_request(
-                '3\tpython-line\tspam.py\t113\tNone\tNone\tNone\tNone'),
+                '3\tpython-line\tspam.py\t113\tNone\tNone\tNone\tNone\tNone'),
             self.expected_pydevd_request(
-                '4\tpython-line\tspam.py\t2\tNone\tNone\tNone\tNone'),
+                '4\tpython-line\tspam.py\t2\tNone\tNone\tNone\tNone\tNone'),
             self.expected_pydevd_request(
-                '5\tpython-line\tspam.py\t10\tNone\tNone\tNone\tNone'),
+                '5\tpython-line\tspam.py\t10\tNone\tNone\tNone\tNone\tNone'),
         ])
 
     def test_multiple_files(self):
@@ -1078,9 +1078,9 @@ class SetBreakpointsTests(NormalRequestTest, unittest.TestCase):
         self.PYDEVD_CMD = CMD_SET_BREAK
         self.assert_received(self.debugger, [
             self.expected_pydevd_request(
-                '1\tpython-line\tspam.py\t10\tNone\tNone\tNone\tNone'),
+                '1\tpython-line\tspam.py\t10\tNone\tNone\tNone\tNone\tNone'),
             self.expected_pydevd_request(
-                '2\tpython-line\teggs.py\t17\tNone\tNone\tNone\tNone'),
+                '2\tpython-line\teggs.py\t17\tNone\tNone\tNone\tNone\tNone'),
         ])
 
     def test_vs_django(self):
@@ -1115,9 +1115,9 @@ class SetBreakpointsTests(NormalRequestTest, unittest.TestCase):
         self.PYDEVD_CMD = CMD_SET_BREAK
         self.assert_received(self.debugger, [
             self.expected_pydevd_request(
-                '1\tpython-line\tspam.py\t10\tNone\tNone\tNone\tNone'),
+                '1\tpython-line\tspam.py\t10\tNone\tNone\tNone\tNone\tNone'),
             self.expected_pydevd_request(
-                '2\tdjango-line\teggs.html\t17\tNone\tNone\tNone\tNone'),
+                '2\tdjango-line\teggs.html\t17\tNone\tNone\tNone\tNone\tNone'),
         ])
 
     def test_vs_flask_jinja2(self):
@@ -1152,9 +1152,9 @@ class SetBreakpointsTests(NormalRequestTest, unittest.TestCase):
         self.PYDEVD_CMD = CMD_SET_BREAK
         self.assert_received(self.debugger, [
             self.expected_pydevd_request(
-                '1\tpython-line\tspam.py\t10\tNone\tNone\tNone\tNone'),
+                '1\tpython-line\tspam.py\t10\tNone\tNone\tNone\tNone\tNone'),
             self.expected_pydevd_request(
-                '2\tjinja2-line\teggs.html\t17\tNone\tNone\tNone\tNone'),
+                '2\tjinja2-line\teggs.html\t17\tNone\tNone\tNone\tNone\tNone'),
         ])
 
     def test_vsc_flask_jinja2(self):
@@ -1189,9 +1189,9 @@ class SetBreakpointsTests(NormalRequestTest, unittest.TestCase):
         self.PYDEVD_CMD = CMD_SET_BREAK
         self.assert_received(self.debugger, [
             self.expected_pydevd_request(
-                '1\tpython-line\tspam.py\t10\tNone\tNone\tNone\tNone'),
+                '1\tpython-line\tspam.py\t10\tNone\tNone\tNone\tNone\tNone'),
             self.expected_pydevd_request(
-                '2\tjinja2-line\teggs.html\t17\tNone\tNone\tNone\tNone'),
+                '2\tjinja2-line\teggs.html\t17\tNone\tNone\tNone\tNone\tNone'),
         ])
 
     def test_vsc_jinja2(self):
@@ -1226,9 +1226,9 @@ class SetBreakpointsTests(NormalRequestTest, unittest.TestCase):
         self.PYDEVD_CMD = CMD_SET_BREAK
         self.assert_received(self.debugger, [
             self.expected_pydevd_request(
-                '1\tpython-line\tspam.py\t10\tNone\tNone\tNone\tNone'),
+                '1\tpython-line\tspam.py\t10\tNone\tNone\tNone\tNone\tNone'),
             self.expected_pydevd_request(
-                '2\tjinja2-line\teggs.html\t17\tNone\tNone\tNone\tNone'),
+                '2\tjinja2-line\teggs.html\t17\tNone\tNone\tNone\tNone\tNone'),
         ])
 
 
