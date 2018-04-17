@@ -4,6 +4,10 @@ from collections import namedtuple
 import contextlib
 import errno
 import socket
+try:
+    from urllib.parse import urlparse
+except ImportError:
+    from urlparse import urlparse
 
 
 NOT_CONNECTED = (
@@ -64,18 +68,33 @@ class Address(namedtuple('Address', 'host port')):
     """An IP address to use for sockets."""
 
     @classmethod
-    def from_raw(cls, raw):
+    def from_raw(cls, raw, defaultport=None):
         """Return an address corresponding to the given data."""
         if isinstance(raw, cls):
             return raw
-        if isinstance(raw, str):
-            raise NotImplementedError
-        try:
-            kwargs = dict(**raw)
-        except TypeError:
-            return cls(*raw)
+        elif not raw:
+            return cls(None, defaultport)
+        elif isinstance(raw, int):
+            return cls(None, raw)
+        elif isinstance(raw, str):
+            parsed = urlparse(raw)
+            if not parsed.netloc:
+                if parsed.scheme:
+                    raise ValueError('invalid address {!r}'.format(raw))
+                return cls.from_raw('x://' + raw, defaultport=defaultport)
+            return cls(
+                parsed.hostname,
+                parsed.port if parsed.port else defaultport,
+            )
         else:
-            return cls(**kwargs)
+            try:
+                kwargs = dict(**raw)
+            except TypeError:
+                return cls(*raw)
+            else:
+                kwargs.setdefault('host', None)
+                kwargs.setdefault('port', defaultport)
+                return cls(**kwargs)
 
     @classmethod
     def as_server(cls, host, port):
