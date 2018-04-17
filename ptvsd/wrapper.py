@@ -80,6 +80,14 @@ INITIALIZE_RESPONSE = dict(
     ],
 )
 
+IGNORE_FILES = [
+    '/ptvsd_launcher.py',
+]
+
+IGNORE_PATH_PREFIXES = [
+    os.path.dirname(os.path.abspath(__file__)),
+]
+
 
 class SafeReprPresentationProvider(pydevd_extapi.StrPresentationProvider):
     """
@@ -1163,7 +1171,10 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
             name = unquote(xframe['name'])
             norm_path = self.path_casing.un_normcase(unquote(xframe['file']))
             source_reference = self.get_source_reference(norm_path)
-            module = self.modules_mgr.add_or_get_from_path(norm_path)
+            if not self.is_debugger_internal_path(norm_path):
+                module = self.modules_mgr.add_or_get_from_path(norm_path)
+            else:
+                module = None
             line = int(xframe['line'])
             frame_name = self._format_frame_name(
                 fmt,
@@ -1182,9 +1193,37 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
                 'line': line, 'column': 1,
             })
 
+        user_frames = []
+        for frame in stackFrames:
+            if not self.is_debugger_internal_path(frame['source']['path']):
+                user_frames.append(frame)
+
+        totalFrames = len(user_frames)
         self.send_response(request,
-                           stackFrames=stackFrames,
+                           stackFrames=user_frames,
                            totalFrames=totalFrames)
+
+    def is_debugger_internal_path(self, file_path):
+        # TODO: Remove replace('\\', '/') after the path mapping in pydevd
+        # is fixed. Currently if the client is windows and server is linux
+        # the path separators used are windows path separators for linux
+        # source paths.
+        if platform.system() == 'Windows':
+            file_path = file_path.lower().replace('\\', '/')
+            for f in IGNORE_FILES:
+                if file_path.endswith(f):
+                    return True
+            for prefix in IGNORE_PATH_PREFIXES:
+                prefix_path = prefix.lower().replace('\\', '/')
+                if file_path.startswith(prefix_path):
+                    return True
+        else:
+            file_path = file_path.replace('\\', '/')
+            for prefix in IGNORE_PATH_PREFIXES:
+                prefix_path = prefix.replace('\\', '/')
+                if file_path.startswith(prefix_path):
+                    return True
+        return False
 
     def _format_frame_name(self, fmt, name, module, line, path):
         frame_name = name
@@ -1481,7 +1520,13 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
     @async_handler
     def on_modules(self, request, args):
         modules = list(self.modules_mgr.get_all())
-        self.send_response(request, modules=modules, totalModules=len(modules))
+        user_modules = []
+        for module in modules:
+            if not self.is_debugger_internal_path(module['path']):
+                user_modules.append(module)
+        self.send_response(request,
+                           modules=user_modules,
+                           totalModules=len(user_modules))
 
     @async_handler
     def on_pause(self, request, args):
@@ -1813,13 +1858,16 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
                 text = unquote(xml.var[1]['type'])
                 description = unquote(xml.var[1]['value'])
                 frame_data = ((
-                               unquote(f['file']),
-                               int(f['line']),
-                               unquote(f['name']),
-                               None
-                               ) for f in xframes)
+                        unquote(f['file']),
+                        int(f['line']),
+                        unquote(f['name']),
+                        None)
+                    for f in xframes
+                    if not self.is_debugger_internal_path(unquote(f['file'])))
                 stack = ''.join(traceback.format_list(frame_data))
                 source = unquote(xframe['file'])
+                if self.is_debugger_internal_path(source):
+                    source = None
             except Exception:
                 text = 'BaseException'
                 description = 'exception: no description'
