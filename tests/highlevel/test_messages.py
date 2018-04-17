@@ -1022,9 +1022,9 @@ class SetBreakpointsTests(NormalRequestTest, unittest.TestCase):
         self.PYDEVD_CMD = CMD_SET_BREAK
         self.assert_received(self.debugger, [
             self.expected_pydevd_request(
-                '1\tpython-line\tspam.py\t10\tNone\tNone\tprint("5")\tNone\tTrue'), # noqa
+                '1\tpython-line\tspam.py\t10\tNone\tNone\tprint(' + repr("5") + ')\tNone\tTrue'), # noqa
             self.expected_pydevd_request(
-                '2\tpython-line\tspam.py\t15\tNone\tNone\tprint("Hello World")\tNone\tTrue'), # noqa
+                '2\tpython-line\tspam.py\t15\tNone\tNone\tprint(' + repr("Hello World") + ')\tNone\tTrue'), # noqa
             self.expected_pydevd_request(
                 '3\tpython-line\tspam.py\t20\tNone\tNone\tprint("{}".format(a))\tNone\tTrue'), # noqa
             self.expected_pydevd_request(
@@ -1200,9 +1200,9 @@ class SetBreakpointsTests(NormalRequestTest, unittest.TestCase):
         self.PYDEVD_CMD = CMD_SET_BREAK
         self.assert_received(self.debugger, [
             self.expected_pydevd_request(
-                '1\tpython-line\tspam.py\t10\tNone\tNone\tprint("Hello World")\tNone\tTrue'), # noqa
+                '1\tpython-line\tspam.py\t10\tNone\tNone\tprint(' + repr("Hello World") + ')\tNone\tTrue'), # noqa
             self.expected_pydevd_request(
-                '2\tdjango-line\teggs.html\t17\tNone\tNone\tprint("Hello Django World")\tNone\tTrue'), # noqa
+                '2\tdjango-line\teggs.html\t17\tNone\tNone\tprint(' + repr("Hello Django World") + ')\tNone\tTrue'), # noqa
         ])
 
     def test_vs_flask_jinja2(self):
@@ -1274,9 +1274,9 @@ class SetBreakpointsTests(NormalRequestTest, unittest.TestCase):
         self.PYDEVD_CMD = CMD_SET_BREAK
         self.assert_received(self.debugger, [
             self.expected_pydevd_request(
-                '1\tpython-line\tspam.py\t10\tNone\tNone\tprint("Hello World")\tNone\tTrue'), # noqa
+                '1\tpython-line\tspam.py\t10\tNone\tNone\tprint(' + repr("Hello World") + ')\tNone\tTrue'), # noqa
             self.expected_pydevd_request(
-                '2\tjinja2-line\teggs.html\t17\tNone\tNone\tprint("Hello Jinja World")\tNone\tTrue'), # noqa
+                '2\tjinja2-line\teggs.html\t17\tNone\tNone\tprint(' + repr("Hello Jinja World") + ')\tNone\tTrue'), # noqa
         ])
 
     def test_vsc_flask_jinja2(self):
