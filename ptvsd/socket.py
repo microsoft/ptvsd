@@ -4,7 +4,6 @@ from collections import namedtuple
 import contextlib
 import errno
 import socket
-import threading
 
 
 NOT_CONNECTED = (
@@ -127,4 +126,3 @@ class Address(namedtuple('Address', 'host port')):
     @property
     def isserver(self):
         return self._isserver
-

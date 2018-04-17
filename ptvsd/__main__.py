@@ -10,7 +10,7 @@ import threading
 
 import pydevd
 
-from ptvsd.pydevd_hooks import install, start_server, start_client
+from ptvsd.pydevd_hooks import install
 from ptvsd.socket import Address, create_server
 from ptvsd.version import __version__, __author__  # noqa
 from ptvsd.runner import run as no_debug_runner
