@@ -1596,11 +1596,11 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
                                 src_bp.get('hitCondition', None))
             logMessage = src_bp.get('logMessage', '')
             if len(logMessage) == 0:
-                continue_execution = None
+                is_logpoint = None
                 condition = src_bp.get('condition', None)
                 expression = None
             else:
-                continue_execution = False
+                is_logpoint = True
                 condition = None
                 expressions = re.findall('\{.*?\}', logMessage)
                 if len(expressions) == 0:
@@ -1612,7 +1612,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
                     expression = 'print("{}".format({}))'.format(raw_text, expression_list) # noqa
 
             msg = msgfmt.format(vsc_bpid, bp_type, path, line, condition,
-                                expression, hit_condition, continue_execution)
+                                expression, hit_condition, is_logpoint)
             self.pydevd_notify(cmd, msg)
             bps.append({
                 'id': vsc_bpid,

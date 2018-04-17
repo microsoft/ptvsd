@@ -258,7 +258,7 @@ class LogpointTests(TestBase, unittest.TestCase):
             self.new_event('initialized'),
             self.new_response(req_attach),
             self.new_response(req_breakpoints, **dict(
-                breakpoints=[{'id': 1, 'verified': True, 'line': '3'}]
+                breakpoints=[{'id': 1, 'verified': True, 'line': '4'}]
             )),
             self.new_response(req_config),
             self.new_event('process', **dict(
