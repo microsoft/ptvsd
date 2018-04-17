@@ -923,9 +923,9 @@ class SetBreakpointsTests(NormalRequestTest, unittest.TestCase):
         self.PYDEVD_CMD = CMD_SET_BREAK
         self.assert_received(self.debugger, [
             self.expected_pydevd_request(
-                '1\tpython-line\tspam.py\t10\tNone\tNone\tNone\tNone'),
+                '1\tpython-line\tspam.py\t10\tNone\tNone\tNone\tNone\tNone'),
             self.expected_pydevd_request(
-                '2\tpython-line\tspam.py\t15\tNone\ti == 3\tNone\tNone'),
+                '2\tpython-line\tspam.py\t15\tNone\ti == 3\tNone\tNone\tNone'),
         ])
 
     def test_with_hit_condition(self):
