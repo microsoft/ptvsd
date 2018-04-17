@@ -218,7 +218,7 @@ class LogpointTests(TestBase, unittest.TestCase):
         with self.fake.start(addr):
                 yield
 
-    def test_launch(self):
+    def test_basic(self):
         addr = (None, 8888)
         with self.fake.start(addr):
             with self.vsc.wait_for_event('output'):
