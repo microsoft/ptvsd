@@ -2,7 +2,9 @@ import os
 import unittest
 
 import ptvsd
+from ptvsd.socket import Address
 from ptvsd.wrapper import INITIALIZE_RESPONSE # noqa
+from tests.helpers.debugadapter import DebugAdapter
 from tests.helpers.debugclient import EasyDebugClient as DebugClient
 from tests.helpers.threading import get_locked_and_waiter
 from tests.helpers.vsc import parse_message, VSCMessages
@@ -288,7 +290,7 @@ class LifecycleTests(TestsBase, unittest.TestCase):
         ])
 
     @unittest.skip('re-attach needs fixing')
-    def test_attach(self):
+    def test_attach_unknown(self):
         lockfile = self.workspace.lockfile()
         done, waitscript = lockfile.wait_in_script()
         filename = self.write_script('spam.py', waitscript)
