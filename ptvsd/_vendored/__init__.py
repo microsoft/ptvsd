@@ -4,7 +4,10 @@ import os.path
 import sys
 
 
-VENDORED_ROOT = os.path.dirname(__file__)
+# TODO: Move the "pydevd" git submodule to the ptvsd/_vendored directory
+# and then fix VENDORED_ROOT.
+VENDORED_ROOT = os.path.dirname(os.path.dirname(__file__))
+#VENDORED_ROOT = os.path.dirname(__file__)
 
 
 def project_root(project):
