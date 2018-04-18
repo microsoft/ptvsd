@@ -80,12 +80,14 @@ class _LifecycleClient(Closeable):
         self._attach(addr, **kwargs)
         return self._session
 
-    def detach(self):
+    def detach(self, adapter=None):
         if self.closed:
             raise RuntimeError('debug client closed')
         if self._session is None:
             raise RuntimeError('not attached')
-        assert self._adapter is not None
+        if adapter is None:
+            adapter = self._adapter
+        assert adapter is not None
         if not self._session.is_client:
             raise RuntimeError('detach not supported')
 
