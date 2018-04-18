@@ -1,13 +1,15 @@
 import contextlib
 from importlib import import_module
+import os
 import os.path
 import sys
 
 
-# TODO: Move the "pydevd" git submodule to the ptvsd/_vendored directory
-# and then fix VENDORED_ROOT.
-VENDORED_ROOT = os.path.dirname(os.path.dirname(__file__))
-#VENDORED_ROOT = os.path.dirname(__file__)
+VENDORED_ROOT = os.path.dirname(__file__)
+# TODO: Move the "pydevd" git subtree to the ptvsd/_vendored directory
+# and then drop the following fallback.
+if 'pydevd' not in os.listdir(VENDORED_ROOT):
+    VENDORED_ROOT = os.path.dirname(os.path.dirname(__file__))
 
 
 def project_root(project):
