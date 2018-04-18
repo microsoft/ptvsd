@@ -6,7 +6,7 @@ import sys
 
 
 VENDORED_ROOT = os.path.dirname(__file__)
-# TODO: Move the "pydevd" git subtree to the ptvsd/_vendored directory
+# TODO: Move the "pydevd" git submodule to the ptvsd/_vendored directory
 # and then drop the following fallback.
 if 'pydevd' not in os.listdir(VENDORED_ROOT):
     VENDORED_ROOT = os.path.dirname(os.path.dirname(__file__))
