@@ -152,6 +152,7 @@ class VSCLifecycle(object):
         self._fix = fix
         self._pydevd = pydevd
         self._hidden = hidden or fix.hidden
+        self.requests = None
 
     @contextlib.contextmanager
     def daemon_running(self, port=None, hide=False):
@@ -187,11 +188,26 @@ class VSCLifecycle(object):
 
     def disconnect(self, exitcode=0, **reqargs):
         wrapper.ptvsd_sys_exit_code = exitcode
-        self._fix.send_request('disconnect', reqargs)
+        self._send_request('disconnect', reqargs)
         # TODO: wait for an exit event?
         # TODO: call self._fix.vsc.close()?
 
     # internal methods
+
+    def _send_request(self, command, args=None, handle_response=None):
+        if self.requests is None:
+            return self._fix.send_request(command, args, handle_response)
+
+        txn = [None, None]
+        self.requests.append(txn)
+
+        def handler(msg, send, _handle_resp=handle_response):
+            txn[1] = msg
+            if _handle_resp is not None:
+                _handle_resp(msg, send)
+        req = self._fix.send_request(command, args, handler)
+        txn[0] = req
+        return req
 
     def _start_daemon(self, port):
         if port is None:
@@ -221,7 +237,7 @@ class VSCLifecycle(object):
         t.join()
         daemon.close()
 
-    def _handshake(self, command, threadnames=None, config=None,
+    def _handshake(self, command, threadnames=None, config=None, requests=None,
                    default_threads=True, process=True, reset=True,
                    **kwargs):
         initargs = dict(
@@ -231,7 +247,7 @@ class VSCLifecycle(object):
 
         with self._fix.wait_for_event('initialized'):
             self._initialize(**initargs)
-            self._fix.send_request(command, **kwargs)
+            self._send_request(command, **kwargs)
 
         if threadnames:
             self._fix.set_threads(*threadnames,
@@ -239,7 +255,7 @@ class VSCLifecycle(object):
 
         self._handle_config(**config or {})
         with self._wait_for_debugger_init():
-            self._fix.send_request('configurationDone')
+            self._send_request('configurationDone')
 
         if process:
             with self._fix.wait_for_event('process'):
@@ -268,7 +284,7 @@ class VSCLifecycle(object):
             self._capabilities = resp.body
         if self._pydevd:
             self._pydevd._initialize()
-        self._fix.send_request(
+        self._send_request(
             'initialize',
             dict(self.MIN_INITIALIZE_ARGS, **reqargs),
             handle_response,
@@ -276,12 +292,12 @@ class VSCLifecycle(object):
 
     def _handle_config(self, breakpoints=None, excbreakpoints=None):
         for req in breakpoints or ():
-            self._fix.send_request(
+            self._send_request(
                 'setBreakpoints',
                 self._parse_breakpoints(req),
             )
         for req in excbreakpoints or ():
-            self._fix.send_request(
+            self._send_request(
                 'setExceptionBreakpoints',
                 self._parse_exception_breakpoints(req),
             )
