@@ -63,14 +63,20 @@ class _LifecycleClient(Closeable):
 
         raise NotImplementedError
 
-    def attach_socket(self, addr=None, **kwargs):
+    def attach_socket(self, addr=None, adapter=None, **kwargs):
         if self.closed:
             raise RuntimeError('debug client closed')
-        if self._adapter is None:
+        if adapter is None:
+            adapter = self._adapter
+        elif self._adapter is not None:
+            raise RuntimeError('already using managed adapter')
+        if adapter is None:
             raise RuntimeError('debugger not running')
         if self._session is not None:
             raise RuntimeError('already attached')
 
+        if addr is None:
+            addr = adapter.address
         self._attach(addr, **kwargs)
         return self._session
 

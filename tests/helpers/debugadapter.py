@@ -113,6 +113,10 @@ class DebugAdapter(Closeable):
         self._addr = addr
 
     @property
+    def address(self):
+        return self._addr
+
+    @property
     def output(self):
         # TODO: Decode here?
         return self._proc.output

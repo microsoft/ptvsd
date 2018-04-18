@@ -8,8 +8,8 @@ class Closeable(object):
     def __init__(self):
         self._closed = False
 
-    def __del__(self):
-        self.close()
+#    def __del__(self):
+#        self.close()
 
     def __enter__(self):
         return self
