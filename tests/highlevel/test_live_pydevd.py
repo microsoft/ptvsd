@@ -5,6 +5,7 @@ import unittest
 
 import ptvsd
 from ptvsd.wrapper import INITIALIZE_RESPONSE # noqa
+from tests.helpers._io import captured_stdio
 from tests.helpers.pydevd._live import LivePyDevd
 from tests.helpers.workspace import PathEntry
 
@@ -180,6 +181,7 @@ class BreakpointTests(VSCFlowTest, unittest.TestCase):
         #    def inc(self, diff=1):
         #        self._next += diff
 
+        # line 21
         def inc(value, count=1):
             return value + count
 
@@ -188,19 +190,87 @@ class BreakpointTests(VSCFlowTest, unittest.TestCase):
         y = inc(x, 2)
         z = inc(3)
         print(x, y, z)
+        raise Exception('ka-boom')
         """
 
     def test_no_breakpoints(self):
+        self.lifecycle.requests = []
         config = {
             'breakpoints': [],
             'excbreakpoints': [],
         }
-        with self.launched(config=config):
-            # Allow the script to run to completion.
-            received = self.vsc.received
+        with captured_stdio() as (stdout, _):
+            with self.launched(config=config):
+                # Allow the script to run to completion.
+                received = self.vsc.received
+        out = stdout.getvalue()
 
+        for req, _ in self.lifecycle.requests:
+            self.assertNotEqual(req['command'], 'setBreakpoints')
+            self.assertNotEqual(req['command'], 'setExceptionBreakpoints')
         self.assert_received(self.vsc, [])
         self.assert_vsc_received(received, [])
+        self.assertIn('2 4 4', out)
+        self.assertIn('ka-boom', out)
+
+    def test_breakpoints_single_file(self):
+        self.lifecycle.requests = []
+        config = {
+            'breakpoints': [{
+                'source': {'path': self.filename},
+                'breakpoints': [
+                    {'line': '22'},
+                ],
+            }],
+            'excbreakpoints': [],
+        }
+        with captured_stdio() as (stdout, _):
+            #with self.wait_for_event('exited', timeout=3):
+            with self.launched(config=config):
+                # TODO: Ensure the breakpoint was hit.
+
+                # Allow the script to run to completion.
+                received = self.vsc.received
+        out = stdout.getvalue()
+
+        got = []
+        for req, resp in self.lifecycle.requests:
+            #print(req, '->', resp)
+            if req['command'] == 'setBreakpoints':
+                got.append(req['arguments'])
+            self.assertNotEqual(req['command'], 'setExceptionBreakpoints')
+        self.assertEqual(got, config['breakpoints'])
+        self.assert_received(self.vsc, [])
+        self.assert_vsc_received(received, [])
+        self.assertIn('2 4 4', out)
+        self.assertIn('ka-boom', out)
+
+    def test_exception_breakpoints(self):
+        self.lifecycle.requests = []
+        config = {
+            'breakpoints': [],
+            'excbreakpoints': [{
+                'filters': ['uncaught'],
+            }],
+        }
+        with captured_stdio() as (stdout, _):
+            with self.launched(config=config):
+                # TODO: Ensure the breakpoint was hit.
+
+                # Allow the script to run to completion.
+                received = self.vsc.received
+        out = stdout.getvalue()
+
+        got = []
+        for req, resp in self.lifecycle.requests:
+            if req['command'] == 'setExceptionBreakpoints':
+                got.append(req['arguments'])
+            self.assertNotEqual(req['command'], 'setBreakpoints')
+        self.assertEqual(got, config['excbreakpoints'])
+        self.assert_received(self.vsc, [])
+        self.assert_vsc_received(received, [])
+        self.assertIn('2 4 4', out)
+        #self.assertNotIn('ka-boom', out)
 
 
 class LogpointTests(TestBase, unittest.TestCase):
