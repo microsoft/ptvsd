@@ -191,7 +191,11 @@ class BreakpointTests(VSCFlowTest, unittest.TestCase):
         """
 
     def test_no_breakpoints(self):
-        with self.launched():
+        config = {
+            'breakpoints': [],
+            'excbreakpoints': [],
+        }
+        with self.launched(config=config):
             # Allow the script to run to completion.
             received = self.vsc.received
 
