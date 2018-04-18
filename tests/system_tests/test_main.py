@@ -289,6 +289,40 @@ class LifecycleTests(TestsBase, unittest.TestCase):
             self.new_event('terminated'),
         ])
 
+    def test_attach_started_separately(self):
+        lockfile = self.workspace.lockfile()
+        done, waitscript = lockfile.wait_in_script()
+        filename = self.write_script('spam.py', waitscript)
+        addr = Address('localhost', 8888)
+        with DebugAdapter.start_for_attach(addr, filename) as adapter:
+            with DebugClient() as editor:
+                session = editor.attach_socket(addr, adapter)
+
+                (req_initialize, req_launch, req_config
+                 ) = lifecycle_handshake(session, 'attach')
+                done()
+                adapter.wait()
+
+        self.assert_received(session.received, [
+            self.new_event(
+                'output',
+                category='telemetry',
+                output='ptvsd',
+                data={'version': ptvsd.__version__}),
+            self.new_response(req_initialize, **INITIALIZE_RESPONSE),
+            self.new_event('initialized'),
+            self.new_response(req_launch),
+            self.new_response(req_config),
+            self.new_event('process', **{
+                'isLocalProcess': True,
+                'systemProcessId': adapter.pid,
+                'startMethod': 'attach',
+                'name': filename,
+            }),
+            self.new_event('exited', exitCode=0),
+            self.new_event('terminated'),
+        ])
+
     @unittest.skip('re-attach needs fixing')
     def test_attach_unknown(self):
         lockfile = self.workspace.lockfile()
