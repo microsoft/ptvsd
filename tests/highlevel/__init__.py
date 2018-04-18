@@ -275,20 +275,63 @@ class VSCLifecycle(object):
         )
 
     def _handle_config(self, breakpoints=None, excbreakpoints=None):
-        if breakpoints:
+        for req in breakpoints or ():
             self._fix.send_request(
                 'setBreakpoints',
-                self._parse_breakpoints(breakpoints),
+                self._parse_breakpoints(req),
             )
-        if excbreakpoints:
+        for req in excbreakpoints or ():
             self._fix.send_request(
                 'setExceptionBreakpoints',
-                self._parse_breakpoints(excbreakpoints),
+                self._parse_exception_breakpoints(req),
             )
 
-    def _parse_breakpoints(self, breakpoints):
-        for bp in breakpoints or ():
-            raise NotImplementedError
+    def _parse_breakpoints(self, req):
+        # setBreakpoints request:
+        #   source : <Source>
+        #   ---
+        #   breakpoints : [<SourceBreakpoint>]
+        #   lines : [int]
+        #   sourceModified : bool
+        # <Source>:
+        #   ---
+        #   name : str
+        #   path : str
+        #   sourceReference : num
+        #   presentationHint : enum
+        #   origin : str
+        #   sources : [<Source>]
+        #   adapterData : *
+        #   checksums : [<Checksum>]
+        # <Checksum>:
+        #   algorithm : enum
+        #   checksum : str
+        #   ---
+        # <SourceBreakpoint>:
+        #   line : int
+        #   ---
+        #   column : int
+        #   condition : str
+        #   hitCondition : str
+        #   logMessage : str
+        # TODO: validate?
+        return req
+
+    def _parse_exception_breakpoints(self, req):
+        # setExceptionBreakpoints request:
+        #   filters : [str]
+        #   ---
+        #   exceptionOptions : [<ExceptionOptions>]
+        # <ExceptionOptions>:
+        #   breakMode : enum
+        #   ---
+        #   path : [<ExceptionPathSegment>]
+        # <ExceptionPathSegment>:
+        #   names : [str]
+        #   ---
+        #   negate : bool
+        # TODO: validate?
+        return req
 
 
 class FixtureBase(object):
