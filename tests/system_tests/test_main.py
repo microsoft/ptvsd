@@ -1,4 +1,5 @@
 import os
+from textwrap import dedent
 import unittest
 
 import ptvsd
@@ -322,6 +323,54 @@ class LifecycleTests(TestsBase, unittest.TestCase):
             self.new_event('exited', exitCode=0),
             self.new_event('terminated'),
         ])
+
+    def test_attach_embedded(self):
+        lockfile = self.workspace.lockfile()
+        done, waitscript = lockfile.wait_in_script()
+        addr = Address('localhost', 8888)
+        script = dedent("""
+            from __future__ import print_function
+            import sys
+            sys.path.insert(0, {!r})
+            import ptvsd
+            ptvsd.enable_attach({}, redirect_output={})
+
+            %s
+
+            print('success!', end='')
+            """).format(os.getcwd(), tuple(addr), True)
+        filename = self.write_script('spam.py', script % waitscript)
+        with DebugAdapter.start_embedded(addr, filename) as adapter:
+            with DebugClient() as editor:
+                session = editor.attach_socket(addr, adapter)
+
+                (req_initialize, req_launch, req_config
+                 ) = lifecycle_handshake(session, 'attach')
+                done()
+                adapter.wait()
+        out = adapter.output.decode('utf-8')
+
+        self.assert_received(session.received, [
+            self.new_event(
+                'output',
+                category='telemetry',
+                output='ptvsd',
+                data={'version': ptvsd.__version__}),
+            self.new_response(req_initialize, **INITIALIZE_RESPONSE),
+            self.new_event('initialized'),
+            self.new_response(req_launch),
+            self.new_response(req_config),
+            self.new_event('process', **{
+                'isLocalProcess': True,
+                'systemProcessId': adapter.pid,
+                'startMethod': 'attach',
+                'name': filename,
+            }),
+            self.new_event('output', output='success!', category='stdout'),
+            self.new_event('exited', exitCode=0),
+            self.new_event('terminated'),
+        ])
+        self.assertIn('success!', out)
 
     @unittest.skip('re-attach needs fixing')
     def test_attach_unknown(self):

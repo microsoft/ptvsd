@@ -75,10 +75,6 @@ class DebugAdapter(Closeable):
             content = scriptfile.read()
             if 'ptvsd.enable_attach' not in content:
                 raise NotImplementedError
-                """
-                import ptvsd
-                ptvsd.enable_attach({}, {}, redirect_output={})
-                """.format(addr.host, addr.port, redirect_output)
         return cls.start_wrapper_script(filename, argv=[], addr=addr)
 
     @classmethod
