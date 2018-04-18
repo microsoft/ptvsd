@@ -117,6 +117,10 @@ class DebugAdapter(Closeable):
         return self._addr
 
     @property
+    def pid(self):
+        return self._proc.pid
+
+    @property
     def output(self):
         # TODO: Decode here?
         return self._proc.output

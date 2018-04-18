@@ -53,6 +53,10 @@ class Proc(Closeable):
     #    return val
 
     @property
+    def pid(self):
+        return self._proc.pid
+
+    @property
     def output(self):
         try:
             # TODO: Could there be more?
