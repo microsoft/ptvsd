@@ -62,7 +62,9 @@ def iter_lines_buffered(read, sep=b'\n', initial=b'', stop=noop):
             try:
                 if stop():
                     raise EOFError()
-                # TODO: handle ConnectionResetError (errno 104)
+                # ConnectionResetError (errno 104) likely means the
+                # client was never able to establish a connection.
+                # TODO: Handle ConnectionResetError gracefully.
                 data = read(1024)
                 if not data:
                     raise EOFError()
