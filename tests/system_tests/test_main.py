@@ -372,6 +372,51 @@ class LifecycleTests(TestsBase, unittest.TestCase):
         ])
         self.assertIn('success!', out)
 
+    def test_reattach(self):
+        lockfile1 = self.workspace.lockfile()
+        done1, waitscript1 = lockfile1.wait_in_script()
+        lockfile2 = self.workspace.lockfile()
+        done2, waitscript2 = lockfile2.wait_in_script()
+        filename = self.write_script('spam.py', waitscript1 + waitscript2)
+        print(waitscript1 + waitscript2)
+        addr = Address('localhost', 8888)
+        with DebugAdapter.start_for_attach(addr, filename) as adapter:
+            with DebugClient() as editor:
+                # Attach initially.
+                session1 = editor.attach_socket(addr, adapter)
+                lifecycle_handshake(session1, 'attach')
+                done1()
+                session1.send_request('disconnect')
+                editor.detach(adapter)
+
+                # Re-attach
+                session2 = editor.attach_socket(addr, adapter)
+                (req_initialize, req_launch, req_config
+                 ) = lifecycle_handshake(session2, 'attach')
+                done2()
+
+                adapter.wait()
+
+        self.assert_received(session2.received, [
+            self.new_event(
+                'output',
+                category='telemetry',
+                output='ptvsd',
+                data={'version': ptvsd.__version__}),
+            self.new_response(req_initialize, **INITIALIZE_RESPONSE),
+            self.new_event('initialized'),
+            self.new_response(req_launch),
+            self.new_response(req_config),
+            self.new_event('process', **{
+                'isLocalProcess': True,
+                'systemProcessId': adapter.pid,
+                'startMethod': 'attach',
+                'name': filename,
+            }),
+            self.new_event('exited', exitCode=0),
+            self.new_event('terminated'),
+        ])
+
     @unittest.skip('re-attach needs fixing')
     def test_attach_unknown(self):
         lockfile = self.workspace.lockfile()
