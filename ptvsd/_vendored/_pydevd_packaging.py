@@ -39,5 +39,6 @@ def exclude_file(dirname, basename):
             return True
         return False
 
-    # TODO: Exclude .pyc files?
+    if basename.endswith('.pyc'):
+        return True
     return False
