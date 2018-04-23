@@ -13,8 +13,10 @@ class InternalsFilterTests(unittest.TestCase):
         )
         internal_files = [
             os.path.abspath(ptvsd.untangle.__file__),
-            'somepath\\ptvsd_launcher.py',  # File used by VS Only
-            os.path.join(internal_dir, 'somefile.py'),  # Any file under ptvsd
+            # File used by VS Only
+            os.path.join('somepath', 'ptvsd_launcher.py'),
+            # Any file under ptvsd
+            os.path.join(internal_dir, 'somefile.py'),
         ]
         for fp in internal_files:
             self.assertTrue(int_filter.is_internal_path(fp))
@@ -23,7 +25,7 @@ class InternalsFilterTests(unittest.TestCase):
         int_filter = InternalsFilter()
         files = [
             __file__,
-            'somepath\\somefile.py',
+            os.path.join('somepath', 'somefile.py'),
         ]
         for fp in files:
             self.assertFalse(int_filter.is_internal_path(fp))

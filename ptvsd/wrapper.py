@@ -622,6 +622,12 @@ class InternalsFilter(object):
     """
     # TODO: Move the internal thread identifier here
     def __init__(self):
+        if platform.system() == 'Windows':
+            self._init_windows()
+        else:
+            self._init_default()
+
+    def _init_default(self):
         self._ignore_files = [
             '/ptvsd_launcher.py',
         ]
@@ -629,6 +635,18 @@ class InternalsFilter(object):
         self._ignore_path_prefixes = [
             os.path.dirname(os.path.abspath(__file__)),
         ]
+
+    def _init_windows(self):
+        self._init_default()
+        files = []
+        for f in self._ignore_files:
+            files.append(f.lower())
+        self._ignore_files = files
+
+        prefixes = []
+        for p in self._ignore_path_prefixes:
+            prefixes.append(p.lower())
+        self._ignore_path_prefixes = prefixes
 
     def is_internal_path(self, abs_file_path):
         # TODO: Remove replace('\\', '/') after the path mapping in pydevd
@@ -643,8 +661,7 @@ class InternalsFilter(object):
             if file_path.endswith(f):
                 return True
         for prefix in self._ignore_path_prefixes:
-            prefix_path = prefix.lower() if is_windows else prefix
-            prefix_path = prefix_path.replace('\\', '/')
+            prefix_path = prefix.replace('\\', '/')
             if file_path.startswith(prefix_path):
                 return True
         return False
