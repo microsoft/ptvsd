@@ -7,7 +7,7 @@ import ptvsd
 from ptvsd.wrapper import INITIALIZE_RESPONSE # noqa
 from tests.helpers._io import captured_stdio
 from tests.helpers.pydevd._live import LivePyDevd
-from tests.helpers.workspace import PathEntry
+from tests.helpers.workspace import Workspace, PathEntry
 
 from . import (
     VSCFixture,
@@ -45,7 +45,7 @@ class TestBase(VSCTest):
 
     def setUp(self):
         super(TestBase, self).setUp()
-        self._workspace = PathEntry()
+        self._pathentry = PathEntry()
 
         self._filename = None
         if self.FILENAME is not None:
@@ -53,11 +53,20 @@ class TestBase(VSCTest):
 
     def tearDown(self):
         super(TestBase, self).tearDown()
-        self._workspace.cleanup()
+        self._pathentry.cleanup()
+
+    @property
+    def pathentry(self):
+        return self._pathentry
 
     @property
     def workspace(self):
-        return self._workspace
+        try:
+            return self._workspace
+        except AttributeError:
+            self._workspace = Workspace()
+            self.addCleanup(self._workspace.cleanup)
+            return self._workspace
 
     @property
     def filename(self):
@@ -70,8 +79,8 @@ class TestBase(VSCTest):
     def set_source_file(self, filename, content=None):
         self.assertIsNone(self._fix)
         if content is not None:
-            filename = self.workspace.write(filename, content=content)
-        self.workspace.install()
+            filename = self.pathentry.write(filename, content=content)
+        self.pathentry.install()
         self._filePath = filename
         self._filename = 'file:' + filename
 
@@ -79,7 +88,7 @@ class TestBase(VSCTest):
         self.assertIsNone(self._fix)
         if content is not None:
             self.write_module(name, content)
-        self.workspace.install()
+        self.pathentry.install()
         self._filename = 'module:' + name
 
 
