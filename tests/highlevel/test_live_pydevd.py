@@ -1,6 +1,7 @@
 import contextlib
 import os
 import sys
+from textwrap import dedent
 import unittest
 
 import ptvsd
@@ -169,7 +170,7 @@ class VSCFlowTest(TestBase):
 class BreakpointTests(VSCFlowTest, unittest.TestCase):
 
     FILENAME = 'spam.py'
-    SOURCE = """
+    SOURCE = dedent("""
         from __future__ import print_function
 
         #class Counter(object):
@@ -190,17 +191,65 @@ class BreakpointTests(VSCFlowTest, unittest.TestCase):
         #    def inc(self, diff=1):
         #        self._next += diff
 
-        # line 21
+        # <a>
         def inc(value, count=1):
             return value + count
 
+        # <b>
         x = 1
+        # <c>
         x = inc(x)
+        # <d>
         y = inc(x, 2)
+        # <e>
         z = inc(3)
+        # <f>
         print(x, y, z)
+        # <g>
         raise Exception('ka-boom')
-        """
+        """)
+
+    def _iter_until_label(self, lines, label):
+        expected = '# <{}>'.format(label)
+        for line in lines:
+            if line.strip() == expected:
+                yield line, True
+                break
+            yield line, False
+        else:
+            raise RuntimeError('not found')
+
+    def _find_line(self, script, label):
+        lines = iter(script.splitlines())
+        for lineno, _ in enumerate(self._iter_until_label(lines, label)):
+            pass
+        return lineno
+
+    def _set_lock(self, label=None, script=None):
+        if script is None:
+            script = self.SOURCE
+        lockfile = self.workspace.lockfile()
+        done, waitscript = lockfile.wait_in_script()
+
+        if label is None:
+            script += waitscript
+        else:
+            leading = []
+            lines = iter(script.splitlines())
+            for line, last in self._iter_until_label(lines, label):
+                if last:
+                    leading.extend([
+                        waitscript,
+                        line,
+                        '',
+                    ])
+                    break
+                leading.append(line)
+            script = os.linesep.join(leading) + os.linesep.join(lines)
+
+        with open(self.filename, 'w') as scriptfile:
+            scriptfile.write(script)
+        return done, script
 
     def test_no_breakpoints(self):
         self.lifecycle.requests = []
@@ -223,12 +272,14 @@ class BreakpointTests(VSCFlowTest, unittest.TestCase):
         self.assertIn('ka-boom', out)
 
     def test_breakpoints_single_file(self):
-        self.lifecycle.requests = []
+        done, script = self._set_lock('a')
+        lineno = self._find_line(script, 'a')
+        self.lifecycle.requests = []  # Trigger capture.
         config = {
             'breakpoints': [{
                 'source': {'path': self.filename},
                 'breakpoints': [
-                    {'line': '22'},
+                    {'line': lineno},
                 ],
             }],
             'excbreakpoints': [],
@@ -236,7 +287,12 @@ class BreakpointTests(VSCFlowTest, unittest.TestCase):
         with captured_stdio() as (stdout, _):
             #with self.wait_for_event('exited', timeout=3):
             with self.launched(config=config):
-                # TODO: Ensure the breakpoint was hit.
+                with self.fix.hidden():
+                    _, tid = self.get_threads()
+                done()
+                req_continue = self.send_request('continue', {
+                    'threadId': tid,
+                })
 
                 # Allow the script to run to completion.
                 received = self.vsc.received
@@ -244,18 +300,30 @@ class BreakpointTests(VSCFlowTest, unittest.TestCase):
 
         got = []
         for req, resp in self.lifecycle.requests:
-            #print(req, '->', resp)
             if req['command'] == 'setBreakpoints':
                 got.append(req['arguments'])
             self.assertNotEqual(req['command'], 'setExceptionBreakpoints')
         self.assertEqual(got, config['breakpoints'])
-        self.assert_received(self.vsc, [])
-        self.assert_vsc_received(received, [])
+        self.assert_vsc_received(received, [
+            self.new_event(
+                'stopped',
+                reason='breakpoint',
+                threadId=tid,
+                text='',
+                description='',
+            ),
+            self.new_response(req_continue),
+            self.new_event(
+                'continued',
+                threadId=tid,
+            ),
+        ])
         self.assertIn('2 4 4', out)
         self.assertIn('ka-boom', out)
 
     def test_exception_breakpoints(self):
-        self.lifecycle.requests = []
+        done, script = self._set_lock('g')
+        self.lifecycle.requests = []  # Trigger capture.
         config = {
             'breakpoints': [],
             'excbreakpoints': [{
@@ -264,7 +332,9 @@ class BreakpointTests(VSCFlowTest, unittest.TestCase):
         }
         with captured_stdio() as (stdout, _):
             with self.launched(config=config):
-                # TODO: Ensure the breakpoint was hit.
+                with self.fix.hidden():
+                    _, tid = self.get_threads()
+                done()
 
                 # Allow the script to run to completion.
                 received = self.vsc.received
@@ -276,10 +346,17 @@ class BreakpointTests(VSCFlowTest, unittest.TestCase):
                 got.append(req['arguments'])
             self.assertNotEqual(req['command'], 'setBreakpoints')
         self.assertEqual(got, config['excbreakpoints'])
-        self.assert_received(self.vsc, [])
-        self.assert_vsc_received(received, [])
+        self.assert_vsc_received(received, [
+            self.new_event(
+                'stopped',
+                reason='exception',
+                threadId=tid,
+                text='',
+                description='',
+            ),
+        ])
         self.assertIn('2 4 4', out)
-        #self.assertNotIn('ka-boom', out)
+        self.assertIn('ka-boom', out)
 
 
 class LogpointTests(TestBase, unittest.TestCase):
