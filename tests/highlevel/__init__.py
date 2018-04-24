@@ -568,6 +568,17 @@ class VSCFixture(FixtureBase):
             with self.wait_for_event(events[0]):
                 yield
 
+    def get_threads(self):
+        threads = {}
+
+        def handle_response(msg, _):
+            for t in msg.body['threads']:
+                threads[t['id']] = t['name']
+                if t['name'] == 'MainThread':
+                    threads[None] = t['id']
+        self.send_request('threads', handle_response=handle_response)
+        return threads, threads.pop(None)
+
     def close_ptvsd(self):
         if self._proc is None:
             warnings.warn('"proc" not bound')
