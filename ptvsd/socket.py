@@ -60,6 +60,7 @@ def close_socket(sock):
     try:
         shut_down(sock)
     except Exception:
+        # TODO: Log errors?
         pass
     sock.close()
 

@@ -97,6 +97,9 @@ class DebugSession(Startable, Closeable):
         self._msgprocessor.close()
         self._msgprocessor = None
 
+    def _close(self):
+        pass
+
     def _msgprocessor_running(self):
         if self._msgprocessor is None:
             return False

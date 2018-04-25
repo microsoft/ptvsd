@@ -1,11 +1,11 @@
-import atexit
-import os
-import platform
-import signal
 import sys
 
 from ptvsd import wrapper
 from ptvsd.socket import close_socket
+from .exit_handlers import (
+    ExitHandlers, UnsupportedSignalError,
+    kill_current_proc)
+from .session import DebugSession
 
 
 def _wait_on_exit():
@@ -28,6 +28,9 @@ class DaemonClosedError(RuntimeError):
         super(DaemonClosedError, self).__init__(msg)
 
 
+# TODO: Inherit from Closeable.
+# TODO: Inherit from Startable?
+
 class Daemon(object):
     """The process-level manager for the VSC protocol debug adapter."""
 
@@ -42,13 +45,9 @@ class Daemon(object):
         self._exiting_via_atexit_handler = False
 
         self._pydevd = None
-        self._server = None
-        self._client = None
-        self._adapter = None
+        self._session = None
 
-        self._signal_handlers = None
-        self._atexit_handlers = None
-        self._handlers_installed = False
+        self._exithandlers = ExitHandlers()
         if addhandlers:
             self.install_exit_handlers()
 
@@ -57,18 +56,30 @@ class Daemon(object):
         return self._pydevd
 
     @property
-    def server(self):
-        return self._server
+    def session(self):
+        """The current session."""
+        return self._session
 
-    @property
-    def client(self):
-        return self._client
+    def install_exit_handlers(self):
+        """Set the placeholder handlers."""
+        self._exithandlers.install()
 
-    @property
-    def adapter(self):
-        return self._adapter
+        try:
+            self._exithandlers.add_atexit_handler(self._handle_atexit)
+        except ValueError:
+            pass
+        for signum in self._exithandlers.SIGNALS:
+            try:
+                self._exithandlers.add_signal_handler(signum,
+                                                      self._handle_signal)
+            except ValueError:
+                # Already added.
+                pass
+            except UnsupportedSignalError:
+                # TODO: This shouldn't happen.
+                pass
 
-    def start(self, server=None):
+    def start(self):
         """Return the "socket" to use for pydevd after setting it up."""
         if self._closed:
             raise DaemonClosedError()
@@ -80,55 +91,36 @@ class Daemon(object):
             self._getpeername,
             self._getsockname,
         )
-        self._server = server
         return self._pydevd
 
-    def install_exit_handlers(self):
-        """Set the placeholder handlers."""
-        if self._signal_handlers is not None:
-            raise RuntimeError('exit handlers already installed')
-        self._atexit_handlers = []
+    # TODO: Add serve_forever().
 
-        if platform.system() == 'Windows':
-            self._signal_handlers = {}
-        else:
-            self._signal_handlers = {
-                signal.SIGHUP: [],
-            }
-            try:
-                for sig in self._signal_handlers:
-                    signal.signal(sig, self._signal_handler)
-            except ValueError:
-                # Wasn't called in main thread!
-                raise
-        atexit.register(self._atexit_handler)
+    def start_session(self, session, threadname):
+        """Start the debug session and remember it.
 
-    def set_connection(self, client):
-        """Set the client socket to use for the debug adapter.
-
-        A VSC message loop is started for the client.
+        If "session" is a socket then a session is created from it.
         """
         if self._closed:
             raise DaemonClosedError()
         if self._pydevd is None:
             raise RuntimeError('not started yet')
-        if self._client is not None:
-            raise RuntimeError('connection already set')
-        self._client = client
+        if self._session is not None:
+            raise RuntimeError('session already started')
 
-        self._adapter = wrapper.VSCodeMessageProcessor(
-            client,
+        if not isinstance(session, DebugSession):
+            client = session
+            session = DebugSession(
+                client,
+                notify_closing=self._handle_session_closing,
+                ownsock=True,
+            )
+        self._session = session
+        self._session.start(
+            threadname,
             self._pydevd.pydevd_notify,
             self._pydevd.pydevd_request,
-            self._handle_vsc_disconnect,
-            self._handle_vsc_close,
         )
-        name = 'ptvsd.Client' if self._server is None else 'ptvsd.Server'
-        self._adapter.start(name)
-        if self._signal_handlers is not None:
-            self._add_signal_handlers()
-            self._add_atexit_handler()
-        return self._adapter
+        return session
 
     def close(self):
         """Stop all loops and release all resources."""
@@ -136,61 +128,48 @@ class Daemon(object):
             raise DaemonClosedError('already closed')
         self._closed = True
 
-        if self._adapter is not None:
-            normal, abnormal = self._adapter._wait_options()
+        session = self._session
+        if session is not None:
+            self._stop_session()
+            normal, abnormal = session.wait_options()
             if (normal and not self.exitcode) or (abnormal and self.exitcode):
                 self.wait_on_exit()
 
         if self._pydevd is not None:
             close_socket(self._pydevd)
-        if self._client is not None:
-            self._release_connection()
 
     def re_build_breakpoints(self):
-        self.adapter.re_build_breakpoints()
+        """Restore the breakpoints to their last values."""
+        if self._session is None:
+            return
+        return self._session.re_build_breakpoints()
 
     # internal methods
 
-    def _signal_handler(self, signum, frame):
-        for handle_signal in self._signal_handlers.get(signum, ()):
-            handle_signal(signum, frame)
+    def _stop_session(self):
+        self._session.stop(self.exitcode)
+        self._session.close()
+        self._session = None
 
-    def _atexit_handler(self):
-        for handle_atexit in self._atexit_handlers:
-            handle_atexit()
+    def _handle_atexit(self):
+        self._exiting_via_atexit_handler = True
+        if not self._closed:
+            self.close()
+        if self._session is not None:
+            self._session.wait_until_stopped()
 
-    def _add_atexit_handler(self):
-        def handler():
-            self._exiting_via_atexit_handler = True
-            if not self._closed:
-                self.close()
-            if self._adapter is not None:
-                # TODO: Do this in VSCodeMessageProcessor.close()?
-                self._adapter._wait_for_server_thread()
-        self._atexit_handlers.append(handler)
-
-    def _add_signal_handlers(self):
-        if platform.system() == 'Windows':
-            return
-
-        def handler(signum, frame):
-            if not self._closed:
-                self.close()
-            sys.exit(0)
-        self._signal_handlers[signal.SIGHUP].append(handler)
-
-    def _release_connection(self):
-        if self._adapter is not None:
-            # TODO: This is not correct in the "attach" case.
-            self._adapter.handle_pydevd_stopped(self.exitcode)
-            self._adapter.close()
-        close_socket(self._client)
+    def _handle_signal(self, signum, frame):
+        if not self._closed:
+            self.close()
+        sys.exit(0)
 
     # internal methods for PyDevdSocket().
 
     def _handle_pydevd_message(self, cmdid, seq, text):
-        if self._adapter is not None:
-            self._adapter.on_pydevd_event(cmdid, seq, text)
+        if self._session is None:
+            # TODO: Do more than ignore?
+            return
+        self._session.handle_pydevd_message(cmdid, seq, text)
 
     def _handle_pydevd_close(self):
         if self._closed:
@@ -198,24 +177,19 @@ class Daemon(object):
         self.close()
 
     def _getpeername(self):
-        if self._client is None:
+        if self._session is None:
             raise NotImplementedError
-        return self._client.getpeername()
+        return self._session.socket.getpeername()
 
     def _getsockname(self):
-        if self._client is None:
+        if self._session is None:
             raise NotImplementedError
-        return self._client.getsockname()
+        return self._session.socket.getsockname()
 
     # internal methods for VSCodeMessageProcessor
 
-    def _handle_vsc_disconnect(self, kill=False):
+    def _handle_session_closing(self, kill=False):
         if not self._closed:
             self.close()
         if kill and self.killonclose and not self._exiting_via_atexit_handler:
-            os.kill(os.getpid(), signal.SIGTERM)
-
-    def _handle_vsc_close(self):
-        if self._closed:
-            return
-        self.close()
+            kill_current_proc()

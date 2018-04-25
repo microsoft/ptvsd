@@ -17,8 +17,9 @@ def start_server(daemon, host, port):
     server = create_server(host, port)
     client, _ = server.accept()
 
-    pydevd = daemon.start(server)
-    daemon.set_connection(client)
+    pydevd = daemon.start()
+    daemon.start_session(client, 'ptvsd.Server')
+    # TODO: Close "server" when "daemon" is closed.
     return pydevd
 
 
@@ -34,7 +35,7 @@ def start_client(daemon, host, port):
     client.connect((host, port))
 
     pydevd = daemon.start()
-    daemon.set_connection(client)
+    daemon.start_session(client, 'ptvsd.Client')
     return pydevd
 
 

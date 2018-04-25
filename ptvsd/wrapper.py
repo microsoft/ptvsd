@@ -786,14 +786,15 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
         abnormal = self.debug_options.get('WAIT_ON_ABNORMAL_EXIT', False)
         return normal, abnormal
 
-    def handle_pydevd_stopped(self, exitcode):
+    def handle_session_stopped(self, exitcode=None):
         """Finalize the protocol connection."""
         if self._exited:
             return
         self._exited = True
 
-        # Notify the editor that the "debuggee" (e.g. script, app) exited.
-        self.send_event('exited', exitCode=exitcode)
+        if exitcode is not None:
+            # Notify the editor that the "debuggee" (e.g. script, app) exited.
+            self.send_event('exited', exitCode=exitcode)
         # Notify the editor that the debugger has stopped.
         self.send_event('terminated')
 

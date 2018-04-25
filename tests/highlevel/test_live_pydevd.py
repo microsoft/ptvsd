@@ -152,7 +152,7 @@ class VSCFlowTest(TestBase):
         kwargs.setdefault('process', False)
         with self.lifecycle.launched(port=port, hide=True, **kwargs):
             yield
-            self.fix.binder.done()
+            self.fix.binder.done(close=False)
         self.fix.binder.wait_until_done()
 
 
@@ -239,9 +239,10 @@ class LogpointTests(TestBase, unittest.TestCase):
 
             req_config = self.send_request('configurationDone')
 
-            with self.wait_for_events(['exited', 'terminated']):
-                self.fix.binder.done()
+            self.fix.binder.done(close=False)
             self.fix.binder.wait_until_done()
+            with self.wait_for_events(['exited', 'terminated']):
+                self.fix.binder.ptvsd.close()
             received = self.vsc.received
 
         self.assert_vsc_received(received, [
