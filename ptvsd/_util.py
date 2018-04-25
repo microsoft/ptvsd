@@ -140,3 +140,74 @@ class Closeable(object):
             if exc is None:
                 continue
             log('failed to close {!r} ({!r})'.format(obj, exc))
+
+
+########################
+# running stuff
+
+class NotRunningError(RuntimeError):
+    """Something isn't currently running."""
+
+
+class AlreadyStartedError(RuntimeError):
+    """Something was already started."""
+
+
+class AlreadyRunningError(AlreadyStartedError):
+    """Something is already running."""
+
+
+class Startable(object):
+    """A base class for types that may be started."""
+
+    RESTARTABLE = False
+    FAIL_ON_ALREADY_STOPPED = True
+
+    def __init__(self):
+        super(Startable, self).__init__()
+        self._is_running = None
+        self._startlock = threading.Lock()
+        self._numstarts = 0
+
+    def is_running(self):
+        """Return True if currently running."""
+        if hasattr(self, 'check_closed'):
+            self.check_closed()
+        is_running = self._is_running
+        if is_running is None:
+            return False
+        return is_running()
+
+    def start(self, *args, **kwargs):
+        """Begin internal execution."""
+        with self._startlock:
+            if hasattr(self, 'check_closed'):
+                self.check_closed()
+            if self._is_running is not None and self._is_running():
+                raise AlreadyRunningError()
+            if not self.RESTARTABLE and self._numstarts > 0:
+                raise AlreadyStartedError()
+
+            self._is_running = self._start(*args, **kwargs)
+            self._numstarts += 1
+
+    def stop(self, *args, **kwargs):
+        """Stop execution and wait until done."""
+        with self._startlock:
+            # TODO: Call self.check_closed() here?
+            if self._is_running is None or not self._is_running():
+                if not self.FAIL_ON_ALREADY_STOPPED:
+                    return
+                raise NotRunningError()
+            self._is_running = None
+
+        self._stop(*args, **kwargs)
+
+    # implemented by subclasses
+
+    def _start(self, *args, **kwargs):
+        """Return an "is_running()" func after starting."""
+        raise NotImplementedError
+
+    def _stop(self):
+        raise NotImplementedError
