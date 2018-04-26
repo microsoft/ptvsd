@@ -383,9 +383,9 @@ class LifecycleTests(TestsBase, unittest.TestCase):
             with DebugClient() as editor:
                 # Attach initially.
                 session1 = editor.attach_socket(addr, adapter)
-                lifecycle_handshake(session1, 'attach')
+                reqs = lifecycle_handshake(session1, 'attach')
                 done1()
-                session1.send_request('disconnect')
+                req_disconnect = session1.send_request('disconnect')
                 editor.detach(adapter)
 
                 # Re-attach
@@ -396,6 +396,28 @@ class LifecycleTests(TestsBase, unittest.TestCase):
 
                 adapter.wait()
 
+        #self.maxDiff = None
+        self.assert_received(session1.received, [
+            self.new_event(
+                'output',
+                category='telemetry',
+                output='ptvsd',
+                data={'version': ptvsd.__version__}),
+            self.new_response(reqs[0], **INITIALIZE_RESPONSE),
+            self.new_event('initialized'),
+            self.new_response(reqs[1]),
+            self.new_response(reqs[2]),
+            self.new_event('process', **{
+                'isLocalProcess': True,
+                'systemProcessId': adapter.pid,
+                'startMethod': 'attach',
+                'name': filename,
+            }),
+            self.new_response(req_disconnect),
+            # TODO: Shouldn't there be a "terminated" event?
+            #self.new_event('terminated'),
+        ])
+        self.messages.reset_all()
         self.assert_received(session2.received, [
             self.new_event(
                 'output',
