@@ -14,12 +14,11 @@ def start_server(daemon, host, port):
 
     This is a replacement for _pydevd_bundle.pydevd_comm.start_server.
     """
-    server = create_server(host, port)
-    client, _ = server.accept()
-
-    pydevd = daemon.start()
-    daemon.start_session(client, 'ptvsd.Server')
-    # TODO: Close "server" when "daemon" is closed.
+    with daemon.started(stoponcmexit=False) as pydevd:
+        server = create_server(host, port)
+        client, _ = server.accept()
+        daemon.start_session(client, 'ptvsd.Server')
+        # TODO: Close "server" when "daemon" is closed.
     return pydevd
 
 
@@ -31,11 +30,10 @@ def start_client(daemon, host, port):
 
     This is a replacement for _pydevd_bundle.pydevd_comm.start_client.
     """
-    client = create_client()
-    client.connect((host, port))
-
-    pydevd = daemon.start()
-    daemon.start_session(client, 'ptvsd.Client')
+    with daemon.started(stoponcmexit=False) as pydevd:
+        client = create_client()
+        client.connect((host, port))
+        daemon.start_session(client, 'ptvsd.Client')
     return pydevd
 
 

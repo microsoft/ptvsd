@@ -1,3 +1,4 @@
+import contextlib
 import sys
 
 from ptvsd import wrapper
@@ -79,12 +80,31 @@ class Daemon(object):
                 # TODO: This shouldn't happen.
                 pass
 
+    @contextlib.contextmanager
+    def started(self, stoponcmexit=True):
+        """A context manager that starts the daemon.
+
+        If there's a failure then the daemon is stopped.  It is also
+        stopped at the end of the with block if "stoponcmexit" is True
+        (the default).
+        """
+        pydevd = self.start()
+        try:
+            yield pydevd
+        except Exception:
+            self._stop_quietly()
+            raise
+        else:
+            if stoponcmexit:
+                self._stop_quietly()
+
     def start(self):
         """Return the "socket" to use for pydevd after setting it up."""
         if self._closed:
             raise DaemonClosedError()
         if self._pydevd is not None:
             raise RuntimeError('already started')
+
         self._pydevd = wrapper.PydevdSocket(
             self._handle_pydevd_message,
             self._handle_pydevd_close,
@@ -92,6 +112,16 @@ class Daemon(object):
             self._getsockname,
         )
         return self._pydevd
+
+    def stop(self):
+        """Un-start the daemon (i.e. stop the "socket")."""
+        if self._closed:
+            raise DaemonClosedError()
+        if self._pydevd is None:
+            raise RuntimeError('not started')
+
+        close_socket(self._pydevd)
+        self._pydevd = None
 
     # TODO: Add serve_forever().
 
@@ -150,6 +180,13 @@ class Daemon(object):
         return self._session.re_build_breakpoints()
 
     # internal methods
+
+    def _stop_quietly(self):
+        try:
+            self.stop()
+        except Exception:
+            # TODO: Log it?
+            pass
 
     def _stop_session(self):
         self._session.stop(self.exitcode)
