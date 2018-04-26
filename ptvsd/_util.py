@@ -2,6 +2,17 @@ import contextlib
 import threading
 
 
+@contextlib.contextmanager
+def ignore_errors(log=None):
+    """A context manager that masks any raised exceptions."""
+    try:
+        yield
+    except Exception as exc:
+        raise
+        if log is not None:
+            log('ignoring error', exc)
+
+
 def call_all(callables, *args, **kwargs):
     """Return the result of calling every given object."""
     results = []
