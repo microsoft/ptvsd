@@ -1,4 +1,4 @@
-from .socket import close_socket
+from .socket import is_socket, close_socket
 from .wrapper import VSCodeMessageProcessor
 from ._util import Closeable, Startable
 
@@ -9,6 +9,18 @@ class DebugSession(Startable, Closeable):
     NAME = 'debug session'
     FAIL_ON_ALREADY_CLOSED = False
     FAIL_ON_ALREADY_STOPPED = False
+
+    @classmethod
+    def from_raw(cls, raw, **kwargs):
+        """Return a session for the given data."""
+        if isinstance(raw, cls):
+            return raw
+        if not is_socket(raw):
+            # TODO: Create a new client socket from a remote address?
+            #addr = Address.from_raw(raw)
+            raise NotImplementedError
+        client = raw
+        return cls(client, **kwargs)
 
     @classmethod
     def from_server_socket(cls, server, **kwargs):
