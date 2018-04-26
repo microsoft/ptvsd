@@ -42,6 +42,8 @@ _ACQUIRE_LOCKFILE = """
 # <- START ACQUIRE LOCKFILE SCRIPT ->
 import os.path
 import time
+class LockTimeoutError(RuntimeError):
+    pass
 %s
 _acquire_lockfile({!r}, {!r})
 # <- END ACQUIRE LOCKFILE SCRIPT ->
