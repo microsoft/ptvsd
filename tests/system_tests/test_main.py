@@ -374,11 +374,10 @@ class LifecycleTests(TestsBase, unittest.TestCase):
 
     def test_reattach(self):
         lockfile1 = self.workspace.lockfile()
-        done1, waitscript1 = lockfile1.wait_in_script()
+        done1, waitscript1 = lockfile1.wait_in_script(timeout=5)
         lockfile2 = self.workspace.lockfile()
-        done2, waitscript2 = lockfile2.wait_in_script()
+        done2, waitscript2 = lockfile2.wait_in_script(timeout=5)
         filename = self.write_script('spam.py', waitscript1 + waitscript2)
-        print(waitscript1 + waitscript2)
         addr = Address('localhost', 8888)
         with DebugAdapter.start_for_attach(addr, filename) as adapter:
             with DebugClient() as editor:

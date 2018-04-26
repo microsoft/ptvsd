@@ -1,9 +1,10 @@
 import sys
+import threading
 
 from _pydevd_bundle import pydevd_comm
 
 from ptvsd.socket import Address
-from ptvsd.daemon import Daemon
+from ptvsd.daemon import Daemon, DaemonStoppedError, DaemonClosedError
 
 
 def start_server(daemon, host, port):
@@ -16,6 +17,19 @@ def start_server(daemon, host, port):
     """
     pydevd, next_session = daemon.start_server((host, port))
     next_session()
+
+    def serve_forever():
+        while True:
+            try:
+                next_session()
+            except (DaemonClosedError, DaemonStoppedError):
+                break
+    t = threading.Thread(
+        target=serve_forever,
+        name='ptvsd.sessions',
+        daemon=True,
+        )
+    t.start()
     return pydevd
 
 

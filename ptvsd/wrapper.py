@@ -814,7 +814,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
     def _handle_disconnect(self, request):
         self.disconnect_request = request
         self.disconnect_request_event.set()
-        self._notify_disconnecting(not self._closed)
+        self._notify_disconnecting(kill=not self._closed)
         if not self._closed:
             self.close()
 
@@ -1065,6 +1065,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
             self._handle_disconnect(request)
         else:
             self.send_response(request)
+            self._notify_disconnecting(kill=False)
 
     def send_process_event(self, start_method):
         # TODO: docstring
