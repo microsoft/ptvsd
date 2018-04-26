@@ -1,7 +1,7 @@
 import sys
 
 from ptvsd import wrapper
-from ptvsd.socket import close_socket
+from ptvsd.socket import is_socket, close_socket
 from .exit_handlers import (
     ExitHandlers, UnsupportedSignalError,
     kill_current_proc)
@@ -98,7 +98,8 @@ class Daemon(object):
     def start_session(self, session, threadname):
         """Start the debug session and remember it.
 
-        If "session" is a socket then a session is created from it.
+        If "session" is a client socket then a session is created
+        from it.
         """
         if self._closed:
             raise DaemonClosedError()
@@ -108,7 +109,11 @@ class Daemon(object):
             raise RuntimeError('session already started')
 
         if not isinstance(session, DebugSession):
-            client = session
+            if is_socket(session):
+                client = session
+            else:
+                # TODO: Pull in code from pydevd_hooks.start_server().
+                raise NotImplementedError
             session = DebugSession(
                 client,
                 notify_closing=self._handle_session_closing,

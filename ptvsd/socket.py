@@ -16,6 +16,11 @@ NOT_CONNECTED = (
 )
 
 
+def is_socket(sock):
+    """Return True if the object can be used as a socket."""
+    return isinstance(sock, socket.socket)
+
+
 def create_server(host, port):
     """Return a local server socket listening on the given port."""
     if host is None:
