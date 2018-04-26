@@ -2,7 +2,7 @@ import sys
 
 from _pydevd_bundle import pydevd_comm
 
-from ptvsd.socket import create_server, create_client, Address
+from ptvsd.socket import Address
 from ptvsd.daemon import Daemon
 
 
@@ -14,11 +14,8 @@ def start_server(daemon, host, port):
 
     This is a replacement for _pydevd_bundle.pydevd_comm.start_server.
     """
-    with daemon.started(stoponcmexit=False) as pydevd:
-        server = create_server(host, port)
-        client, _ = server.accept()
-        daemon.start_session(client, 'ptvsd.Server')
-        # TODO: Close "server" when "daemon" is closed.
+    pydevd, next_session = daemon.start_server((host, port))
+    next_session()
     return pydevd
 
 
@@ -30,10 +27,8 @@ def start_client(daemon, host, port):
 
     This is a replacement for _pydevd_bundle.pydevd_comm.start_client.
     """
-    with daemon.started(stoponcmexit=False) as pydevd:
-        client = create_client()
-        client.connect((host, port))
-        daemon.start_session(client, 'ptvsd.Client')
+    pydevd, start_session = daemon.start_client((host, port))
+    start_session()
     return pydevd
 
 

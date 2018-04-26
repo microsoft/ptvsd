@@ -1,12 +1,14 @@
 import contextlib
 import sys
+import threading
 
 from ptvsd import wrapper
-from ptvsd.socket import is_socket, close_socket
+from ptvsd.socket import close_socket, create_server, create_client, Address
 from .exit_handlers import (
     ExitHandlers, UnsupportedSignalError,
     kill_current_proc)
 from .session import DebugSession
+from ._util import ignore_errors
 
 
 def _wait_on_exit():
@@ -23,10 +25,24 @@ def _wait_on_exit():
             msvcrt.getch()
 
 
-class DaemonClosedError(RuntimeError):
+class DaemonError(RuntimeError):
+    """Indicates that a Daemon had a problem."""
+    MSG = 'error'
+
+    def __init__(self, msg=None):
+        if msg is None:
+            msg = self.MSG
+        super(DaemonError, self).__init__(msg)
+
+
+class DaemonClosedError(DaemonError):
     """Indicates that a Daemon was unexpectedly closed."""
-    def __init__(self, msg='closed'):
-        super(DaemonClosedError, self).__init__(msg)
+    MSG = 'closed'
+
+
+class DaemonStoppedError(DaemonError):
+    """Indicates that a Daemon was unexpectedly stopped."""
+    MSG = 'stopped'
 
 
 # TODO: Inherit from Closeable.
@@ -46,7 +62,12 @@ class Daemon(object):
         self._exiting_via_atexit_handler = False
 
         self._pydevd = None
+        self._server = None
+        self._numstarts = 0
+
         self._session = None
+        self._sessionlock = None
+        self._numsessions = 0
 
         self._exithandlers = ExitHandlers()
         if addhandlers:
@@ -98,6 +119,12 @@ class Daemon(object):
             if stoponcmexit:
                 self._stop_quietly()
 
+    def is_running(self):
+        """Return True if the daemon is running."""
+        if self._pydevd is None:
+            return False
+        return True
+
     def start(self):
         """Return the "socket" to use for pydevd after setting it up."""
         if self._closed:
@@ -105,13 +132,7 @@ class Daemon(object):
         if self._pydevd is not None:
             raise RuntimeError('already started')
 
-        self._pydevd = wrapper.PydevdSocket(
-            self._handle_pydevd_message,
-            self._handle_pydevd_close,
-            self._getpeername,
-            self._getsockname,
-        )
-        return self._pydevd
+        return self._start()
 
     def stop(self):
         """Un-start the daemon (i.e. stop the "socket")."""
@@ -120,10 +141,71 @@ class Daemon(object):
         if self._pydevd is None:
             raise RuntimeError('not started')
 
-        close_socket(self._pydevd)
-        self._pydevd = None
+        self._stop()
 
-    # TODO: Add serve_forever().
+    def start_server(self, addr):
+        """Return (pydevd "socket", next_session) with a new server socket."""
+        addr = Address.from_raw(addr)
+        with self.started(stoponcmexit=False) as pydevd:
+            assert self._sessionlock is None
+            assert self._session is None
+            self._server = create_server(addr.host, addr.port)
+            self._sessionlock = threading.Lock()
+
+        def next_session():
+            if self._closed:
+                raise DaemonClosedError()
+            if self._pydevd is None or self._server is None:
+                raise DaemonStoppedError()
+            sessionlock = self._sessionlock
+            if sessionlock is None:
+                raise DaemonStoppedError()
+
+            sessionlock.acquire()  # Released in _handle_session_closing().
+            try:
+                client, _ = self._server.accept()
+                session = DebugSession.from_raw(
+                    client,
+                    notify_closing=self._handle_session_closing,
+                    ownsock=True,
+                )
+                return self._start_session(session, 'ptvsd.Server')
+            except Exception:
+                self._stop_quietly()
+                raise
+
+        return pydevd, next_session
+
+    def start_client(self, addr):
+        """Return (pydevd "socket", start_session) with a new client socket."""
+        addr = Address.from_raw(addr)
+        with self.started(stoponcmexit=False) as pydevd:
+            assert self._session is None
+            client = create_client()
+            client.connect(addr)
+
+        def start_session():
+            if self._closed:
+                raise DaemonClosedError()
+            if self._pydevd is None:
+                raise DaemonStoppedError()
+            if self._session is not None:
+                raise RuntimeError('session already started')
+            if self._numsessions:
+                raise RuntimeError('session stopped')
+
+            try:
+                session = DebugSession.from_raw(
+                    client,
+                    notify_closing=self._handle_session_closing,
+                    ownsock=True,
+                )
+                return self._start_session(session, 'ptvsd.Client')
+            except Exception:
+                self._stop_quietly()
+                raise
+
+        return pydevd, start_session
 
     def start_session(self, session, threadname):
         """Start the debug session and remember it.
@@ -135,43 +217,24 @@ class Daemon(object):
             raise DaemonClosedError()
         if self._pydevd is None:
             raise RuntimeError('not started yet')
+        if self._server is not None:
+            raise RuntimeError('running as server')
         if self._session is not None:
             raise RuntimeError('session already started')
 
-        if not isinstance(session, DebugSession):
-            if is_socket(session):
-                client = session
-            else:
-                # TODO: Pull in code from pydevd_hooks.start_server().
-                raise NotImplementedError
-            session = DebugSession(
-                client,
-                notify_closing=self._handle_session_closing,
-                ownsock=True,
-            )
-        self._session = session
-        self._session.start(
-            threadname,
-            self._pydevd.pydevd_notify,
-            self._pydevd.pydevd_request,
+        session = DebugSession.from_raw(
+            session,
+            notify_closing=self._handle_session_closing,
+            ownsock=True,
         )
-        return session
+        return self._start_session(session, threadname)
 
     def close(self):
         """Stop all loops and release all resources."""
         if self._closed:
             raise DaemonClosedError('already closed')
-        self._closed = True
 
-        session = self._session
-        if session is not None:
-            self._stop_session()
-            normal, abnormal = session.wait_options()
-            if (normal and not self.exitcode) or (abnormal and self.exitcode):
-                self.wait_on_exit()
-
-        if self._pydevd is not None:
-            close_socket(self._pydevd)
+        self._close()
 
     def re_build_breakpoints(self):
         """Restore the breakpoints to their last values."""
@@ -181,29 +244,104 @@ class Daemon(object):
 
     # internal methods
 
+    def _close(self):
+        self._closed = True
+        session = self._stop()
+        if session is not None:
+            normal, abnormal = session.wait_options()
+            if (normal and not self.exitcode) or (abnormal and self.exitcode):
+                self.wait_on_exit()
+
+    def _start(self):
+        self._numstarts += 1
+        self._pydevd = wrapper.PydevdSocket(
+            self._handle_pydevd_message,
+            self._handle_pydevd_close,
+            self._getpeername,
+            self._getsockname,
+        )
+        return self._pydevd
+
+    def _stop(self):
+        server = self._server
+        self._server = None
+        pydevd = self._pydevd
+        self._pydevd = None
+
+        session = self._session
+        with ignore_errors():
+            self._stop_session()
+
+        if server is not None:
+            with ignore_errors():
+                close_socket(server)
+
+        if pydevd is not None:
+            with ignore_errors():
+                close_socket(pydevd)
+
+        return session
+
     def _stop_quietly(self):
+        if self._closed:
+            return
+        with ignore_errors():
+            self._stop()
+
+    def _start_session(self, session, threadname):
+        self._session = session
+        self._numsessions += 1
         try:
-            self.stop()
+            session.start(
+                threadname,
+                self._pydevd.pydevd_notify,
+                self._pydevd.pydevd_request,
+            )
         except Exception:
-            # TODO: Log it?
-            pass
+            assert self._session is session
+            with ignore_errors():
+                self._stop_session()
+            raise
 
     def _stop_session(self):
-        self._session.stop(self.exitcode)
-        self._session.close()
+        session = self._session
         self._session = None
+        sessionlock = self._sessionlock
+        self._sessionlock = None
+
+        if session is not None:
+            session.stop(self.exitcode if self._server is None else None)
+            session.close()
+
+        if sessionlock is not None:
+            try:
+                sessionlock.release()
+            except ValueError:
+                pass
 
     def _handle_atexit(self):
         self._exiting_via_atexit_handler = True
         if not self._closed:
-            self.close()
+            self._close()
+        # TODO: Is this broken (due to always clearing self._session on close?
         if self._session is not None:
             self._session.wait_until_stopped()
 
     def _handle_signal(self, signum, frame):
         if not self._closed:
-            self.close()
+            self._close()
         sys.exit(0)
+
+    def _handle_session_closing(self, kill=False):
+        if self._server is not None and not kill:
+            self._session = None
+            self._stop_session()
+            return
+
+        if not self._closed:
+            self._close()
+        if kill and self.killonclose and not self._exiting_via_atexit_handler:
+            kill_current_proc()
 
     # internal methods for PyDevdSocket().
 
@@ -216,7 +354,7 @@ class Daemon(object):
     def _handle_pydevd_close(self):
         if self._closed:
             return
-        self.close()
+        self._close()
 
     def _getpeername(self):
         if self._session is None:
@@ -227,11 +365,3 @@ class Daemon(object):
         if self._session is None:
             raise NotImplementedError
         return self._session.socket.getsockname()
-
-    # internal methods for VSCodeMessageProcessor
-
-    def _handle_session_closing(self, kill=False):
-        if not self._closed:
-            self.close()
-        if kill and self.killonclose and not self._exiting_via_atexit_handler:
-            kill_current_proc()
