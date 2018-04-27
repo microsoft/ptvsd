@@ -18,21 +18,24 @@ class AddressTests(unittest.TestCase):
         clientlocal = Address.as_client('localhost', 9876)
         clientremote = Address.as_client('1.2.3.4', 9876)
         default = Address(None, 1111)
+        external = Address('', 1111)
         values = [
             (serverlocal, serverlocal),
             (serverremote, serverremote),
             (clientlocal, clientlocal),
             (clientremote, clientremote),
             (None, default),
-            ('', default),
+            ('', external),
             ([], default),
             ({}, default),
             (9876, serverlocal),
             ('localhost:9876', clientlocal),
             ('1.2.3.4:9876', clientremote),
-            (':9876', serverlocal),
+            ('*:9876', Address.as_server('', 9876)),
+            ('*', external),
+            (':9876', Address.as_server('', 9876)),
             ('localhost', Address('localhost', 1111)),
-            (':', default),
+            (':', external),
             (dict(host='localhost'), Address('localhost', 1111)),
             (dict(port=9876), serverlocal),
             (dict(host=None, port=9876), serverlocal),
@@ -147,6 +150,14 @@ class AddressTests(unittest.TestCase):
         self.assertEqual(
             addr,
             Address('localhost', 9786, isserver=True),
+        )
+
+    def test_new_wildcard_host(self):
+        addr = Address('*', 9786)
+
+        self.assertEqual(
+            addr,
+            Address('', 9786, isserver=True),
         )
 
     def test_new_bad_port(self):

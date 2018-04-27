@@ -78,20 +78,22 @@ class Address(namedtuple('Address', 'host port')):
         """Return an address corresponding to the given data."""
         if isinstance(raw, cls):
             return raw
-        elif not raw:
-            return cls(None, defaultport)
         elif isinstance(raw, int):
             return cls(None, raw)
         elif isinstance(raw, str):
+            if raw == '':
+                return cls('', defaultport)
             parsed = urlparse(raw)
             if not parsed.netloc:
                 if parsed.scheme:
                     raise ValueError('invalid address {!r}'.format(raw))
                 return cls.from_raw('x://' + raw, defaultport=defaultport)
             return cls(
-                parsed.hostname,
+                parsed.hostname or '',
                 parsed.port if parsed.port else defaultport,
             )
+        elif not raw:
+            return cls(None, defaultport)
         else:
             try:
                 kwargs = dict(**raw)
@@ -113,6 +115,8 @@ class Address(namedtuple('Address', 'host port')):
         return cls(host, port, isserver=False)
 
     def __new__(cls, host, port, **kwargs):
+        if host == '*':
+            host = ''
         isserver = kwargs.pop('isserver', None)
         if isserver is None:
             isserver = (host is None or host == '')
