@@ -1,7 +1,6 @@
 import contextlib
 import io
 import os.path
-import platform
 import subprocess
 import sys
 import tempfile
@@ -47,12 +46,10 @@ class DownloadCommandTests(unittest.TestCase):
         super().tearDown()
 
     def get_expected_stdout(self, lines):
-        is_windows = platform.system() == 'Windows'
-        newline = '\r\n' if is_windows else '\n'
         with io.StringIO() as txt:
             for line in lines:
                 txt.write(line)
-                txt.write(newline)
+                txt.write(os.linesep)
             txt.flush()
             return txt.getvalue()
 
@@ -134,12 +131,10 @@ class CheckCommandTests(unittest.TestCase):
         return filename
 
     def get_expected_stdout(self, lines):
-        is_windows = platform.system() == 'Windows'
-        newline = '\r\n' if is_windows else '\n'
         with io.StringIO() as txt:
             for line in lines:
                 txt.write(line)
-                txt.write(newline)
+                txt.write(os.linesep)
             txt.flush()
             return txt.getvalue()
 
