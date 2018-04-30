@@ -67,8 +67,9 @@ class TestBase(VSCTest):
     @property
     def workspace(self):
         try:
-            return self._workspace
-        except AttributeError:
+            return vars(self)['_workspace']
+            #return self._workspace
+        except KeyError:
             self._workspace = Workspace()
             self.addCleanup(self._workspace.cleanup)
             return self._workspace
@@ -197,19 +198,20 @@ class BreakpointTests(VSCFlowTest, unittest.TestCase):
 
         # <a>
         def inc(value, count=1):
+            # <b>
             return value + count
 
-        # <b>
-        x = 1
         # <c>
-        x = inc(x)
+        x = 1
         # <d>
-        y = inc(x, 2)
+        x = inc(x)
         # <e>
-        z = inc(3)
+        y = inc(x, 2)
         # <f>
-        print(x, y, z)
+        z = inc(3)
         # <g>
+        print(x, y, z)
+        # <h>
         raise Exception('ka-boom')
         """)
 
@@ -225,9 +227,9 @@ class BreakpointTests(VSCFlowTest, unittest.TestCase):
 
     def _find_line(self, script, label):
         lines = iter(script.splitlines())
-        for lineno, _ in enumerate(self._iter_until_label(lines, label)):
+        for lineno, _ in enumerate(self._iter_until_label(lines, label), 1):
             pass
-        return lineno
+        return lineno + 1  # the line after
 
     def _set_lock(self, label=None, script=None):
         if script is None:
@@ -276,8 +278,9 @@ class BreakpointTests(VSCFlowTest, unittest.TestCase):
         self.assertIn('ka-boom', out)
 
     def test_breakpoints_single_file(self):
-        done, script = self._set_lock('a')
-        lineno = self._find_line(script, 'a')
+        done1, script = self._set_lock('d')
+        done2, script = self._set_lock('h')
+        lineno = self._find_line(script, 'b')
         self.lifecycle.requests = []  # Trigger capture.
         config = {
             'breakpoints': [{
@@ -292,14 +295,27 @@ class BreakpointTests(VSCFlowTest, unittest.TestCase):
             #with self.wait_for_event('exited', timeout=3):
             with self.launched(config=config):
                 with self.fix.hidden():
-                    _, tid = self.get_threads()
-                done()
-                req_continue = self.send_request('continue', {
-                    'threadId': tid,
-                })
+                    _, tid = self.get_threads(self.thread.name)
+                with self.wait_for_event('stopped'):
+                    done1()
+                with self.wait_for_event('stopped'):
+                    with self.wait_for_event('continued'):
+                        req_continue1 = self.send_request('continue', {
+                            'threadId': tid,
+                        })
+                with self.wait_for_event('stopped'):
+                    with self.wait_for_event('continued'):
+                        req_continue2 = self.send_request('continue', {
+                            'threadId': tid,
+                        })
+                with self.wait_for_event('continued'):
+                    req_continue_last = self.send_request('continue', {
+                        'threadId': tid,
+                    })
 
                 # Allow the script to run to completion.
                 received = self.vsc.received
+                done2()
         out = stdout.getvalue()
 
         got = []
@@ -309,14 +325,56 @@ class BreakpointTests(VSCFlowTest, unittest.TestCase):
             self.assertNotEqual(req['command'], 'setExceptionBreakpoints')
         self.assertEqual(got, config['breakpoints'])
         self.assert_vsc_received(received, [
+            self.new_event('process', **dict(
+                name=sys.argv[0],
+                systemProcessId=os.getpid(),
+                isLocalProcess=True,
+                startMethod='launch',
+            )),
+            self.new_event('thread',
+                threadId=1,
+                reason='started',
+            ),
+            self.new_event('thread',
+                threadId=2,
+                reason='started',
+            ),
+            self.new_event('thread',
+                threadId=3,
+                reason='started',
+            ),
             self.new_event(
                 'stopped',
                 reason='breakpoint',
                 threadId=tid,
-                text='',
-                description='',
+                text=None,
+                description=None,
             ),
-            self.new_response(req_continue),
+            self.new_response(req_continue1),
+            self.new_event(
+                'continued',
+                threadId=tid,
+            ),
+            self.new_event(
+                'stopped',
+                reason='breakpoint',
+                threadId=tid,
+                text=None,
+                description=None,
+            ),
+            self.new_response(req_continue2),
+            self.new_event(
+                'continued',
+                threadId=tid,
+            ),
+            self.new_event(
+                'stopped',
+                reason='breakpoint',
+                threadId=tid,
+                text=None,
+                description=None,
+            ),
+            self.new_response(req_continue_last),
             self.new_event(
                 'continued',
                 threadId=tid,
