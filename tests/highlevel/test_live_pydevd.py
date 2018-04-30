@@ -33,6 +33,10 @@ class Fixture(VSCFixture):
     def binder(self):
         return self._pydevd.binder
 
+    @property
+    def thread(self):
+        return self._pydevd.thread
+
     def install_sig_handler(self):
         self._pydevd._ptvsd.install_sig_handler()
 

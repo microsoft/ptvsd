@@ -568,13 +568,13 @@ class VSCFixture(FixtureBase):
             with self.wait_for_event(events[0]):
                 yield
 
-    def get_threads(self):
+    def get_threads(self, name='MainThread'):
         threads = {}
 
         def handle_response(msg, _):
             for t in msg.body['threads']:
                 threads[t['id']] = t['name']
-                if t['name'] == 'MainThread':
+                if t['name'] == name:
                     threads[None] = t['id']
         self.send_request('threads', handle_response=handle_response)
         return threads, threads.pop(None)
