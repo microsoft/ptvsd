@@ -328,21 +328,25 @@ class BreakpointTests(VSCFlowTest, unittest.TestCase):
             self.assertNotEqual(req['command'], 'setExceptionBreakpoints')
         self.assertEqual(got, config['breakpoints'])
         self.assert_vsc_received(received, [
-            self.new_event('process', **dict(
+            self.new_event(
+                'process',
                 name=sys.argv[0],
                 systemProcessId=os.getpid(),
                 isLocalProcess=True,
                 startMethod='launch',
-            )),
-            self.new_event('thread',
+            ),
+            self.new_event(
+                'thread',
                 threadId=1,
                 reason='started',
             ),
-            self.new_event('thread',
+            self.new_event(
+                'thread',
                 threadId=2,
                 reason='started',
             ),
-            self.new_event('thread',
+            self.new_event(
+                'thread',
                 threadId=3,
                 reason='started',
             ),
@@ -418,24 +422,6 @@ class BreakpointTests(VSCFlowTest, unittest.TestCase):
             self.assertNotEqual(req['command'], 'setBreakpoints')
         self.assertEqual(got, config['excbreakpoints'])
         self.assert_vsc_received(received, [
-            #self.new_event('process', **dict(
-            #    name=sys.argv[0],
-            #    systemProcessId=os.getpid(),
-            #    isLocalProcess=True,
-            #    startMethod='launch',
-            #)),
-            #self.new_event('thread',
-            #    threadId=1,
-            #    reason='started',
-            #),
-            #self.new_event('thread',
-            #    threadId=2,
-            #    reason='started',
-            #),
-            #self.new_event('thread',
-            #    threadId=3,
-            #    reason='started',
-            #),
             self.new_event(
                 'stopped',
                 reason='exception',
