@@ -342,10 +342,8 @@ class BreakpointTests(VSCFlowTest, unittest.TestCase):
             with self.launched(config=config):
                 with self.fix.hidden():
                     _, tid = self.get_threads(self.thread.name)
-                with self.wait_for_events(['process',
-                                           'thread', 'thread', 'thread']):
-                    with self.wait_for_event('stopped'):
-                        done1()
+                with self.wait_for_event('stopped'):
+                    done1()
                 with self.wait_for_event('stopped'):
                     with self.wait_for_event('continued'):
                         req_continue1 = self.send_request('continue', {
