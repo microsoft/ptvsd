@@ -218,6 +218,49 @@ class BreakpointTests(VSCFlowTest, unittest.TestCase):
         raise MyError('ka-boom')
         """)
 
+    def _add_proc(self, expected, method='launch'):
+        expected.extend([
+            self.new_event(
+                'process',
+                name=sys.argv[0],
+                systemProcessId=os.getpid(),
+                isLocalProcess=True,
+                startMethod=method,
+            ),
+            self.new_event(
+                'thread',
+                threadId=1,
+                reason='started',
+            ),
+            self.new_event(
+                'thread',
+                threadId=2,
+                reason='started',
+            ),
+            self.new_event(
+                'thread',
+                threadId=3,
+                reason='started',
+            ),
+        ])
+
+    def _inject_proc(self, received, specs):
+        expected = []
+        if not specs:
+            self._add_proc(expected)
+        else:
+            for i, spec in enumerate(specs):
+                if received[i].type == 'event':
+                    if received[i].event == 'process':
+                        self._add_proc(expected)
+                if isinstance(spec, tuple):
+                    event, body = spec
+                    msg = self.new_event(event, **body)
+                else:
+                    msg = self.new_response(spec)
+                expected.append(msg)
+        return expected
+
     def _iter_until_label(self, lines, label):
         expected = '# <{}>'.format(label)
         for line in lines:
@@ -299,8 +342,10 @@ class BreakpointTests(VSCFlowTest, unittest.TestCase):
             with self.launched(config=config):
                 with self.fix.hidden():
                     _, tid = self.get_threads(self.thread.name)
-                with self.wait_for_event('stopped'):
-                    done1()
+                with self.wait_for_events(['process',
+                                           'thread', 'thread', 'thread']):
+                    with self.wait_for_event('stopped'):
+                        done1()
                 with self.wait_for_event('stopped'):
                     with self.wait_for_event('continued'):
                         req_continue1 = self.send_request('continue', {
@@ -327,66 +372,38 @@ class BreakpointTests(VSCFlowTest, unittest.TestCase):
                 got.append(req['arguments'])
             self.assertNotEqual(req['command'], 'setExceptionBreakpoints')
         self.assertEqual(got, config['breakpoints'])
-        self.assert_vsc_received(received, [
-            self.new_event(
-                'process',
-                name=sys.argv[0],
-                systemProcessId=os.getpid(),
-                isLocalProcess=True,
-                startMethod='launch',
-            ),
-            self.new_event(
-                'thread',
-                threadId=1,
-                reason='started',
-            ),
-            self.new_event(
-                'thread',
-                threadId=2,
-                reason='started',
-            ),
-            self.new_event(
-                'thread',
-                threadId=3,
-                reason='started',
-            ),
-            self.new_event(
-                'stopped',
+        self.assert_vsc_received(received, self._inject_proc(received, [
+            ('stopped', dict(
                 reason='breakpoint',
                 threadId=tid,
                 text=None,
                 description=None,
-            ),
-            self.new_response(req_continue1),
-            self.new_event(
-                'continued',
+            )),
+            req_continue1,
+            ('continued', dict(
                 threadId=tid,
-            ),
-            self.new_event(
-                'stopped',
+            )),
+            ('stopped', dict(
                 reason='breakpoint',
                 threadId=tid,
                 text=None,
                 description=None,
-            ),
-            self.new_response(req_continue2),
-            self.new_event(
-                'continued',
+            )),
+            req_continue2,
+            ('continued', dict(
                 threadId=tid,
-            ),
-            self.new_event(
-                'stopped',
+            )),
+            ('stopped', dict(
                 reason='breakpoint',
                 threadId=tid,
                 text=None,
                 description=None,
-            ),
-            self.new_response(req_continue_last),
-            self.new_event(
-                'continued',
+            )),
+            req_continue_last,
+            ('continued', dict(
                 threadId=tid,
-            ),
-        ])
+            )),
+        ]))
         self.assertIn('2 4 4', out)
         self.assertIn('ka-boom', out)
 
