@@ -362,6 +362,9 @@ class BreakpointTests(VSCFlowTest, unittest.TestCase):
                 # Allow the script to run to completion.
                 received = self.vsc.received
                 done2()
+                raise Exception(
+                    'received:\n -> ' + '\n -> '.join(repr(msg)
+                                                      for msg in received))
         out = stdout.getvalue()
 
         got = []
