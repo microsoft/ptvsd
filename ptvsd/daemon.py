@@ -54,9 +54,11 @@ class Daemon(object):
     exitcode = 0
 
     def __init__(self, wait_on_exit=_wait_on_exit,
-                 addhandlers=True, killonclose=True):
+                 addhandlers=True, killonclose=True,
+                 hidebadsessions=True):
         self.wait_on_exit = wait_on_exit
         self.killonclose = killonclose
+        self.hidebadsessions = hidebadsessions
 
         self._closed = False
         self._exiting_via_atexit_handler = False
@@ -171,6 +173,11 @@ class Daemon(object):
                 )
                 return self._start_session(session, 'ptvsd.Server')
             except Exception:
+                with ignore_errors():
+                    self._stop_session()
+                if self.hidebadsessions:
+                    # TODO: Log the error?
+                    return None
                 self._stop_quietly()
                 raise
 
@@ -263,6 +270,8 @@ class Daemon(object):
         return self._pydevd
 
     def _stop(self):
+        sessionlock = self._sessionlock
+        self._sessionlock = None
         server = self._server
         self._server = None
         pydevd = self._pydevd
@@ -271,6 +280,12 @@ class Daemon(object):
         session = self._session
         with ignore_errors():
             self._stop_session()
+
+        if sessionlock is not None:
+            try:
+                sessionlock.release()
+            except Exception:
+                pass
 
         if server is not None:
             with ignore_errors():
@@ -306,17 +321,16 @@ class Daemon(object):
     def _stop_session(self):
         session = self._session
         self._session = None
-        sessionlock = self._sessionlock
-        self._sessionlock = None
 
         if session is not None:
             session.stop(self.exitcode if self._server is None else None)
             session.close()
 
+        sessionlock = self._sessionlock
         if sessionlock is not None:
             try:
                 sessionlock.release()
-            except ValueError:
+            except Exception:  # TODO: Make it more specific?
                 pass
 
     def _handle_atexit(self):

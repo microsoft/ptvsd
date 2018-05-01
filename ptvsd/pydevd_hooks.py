@@ -16,7 +16,14 @@ def start_server(daemon, host, port):
     This is a replacement for _pydevd_bundle.pydevd_comm.start_server.
     """
     pydevd, next_session = daemon.start_server((host, port))
-    next_session()
+    while True:
+        try:
+            next_session()
+            break
+        except (DaemonClosedError, DaemonStoppedError):
+            raise
+        except Exception:
+            pass
 
     def serve_forever():
         while True:
@@ -24,11 +31,12 @@ def start_server(daemon, host, port):
                 next_session()
             except (DaemonClosedError, DaemonStoppedError):
                 break
+
     t = threading.Thread(
         target=serve_forever,
         name='ptvsd.sessions',
-        daemon=True,
         )
+    t.daemon = True,
     t.start()
     return pydevd
 
