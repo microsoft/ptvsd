@@ -324,7 +324,7 @@ class BreakpointTests(VSCFlowTest, unittest.TestCase):
         self.assertIn('ka-boom', out)
 
     def test_breakpoints_single_file(self):
-        done1, script = self._set_lock('d')
+        done1, _ = self._set_lock('d')
         done2, script = self._set_lock('h')
         lineno = self._find_line(script, 'b')
         self.lifecycle.requests = []  # Trigger capture.
@@ -337,19 +337,19 @@ class BreakpointTests(VSCFlowTest, unittest.TestCase):
             }],
             'excbreakpoints': [],
         }
-        with captured_stdio() as (stdout, _):
+        with captured_stdio(out=True, err=True) as (stdout, stderr):
             #with self.wait_for_event('exited', timeout=3):
             with self.launched(config=config):
                 with self.fix.hidden():
                     _, tid = self.get_threads(self.thread.name)
-                with self.wait_for_event('stopped', timeout=2):
+                with self.wait_for_event('stopped'):
                     done1()
-                with self.wait_for_event('stopped', timeout=2):
+                with self.wait_for_event('stopped'):
                     with self.wait_for_event('continued'):
                         req_continue1 = self.send_request('continue', {
                             'threadId': tid,
                         })
-                with self.wait_for_event('stopped', timeout=2):
+                with self.wait_for_event('stopped'):
                     with self.wait_for_event('continued'):
                         req_continue2 = self.send_request('continue', {
                             'threadId': tid,
@@ -363,6 +363,7 @@ class BreakpointTests(VSCFlowTest, unittest.TestCase):
                 received = self.vsc.received
                 done2()
         out = stdout.getvalue()
+        err = stderr.getvalue()
 
         got = []
         for req, resp in self.lifecycle.requests:
@@ -403,7 +404,7 @@ class BreakpointTests(VSCFlowTest, unittest.TestCase):
             )),
         ]))
         self.assertIn('2 4 4', out)
-        self.assertIn('ka-boom', out)
+        self.assertIn('ka-boom', err)
 
     # TODO: fix this
     @unittest.skip('not working right')
