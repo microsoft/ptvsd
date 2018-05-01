@@ -1,5 +1,6 @@
 from collections import namedtuple
 import contextlib
+import inspect
 import platform
 import threading
 import warnings
@@ -28,6 +29,15 @@ OS_ID = 'WINDOWS' if platform.system() == 'Windows' else 'UNIX'
 @contextlib.contextmanager
 def noop_cm(*args, **kwargs):
     yield
+
+
+def _get_caller():
+    caller = inspect.currentframe()
+    filename = caller.f_code.co_filename
+    while filename == __file__ or filename == contextlib.__file__:
+        caller = caller.f_back
+        filename = caller.f_code.co_filename
+    return caller
 
 
 class Thread(namedtuple('Thread', 'id name')):
@@ -554,6 +564,9 @@ class VSCFixture(FixtureBase):
 
     @contextlib.contextmanager
     def wait_for_event(self, event, *args, **kwargs):
+        if 'caller' not in kwargs:
+            caller = _get_caller()
+            kwargs['caller'] = (caller.f_code.co_filename, caller.f_lineno)
         with self.fake.wait_for_event(event, *args, **kwargs):
             yield
         if self._hidden:
