@@ -11,32 +11,33 @@ class Proc(Closeable):
     #VERBOSE = True
 
     @classmethod
-    def start_python_script(cls, filename, argv):
+    def start_python_script(cls, filename, argv, **kwargs):
         argv = [
             sys.executable,
             filename,
         ] + argv
-        return cls.start(argv)
+        return cls.start(argv, **kwargs)
 
     @classmethod
-    def start_python_module(cls, module, argv):
+    def start_python_module(cls, module, argv, **kwargs):
         argv = [
             sys.executable,
             '-m', module,
         ] + argv
-        return cls.start(argv)
+        return cls.start(argv, **kwargs)
 
     @classmethod
-    def start(cls, argv):
-        proc = cls._start(argv)
+    def start(cls, argv, env=None):
+        proc = cls._start(argv, env)
         return cls(proc, owned=True)
 
     @classmethod
-    def _start(cls, argv):
+    def _start(cls, argv, env):
         proc = subprocess.Popen(
             argv,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
+            env=env,
         )
         return proc
 
