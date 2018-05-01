@@ -342,14 +342,14 @@ class BreakpointTests(VSCFlowTest, unittest.TestCase):
             with self.launched(config=config):
                 with self.fix.hidden():
                     _, tid = self.get_threads(self.thread.name)
-                with self.wait_for_event('stopped'):
+                with self.wait_for_event('stopped', timeout=2):
                     done1()
-                with self.wait_for_event('stopped'):
+                with self.wait_for_event('stopped', timeout=2):
                     with self.wait_for_event('continued'):
                         req_continue1 = self.send_request('continue', {
                             'threadId': tid,
                         })
-                with self.wait_for_event('stopped'):
+                with self.wait_for_event('stopped', timeout=2):
                     with self.wait_for_event('continued'):
                         req_continue2 = self.send_request('continue', {
                             'threadId': tid,
@@ -362,9 +362,6 @@ class BreakpointTests(VSCFlowTest, unittest.TestCase):
                 # Allow the script to run to completion.
                 received = self.vsc.received
                 done2()
-                raise Exception(
-                    'received:\n -> ' + '\n -> '.join(repr(msg)
-                                                      for msg in received))
         out = stdout.getvalue()
 
         got = []
