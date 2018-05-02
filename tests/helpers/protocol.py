@@ -8,6 +8,7 @@ import warnings
 
 from . import socket
 from .counter import Counter
+from .threading import acquire_with_timeout
 
 
 try:
@@ -259,7 +260,7 @@ class MessageDaemon(Daemon):
         yield req
 
         # Wait for the message to match.
-        if lock.acquire(timeout=timeout):
+        if acquire_with_timeout(lock, timeout=timeout):
             lock.release()
         else:
             msg = 'timed out after {} seconds waiting for message ({})'
