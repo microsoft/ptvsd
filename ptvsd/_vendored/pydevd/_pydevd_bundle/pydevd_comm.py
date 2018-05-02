@@ -1140,7 +1140,10 @@ class InternalGetNextStatementTargets(InternalThreadCommand):
                     lineno = code.co_firstlineno
                     lnotab = code.co_lnotab
                     for i in itertools.islice(lnotab, 1, len(lnotab), 2):
-                        lineno += i
+                        if isinstance(i, int):
+                            lineno = lineno + i
+                        else:
+                            lineno = lineno + ord(i)
                         xml += "<line>{}</line>".format(lineno)
                 else:
                     xml += "<line>{}</line>".format(frame.f_lineno)
