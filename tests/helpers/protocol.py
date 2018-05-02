@@ -279,7 +279,7 @@ class MessageDaemon(Daemon):
 
     def _listen(self):
         try:
-            with self._sock.makefile('rb') as sockfile:
+            with contextlib.closing(self._sock.makefile('rb')) as sockfile:
                 for msg in self._protocol.iter(sockfile, lambda: self._closed):
                     if isinstance(msg, StreamFailure):
                         self._failures.append(msg)
