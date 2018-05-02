@@ -63,6 +63,7 @@ each command has a format:
     * PYDB - pydevd, the python end
 '''
 
+import itertools
 import os
 
 from _pydev_bundle.pydev_imports import _queue
@@ -1138,8 +1139,8 @@ class InternalGetNextStatementTargets(InternalThreadCommand):
                 if hasattr(code, 'co_lnotab'):
                     lineno = code.co_firstlineno
                     lnotab = code.co_lnotab
-                    for i in range(0, len(lnotab), 2):
-                        lineno += lnotab[i + 1]
+                    for i in itertools.islice(lnotab, 1, len(lnotab), 2):
+                        lineno += i
                         xml += "<line>{}</line>".format(lineno)
                 else:
                     xml += "<line>{}</line>".format(frame.f_lineno)
