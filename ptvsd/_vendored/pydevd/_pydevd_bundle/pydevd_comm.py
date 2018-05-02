@@ -154,6 +154,7 @@ CMD_GET_DESCRIPTION = 148
 CMD_PROCESS_CREATED = 149
 
 CMD_REDIRECT_OUTPUT = 200
+CMD_GET_NEXT_STATEMENT_TARGETS = 201
 
 CMD_VERSION = 501
 CMD_RETURN = 502
@@ -213,6 +214,7 @@ ID_TO_MEANING = {
     '149': 'CMD_PROCESS_CREATED',
 
     '200': 'CMD_REDIRECT_OUTPUT',
+    '201': 'CMD_GET_NEXT_STATEMENT_TARGETS',
 
     '501': 'CMD_VERSION',
     '502': 'CMD_RETURN',
@@ -846,6 +848,13 @@ class NetCommandFactory:
 
         return net
 
+    def make_get_next_statement_targets_message(self, seq, payload):
+        try:
+            return NetCommand(CMD_GET_NEXT_STATEMENT_TARGETS, seq, payload)
+        except Exception:
+            return self.make_error_message(seq, get_exception_traceback_str())
+
+
 INTERNAL_TERMINATE_THREAD = 1
 INTERNAL_SUSPEND_THREAD = 2
 
@@ -1109,6 +1118,41 @@ class InternalGetFrame(InternalThreadCommand):
             cmd = dbg.cmd_factory.make_error_message(self.sequence, "Error resolving frame: %s from thread: %s" % (self.frame_id, self.thread_id))
             dbg.writer.add_command(cmd)
 
+#=======================================================================================================================
+# InternalGetNextStatementTargets
+#=======================================================================================================================
+class InternalGetNextStatementTargets(InternalThreadCommand):
+    """ gets the valid line numbers for use with set next statement """
+    def __init__(self, seq, thread_id, frame_id):
+        self.sequence = seq
+        self.thread_id = thread_id
+        self.frame_id = frame_id
+
+    def do_it(self, dbg):
+        """ Converts request into set of line numbers """
+        try:
+            frame = pydevd_vars.find_frame(self.thread_id, self.frame_id)
+            if frame is not None:
+                code = frame.f_code
+                xml = "<xml>"
+                if hasattr(code, 'co_lnotab'):
+                    lineno = code.co_firstlineno
+                    lnotab = code.co_lnotab
+                    for i in range(0, len(lnotab), 2):
+                        lineno += lnotab[i + 1]
+                        xml += "<line>{}</line>".format(lineno)
+                else:
+                    xml += "<line>{}</line>".format(frame.f_lineno)
+                del frame
+                xml += "</xml>"
+                cmd = dbg.cmd_factory.make_get_next_statement_targets_message(self.sequence, xml)
+                dbg.writer.add_command(cmd)
+            else:
+                cmd = dbg.cmd_factory.make_error_message(self.sequence, "Frame not found: %s from thread: %s" % (self.frame_id, self.thread_id))
+                dbg.writer.add_command(cmd)
+        except:
+            cmd = dbg.cmd_factory.make_error_message(self.sequence, "Error resolving frame: %s from thread: %s" % (self.frame_id, self.thread_id))
+            dbg.writer.add_command(cmd)
 
 #=======================================================================================================================
 # InternalEvaluateExpression
