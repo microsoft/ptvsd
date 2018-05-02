@@ -2,6 +2,7 @@ from __future__ import absolute_import, print_function
 
 import contextlib
 import json
+import socket
 import sys
 import time
 import threading
@@ -34,10 +35,10 @@ class DebugSessionConnection(Closeable):
             for _ in range(int(timeout * 10)):
                 try:
                     sock.connect(addr)
-                except OSError:
+                except (OSError, socket.error):
                     if cls.VERBOSE:
                         print('+', end='')
-                    sys.stdout.flush()
+                        sys.stdout.flush()
                     time.sleep(0.1)
                 else:
                     break
