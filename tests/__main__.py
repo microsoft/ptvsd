@@ -6,12 +6,7 @@ import subprocess
 import sys
 import unittest
 
-from ptvsd._vendored import list_all as vendored
-
-
-TEST_ROOT = os.path.dirname(__file__)
-PROJECT_ROOT = os.path.dirname(TEST_ROOT)
-VENDORED_ROOTS = vendored(resolve=True)
+from . import TEST_ROOT, PROJECT_ROOT, VENDORED_ROOTS
 
 
 def convert_argv(argv):
