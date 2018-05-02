@@ -71,8 +71,6 @@ def convert_argv(argv):
             quickroot = os.path.join(TEST_ROOT, 'ptvsd')
             if quick:
                 start = quickroot
-            elif sys.version_info[0] != 3:
-                start = quickroot
             else:
                 start = PROJECT_ROOT
             cmd += [
