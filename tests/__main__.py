@@ -12,6 +12,7 @@ from . import TEST_ROOT, PROJECT_ROOT, VENDORED_ROOTS
 def convert_argv(argv):
     help  = False
     quick = False
+    quickpy2 = False
     network = True
     runtests = True
     lint = False
@@ -20,6 +21,9 @@ def convert_argv(argv):
     for arg in argv:
         if arg == '--quick':
             quick = True
+            continue
+        if arg == '--quick-py2':
+            quickpy2 = True
             continue
         elif arg == '--full':
             quick = False
@@ -70,6 +74,8 @@ def convert_argv(argv):
             # Do discovery.
             quickroot = os.path.join(TEST_ROOT, 'ptvsd')
             if quick:
+                start = quickroot
+            elif quickpy2 and sys.version_info[0] == 2:
                 start = quickroot
             else:
                 start = PROJECT_ROOT
