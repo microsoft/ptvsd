@@ -87,7 +87,7 @@ class DebugSessionConnection(Closeable):
         read = recv_as_read(self._sock)
         for msg, _, _ in read_messages(read, stop=stop):
             if self.VERBOSE:
-                print(msg)
+                print(repr(msg))
             yield parse_message(msg)
 
     def send(self, req):
