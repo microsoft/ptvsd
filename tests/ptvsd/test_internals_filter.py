@@ -5,6 +5,7 @@ import ptvsd.untangle
 from ptvsd.wrapper import InternalsFilter
 from ptvsd.wrapper import filter_ptvsd_files
 
+
 class InternalsFilterTests(unittest.TestCase):
     def test_internal_paths(self):
         int_filter = InternalsFilter()
