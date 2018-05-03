@@ -27,16 +27,20 @@ class Proc(Closeable):
         return cls.start(argv, **kwargs)
 
     @classmethod
-    def start(cls, argv, env=None):
-        proc = cls._start(argv, env)
+    def start(cls, argv, env=None, stdout=None, stderr=None):
+        proc = cls._start(argv, env, stdout, stderr)
         return cls(proc, owned=True)
 
     @classmethod
-    def _start(cls, argv, env):
+    def _start(cls, argv, env, stdout, stderr):
+        if stdout is None:
+            stdout = subprocess.PIPE
+        if stderr is None:
+            stderr = subprocess.STDOUT
         proc = subprocess.Popen(
             argv,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
+            stdout=stdout,
+            stderr=stderr,
             env=env,
         )
         return proc
@@ -45,6 +49,8 @@ class Proc(Closeable):
         super(Proc, self).__init__()
         assert isinstance(proc, subprocess.Popen)
         self._proc = proc
+        if proc.stdout is sys.stdout or proc.stdout is None:
+            self._output = None
 
     # TODO: Emulate class-only methods?
     #def __getattribute__(self, name):
@@ -84,5 +90,7 @@ class Proc(Closeable):
                 # Already killed.
                 pass
         if self.VERBOSE:
-            lines = self.output.decode('utf-8').splitlines()
-            print(' + ' + '\n + '.join(lines))
+            out = self.output
+            if out is not None:
+                lines = out.decode('utf-8').splitlines()
+                print(' + ' + '\n + '.join(lines))
