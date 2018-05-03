@@ -1143,6 +1143,7 @@ class InternalGetNextStatementTargets(InternalThreadCommand):
                         if isinstance(i, int):
                             lineno = lineno + i
                         else:
+                            # in python 2 elements in co_lnotab are of type str
                             lineno = lineno + ord(i)
                         xml += "<line>{}</line>".format(lineno)
                 else:
