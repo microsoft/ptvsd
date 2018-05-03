@@ -156,7 +156,7 @@ DONT_TRACE_FILES = {
 
 
 def filter_ptvsd_files(file_path):
-    ptvsd_path_re = r"(ptvsd[\\\/].*\.[pP][yY])"
+    ptvsd_path_re = r"(ptvsd[\\\/].*\.py)"
     matches = re.finditer(ptvsd_path_re, file_path)
     for _, match in enumerate(matches):
         for g in match.groups():
