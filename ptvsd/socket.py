@@ -27,7 +27,7 @@ def create_server(host, port):
         host = 'localhost'
     server = _new_sock()
     server.bind((host, port))
-    server.listen(1)
+    server.listen(0)
     return server
 
 
