@@ -36,6 +36,7 @@ pydevd_constants.MAXIMUM_VARIABLE_REPRESENTATION_SIZE = 2**32
 import _pydevd_bundle.pydevd_comm as pydevd_comm  # noqa
 import _pydevd_bundle.pydevd_extension_api as pydevd_extapi  # noqa
 import _pydevd_bundle.pydevd_extension_utils as pydevd_extutil  # noqa
+import _pydevd_bundle.pydevd_frame as pydevd_frame # noqa
 #from _pydevd_bundle.pydevd_comm import pydevd_log
 
 import ptvsd.ipcjson as ipcjson  # noqa
@@ -128,6 +129,45 @@ SafeReprPresentationProvider._instance = SafeReprPresentationProvider()
 # so that we're in full control of presentation.
 str_handlers = pydevd_extutil.EXTENSION_MANAGER_INSTANCE.type_to_instance.setdefault(pydevd_extapi.StrPresentationProvider, [])  # noqa
 str_handlers.insert(0, SafeReprPresentationProvider._instance)
+
+PTVSD_FILE = 2
+DONT_TRACE_FILES = {
+    os.path.join('ptvsd', 'attach_server.py'): PTVSD_FILE,
+    os.path.join('ptvsd', 'daemon.py'): PTVSD_FILE,
+    os.path.join('ptvsd', 'debugger.py'): PTVSD_FILE,
+    os.path.join('ptvsd', 'futures.py'): PTVSD_FILE,
+    os.path.join('ptvsd', 'ipcjson.py'): PTVSD_FILE,
+    os.path.join('ptvsd', 'pathutils.py'): PTVSD_FILE,
+    os.path.join('ptvsd', 'pydevd_hooks.py'): PTVSD_FILE,
+    os.path.join('ptvsd', 'reraise.py'): PTVSD_FILE,
+    os.path.join('ptvsd', 'reraise2.py'): PTVSD_FILE,
+    os.path.join('ptvsd', 'reraise3.py'): PTVSD_FILE,
+    os.path.join('ptvsd', 'runner.py'): PTVSD_FILE,
+    os.path.join('ptvsd', 'safe_repr.py'): PTVSD_FILE,
+    os.path.join('ptvsd', 'socket.py'): PTVSD_FILE,
+    os.path.join('ptvsd', 'untangle.py'): PTVSD_FILE,
+    os.path.join('ptvsd', 'version.py'): PTVSD_FILE,
+    os.path.join('ptvsd', 'wrapper.py'): PTVSD_FILE,
+    os.path.join('ptvsd', '_main.py'): PTVSD_FILE,
+    os.path.join('ptvsd', '_version.py'): PTVSD_FILE,
+    os.path.join('ptvsd', '__init__.py'): PTVSD_FILE,
+    os.path.join('ptvsd', '__main__.py'): PTVSD_FILE,
+}
+
+
+def filter_ptvsd_files(file_path):
+    ptvsd_path_re = r"(ptvsd[\\\/].*\.[pP][yY])"
+    matches = re.finditer(ptvsd_path_re, file_path)
+    for _, match in enumerate(matches):
+        for g in match.groups():
+            try:
+                return DONT_TRACE_FILES[g] == PTVSD_FILE
+            except KeyError:
+                pass
+    return False
+
+
+pydevd_frame.file_tracing_filter = filter_ptvsd_files
 
 
 class UnsupportedPyDevdCommandError(Exception):
