@@ -130,41 +130,39 @@ SafeReprPresentationProvider._instance = SafeReprPresentationProvider()
 str_handlers = pydevd_extutil.EXTENSION_MANAGER_INSTANCE.type_to_instance.setdefault(pydevd_extapi.StrPresentationProvider, [])  # noqa
 str_handlers.insert(0, SafeReprPresentationProvider._instance)
 
-PTVSD_FILE = 2
-DONT_TRACE_FILES = {
-    os.path.join('ptvsd', 'attach_server.py'): PTVSD_FILE,
-    os.path.join('ptvsd', 'daemon.py'): PTVSD_FILE,
-    os.path.join('ptvsd', 'debugger.py'): PTVSD_FILE,
-    os.path.join('ptvsd', 'futures.py'): PTVSD_FILE,
-    os.path.join('ptvsd', 'ipcjson.py'): PTVSD_FILE,
-    os.path.join('ptvsd', 'pathutils.py'): PTVSD_FILE,
-    os.path.join('ptvsd', 'pydevd_hooks.py'): PTVSD_FILE,
-    os.path.join('ptvsd', 'reraise.py'): PTVSD_FILE,
-    os.path.join('ptvsd', 'reraise2.py'): PTVSD_FILE,
-    os.path.join('ptvsd', 'reraise3.py'): PTVSD_FILE,
-    os.path.join('ptvsd', 'runner.py'): PTVSD_FILE,
-    os.path.join('ptvsd', 'safe_repr.py'): PTVSD_FILE,
-    os.path.join('ptvsd', 'socket.py'): PTVSD_FILE,
-    os.path.join('ptvsd', 'untangle.py'): PTVSD_FILE,
-    os.path.join('ptvsd', 'version.py'): PTVSD_FILE,
-    os.path.join('ptvsd', 'wrapper.py'): PTVSD_FILE,
-    os.path.join('ptvsd', '_main.py'): PTVSD_FILE,
-    os.path.join('ptvsd', '_version.py'): PTVSD_FILE,
-    os.path.join('ptvsd', '__init__.py'): PTVSD_FILE,
-    os.path.join('ptvsd', '__main__.py'): PTVSD_FILE,
-}
+DONT_TRACE_FILES = set((os.path.join(*elem) for elem in [
+    ('ptvsd', 'attach_server.py'),
+    ('ptvsd', 'daemon.py'),
+    ('ptvsd', 'debugger.py'),
+    ('ptvsd', 'futures.py'),
+    ('ptvsd', 'ipcjson.py'),
+    ('ptvsd', 'pathutils.py'),
+    ('ptvsd', 'pydevd_hooks.py'),
+    ('ptvsd', 'reraise.py'),
+    ('ptvsd', 'reraise2.py'),
+    ('ptvsd', 'reraise3.py'),
+    ('ptvsd', 'runner.py'),
+    ('ptvsd', 'safe_repr.py'),
+    ('ptvsd', 'socket.py'),
+    ('ptvsd', 'untangle.py'),
+    ('ptvsd', 'version.py'),
+    ('ptvsd', 'wrapper.py'),
+    ('ptvsd', '_main.py'),
+    ('ptvsd', '_version.py'),
+    ('ptvsd', '__init__.py'),
+    ('ptvsd', '__main__.py'),
+]))
 
 
 def filter_ptvsd_files(file_path):
+    """
+    Returns true if the file should not be traced.
+    """
     ptvsd_path_re = r"(ptvsd[\\\/].*\.py)"
     matches = re.finditer(ptvsd_path_re, file_path)
-    for _, match in enumerate(matches):
-        for g in match.groups():
-            try:
-                return DONT_TRACE_FILES[g] == PTVSD_FILE
-            except KeyError:
-                pass
-    return False
+    return any((g in DONT_TRACE_FILES
+                for m in matches
+                for g in m.groups()))
 
 
 pydevd_frame.file_tracing_filter = filter_ptvsd_files
