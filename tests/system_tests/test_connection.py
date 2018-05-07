@@ -5,6 +5,7 @@ import time
 import sys
 import unittest
 
+import ptvsd._util
 from ptvsd.socket import create_client, close_socket
 from tests.helpers.proc import Proc
 from tests.helpers.workspace import Workspace
@@ -54,7 +55,7 @@ class RawConnectionTests(unittest.TestCase):
         self.addCleanup(self.workspace.cleanup)
 
     def test_repeated(self):
-        def connect(addr, wait=None):
+        def connect(addr, wait=None, closeonly=False):
             sock = create_client()
             try:
                 sock.settimeout(1)
@@ -62,16 +63,23 @@ class RawConnectionTests(unittest.TestCase):
                 if wait is not None:
                     time.sleep(wait)
             finally:
-                sock.close()
-        filename = self.workspace.write('spam.py', content='')
+                if closeonly:
+                    sock.close()
+                else:
+                    close_socket(sock)
+        filename = self.workspace.write('spam.py', content="""
+            raise Exception('should never run')
+            """)
         addr = ('localhost', 5678)
         proc = Proc.start_python_module('ptvsd', [
             '--server',
             '--port', '5678',
             '--file', filename,
-        ])
+        ], stdout=sys.stdout if self.VERBOSE else None)
         proc.VERBOSE = self.VERBOSE
+        ptvsd._util.DEBUG = self.VERBOSE
         with proc:
+            # Wait for the server to spin up.
             with _retrier(timeout=3, verbose=self.VERBOSE) as attempts:
                 for _ in attempts:
                     try:
@@ -82,6 +90,7 @@ class RawConnectionTests(unittest.TestCase):
             # Give ptvsd long enough to try sending something.
             connect(addr, wait=0.2)
             # We should be able to handle more connections.
+            connect(addr, closeonly=True)
             connect(addr)
             connect(addr)
-            connect(addr)
+            # TODO: wait for server to finish
