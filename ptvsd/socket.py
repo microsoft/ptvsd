@@ -15,12 +15,9 @@ NOT_CONNECTED = (
     errno.EBADF,
 )
 
-try:
-    class TimeoutError(TimeoutError, RuntimeError):
-        """A socket timeout happened."""
-except NameError:
-    class TimeoutError(RuntimeError):
-        """A socket timeout happened."""
+
+class TimeoutError(socket.timeout):
+    """A socket timeout happened."""
 
 
 def is_socket(sock):
