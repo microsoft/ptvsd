@@ -37,6 +37,7 @@ import _pydevd_bundle.pydevd_comm as pydevd_comm  # noqa
 import _pydevd_bundle.pydevd_extension_api as pydevd_extapi  # noqa
 import _pydevd_bundle.pydevd_extension_utils as pydevd_extutil  # noqa
 #from _pydevd_bundle.pydevd_comm import pydevd_log
+from _pydevd_bundle.pydevd_additional_thread_info import PyDBAdditionalThreadInfo # noqa
 
 import ptvsd.ipcjson as ipcjson  # noqa
 import ptvsd.futures as futures  # noqa
@@ -44,7 +45,7 @@ import ptvsd.untangle as untangle  # noqa
 from ptvsd.pathutils import PathUnNormcase  # noqa
 from ptvsd.safe_repr import SafeRepr  # noqa
 from ptvsd.version import __version__  # noqa
-from _pydevd_bundle.pydevd_additional_thread_info import PyDBAdditionalThreadInfo # noqa
+from ptvsd._util import debug  # noqa
 
 
 #def ipcjson_trace(s):
@@ -755,6 +756,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
 
     def close(self):
         """Stop the message processor and release its resources."""
+        debug('raw closing')
         if self._closed:
             return
         self._closed = True

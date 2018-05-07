@@ -89,6 +89,9 @@ class Proc(Closeable):
             except OSError:
                 # Already killed.
                 pass
+            else:
+                if self.VERBOSE:
+                    print('proc killed')
         if self.VERBOSE:
             out = self.output
             if out is not None:

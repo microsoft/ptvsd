@@ -1,6 +1,6 @@
 from .socket import is_socket, close_socket
 from .wrapper import VSCodeMessageProcessor
-from ._util import Closeable, Startable
+from ._util import Closeable, Startable, debug
 
 
 class DebugSession(Startable, Closeable):
@@ -110,6 +110,7 @@ class DebugSession(Startable, Closeable):
         self._msgprocessor = None
 
     def _close(self):
+        debug('session closing')
         pass
 
     def _msgprocessor_running(self):
@@ -126,4 +127,5 @@ class DebugSession(Startable, Closeable):
         self.close()
 
     def _handle_vsc_close(self):
+        debug('processor closing')
         self.close()

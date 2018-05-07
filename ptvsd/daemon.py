@@ -8,7 +8,7 @@ from .exit_handlers import (
     ExitHandlers, UnsupportedSignalError,
     kill_current_proc)
 from .session import DebugSession
-from ._util import ignore_errors
+from ._util import ignore_errors, debug
 
 
 def _wait_on_exit():
@@ -163,7 +163,9 @@ class Daemon(object):
             if sessionlock is None:
                 raise DaemonStoppedError()
 
+            debug('getting next session')
             sessionlock.acquire()  # Released in _handle_session_closing().
+            debug('session lock acquired')
             try:
                 client, _ = self._server.accept()
                 session = DebugSession.from_raw(
@@ -171,11 +173,16 @@ class Daemon(object):
                     notify_closing=self._handle_session_closing,
                     ownsock=True,
                 )
-                return self._start_session(session, 'ptvsd.Server')
-            except Exception:
+                debug('starting session')
+                self._start_session(session, 'ptvsd.Server')
+                debug('session started')
+                return session
+            except Exception as exc:
+                debug('session exc:', exc, tb=True)
                 with ignore_errors():
                     self._stop_session()
                 if self.hidebadsessions:
+                    debug('hiding bad session')
                     # TODO: Log the error?
                     return None
                 self._stop_quietly()
@@ -347,6 +354,7 @@ class Daemon(object):
         sys.exit(0)
 
     def _handle_session_closing(self, kill=False):
+        debug('handling closing session')
         if self._server is not None and not kill:
             self._session = None
             self._stop_session()
