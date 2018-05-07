@@ -1145,9 +1145,9 @@ class InternalGetNextStatementTargets(InternalThreadCommand):
                         else:
                             # in python 2 elements in co_lnotab are of type str
                             lineno = lineno + ord(i)
-                        xml += "<line>{}</line>".format(lineno)
+                        xml += "<line>%d</line>" % (lineno,)
                 else:
-                    xml += "<line>{}</line>".format(frame.f_lineno)
+                    xml += "<line>%d</line>" % (frame.f_lineno,)
                 del frame
                 xml += "</xml>"
                 cmd = dbg.cmd_factory.make_get_next_statement_targets_message(self.sequence, xml)
