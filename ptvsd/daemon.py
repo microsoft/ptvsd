@@ -214,7 +214,8 @@ class Daemon(object):
                     notify_closing=self._handle_session_closing,
                     ownsock=True,
                 )
-                return self._start_session(session, 'ptvsd.Client')
+                self._start_session(session, 'ptvsd.Client')
+                return session
             except Exception:
                 self._stop_quietly()
                 raise
@@ -241,7 +242,8 @@ class Daemon(object):
             notify_closing=self._handle_session_closing,
             ownsock=True,
         )
-        return self._start_session(session, threadname)
+        self._start_session(session, threadname)
+        return session
 
     def close(self):
         """Stop all loops and release all resources."""
