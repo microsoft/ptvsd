@@ -744,12 +744,14 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
         self.server_thread.start()
 
         # special initialization
+        debug('sending output')
         self.send_event(
             'output',
             category='telemetry',
             output='ptvsd',
             data={'version': __version__},
         )
+        debug('output sent')
         self.readylock.release()
 
     # closing the adapter

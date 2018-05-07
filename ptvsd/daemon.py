@@ -167,6 +167,7 @@ class Daemon(object):
             debug('getting next session')
             sessionlock.acquire()  # Released in _handle_session_closing().
             debug('session lock acquired')
+            debug('getting session socket')
             try:
                 client = connect(self._server, None, **kwargs)
                 session = DebugSession.from_raw(
