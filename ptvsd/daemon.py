@@ -158,7 +158,8 @@ class Daemon(object):
         def next_session(**kwargs):
             if self._closed:
                 raise DaemonClosedError()
-            if self._pydevd is None or self._server is None:
+            server = self._server
+            if self._pydevd is None or server is None:
                 raise DaemonStoppedError()
             sessionlock = self._sessionlock
             if sessionlock is None:
@@ -167,10 +168,14 @@ class Daemon(object):
             debug('getting next session')
             sessionlock.acquire()  # Released in _handle_session_closing().
             debug('session lock acquired')
+            if self._closed:
+                raise DaemonClosedError()
+            if self._pydevd is None or self._server is None:
+                raise DaemonStoppedError()
             timeout = kwargs.pop('timeout', None)
             try:
                 debug('getting session socket')
-                client = connect(self._server, None, **kwargs)
+                client = connect(server, None, **kwargs)
                 session = DebugSession.from_raw(
                     client,
                     notify_closing=self._handle_session_closing,
