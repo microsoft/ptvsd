@@ -42,6 +42,7 @@ def _retrier(timeout=1, persec=10, max=None, verbose=False):
         else:
             raise RuntimeError('timed out')
     yield attempts()
+    print()
 
 
 class RawConnectionTests(unittest.TestCase):
@@ -53,6 +54,17 @@ class RawConnectionTests(unittest.TestCase):
         super(RawConnectionTests, self).setUp()
         self.workspace = Workspace()
         self.addCleanup(self.workspace.cleanup)
+
+    def _propagate_verbose(self):
+        if not self.VERBOSE:
+            return
+
+        def unset():
+            Proc.VERBOSE = False
+            ptvsd._util.DEBUG = False
+        self.addCleanup(unset)
+        Proc.VERBOSE = True
+        ptvsd._util.DEBUG = True
 
     def test_repeated(self):
         def connect(addr, wait=None, closeonly=False):
@@ -71,13 +83,13 @@ class RawConnectionTests(unittest.TestCase):
             raise Exception('should never run')
             """)
         addr = ('localhost', 5678)
+        self._propagate_verbose()
         proc = Proc.start_python_module('ptvsd', [
             '--server',
             '--port', '5678',
             '--file', filename,
+        #])  # noqa
         ], stdout=sys.stdout if self.VERBOSE else None)
-        proc.VERBOSE = self.VERBOSE
-        ptvsd._util.DEBUG = self.VERBOSE
         with proc:
             # Wait for the server to spin up.
             with _retrier(timeout=3, verbose=self.VERBOSE) as attempts:
