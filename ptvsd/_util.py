@@ -1,11 +1,14 @@
 from __future__ import print_function
 
 import contextlib
+import os
 import threading
 import sys
 
 
 DEBUG = False
+if os.environ.get('PTVSD_DEBUG', ''):
+    DEBUG = True
 
 
 def debug(*msg, **kwargs):

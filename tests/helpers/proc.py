@@ -1,3 +1,4 @@
+import os
 import subprocess
 import sys
 
@@ -28,6 +29,10 @@ class Proc(Closeable):
 
     @classmethod
     def start(cls, argv, env=None, stdout=None, stderr=None):
+        if env is None:
+            env = dict(os.environ)
+        if cls.VERBOSE:
+            env.setdefault('PTVSD_DEBUG', '1')
         proc = cls._start(argv, env, stdout, stderr)
         return cls(proc, owned=True)
 
