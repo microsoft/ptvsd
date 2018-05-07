@@ -48,7 +48,7 @@ def _retrier(timeout=1, persec=10, max=None, verbose=False):
 class RawConnectionTests(unittest.TestCase):
 
     VERBOSE = False
-    #VERBOSE = True
+    VERBOSE = True
 
     def setUp(self):
         super(RawConnectionTests, self).setUp()
@@ -72,6 +72,7 @@ class RawConnectionTests(unittest.TestCase):
             try:
                 sock.settimeout(1)
                 sock.connect(addr)
+                print('>connected')
                 if wait is not None:
                     time.sleep(wait)
             finally:
@@ -92,6 +93,7 @@ class RawConnectionTests(unittest.TestCase):
         ], stdout=sys.stdout if self.VERBOSE else None)
         with proc:
             # Wait for the server to spin up.
+            print('>a')
             with _retrier(timeout=3, verbose=self.VERBOSE) as attempts:
                 for _ in attempts:
                     try:
@@ -99,10 +101,21 @@ class RawConnectionTests(unittest.TestCase):
                         break
                     except Exception:
                         pass
-            # Give ptvsd long enough to try sending something.
-            connect(addr, wait=0.2)
-            # We should be able to handle more connections.
-            connect(addr, closeonly=True)
+            print('>b')
             connect(addr)
+            # We should be able to handle more connections.
+            print('>c')
+            connect(addr)
+            # Give ptvsd long enough to try sending something.
+            print('>d')
+            connect(addr, wait=0.2)
+            print('>e')
+            connect(addr)
+            print('>f')
+            connect(addr, closeonly=True)
+            print('>g')
+            connect(addr)
+            print('>h')
             connect(addr)
             # TODO: wait for server to finish
+            sys.stdout.flush()
