@@ -331,16 +331,20 @@ class Daemon(object):
         session = self._session
         self._session = None
 
-        if session is not None:
-            session.stop(self.exitcode if self._server is None else None)
-            session.close()
-
-        sessionlock = self._sessionlock
-        if sessionlock is not None:
-            try:
-                sessionlock.release()
-            except Exception:  # TODO: Make it more specific?
-                pass
+        try:
+            if session is not None:
+                session.stop(self.exitcode if self._server is None else None)
+                session.close()
+        finally:
+            sessionlock = self._sessionlock
+            if sessionlock is not None:
+                try:
+                    sessionlock.release()
+                except Exception:  # TODO: Make it more specific?
+                    debug('session lock not released')
+                else:
+                    debug('session lock released')
+        debug('session stopped')
 
     def _handle_atexit(self):
         self._exiting_via_atexit_handler = True
