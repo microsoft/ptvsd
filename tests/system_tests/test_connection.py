@@ -5,32 +5,42 @@ import time
 import sys
 import unittest
 
-from ptvsd.socket import create_client
+from ptvsd.socket import create_client, close_socket
 from tests.helpers.proc import Proc
 from tests.helpers.workspace import Workspace
 
 
 @contextlib.contextmanager
-def _retrier(timeout=1, persec=10, verbose=False):
+def _retrier(timeout=1, persec=10, max=None, verbose=False):
     steps = int(timeout * persec) + 1
     delay = 1.0 / persec
 
+    @contextlib.contextmanager
+    def attempt(num):
+        if verbose:
+            print('*', end='')
+            sys.stdout.flush()
+        yield
+        if verbose:
+            if num % persec == 0:
+                print()
+            elif (num * 2) % persec == 0:
+                print(' ', end='')
+
     def attempts():
-        for attempt in range(1, steps + 1):
-            if verbose:
-                print('*', end='')
-                sys.stdout.flush()
-            yield attempt
-            if verbose:
-                if attempt % persec == 0:
-                    print()
-                elif (attempt * 2) % persec == 0:
-                    print(' ', end='')
+        # The first attempt always happens.
+        num = 1
+        with attempt(num):
+            yield num
+        for num in range(2, steps):
+            if max is not None and num > max:
+                raise RuntimeError('too many attempts (max {})'.format(max))
             time.sleep(delay)
+            with attempt(num):
+                yield num
         else:
             raise RuntimeError('timed out')
     yield attempts()
-    print()
 
 
 class RawConnectionTests(unittest.TestCase):
