@@ -3,7 +3,8 @@ import sys
 import threading
 
 from ptvsd import wrapper
-from ptvsd.socket import close_socket, create_server, create_client, Address
+from ptvsd.socket import (
+    close_socket, create_server, create_client, connect, Address)
 from .exit_handlers import (
     ExitHandlers, UnsupportedSignalError,
     kill_current_proc)
@@ -154,7 +155,7 @@ class Daemon(object):
             self._server = create_server(addr.host, addr.port)
             self._sessionlock = threading.Lock()
 
-        def next_session():
+        def next_session(**kwargs):
             if self._closed:
                 raise DaemonClosedError()
             if self._pydevd is None or self._server is None:
@@ -167,7 +168,7 @@ class Daemon(object):
             sessionlock.acquire()  # Released in _handle_session_closing().
             debug('session lock acquired')
             try:
-                client, _ = self._server.accept()
+                client = connect(self._server, None, **kwargs)
                 session = DebugSession.from_raw(
                     client,
                     notify_closing=self._handle_session_closing,
@@ -196,7 +197,7 @@ class Daemon(object):
         with self.started(stoponcmexit=False) as pydevd:
             assert self._session is None
             client = create_client()
-            client.connect(addr)
+            connect(client, addr)
 
         def start_session():
             if self._closed:

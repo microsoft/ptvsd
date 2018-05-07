@@ -54,6 +54,80 @@ def ignored_errno(*ignored):
             raise
 
 
+class KeepAlive(namedtuple('KeepAlive', 'interval idle, maxfails')):
+    """TCP keep-alive settings."""
+
+    INTERVAL = 3  # seconds
+    IDLE = 1  # seconds after idle
+    MAX_FAILS = 5
+
+    @classmethod
+    def from_raw(cls, raw):
+        """Return the corresponding KeepAlive."""
+        if raw is None:
+            return None
+        elif isinstance(raw, cls):
+            return raw
+        elif isinstance(raw, (str, int, float)):
+            return cls(raw)
+        else:
+            try:
+                raw = dict(raw)
+            except TypeError:
+                return cls(*raw)
+            else:
+                return cls(**raw)
+
+    def __new__(cls, interval=None, idle=None, maxfails=None):
+        self = super(KeepAlive, cls).__new__(
+            cls,
+            float(interval) if interval or interval == 0 else cls.INTERVAL,
+            float(idle) if idle or idle == 0 else cls.IDLE,
+            float(maxfails) if maxfails or maxfails == 0 else cls.MAX_FAILS,
+        )
+        return self
+
+    def apply(self, sock):
+        """Set the keepalive values on the socket."""
+        sock.setsockopt(socket.SOL_SOCKET,
+                        socket.SO_KEEPALIVE,
+                        1)
+        try:
+            if self.interval > 0:
+                sock.setsockopt(socket.IPPROTO_TCP,
+                                socket.TCP_KEEPINTVL,
+                                self.interval)
+            if self.idle > 0:
+                sock.setsockopt(socket.IPPROTO_TCP,
+                                socket.TCP_KEEPIDLE,
+                                self.idle)
+            if self.interval >= 0:
+                sock.setsockopt(socket.IPPROTO_TCP,
+                                socket.TCP_KEEPCNT,
+                                self.maxfails)
+        except AttributeError:
+            # mostly linux-only
+            pass
+
+
+def connect(sock, addr, keepalive=None):
+    """Return the client socket for the next connection."""
+    if addr is None:
+        if keepalive is None or keepalive is True:
+            keepalive = KeepAlive()
+        elif keepalive:
+            keepalive = KeepAlive.from_raw(keepalive)
+        client, _ = sock.accept()
+        if keepalive:
+            keepalive.apply(client)
+        return client
+    else:
+        if keepalive:
+            raise NotImplementedError
+        sock.connect(addr)
+        return sock
+
+
 def shut_down(sock, how=socket.SHUT_RDWR, ignored=NOT_CONNECTED):
     """Shut down the given socket."""
     with ignored_errno(*ignored or ()):
