@@ -84,7 +84,7 @@ class DebugSession(Startable, Closeable):
 
     # internal methods
 
-    def _start(self, threadname, pydevd_notify, pydevd_request):
+    def _start(self, threadname, pydevd_notify, pydevd_request, timeout=None):
         """Start the message handling for the session.
 
         A VSC message loop is started.
@@ -95,6 +95,7 @@ class DebugSession(Startable, Closeable):
             pydevd_request,
             notify_disconnecting=self._handle_vsc_disconnect,
             notify_closing=self._handle_vsc_close,
+            timeout=timeout,
         )
         self.add_resource_to_close(self._msgprocessor)
         self._msgprocessor.start(threadname)

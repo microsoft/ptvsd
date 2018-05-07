@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 import contextlib
+import os
 import time
 import sys
 import unittest
@@ -42,13 +43,14 @@ def _retrier(timeout=1, persec=10, max=None, verbose=False):
         else:
             raise RuntimeError('timed out')
     yield attempts()
-    print()
+    if verbose:
+        print()
 
 
 class RawConnectionTests(unittest.TestCase):
 
     VERBOSE = False
-    VERBOSE = True
+    #VERBOSE = True
 
     def setUp(self):
         super(RawConnectionTests, self).setUp()
@@ -66,16 +68,37 @@ class RawConnectionTests(unittest.TestCase):
         Proc.VERBOSE = True
         ptvsd._util.DEBUG = True
 
+    def _wait_for_ready(self, rpipe):
+        if self.VERBOSE:
+            print('waiting for ready')
+        line = b''
+        while True:
+            c = os.read(rpipe, 1)
+            line += c
+            if c == b'\n':
+                if self.VERBOSE:
+                    print(line.decode('utf-8'), end='')
+                if b'getting session socket' in line:
+                    break
+                line = b''
+
     def test_repeated(self):
+        def debug(msg):
+            if not self.VERBOSE:
+                return
+            print(msg)
+
         def connect(addr, wait=None, closeonly=False):
             sock = create_client()
             try:
                 sock.settimeout(1)
                 sock.connect(addr)
-                print('>connected')
+                debug('>connected')
                 if wait is not None:
+                    debug('>waiting')
                     time.sleep(wait)
             finally:
+                debug('>closing')
                 if closeonly:
                     sock.close()
                 else:
@@ -85,15 +108,20 @@ class RawConnectionTests(unittest.TestCase):
             """)
         addr = ('localhost', 5678)
         self._propagate_verbose()
+        rpipe, wpipe = os.pipe()
+        self.addCleanup(lambda: os.close(rpipe))
+        self.addCleanup(lambda: os.close(wpipe))
         proc = Proc.start_python_module('ptvsd', [
             '--server',
             '--port', '5678',
             '--file', filename,
-        #])  # noqa
-        ], stdout=sys.stdout if self.VERBOSE else None)
+        ], env={
+            'PTVSD_DEBUG': '1',
+            'PTVSD_SOCKET_TIMEOUT': '1',
+        }, stdout=wpipe)
         with proc:
             # Wait for the server to spin up.
-            print('>a')
+            debug('>a')
             with _retrier(timeout=3, verbose=self.VERBOSE) as attempts:
                 for _ in attempts:
                     try:
@@ -101,21 +129,27 @@ class RawConnectionTests(unittest.TestCase):
                         break
                     except Exception:
                         pass
-            print('>b')
+            self._wait_for_ready(rpipe)
+            debug('>b')
             connect(addr)
+            self._wait_for_ready(rpipe)
             # We should be able to handle more connections.
-            print('>c')
+            debug('>c')
             connect(addr)
+            self._wait_for_ready(rpipe)
             # Give ptvsd long enough to try sending something.
-            print('>d')
+            debug('>d')
             connect(addr, wait=0.2)
-            print('>e')
+            self._wait_for_ready(rpipe)
+            debug('>e')
             connect(addr)
-            print('>f')
+            self._wait_for_ready(rpipe)
+            debug('>f')
             connect(addr, closeonly=True)
-            print('>g')
+            self._wait_for_ready(rpipe)
+            debug('>g')
             connect(addr)
-            print('>h')
+            self._wait_for_ready(rpipe)
+            debug('>h')
             connect(addr)
-            # TODO: wait for server to finish
-            sys.stdout.flush()
+            self._wait_for_ready(rpipe)

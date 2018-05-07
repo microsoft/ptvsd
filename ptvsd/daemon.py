@@ -167,8 +167,9 @@ class Daemon(object):
             debug('getting next session')
             sessionlock.acquire()  # Released in _handle_session_closing().
             debug('session lock acquired')
-            debug('getting session socket')
+            timeout = kwargs.pop('timeout', None)
             try:
+                debug('getting session socket')
                 client = connect(self._server, None, **kwargs)
                 session = DebugSession.from_raw(
                     client,
@@ -176,7 +177,7 @@ class Daemon(object):
                     ownsock=True,
                 )
                 debug('starting session')
-                self._start_session(session, 'ptvsd.Server')
+                self._start_session(session, 'ptvsd.Server', timeout)
                 debug('session started')
                 return session
             except Exception as exc:
@@ -224,7 +225,7 @@ class Daemon(object):
 
         return pydevd, start_session
 
-    def start_session(self, session, threadname):
+    def start_session(self, session, threadname, timeout=None):
         """Start the debug session and remember it.
 
         If "session" is a client socket then a session is created
@@ -244,7 +245,7 @@ class Daemon(object):
             notify_closing=self._handle_session_closing,
             ownsock=True,
         )
-        self._start_session(session, threadname)
+        self._start_session(session, threadname, timeout)
         return session
 
     def close(self):
@@ -314,7 +315,7 @@ class Daemon(object):
         with ignore_errors():
             self._stop()
 
-    def _start_session(self, session, threadname):
+    def _start_session(self, session, threadname, timeout):
         self._session = session
         self._numsessions += 1
         try:
@@ -322,6 +323,7 @@ class Daemon(object):
                 threadname,
                 self._pydevd.pydevd_notify,
                 self._pydevd.pydevd_request,
+                timeout=timeout,
             )
         except Exception:
             assert self._session is session

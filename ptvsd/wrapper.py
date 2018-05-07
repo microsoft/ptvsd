@@ -46,6 +46,7 @@ from ptvsd.pathutils import PathUnNormcase  # noqa
 from ptvsd.safe_repr import SafeRepr  # noqa
 from ptvsd.version import __version__  # noqa
 from ptvsd._util import debug  # noqa
+from ptvsd.socket import TimeoutError
 
 
 #def ipcjson_trace(s):
@@ -677,10 +678,11 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
 
     def __init__(self, socket, pydevd_notify, pydevd_request,
                  notify_disconnecting, notify_closing,
-                 logfile=None,
+                 timeout=None, logfile=None,
                  ):
         super(VSCodeMessageProcessor, self).__init__(socket=socket,
                                                      own_socket=False,
+                                                     timeout=timeout,
                                                      logfile=logfile)
         self.socket = socket
         self._pydevd_notify = pydevd_notify
@@ -735,7 +737,11 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
         # VSC msg processing loop
         def process_messages():
             self.readylock.acquire()
-            self.process_messages()
+            try:
+                self.process_messages()
+            except TimeoutError:
+                debug('client socket closed')
+                self.close()
         self.server_thread = threading.Thread(
             target=process_messages,
             name=threadname,
