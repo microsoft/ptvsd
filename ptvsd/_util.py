@@ -1,5 +1,23 @@
+from __future__ import print_function
+
 import contextlib
 import threading
+import sys
+
+
+DEBUG = False
+
+
+def debug(*msg, **kwargs):
+    if not DEBUG:
+        return
+    tb = kwargs.pop('tb', False)
+    assert not kwargs
+    if tb:
+        import traceback
+        traceback.print_exc()
+    print(*msg)
+    sys.stdout.flush()
 
 
 @contextlib.contextmanager
