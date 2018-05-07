@@ -46,7 +46,7 @@ from ptvsd.pathutils import PathUnNormcase  # noqa
 from ptvsd.safe_repr import SafeRepr  # noqa
 from ptvsd.version import __version__  # noqa
 from ptvsd._util import debug  # noqa
-from ptvsd.socket import TimeoutError
+from ptvsd.socket import TimeoutError  # noqa
 
 
 #def ipcjson_trace(s):
