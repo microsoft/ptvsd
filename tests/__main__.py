@@ -144,8 +144,9 @@ def run_tests(argv, env, junit_report_file, coverage=False):
     else:
         os.environ.update(env)
         with open(junit_report_file, 'wb') as output:
-            unittest.main(testRunner=xmlrunner.XMLTestRunner(output=output), 
-                failfast=False, buffer=False, catchbreak=False, module=None, 
+            unittest.main(
+                testRunner=xmlrunner.XMLTestRunner(output=output),
+                failfast=False, buffer=False, catchbreak=False, module=None,
                 argv=argv)
 
 
