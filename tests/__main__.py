@@ -5,6 +5,7 @@ import os.path
 import subprocess
 import sys
 import unittest
+import xmlrunner
 
 from . import TEST_ROOT, PROJECT_ROOT, VENDORED_ROOTS
 
@@ -16,6 +17,7 @@ def convert_argv(argv):
     network = True
     runtests = True
     lint = False
+    junit_xml_file = './junit-report.xml'
     args = []
     modules = set()
     for arg in argv:
@@ -44,6 +46,9 @@ def convert_argv(argv):
             lint = True
             runtests = False
             break
+        elif arg.startswith('--junit-xml='):
+            junit_xml_file = arg[len('--junit-xml='):]
+            continue
 
         # Unittest's main has only flags and positional args.
         # So we don't worry about options with values.
@@ -87,7 +92,7 @@ def convert_argv(argv):
         args = cmd + args
     else:
         args = env = None
-    return args, env, runtests, lint
+    return args, env, runtests, lint, junit_xml_file
 
 
 def fix_sys_path():
@@ -112,7 +117,7 @@ def check_lint():
     print('...done')
 
 
-def run_tests(argv, env, coverage=False):
+def run_tests(argv, env, junit_report_file, coverage=False):
     print('running tests...')
     if coverage:
         omissions = [os.path.join(root, '*') for root in VENDORED_ROOTS]
@@ -138,20 +143,25 @@ def run_tests(argv, env, coverage=False):
         print('...done')
     else:
         os.environ.update(env)
-        unittest.main(module=None, argv=argv)
+        with open(junit_report_file, 'wb') as output:
+            unittest.main(testRunner=xmlrunner.XMLTestRunner(output=output), 
+                failfast=False, buffer=False, catchbreak=False, module=None, 
+                argv=argv)
 
 
 if __name__ == '__main__':
-    argv, env, runtests, lint = convert_argv(sys.argv[1:])
+    argv, env, runtests, lint, junit_xml_file = convert_argv(sys.argv[1:])
     fix_sys_path()
     if lint:
         check_lint()
     if runtests:
+        junit_output_file = './junit-report.xml'
         if '--start-directory' in argv:
             start = argv[argv.index('--start-directory') + 1]
             print('(will look for tests under {})'.format(start))
         run_tests(
             argv,
             env,
+            junit_xml_file,
             coverage=(runtests == 'coverage'),
         )
