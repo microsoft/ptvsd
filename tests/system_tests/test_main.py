@@ -2,7 +2,7 @@ import os
 from textwrap import dedent
 import unittest
 
-#import ptvsd
+import ptvsd
 from ptvsd.socket import Address
 from ptvsd.wrapper import INITIALIZE_RESPONSE # noqa
 from tests.helpers.debugadapter import DebugAdapter
@@ -12,8 +12,8 @@ from tests.helpers.vsc import parse_message, VSCMessages
 from tests.helpers.workspace import Workspace, PathEntry
 
 
-VERSION = '0+unknown'
-#VERSION = ptvsd.__version__
+#VERSION = '0+unknown'
+VERSION = ptvsd.__version__
 
 
 def _strip_pydevd_output(out):
