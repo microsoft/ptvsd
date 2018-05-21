@@ -58,7 +58,7 @@ def ignored_errno(*ignored):
             raise
 
 
-class KeepAlive(namedtuple('KeepAlive', 'interval idle, maxfails')):
+class KeepAlive(namedtuple('KeepAlive', 'interval idle maxfails')):
     """TCP keep-alive settings."""
 
     INTERVAL = 3  # seconds
