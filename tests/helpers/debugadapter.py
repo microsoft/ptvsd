@@ -15,9 +15,16 @@ class DebugAdapter(Closeable):
     @classmethod
     def start(cls, argv, **kwargs):
         def new_proc(argv, addr):
+            if cls.VERBOSE:
+                env = {
+                    'PTVSD_DEBUG': '1',
+                    'PTVSD_SOCKET_TIMEOUT': '1',
+                }
+            else:
+                env = {}
             argv = list(argv)
             cls._ensure_addr(argv, addr)
-            return Proc.start_python_module('ptvsd', argv)
+            return Proc.start_python_module('ptvsd', argv, env=env)
         return cls._start(new_proc, argv, **kwargs)
 
     @classmethod
