@@ -2,7 +2,7 @@ import os
 from textwrap import dedent
 import unittest
 
-import ptvsd
+#import ptvsd
 from ptvsd.socket import Address
 from ptvsd.wrapper import INITIALIZE_RESPONSE # noqa
 from tests.helpers.debugadapter import DebugAdapter
@@ -10,6 +10,10 @@ from tests.helpers.debugclient import EasyDebugClient as DebugClient
 from tests.helpers.threading import get_locked_and_waiter
 from tests.helpers.vsc import parse_message, VSCMessages
 from tests.helpers.workspace import Workspace, PathEntry
+
+
+VERSION = '0+unknown'
+#VERSION = ptvsd.__version__
 
 
 def _strip_pydevd_output(out):
@@ -220,7 +224,7 @@ class LifecycleTests(TestsBase, unittest.TestCase):
                 'body': {
                     'output': 'ptvsd',
                     'data': {
-                        'version': ptvsd.__version__,
+                        'version': VERSION,
                     },
                     'category': 'telemetry',
                 },
@@ -252,7 +256,7 @@ class LifecycleTests(TestsBase, unittest.TestCase):
                 'output',
                 category='telemetry',
                 output='ptvsd',
-                data={'version': ptvsd.__version__}),
+                data={'version': VERSION}),
             self.new_response(req_initialize, **INITIALIZE_RESPONSE),
             self.new_event('initialized'),
             self.new_response(req_launch),
@@ -276,12 +280,13 @@ class LifecycleTests(TestsBase, unittest.TestCase):
             done()
             adapter.wait()
 
+        self.maxDiff = None
         self.assert_received(session.received, [
             self.new_event(
                 'output',
                 category='telemetry',
                 output='ptvsd',
-                data={'version': ptvsd.__version__}),
+                data={'version': VERSION}),
             self.new_response(req_initialize, **INITIALIZE_RESPONSE),
             self.new_event('initialized'),
             self.new_response(req_launch),
@@ -309,7 +314,7 @@ class LifecycleTests(TestsBase, unittest.TestCase):
                 'output',
                 category='telemetry',
                 output='ptvsd',
-                data={'version': ptvsd.__version__}),
+                data={'version': VERSION}),
             self.new_response(req_initialize, **INITIALIZE_RESPONSE),
             self.new_event('initialized'),
             self.new_response(req_launch),
@@ -355,7 +360,7 @@ class LifecycleTests(TestsBase, unittest.TestCase):
                 'output',
                 category='telemetry',
                 output='ptvsd',
-                data={'version': ptvsd.__version__}),
+                data={'version': VERSION}),
             self.new_response(req_initialize, **INITIALIZE_RESPONSE),
             self.new_event('initialized'),
             self.new_response(req_launch),
@@ -402,7 +407,7 @@ class LifecycleTests(TestsBase, unittest.TestCase):
                 'output',
                 category='telemetry',
                 output='ptvsd',
-                data={'version': ptvsd.__version__}),
+                data={'version': VERSION}),
             self.new_response(reqs[0], **INITIALIZE_RESPONSE),
             self.new_event('initialized'),
             self.new_response(reqs[1]),
@@ -423,7 +428,7 @@ class LifecycleTests(TestsBase, unittest.TestCase):
                 'output',
                 category='telemetry',
                 output='ptvsd',
-                data={'version': ptvsd.__version__}),
+                data={'version': VERSION}),
             self.new_response(req_initialize, **INITIALIZE_RESPONSE),
             self.new_event('initialized'),
             self.new_response(req_launch),
@@ -469,7 +474,7 @@ class LifecycleTests(TestsBase, unittest.TestCase):
                 'output',
                 category='telemetry',
                 output='ptvsd',
-                data={'version': ptvsd.__version__}),
+                data={'version': VERSION}),
             self.new_response(req_initialize, **INITIALIZE_RESPONSE),
             self.new_event('initialized'),
             self.new_response(req_launch),
