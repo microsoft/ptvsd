@@ -96,19 +96,22 @@ class KeepAlive(namedtuple('KeepAlive', 'interval idle maxfails')):
         sock.setsockopt(socket.SOL_SOCKET,
                         socket.SO_KEEPALIVE,
                         1)
+        interval = self.interval
+        idle = self.idle
+        maxfails = self.maxfails
         try:
-            if self.interval > 0:
+            if interval > 0:
                 sock.setsockopt(socket.IPPROTO_TCP,
                                 socket.TCP_KEEPINTVL,
-                                self.interval)
-            if self.idle > 0:
+                                interval)
+            if idle > 0:
                 sock.setsockopt(socket.IPPROTO_TCP,
                                 socket.TCP_KEEPIDLE,
-                                self.idle)
-            if self.interval >= 0:
+                                idle)
+            if maxfails >= 0:
                 sock.setsockopt(socket.IPPROTO_TCP,
                                 socket.TCP_KEEPCNT,
-                                self.maxfails)
+                                maxfails)
         except AttributeError:
             # mostly linux-only
             pass
