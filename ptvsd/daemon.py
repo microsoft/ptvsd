@@ -222,7 +222,7 @@ class Daemon(object):
                     notify_closing=self._handle_session_closing,
                     ownsock=True,
                 )
-                self._start_session(session, 'ptvsd.Client')
+                self._start_session(session, 'ptvsd.Client', None)
                 return session
             except Exception:
                 self._stop_quietly()
