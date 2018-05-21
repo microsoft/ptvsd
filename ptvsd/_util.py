@@ -19,8 +19,8 @@ def debug(*msg, **kwargs):
     if tb:
         import traceback
         traceback.print_exc()
-    print(*msg)
-    sys.stdout.flush()
+    print(*msg, file=sys.stderr)
+    sys.stderr.flush()
 
 
 @contextlib.contextmanager
@@ -29,7 +29,6 @@ def ignore_errors(log=None):
     try:
         yield
     except Exception as exc:
-        raise
         if log is not None:
             log('ignoring error', exc)
 
