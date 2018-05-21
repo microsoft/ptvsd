@@ -199,9 +199,9 @@ class Startable(object):
         self._startlock = threading.Lock()
         self._numstarts = 0
 
-    def is_running(self):
+    def is_running(self, checkclosed=True):
         """Return True if currently running."""
-        if hasattr(self, 'check_closed'):
+        if checkclosed and hasattr(self, 'check_closed'):
             self.check_closed()
         is_running = self._is_running
         if is_running is None:
@@ -211,9 +211,7 @@ class Startable(object):
     def start(self, *args, **kwargs):
         """Begin internal execution."""
         with self._startlock:
-            if hasattr(self, 'check_closed'):
-                self.check_closed()
-            if self._is_running is not None and self._is_running():
+            if self.is_running():
                 raise AlreadyRunningError()
             if not self.RESTARTABLE and self._numstarts > 0:
                 raise AlreadyStartedError()
@@ -225,7 +223,7 @@ class Startable(object):
         """Stop execution and wait until done."""
         with self._startlock:
             # TODO: Call self.check_closed() here?
-            if self._is_running is None or not self._is_running():
+            if not self.is_running(checkclosed=False):
                 if not self.FAIL_ON_ALREADY_STOPPED:
                     return
                 raise NotRunningError()
