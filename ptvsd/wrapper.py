@@ -799,7 +799,6 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
     def _stop_vsc_message_loop(self):
         self.set_exit()
         self.loop.stop()
-        self.event_loop_thread.join(WAIT_FOR_THREAD_FINISH_TIMEOUT)
         if self.socket:
             try:
                 self.socket.shutdown(socket.SHUT_RDWR)
