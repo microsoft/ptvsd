@@ -82,6 +82,7 @@ class RawConnectionTests(unittest.TestCase):
                     break
                 line = b''
 
+    @unittest.skip('there is a race here under travis')
     def test_repeated(self):
         def debug(msg):
             if not self.VERBOSE:
