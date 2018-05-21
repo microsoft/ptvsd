@@ -76,7 +76,6 @@ class Closeable(object):
         super(Closeable, self).__init__()
         self._closed = False
         self._closedlock = threading.Lock()
-        self._resources = []
         self._handlers = []
 
     def __del__(self):
