@@ -5,7 +5,9 @@ import os.path
 import subprocess
 import sys
 import unittest
-import xmlrunner
+from collections import namedtuple
+
+from xmlrunner import XMLTestRunner
 
 from . import TEST_ROOT, PROJECT_ROOT, VENDORED_ROOTS
 
@@ -17,7 +19,7 @@ def convert_argv(argv):
     network = True
     runtests = True
     lint = False
-    junit_xml_file = './junit-report.xml'
+    junit_xml_file = None
     args = []
     modules = set()
     for arg in argv:
@@ -92,7 +94,9 @@ def convert_argv(argv):
         args = cmd + args
     else:
         args = env = None
-    return args, env, runtests, lint, junit_xml_file
+
+    RunArgs = namedtuple('RunArgs', 'argv, env, junit_xml_file')
+    return runtests, lint, RunArgs(argv=args, env=env, junit_xml_file=junit_xml_file)
 
 
 def fix_sys_path():
@@ -141,28 +145,31 @@ def run_tests(argv, env, junit_report_file, coverage=False):
             print('...coverage failed!')
             sys.exit(rc)
         print('...done')
-    else:
+    elif junit_report_file:
         os.environ.update(env)
         with open(junit_report_file, 'wb') as output:
             unittest.main(
-                testRunner=xmlrunner.XMLTestRunner(output=output),
-                failfast=False, buffer=False, catchbreak=False, module=None,
-                argv=argv)
-
+                testRunner=XMLTestRunner(output=output),
+                module=None,
+                argv=argv
+            )
+    else:
+        os.environ.update(env)
+        unittest.main(module=None,argv=argv)
 
 if __name__ == '__main__':
-    argv, env, runtests, lint, junit_xml_file = convert_argv(sys.argv[1:])
+    runtests, lint, runtest_args = convert_argv(sys.argv[1:])
     fix_sys_path()
     if lint:
         check_lint()
     if runtests:
-        junit_output_file = './junit-report.xml'
-        if '--start-directory' in argv:
-            start = argv[argv.index('--start-directory') + 1]
+        if '--start-directory' in runtest_args.argv:
+            start = runtest_args.argv[runtest_args.argv.index('--start-directory') + 1]
             print('(will look for tests under {})'.format(start))
+
         run_tests(
-            argv,
-            env,
-            junit_xml_file,
+            runtest_args.argv,
+            runtest_args.env,
+            runtest_args.junit_xml_file,
             coverage=(runtests == 'coverage'),
         )
