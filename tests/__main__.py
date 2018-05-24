@@ -1,57 +1,96 @@
 from __future__ import absolute_import
 
+import argparse
 import os
 import os.path
 import subprocess
 import sys
 import unittest
-from collections import namedtuple
 
 from xmlrunner import XMLTestRunner
 
 from . import TEST_ROOT, PROJECT_ROOT, VENDORED_ROOTS
 
 
-def convert_argv(argv):
-    help  = False
-    quick = False
-    quickpy2 = False
-    network = True
-    runtests = True
-    lint = False
-    junit_xml_file = None
-    args = []
-    modules = set()
-    for arg in argv:
-        if arg == '--quick':
-            quick = True
-            continue
-        if arg == '--quick-py2':
-            quickpy2 = True
-            continue
-        elif arg == '--full':
-            quick = False
-            continue
-        elif arg == '--network':
-            network = True
-            continue
-        elif arg == '--no-network':
-            network = False
-            continue
-        elif arg == '--coverage':
-            runtests = 'coverage'
-            continue
-        elif arg == '--lint':
-            lint = True
-            continue
-        elif arg == '--lint-only':
-            lint = True
-            runtests = False
-            break
-        elif arg.startswith('--junit-xml='):
-            junit_xml_file = arg[len('--junit-xml='):]
-            continue
+def parse_cmdline(argv):
+    """Obtain command line arguments and setup the test run accordingly."""
 
+    parser = argparse.ArgumentParser(
+        description="Run tests associated to the PTVSD project."
+    )
+    parser.add_argument(
+        "-q",
+        "--quick",
+        help="Only do the tests under test/ptvsd.",
+        action="store_true"
+        )
+    parser.add_argument(
+        "--quick-py2",
+        help=("Only do the tests under test/ptvsd, that are compatible "
+              "with Python 2.x."),
+        action="store_true"
+    )
+    parser.add_argument(
+        '-n',
+        '--network',
+        help="Perform tests taht require network connectivity.",
+        action='store_true',
+        dest='network'
+    )
+    parser.add_argument(
+        "--no-network",
+        help="Do not perform tests that require network connectivity.",
+        action="store_false",
+        dest='network'
+    )
+    parser.set_defaults(network=True)
+    parser.add_argument(
+        "-c",
+        "--coverage",
+        help="Generate code coverage report.",
+        action="store_true"
+    )
+    parser.add_argument(
+        "-l",
+        "--lint",
+        help="Run and report on Linter compliance.",
+        action="store_true"
+    )
+    parser.add_argument(
+        "-L",
+        "--lint-only",
+        help="Run and report on Linter compliance only, do not perform tests.",
+        action="store_true"
+    )
+    parser.add_argument(
+        "-j",
+        "--junit-xml",
+        help="Output report is generated to JUnit-style XML file specified.",
+        type=str
+    )
+    parser.add_argument(
+        "-s",
+        "--start-directory",
+        help="Run tests from the directory specified, not from the repo root.",
+        type=str
+    )
+    parser.allow_abbrev = False
+    parser.prog = "tests"
+    parser.usage = "python -m %(prog)s OPTS"
+
+    config, passthrough_args = parser.parse_known_args(argv)
+
+    return config, passthrough_args
+
+
+def convert_argv(argv):
+    """Convert commandling args into unittest/linter/coverage input."""
+
+    config, passthru = parse_cmdline(argv)
+
+    modules = set()
+
+    for arg in passthru:
         # Unittest's main has only flags and positional args.
         # So we don't worry about options with values.
         if not arg.startswith('-'):
@@ -66,37 +105,31 @@ def convert_argv(argv):
             mod = mod.replace(os.sep, '.')
             arg = mod if not test else mod + '.' + test
             modules.add(mod)
-        elif arg in ('-h', '--help'):
-            help = True
-        args.append(arg)
 
-    if runtests:
-        env = {}
-        if network:
-            env['HAS_NETWORK'] = '1'
-        # We make the "executable" a single arg because unittest.main()
-        # doesn't work if we split it into 3 parts.
-        cmd = [sys.executable + ' -m unittest']
-        if not modules and not help:
-            # Do discovery.
-            quickroot = os.path.join(TEST_ROOT, 'ptvsd')
-            if quick:
-                start = quickroot
-            elif quickpy2 and sys.version_info[0] == 2:
-                start = quickroot
-            else:
-                start = PROJECT_ROOT
-            cmd += [
-                'discover',
-                '--top-level-directory', PROJECT_ROOT,
-                '--start-directory', start,
-            ]
-        args = cmd + args
-    else:
-        args = env = None
+    env = {}
+    if config.network:
+        env['HAS_NETWORK'] = '1'
+    # We make the "executable" a single arg because unittest.main()
+    # doesn't work if we split it into 3 parts.
+    cmd = [sys.executable + ' -m unittest']
+    if not modules:
+        # Do discovery.
+        quickroot = os.path.join(TEST_ROOT, 'ptvsd')
+        if config.quick:
+            start = quickroot
+        elif config.quick_py2 and sys.version_info[0] == 2:
+            start = quickroot
+        else:
+            start = PROJECT_ROOT
 
-    RunArgs = namedtuple('RunArgs', 'argv, env, junit_xml_file')
-    return runtests, lint, RunArgs(argv=args, env=env, junit_xml_file=junit_xml_file)
+        cmd += [
+            'discover',
+            '--top-level-directory', PROJECT_ROOT,
+            '--start-directory', start,
+        ]
+    args = cmd + passthru
+
+    return config, args, env
 
 
 def fix_sys_path():
@@ -121,9 +154,9 @@ def check_lint():
     print('...done')
 
 
-def run_tests(argv, env, junit_report_file, coverage=False):
+def run_tests(argv, env, config):
     print('running tests...')
-    if coverage:
+    if config.coverage:
         omissions = [os.path.join(root, '*') for root in VENDORED_ROOTS]
         # TODO: Drop the explicit pydevd omit once we move the subtree.
         omissions.append(os.path.join('ptvsd', 'pydevd', '*'))
@@ -145,9 +178,9 @@ def run_tests(argv, env, junit_report_file, coverage=False):
             print('...coverage failed!')
             sys.exit(rc)
         print('...done')
-    elif junit_report_file:
+    elif config.junit_xml:
         os.environ.update(env)
-        with open(junit_report_file, 'wb') as output:
+        with open(config.junit_xml, 'wb') as output:
             unittest.main(
                 testRunner=XMLTestRunner(output=output),
                 module=None,
@@ -155,21 +188,23 @@ def run_tests(argv, env, junit_report_file, coverage=False):
             )
     else:
         os.environ.update(env)
-        unittest.main(module=None,argv=argv)
+        unittest.main(module=None, argv=argv)
+
 
 if __name__ == '__main__':
-    runtests, lint, runtest_args = convert_argv(sys.argv[1:])
+    config, args, env = convert_argv(sys.argv[1:])
     fix_sys_path()
-    if lint:
+    if config.lint or config.lint_only:
         check_lint()
-    if runtests:
-        if '--start-directory' in runtest_args.argv:
-            start = runtest_args.argv[runtest_args.argv.index('--start-directory') + 1]
-            print('(will look for tests under {})'.format(start))
+    if not config.lint_only:
+        if config.start_directory:
+            print(
+                '(will look for tests under {})'
+                .format(config.start_directory)
+            )
 
         run_tests(
-            runtest_args.argv,
-            runtest_args.env,
-            runtest_args.junit_xml_file,
-            coverage=(runtests == 'coverage'),
+            args,
+            env,
+            config
         )
