@@ -28,7 +28,7 @@ def parse_cmdline(argv):
         "--full",
         help="Do full suite of tests (disables prior --quick options).",
         action="store_false",
-        target="quick"
+        dest="quick"
     )
     parser.add_argument(
         "-j",
@@ -49,25 +49,27 @@ def parse_cmdline(argv):
         action="store_true"
     )
     parser.add_argument(
-        '-n',
-        '--network',
+        "-n",
+        "--network",
         help="Perform tests taht require network connectivity.",
-        action='store_true',
-        dest='network'
+        action="store_true",
+        dest="network"
     )
     parser.add_argument(
         "--no-network",
         help="Do not perform tests that require network connectivity.",
         action="store_false",
-        dest='network'
+        dest="network"
     )
     parser.set_defaults(network=True)
     parser.add_argument(
         "-q",
         "--quick",
         help="Only do the tests under test/ptvsd.",
-        action="store_true"
+        action="store_true",
+        dest="quick"
     )
+    parser.set_defaults(quick=False)
     parser.add_argument(
         "--quick-py2",
         help=("Only do the tests under test/ptvsd, that are compatible "
