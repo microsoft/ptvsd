@@ -141,6 +141,7 @@ class CLITests(TestsBase, unittest.TestCase):
 
 class DebugTests(TestsBase, unittest.TestCase):
 
+    @unittest.skipUnless(os.environ.get('HAS_NETWORK'), 'no network')
     def test_script(self):
         argv = []
         filename = self.write_script('spam.py', """
@@ -229,6 +230,7 @@ class LifecycleTests(TestsBase, unittest.TestCase):
         out = _strip_pydevd_output(out)
         self.assertEqual(out, '')
 
+    @unittest.skipUnless(os.environ.get('HAS_NETWORK'), 'no network')
     def test_launch_ptvsd_client(self):
         argv = []
         lockfile = self.workspace.lockfile()

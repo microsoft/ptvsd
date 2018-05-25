@@ -97,6 +97,7 @@ def convert_argv(argv):
     config, passthru = parse_cmdline(argv)
 
     modules = set()
+    args = []
 
     for arg in passthru:
         # Unittest's main has only flags and positional args.
@@ -113,6 +114,7 @@ def convert_argv(argv):
             mod = mod.replace(os.sep, '.')
             arg = mod if not test else mod + '.' + test
             modules.add(mod)
+        args.append(arg)
 
     env = {}
     if config.network:
@@ -135,7 +137,7 @@ def convert_argv(argv):
             '--top-level-directory', PROJECT_ROOT,
             '--start-directory', start,
         ]
-    args = cmd + passthru
+    args = cmd + args
 
     return config, args, env
 

@@ -115,15 +115,19 @@ class ConvertArgsTests(unittest.TestCase):
         })
 
         self.assertFalse(config.lint_only)
-        self.assertFalse(config.lint)
+        self.assertTrue(config.lint)
+        self.assertTrue(config.quick)
+
 
     def test_lint_only(self):
-        config, argv, env = convert_argv([
+        config, _, _ = convert_argv([
             '--quick', '--lint-only', '-v',
         ])
 
         self.assertTrue(config.lint_only)
         self.assertFalse(config.lint)
+        self.assertTrue(config.quick)
+
 
     def test_coverage(self):
         config, argv, env = convert_argv([
