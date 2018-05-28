@@ -97,14 +97,16 @@ class TestBase(VSCTest):
         self.pathentry.install()
         self._filename = 'module:' + name
 
-
 ##################################
 # lifecycle tests
+
 
 class LifecycleTests(TestBase, unittest.TestCase):
 
     FILENAME = 'spam.py'
-    SOURCE = ''
+
+    # Give some time for thread notification to arrive before finishing.
+    SOURCE = 'import time;time.sleep(.5)'
 
     @contextlib.contextmanager
     def running(self):
@@ -126,7 +128,8 @@ class LifecycleTests(TestBase, unittest.TestCase):
                 req_attach = self.send_request('attach')
 
             # configuration
-            req_config = self.send_request('configurationDone')
+            with self.vsc.wait_for_event('thread'):
+                req_config = self.send_request('configurationDone')
 
             # Normal ops would go here.
 
@@ -153,13 +156,14 @@ class LifecycleTests(TestBase, unittest.TestCase):
                 isLocalProcess=True,
                 startMethod='attach',
             )),
+            self.new_event('thread', reason='started', threadId=1),
             self.new_event('exited', exitCode=0),
             self.new_event('terminated'),
         ])
 
-
 ##################################
 # "normal operation" tests
+
 
 class VSCFlowTest(TestBase):
 
@@ -466,9 +470,11 @@ class LogpointTests(TestBase, unittest.TestCase):
 
     @contextlib.contextmanager
     def closing(self, exit=True):
+
         def handle_msg(msg, _):
             with self.wait_for_event('output'):
                 self.req_disconnect = self.send_request('disconnect')
+
         with self.wait_for_event('terminated', handler=handle_msg):
             if exit:
                 with self.wait_for_event('exited'):
@@ -510,8 +516,10 @@ class LogpointTests(TestBase, unittest.TestCase):
                     ],
                 })
             with self.vsc.wait_for_event('output'):
-                req_config = self.send_request('configurationDone')
-                done()
+                with self.vsc.wait_for_event('thread'):
+                    req_config = self.send_request('configurationDone')
+
+            done()
 
             self.fix.binder.done(close=False)
             self.fix.binder.wait_until_done()
@@ -538,6 +546,7 @@ class LogpointTests(TestBase, unittest.TestCase):
                 isLocalProcess=True,
                 startMethod='attach',
             )),
+            self.new_event('thread', reason='started', threadId=1),
             self.new_event('output', **dict(
                 category='stdout',
                 output='1+2=3' + os.linesep,

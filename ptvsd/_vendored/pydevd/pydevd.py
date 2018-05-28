@@ -119,7 +119,6 @@ class PyDBCommandThread(PyDBDaemonThread):
             #pydevd_log(0, 'Finishing debug communication...(3)')
 
 
-
 #=======================================================================================================================
 # CheckOutputThread
 # Non-daemonic thread guaranties that all data is written even if program is finished
@@ -465,6 +464,12 @@ class PyDB:
                     sys.stderr.write("Can't suspend thread: %s\n" % (t,))
                     
     def notify_thread_created(self, thread_id, thread, use_lock=True):
+        if self.writer is None:
+            # Protect about threads being created before the communication structure is in place
+            # (note that they will appear later on anyways as pydevd does reconcile live/dead threads
+            # when processing internal commands, albeit it may take longer and in general this should
+            # not be usual as it's expected that the debugger is live before other threads are created).
+            return
         if use_lock:
             self._lock_running_thread_ids.acquire()
         try:

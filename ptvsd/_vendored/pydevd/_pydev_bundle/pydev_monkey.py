@@ -592,10 +592,9 @@ class _NewThreadStartupWithTrace:
             if not getattr(t, 'is_pydev_daemon_thread', False):
                 thread_id = get_thread_id(t)
                 global_debugger.notify_thread_created(thread_id, t)
-            else:
                 _on_set_trace_for_new_thread(global_debugger)
             
-            if global_debugger.thread_analyser is not None:
+            if getattr(global_debugger, 'thread_analyser', None) is not None:
                 try:
                     from pydevd_concurrency_analyser.pydevd_concurrency_logger import log_new_thread
                     log_new_thread(global_debugger, t)
