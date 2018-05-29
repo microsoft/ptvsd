@@ -273,13 +273,18 @@ class BreakpointTests(VSCFlowTest, unittest.TestCase):
 
     def _find_line(self, script, label):
         lines = iter(script.splitlines())
+        # Line numbers start with 1.
         for lineno, _ in enumerate(self._iter_until_label(lines, label), 1):
             pass
         return lineno + 1  # the line after
 
     def _set_lock(self, label=None, script=None):
         if script is None:
-            script = self.SOURCE
+            if os.path.exists(self.filename):
+                with open(self.filename) as scriptfile:
+                    script = scriptfile.read()
+            else:
+                script = self.SOURCE
         lockfile = self.workspace.lockfile()
         done, waitscript = lockfile.wait_in_script()
 
