@@ -34,7 +34,8 @@ class SafeRepr(object):
         set_info = (set, 'set([', '])', False)
         frozenset_info = (frozenset, 'frozenset([', '])', False)
         int_types = (int, long)  # noqa
-        long_iter_types = (list, tuple, bytearray, dict, buffer, xrange)
+        long_iter_types = (list, tuple, bytearray, xrange,
+                           dict, set, frozenset, buffer)  # noqa
 
     # Collection types are recursively iterated for each limit in
     # maxcollection.
