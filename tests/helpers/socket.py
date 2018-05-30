@@ -32,6 +32,7 @@ CLOSED = (
     errno.ECONNRESET,
     # Windows
     10038,  # "An operation was attempted on something that is not a socket"
+    10058,  # socket already shut down
 )
 
 EOF = NOT_CONNECTED + CLOSED
