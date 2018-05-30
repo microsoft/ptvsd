@@ -105,8 +105,8 @@ class CLITests(TestsBase, unittest.TestCase):
             session.send_request('disconnect')
         out = adapter.output
 
-        self.assertEqual(out.decode('utf-8').strip().splitlines()[-1],
-                         u"[{!r}, '--eggs']".format(filename))
+        self.assertIn(u"[{!r}, '--eggs']".format(filename),
+                      out.decode('utf-8').strip().splitlines())
 
     def test_run_to_completion(self):
         filename = self.pathentry.write_module('spam', """
