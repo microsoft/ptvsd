@@ -1,3 +1,5 @@
+import os
+
 from ptvsd.socket import Address
 from . import Closeable
 from .proc import Proc
@@ -15,15 +17,14 @@ class DebugAdapter(Closeable):
     @classmethod
     def start(cls, argv, **kwargs):
         def new_proc(argv, addr):
+            env = dict(os.environ)
+            # TODO: Be smarter about the seed?
+            env.setdefault('PYTHONHASHSEED', '1234')
             if cls.VERBOSE:
-                env = {
+                env.update({
                     'PTVSD_DEBUG': '1',
                     'PTVSD_SOCKET_TIMEOUT': '1',
-                }
-            else:
-                env = {}
-            # TODO: Be smarter about the seed?
-            env['PYTHONHASHSEED'] = '1234'
+                })
             argv = list(argv)
             cls._ensure_addr(argv, addr)
             return Proc.start_python_module('ptvsd', argv, env=env)
