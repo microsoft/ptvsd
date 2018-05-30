@@ -5,6 +5,18 @@ from . import Closeable
 from .proc import Proc
 
 
+def _copy_env(verbose=False):
+    env = dict(os.environ)
+    # TODO: Be smarter about the seed?
+    env.setdefault('PYTHONHASHSEED', '1234')
+    if verbose:
+        env.update({
+            'PTVSD_DEBUG': '1',
+            'PTVSD_SOCKET_TIMEOUT': '1',
+        })
+    return env
+
+
 class DebugAdapter(Closeable):
 
     VERBOSE = False
@@ -17,14 +29,7 @@ class DebugAdapter(Closeable):
     @classmethod
     def start(cls, argv, **kwargs):
         def new_proc(argv, addr):
-            env = dict(os.environ)
-            # TODO: Be smarter about the seed?
-            env.setdefault('PYTHONHASHSEED', '1234')
-            if cls.VERBOSE:
-                env.update({
-                    'PTVSD_DEBUG': '1',
-                    'PTVSD_SOCKET_TIMEOUT': '1',
-                })
+            env = _copy_env(verbose=cls.VERBOSE)
             argv = list(argv)
             cls._ensure_addr(argv, addr)
             return Proc.start_python_module('ptvsd', argv, env=env)
@@ -33,7 +38,8 @@ class DebugAdapter(Closeable):
     @classmethod
     def start_wrapper_script(cls, filename, argv, **kwargs):
         def new_proc(argv, addr):
-            return Proc.start_python_script(filename, argv)
+            env = _copy_env(verbose=cls.VERBOSE)
+            return Proc.start_python_script(filename, argv, env=env)
         return cls._start(new_proc, argv, **kwargs)
 
     # specific factory cases
