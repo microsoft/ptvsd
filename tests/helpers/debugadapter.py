@@ -22,6 +22,8 @@ class DebugAdapter(Closeable):
                 }
             else:
                 env = {}
+            # TODO: Be smarter about the seed?
+            env['PYTHONHASHSEED'] = '1234'
             argv = list(argv)
             cls._ensure_addr(argv, addr)
             return Proc.start_python_module('ptvsd', argv, env=env)
