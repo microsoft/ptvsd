@@ -303,7 +303,7 @@ class BreakpointTests(VSCFlowTest, unittest.TestCase):
                     ])
                     break
                 leading.append(line)
-            script = os.linesep.join(leading) + os.linesep.join(lines)
+            script = '\n'.join(leading) + '\n'.join(lines)
 
         with open(self.filename, 'w') as scriptfile:
             scriptfile.write(script)
@@ -548,7 +548,7 @@ class LogpointTests(TestBase, unittest.TestCase):
             self.new_event('thread', reason='started', threadId=1),
             self.new_event('output', **dict(
                 category='stdout',
-                output='1+2=3' + os.linesep,
+                output='1+2=3\n',
             )),
             self.new_event('exited', exitCode=0),
             self.new_event('terminated'),
