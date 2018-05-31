@@ -5,8 +5,52 @@ from . import Closeable
 from .proc import Proc
 
 
+COPIED_ENV = [
+    'PYTHONHASHSEED',
+
+    # Windows
+    #'ALLUSERSPROFILE',
+    #'APPDATA',
+    #'CLIENTNAME',
+    #'COMMONPROGRAMFILES',
+    #'COMMONPROGRAMFILES(X86)',
+    #'COMMONPROGRAMW6432',
+    #'COMPUTERNAME',
+    #'COMSPEC',
+    #'DRIVERDATA',
+    #'HOMEDRIVE',
+    #'HOMEPATH',
+    #'LOCALAPPDATA',
+    #'LOGONSERVER',
+    #'NUMBER_OF_PROCESSORS',
+    #'OS',
+    #'PATH',
+    #'PATHEXT',
+    #'PROCESSOR_ARCHITECTURE',
+    #'PROCESSOR_IDENTIFIER',
+    #'PROCESSOR_LEVEL',
+    #'PROCESSOR_REVISION',
+    #'PROGRAMDATA',
+    #'PROGRAMFILES',
+    #'PROGRAMFILES(X86)',
+    #'PROGRAMW6432',
+    #'PSMODULEPATH',
+    #'PUBLIC',
+    #'SESSIONNAME',
+    'SYSTEMDRIVE',
+    'SYSTEMROOT',
+    #'TEMP',
+    #'TMP',
+    #'USERDOMAIN',
+    #'USERDOMAIN_ROAMINGPROFILE',
+    #'USERNAME',
+    #'USERPROFILE',
+    'WINDIR',
+]
+
+
 def _copy_env(verbose=False):
-    env = dict(os.environ)
+    env = {k: v for k, v in os.environ.items() if k in COPIED_ENV}
     # TODO: Be smarter about the seed?
     env.setdefault('PYTHONHASHSEED', '1234')
     if verbose:
