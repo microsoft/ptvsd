@@ -1,6 +1,5 @@
 import os
 import sys
-import time
 import unittest
 
 from _pydevd_bundle.pydevd_comm import (
@@ -1078,9 +1077,9 @@ class SetBreakpointsTests(NormalRequestTest, unittest.TestCase):
         with self.launched():
             with self.hidden():
                 self.PYDEVD_CMD = CMD_SET_BREAK
-                self.expected_pydevd_request(
+                p1 = self.expected_pydevd_request(
                     '1\tpython-line\tspam.py\t10\tNone\tNone\tNone\tNone\tNone') # noqa
-                self.expected_pydevd_request(
+                p2 = self.expected_pydevd_request(
                     '2\tpython-line\tspam.py\t17\tNone\tNone\tNone\tNone\tNone') # noqa
                 self.fix.send_request('setBreakpoints', dict(
                     source={'path': 'spam.py'},
@@ -1089,8 +1088,7 @@ class SetBreakpointsTests(NormalRequestTest, unittest.TestCase):
                         {'line': '17'},
                     ],
                 ))
-                while len(self.pydevd.received) < 2:
-                    time.sleep(0.01)
+                self.wait_for_pydevd(p1, p2)
             self.send_request(
                 source={'path': 'spam.py'},
                 breakpoints=[
@@ -1650,14 +1648,15 @@ class SetExceptionBreakpointsTests(NormalRequestTest, unittest.TestCase):
         with self.launched():
             with self.hidden():
                 self.PYDEVD_CMD = CMD_ADD_EXCEPTION_BREAK
-                self.expected_pydevd_request('python-BaseException\t0\t1\t0')
+                p1 = self.expected_pydevd_request(
+                    'python-BaseException\t0\t1\t0',
+                )
                 self.fix.send_request('setExceptionBreakpoints', dict(
                     filters=[
                         'uncaught',
                     ],
                 ))
-                while len(self.pydevd.received) < 1:
-                    time.sleep(0.01)
+                self.wait_for_pydevd(p1)
             self.send_request(
                 filters=[],
                 exceptionOptions=[
@@ -1692,8 +1691,12 @@ class SetExceptionBreakpointsTests(NormalRequestTest, unittest.TestCase):
         with self.launched():
             with self.hidden():
                 self.PYDEVD_CMD = CMD_ADD_EXCEPTION_BREAK
-                self.expected_pydevd_request('python-ImportError\t0\t1\t0')
-                self.expected_pydevd_request('python-BaseException\t3\t0\t0')
+                p1 = self.expected_pydevd_request(
+                    'python-ImportError\t0\t1\t0',
+                )
+                p2 = self.expected_pydevd_request(
+                    'python-BaseException\t3\t0\t0',
+                )
                 self.fix.send_request('setExceptionBreakpoints', dict(
                     filters=[],
                     exceptionOptions=[
@@ -1708,8 +1711,7 @@ class SetExceptionBreakpointsTests(NormalRequestTest, unittest.TestCase):
                          'breakMode': 'always'},
                     ],
                 ))
-                while len(self.pydevd.received) < 2:
-                    time.sleep(0.01)
+                self.wait_for_pydevd(p1, p2)
             self.send_request(
                 filters=[],
                 exceptionOptions=[
@@ -1837,14 +1839,15 @@ class SetExceptionBreakpointsTests(NormalRequestTest, unittest.TestCase):
         with self.launched():
             with self.hidden():
                 self.PYDEVD_CMD = CMD_ADD_EXCEPTION_BREAK
-                self.expected_pydevd_request('python-BaseException\t0\t1\t0')
+                p1 = self.expected_pydevd_request(
+                    'python-BaseException\t0\t1\t0',
+                )
                 self.fix.send_request('setExceptionBreakpoints', dict(
                     filters=[
                         'uncaught',
                     ],
                 ))
-                while len(self.pydevd.received) < 1:
-                    time.sleep(0.01)
+                self.wait_for_pydevd(p1)
             self.send_request(
                 filters=[
                     'raised',
@@ -1868,8 +1871,12 @@ class SetExceptionBreakpointsTests(NormalRequestTest, unittest.TestCase):
         with self.launched():
             with self.hidden():
                 self.PYDEVD_CMD = CMD_ADD_EXCEPTION_BREAK
-                self.expected_pydevd_request('python-ImportError\t0\t1\t0')
-                self.expected_pydevd_request('python-BaseException\t3\t0\t0')
+                p1 = self.expected_pydevd_request(
+                    'python-ImportError\t0\t1\t0',
+                )
+                p2 = self.expected_pydevd_request(
+                    'python-BaseException\t3\t0\t0',
+                )
                 self.fix.send_request('setExceptionBreakpoints', dict(
                     filters=[],
                     exceptionOptions=[
@@ -1884,8 +1891,7 @@ class SetExceptionBreakpointsTests(NormalRequestTest, unittest.TestCase):
                          'breakMode': 'always'},
                     ],
                 ))
-                while len(self.pydevd.received) < 2:
-                    time.sleep(0.01)
+                self.wait_for_pydevd(p1, p2)
             self.send_request(
                 filters=[
                     'raised',

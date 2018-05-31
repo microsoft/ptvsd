@@ -3,6 +3,7 @@ import contextlib
 import inspect
 import platform
 import threading
+import time
 import warnings
 
 from _pydevd_bundle.pydevd_comm import (
@@ -948,6 +949,19 @@ class HighlevelTest(VSCTest):
         """Return a new fake VSC that may be used in tests."""
         vsc, debugger = self.fix.new_fake(debugger, handler)
         return vsc, debugger
+
+    def wait_for_pydevd(self, *msgs, **kwargs):
+        timeout = kwargs.pop('timeout', 10.0)
+        assert not kwargs
+        steps = int(timeout * 100) + 1
+        for _ in range(steps):
+            # TODO: Watch for the specific messages.
+            if len(self.pydevd.received) >= len(msgs):
+                break
+            time.sleep(0.01)
+        else:
+            if len(self.pydevd.received) < len(msgs):
+                raise RuntimeError('timed out')
 
 
 class RunningTest(HighlevelTest):
