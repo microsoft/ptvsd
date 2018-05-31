@@ -206,7 +206,8 @@ class BreakpointTests(VSCFlowTest, unittest.TestCase):
         # <a>
         def inc(value, count=1):
             # <b>
-            return value + count
+            result = value + count
+            return result
 
         # <c>
         x = 1
