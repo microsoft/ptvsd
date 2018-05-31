@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 import unittest
 
 from _pydevd_bundle.pydevd_comm import (
@@ -1088,6 +1089,8 @@ class SetBreakpointsTests(NormalRequestTest, unittest.TestCase):
                         {'line': '17'},
                     ],
                 ))
+                while len(self.pydevd.received) < 2:
+                    time.sleep(0.01)
             self.send_request(
                 source={'path': 'spam.py'},
                 breakpoints=[
