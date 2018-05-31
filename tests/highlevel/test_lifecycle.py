@@ -1,6 +1,7 @@
 import os
 import ptvsd
 import sys
+import time
 import unittest
 
 from _pydevd_bundle.pydevd_comm import (
@@ -116,6 +117,8 @@ class LifecycleTests(HighlevelTest, unittest.TestCase):
 
             # configuration
             req_config = self.send_request('configurationDone')
+            while len(self.pydevd.received) < 3:
+                time.sleep(0.01)
 
             # Normal ops would go here.
 
