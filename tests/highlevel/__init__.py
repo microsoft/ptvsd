@@ -414,9 +414,9 @@ class FixtureBase(object):
     def assert_no_failures(self):
         assert self.fake.failures == [], self.fake.failures
 
-    def reset(self):
+    def reset(self, **kwargs):
         self.assert_no_failures()
-        self.fake.reset()
+        self.fake.reset(**kwargs)
 
 
 class PyDevdFixture(FixtureBase):
@@ -701,9 +701,9 @@ class HighlevelFixture(object):
         self._vsc.assert_no_failures()
         self._pydevd.assert_no_failures()
 
-    def reset(self):
-        self._vsc.reset()
-        self._debugger.reset()
+    def reset(self, **kwargs):
+        self._vsc.reset(**kwargs)
+        self._debugger.reset(**kwargs)
 
     # wrappers
 
