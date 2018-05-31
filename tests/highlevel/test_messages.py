@@ -35,6 +35,10 @@ from . import RunningTest
 from ptvsd.wrapper import UnsupportedPyDevdCommandError, INITIALIZE_RESPONSE
 
 
+def fail(msg):
+    raise RuntimeError(msg)
+
+
 # TODO: Make sure we are handling all args properly and sending the
 # correct response/event bpdies.
 
@@ -1972,7 +1976,8 @@ class ExceptionInfoTests(NormalRequestTest, unittest.TestCase):
 
     def test_active_exception(self):
         exc = RuntimeError('something went wrong')
-        frame = (2, 'spam', 'abc.py', 10)  # (pfid, func, file, line)
+        lineno = fail.__code__.co_firstlineno + 1
+        frame = (2, 'fail', __file__, lineno)  # (pfid, func, file, line)
         with self.launched():
             with self.hidden():
                 tid, _ = self.error('x', exc, frame)
@@ -1993,10 +1998,11 @@ class ExceptionInfoTests(NormalRequestTest, unittest.TestCase):
                 details=dict(
                     message=excstr,
                     typeName='RuntimeError',
-                    source='abc.py',
+                    source=__file__,
                     stackTrace='\n'.join([
-                        '  File "abc.py", line 10, in spam',
-                        '    """A decorator indicating abstract methods.',
+                        '  File "{}", line {}, in fail'.format(__file__,
+                                                               lineno),
+                        '    raise RuntimeError(msg)',
                         '',
                     ]),
                 ),
