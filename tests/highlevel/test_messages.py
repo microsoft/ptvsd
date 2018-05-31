@@ -1656,6 +1656,8 @@ class SetExceptionBreakpointsTests(NormalRequestTest, unittest.TestCase):
                         'uncaught',
                     ],
                 ))
+                while len(self.pydevd.received) < 1:
+                    time.sleep(0.01)
             self.send_request(
                 filters=[],
                 exceptionOptions=[
@@ -1706,6 +1708,8 @@ class SetExceptionBreakpointsTests(NormalRequestTest, unittest.TestCase):
                          'breakMode': 'always'},
                     ],
                 ))
+                while len(self.pydevd.received) < 2:
+                    time.sleep(0.01)
             self.send_request(
                 filters=[],
                 exceptionOptions=[
@@ -1839,6 +1843,8 @@ class SetExceptionBreakpointsTests(NormalRequestTest, unittest.TestCase):
                         'uncaught',
                     ],
                 ))
+                while len(self.pydevd.received) < 1:
+                    time.sleep(0.01)
             self.send_request(
                 filters=[
                     'raised',
@@ -1878,6 +1884,8 @@ class SetExceptionBreakpointsTests(NormalRequestTest, unittest.TestCase):
                          'breakMode': 'always'},
                     ],
                 ))
+                while len(self.pydevd.received) < 2:
+                    time.sleep(0.01)
             self.send_request(
                 filters=[
                     'raised',
