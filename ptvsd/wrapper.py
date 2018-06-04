@@ -1985,6 +1985,13 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         }
         self.send_response(request, **sys_info)
 
+    # VS specific custom message handlers
+    @async_handler
+    def on_setDebuggerProperty(self, request, args):
+        self.debug_options['JUST_MY_CODE'] = args.get('JustMyCodeStepping',
+                                                      False)
+        self.send_response(request)
+
     # PyDevd protocol event handlers
 
     @pydevd_events.handler(pydevd_comm.CMD_THREAD_CREATE)
