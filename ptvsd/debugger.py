@@ -33,4 +33,5 @@ def debug(filename, port_num, debug_id, debug_options, run_as,
         run = _runners[None]
     if _extra:
         args = _extra + list(args)
+    kwargs.setdefault('singlesession', True)
     run(address, filename, *args, **kwargs)

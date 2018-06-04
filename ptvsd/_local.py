@@ -27,6 +27,8 @@ def run_main(address, name, kind, *extra, **kwargs):
 def run_module(address, modname, *extra, **kwargs):
     """Run pydevd for the given module."""
     addr = Address.from_raw(address)
+    if not addr.isserver:
+        kwargs['singlesession'] = True
     run = kwargs.pop('_run', _run)
     prog = kwargs.pop('_prog', sys.argv[0])
     filename = modname + ':'
@@ -38,6 +40,8 @@ def run_module(address, modname, *extra, **kwargs):
 def run_file(address, filename, *extra, **kwargs):
     """Run pydevd for the given Python file."""
     addr = Address.from_raw(address)
+    if not addr.isserver:
+        kwargs['singlesession'] = True
     run = kwargs.pop('_run', _run)
     prog = kwargs.pop('_prog', sys.argv[0])
     argv = _run_argv(addr, filename, extra, _prog=prog)

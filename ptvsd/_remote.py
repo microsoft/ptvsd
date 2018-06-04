@@ -37,6 +37,7 @@ def enable_attach(address, redirect_output=True,
                       address,
                       start_server=None,
                       start_client=(lambda daemon, h, port: daemon.start()),
+                      singlesession=False,
                       **kwargs)
 
     connection_thread = threading.Thread(target=wait_for_connection,

@@ -56,10 +56,11 @@ class Daemon(object):
 
     def __init__(self, wait_for_user=_wait_for_user,
                  addhandlers=True, killonclose=True,
-                 hidebadsessions=True):
+                 singlesession=False, hidebadsessions=True):
         self._wait_for_user = wait_for_user
-        self.killonclose = killonclose
-        self.hidebadsessions = hidebadsessions
+        self._killonclose = killonclose
+        self._singlesession = singlesession
+        self._hidebadsessions = hidebadsessions
 
         self._closed = False
         self._exiting_via_atexit_handler = False
@@ -189,7 +190,7 @@ class Daemon(object):
                 debug('session exc:', exc, tb=True)
                 with ignore_errors():
                     self._stop_session()
-                if self.hidebadsessions:
+                if self._hidebadsessions:
                     debug('hiding bad session')
                     # TODO: Log the error?
                     return None
@@ -377,7 +378,7 @@ class Daemon(object):
 
         if not self._closed:
             self._close()
-        if kill and self.killonclose and not self._exiting_via_atexit_handler:
+        if kill and self._killonclose and not self._exiting_via_atexit_handler:
             kill_current_proc()
 
     # internal methods for PyDevdSocket().

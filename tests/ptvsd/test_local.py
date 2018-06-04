@@ -76,7 +76,9 @@ class RunModuleTests(RunBase, unittest.TestCase):
             '--file', 'spam:',
         ])
         self.assertEqual(self.addr, Address.as_client(*addr))
-        self.assertEqual(self.kwargs, {})
+        self.assertEqual(self.kwargs, {
+            'singlesession': True,
+        })
 
     def test_remote_localhost(self):
         addr = Address.as_client(None, 8888)
@@ -90,7 +92,9 @@ class RunModuleTests(RunBase, unittest.TestCase):
             '--file', 'spam:',
         ])
         self.assertEqual(self.addr, Address.as_client(*addr))
-        self.assertEqual(self.kwargs, {})
+        self.assertEqual(self.kwargs, {
+            'singlesession': True,
+        })
 
     def test_extra(self):
         addr = (None, 8888)
@@ -159,7 +163,9 @@ class RunScriptTests(RunBase, unittest.TestCase):
             '--file', 'spam.py',
         ])
         self.assertEqual(self.addr, Address.as_client(*addr))
-        self.assertEqual(self.kwargs, {})
+        self.assertEqual(self.kwargs, {
+            'singlesession': True,
+        })
 
     def test_remote_localhost(self):
         addr = Address.as_client(None, 8888)
@@ -172,7 +178,9 @@ class RunScriptTests(RunBase, unittest.TestCase):
             '--file', 'spam.py',
         ])
         self.assertEqual(self.addr, Address.as_client(*addr))
-        self.assertEqual(self.kwargs, {})
+        self.assertEqual(self.kwargs, {
+            'singlesession': True,
+        })
 
     def test_extra(self):
         addr = (None, 8888)
