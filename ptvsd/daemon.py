@@ -12,7 +12,7 @@ from .session import DebugSession
 from ._util import ignore_errors, debug
 
 
-def _wait_on_exit():
+def _wait_for_user():
     if sys.__stdout__ is not None:
         try:
             import msvcrt
@@ -54,10 +54,10 @@ class Daemon(object):
 
     exitcode = 0
 
-    def __init__(self, wait_on_exit=_wait_on_exit,
+    def __init__(self, wait_for_user=_wait_for_user,
                  addhandlers=True, killonclose=True,
                  hidebadsessions=True):
-        self.wait_on_exit = wait_on_exit
+        self._wait_for_user = wait_for_user
         self.killonclose = killonclose
         self.hidebadsessions = hidebadsessions
 
@@ -274,7 +274,7 @@ class Daemon(object):
         if session is not None:
             normal, abnormal = session.wait_options()
             if (normal and not self.exitcode) or (abnormal and self.exitcode):
-                self.wait_on_exit()
+                self._wait_for_user()
 
     def _start(self):
         self._numstarts += 1
