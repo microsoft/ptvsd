@@ -6,7 +6,7 @@ import argparse
 import os.path
 import sys
 
-from ptvsd._main import debug_main, run_main
+from ptvsd._local import debug_main, run_main
 from ptvsd.socket import Address
 from ptvsd.version import __version__, __author__  # noqa
 

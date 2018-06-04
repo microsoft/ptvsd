@@ -5,7 +5,7 @@ from _pydevd_bundle import pydevd_comm
 
 import ptvsd.pydevd_hooks
 from ptvsd.socket import Address
-from ptvsd._main import run_module, run_file
+from ptvsd._local import run_module, run_file
 
 
 class FakePyDevd(object):
