@@ -356,6 +356,13 @@ class Daemon(object):
                     debug('session lock released')
         debug('session stopped')
 
+        if self._singlesession:
+            debug('closing daemon after single session')
+            try:
+                self.close()
+            except DaemonClosedError:
+                pass
+
     def _handle_atexit(self):
         self._exiting_via_atexit_handler = True
         if not self._closed:
