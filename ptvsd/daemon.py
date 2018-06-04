@@ -64,6 +64,7 @@ class Daemon(object):
 
         self._closed = False
         self._exiting_via_atexit_handler = False
+        self._wait_on_exit = (lambda ec: False)
 
         self._pydevd = None
         self._server = None
@@ -271,11 +272,9 @@ class Daemon(object):
 
     def _close(self):
         self._closed = True
-        session = self._stop()
-        if session is not None:
-            normal, abnormal = session.wait_options()
-            if (normal and not self.exitcode) or (abnormal and self.exitcode):
-                self._wait_for_user()
+        self._stop()
+        if self._wait_on_exit(self.exitcode):
+            self._wait_for_user()
 
     def _start(self):
         self._numstarts += 1
@@ -342,26 +341,34 @@ class Daemon(object):
         self._session = None
 
         try:
-            if session is not None:
-                session.stop(self.exitcode if self._server is None else None)
-                session.close()
+            self._close_session(session)
+            debug('session stopped')
         finally:
             sessionlock = self._sessionlock
-            if sessionlock is not None:
-                try:
-                    sessionlock.release()
-                except Exception:  # TODO: Make it more specific?
-                    debug('session lock not released')
-                else:
-                    debug('session lock released')
-        debug('session stopped')
-
-        if self._singlesession:
-            debug('closing daemon after single session')
             try:
-                self.close()
-            except DaemonClosedError:
-                pass
+                sessionlock.release()
+            except Exception:  # TODO: Make it more specific?
+                debug('session lock not released')
+            else:
+                debug('session lock released')
+
+            if self._singlesession:
+                debug('closing daemon after single session')
+                self._wait_on_exit = session.get_wait_on_exit()
+                try:
+                    self.close()
+                except DaemonClosedError:
+                    pass
+
+    def _close_session(self, session):
+        if session is None:
+            return
+
+        if self._server is None:
+            session.stop(self.exitcode)
+        else:
+            session.stop()
+        session.close()
 
     def _handle_atexit(self):
         self._exiting_via_atexit_handler = True

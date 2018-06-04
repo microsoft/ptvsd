@@ -82,6 +82,18 @@ class DebugSession(Startable, Closeable):
         # TODO: Do this in VSCodeMessageProcessor.close()?
         self._msgprocessor._wait_for_server_thread()
 
+    def get_wait_on_exit(self):
+        """Return a wait_on_exit(exitcode) func.
+
+        The func returns True if process should wait for the user
+        before exiting.
+        """
+        normal, abnormal = self.wait_options()
+
+        def wait_on_exit(exitcode):
+            return (normal and not exitcode) or (abnormal and exitcode)
+        return wait_on_exit
+
     # internal methods
 
     def _start(self, threadname, pydevd_notify, pydevd_request, timeout=None):
