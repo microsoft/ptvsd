@@ -9,9 +9,9 @@ from ptvsd.pydevd_hooks import install
 from ptvsd.runner import run as no_debug_runner
 from ptvsd.socket import Address, create_server
 
+
 ########################
 # high-level functions
-
 
 def debug_main(address, name, kind, *extra, **kwargs):
     if kind == 'module':
@@ -23,9 +23,9 @@ def debug_main(address, name, kind, *extra, **kwargs):
 def run_main(address, name, kind, *extra, **kwargs):
     no_debug_runner(address, name, kind == 'module', *extra, **kwargs)
 
+
 ########################
 # low-level functions
-
 
 def run_module(address, modname, *extra, **kwargs):
     """Run pydevd for the given module."""
@@ -100,6 +100,12 @@ def _run(argv, addr, _pydevd=pydevd, _install=install, **kwargs):
         daemon.exitcode = int(ex.code)
         raise
 
+
+# TODO: Split up enable_attach() to align with module organization.
+# This should including making better use of Daemon (e,g, the
+# start_server() method).
+# Then move at least some parts to the appropriate modules.  This module
+# is focused on running the debugger.
 
 def enable_attach(address, redirect_output=True,
                   _pydevd=pydevd, _install=install,

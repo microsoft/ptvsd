@@ -74,6 +74,9 @@ def enable_attach(address=(DEFAULT_HOST, DEFAULT_PORT), redirect_output=True):
     ptvsd_enable_attach(address, redirect_output, on_attach=_attached.set)
 
 
+# TODO: Add disable_attach()?
+
+
 def is_attached():
     """Returns ``True`` if debugger is attached, ``False`` otherwise."""
     return _attached.isSet()
