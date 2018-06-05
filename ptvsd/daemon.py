@@ -57,21 +57,28 @@ class Daemon(object):
     def __init__(self, wait_for_user=_wait_for_user,
                  addhandlers=True, killonclose=True,
                  singlesession=False):
-        self._wait_for_user = wait_for_user
-        self._killonclose = killonclose
-        self._singlesession = singlesession
 
         self._closed = False
-        self._exiting_via_atexit_handler = False
-        self._wait_on_exit = (lambda ec: False)
 
         self._pydevd = None
-        self._server = None
         self._numstarts = 0
 
+        # session-related
+
+        self._singlesession = singlesession
+
+        self._server = None
         self._session = None
         self._numsessions = 0
         self._sessionlock = None
+
+        # proc-related
+
+        self._wait_for_user = wait_for_user
+        self._killonclose = killonclose
+
+        self._exiting_via_atexit_handler = False
+        self._wait_on_exit = (lambda ec: False)
 
         self._exithandlers = ExitHandlers()
         if addhandlers:
