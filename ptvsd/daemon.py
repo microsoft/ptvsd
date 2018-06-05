@@ -190,7 +190,7 @@ class Daemon(object):
         pydevd = self._pydevd
 
         def start_session():
-            self._check_running()
+            self._check_ready_for_session()
             if self._server is not None:
                 raise RuntimeError('running as server')
             if self._numsessions:
