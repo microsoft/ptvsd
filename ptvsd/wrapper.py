@@ -149,6 +149,22 @@ def filter_ptvsd_files(file_path):
 pydevd_frame.file_tracing_filter = filter_ptvsd_files
 
 
+STDLIB_PATH_PREFIXES = [os.path.normcase(sys.prefix)]
+# If we're running in a virtual env, DEBUG_STDLIB should respect this too.
+if hasattr(sys, 'base_prefix'):
+    STDLIB_PATH_PREFIXES.append(os.path.normcase(sys.base_prefix))
+if hasattr(sys, 'real_prefix'):
+    STDLIB_PATH_PREFIXES.append(os.path.normcase(sys.real_prefix))
+
+IMPORTLIB_BOOTSTRAP = []
+if sys.version_info >= (3, 3):
+    IMPORTLIB_BOOTSTRAP.append(
+        os.path.normcase('<frozen importlib._bootstrap>'))
+if sys.version_info >= (3, 5):
+    IMPORTLIB_BOOTSTRAP.append(
+        os.path.normcase('<frozen importlib._bootstrap_external>'))
+
+
 class UnsupportedPyDevdCommandError(Exception):
 
     def __init__(self, cmdid):
@@ -1992,6 +2008,22 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
                                                       False)
         self.send_response(request)
 
+    def _is_stdlib(self, filepath):
+        if not self.debug_options.get('DEBUG_STDLIB', False):
+            if filepath in IMPORTLIB_BOOTSTRAP:
+                return True
+            for prefix in STDLIB_PATH_PREFIXES:
+                if prefix != '' and filepath.startswith(prefix):
+                    return True
+        return False
+
+    def _should_debug(self, filepath):
+        opts = not self.debug_options.get('DEBUG_STDLIB', False) or \
+            self.debug_options.get('JUST_MY_CODE', False)
+        if opts and self._is_stdlib(filepath):
+            return False
+        return True
+
     # PyDevd protocol event handlers
 
     @pydevd_events.handler(pydevd_comm.CMD_THREAD_CREATE)
@@ -2042,6 +2074,13 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
             pydevd_comm.CMD_ADD_EXCEPTION_BREAK
         }
 
+        xframes = list(xml.thread.frame)
+        xframe = xframes[0]
+        filepath = unquote(xframe['file'])
+        if not self._should_debug(filepath):
+            self.pydevd_notify(pydevd_comm.CMD_THREAD_RUN, pyd_tid)
+            return
+
         try:
             vsc_tid = self.thread_map.to_vscode(pyd_tid, autogen=False)
         except KeyError:
@@ -2068,7 +2107,6 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         if reason == 'exception':
             # Get exception info from frame
             try:
-                xframes = list(xml.thread.frame)
                 xframe = xframes[0]
                 pyd_fid = xframe['id']
                 cmdargs = '{}\t{}\tFRAME\t__exception__'.format(pyd_tid,
