@@ -164,9 +164,9 @@ class Daemon(object):
                 client = connect(server, None, **kwargs)
                 self._bind_session(client)
                 debug('starting session')
-                self._start_session(session, 'ptvsd.Server', timeout)
+                self._start_session('ptvsd.Server', timeout)
                 debug('session started')
-                return session
+                return self._session
             except Exception as exc:
                 debug('session exc:', exc, tb=True)
                 with ignore_errors():
@@ -199,7 +199,7 @@ class Daemon(object):
             try:
                 self._bind_session(client)
                 self._start_session('ptvsd.Client', None)
-                return session
+                return self._session
             except Exception:
                 self._stop_quietly()
                 raise
