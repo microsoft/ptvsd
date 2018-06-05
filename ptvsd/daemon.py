@@ -351,7 +351,8 @@ class Daemon(object):
 
     def _release_session(self, stop=True):
         session = self.session
-        self._session = None  # XXX wrong?
+        if not self._singlesession:
+            self._session = None
 
         if stop:
             exitcode = None
@@ -388,7 +389,6 @@ class Daemon(object):
         self._exiting_via_atexit_handler = True
         if not self._closed:  # XXX wrong?
             self._close()
-        # TODO: Is this broken (due to always clearing self._session on close?
         if self.session is not None:
             self.session.wait_until_stopped()
 
