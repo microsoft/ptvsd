@@ -330,7 +330,8 @@ class Daemon(object):
     def _handle_signal(self, signum, frame):
         if not self._closed:
             self._close()
-        sys.exit(0)
+        if not self._exiting_via_atexit_handler:
+            sys.exit(0)
 
     def _handle_session_closing(self, session, kill=False):
         debug('handling closing session')
@@ -341,8 +342,9 @@ class Daemon(object):
 
         if not self._closed:
             self._close()
-        if kill and self._killonclose and not self._exiting_via_atexit_handler:
-            kill_current_proc()
+        if kill and self._killonclose:
+            if not self._exiting_via_atexit_handler:
+                kill_current_proc()
 
     # internal session-related methods
 
