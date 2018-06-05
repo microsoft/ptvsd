@@ -71,8 +71,8 @@ class Daemon(object):
         self._numstarts = 0
 
         self._session = None
-        self._sessionlock = None
         self._numsessions = 0
+        self._sessionlock = None
 
         self._exithandlers = ExitHandlers()
         if addhandlers:
@@ -320,6 +320,33 @@ class Daemon(object):
         with ignore_errors():
             self._stop()
 
+    def _handle_atexit(self):
+        self._exiting_via_atexit_handler = True
+        if not self._closed:
+            self._close()
+        # TODO: Is this broken (due to always clearing self._session on close?
+        if self._session is not None:
+            self._session.wait_until_stopped()
+
+    def _handle_signal(self, signum, frame):
+        if not self._closed:
+            self._close()
+        sys.exit(0)
+
+    def _handle_session_closing(self, kill=False):
+        debug('handling closing session')
+        if self._server is not None and not kill:
+            self._session = None
+            self._stop_session()
+            return
+
+        if not self._closed:
+            self._close()
+        if kill and self._killonclose and not self._exiting_via_atexit_handler:
+            kill_current_proc()
+
+    # internal session-related methods
+
     def _start_session(self, session, threadname, timeout):
         self._session = session
         self._numsessions += 1
@@ -370,35 +397,10 @@ class Daemon(object):
             session.stop()
         session.close()
 
-    def _handle_atexit(self):
-        self._exiting_via_atexit_handler = True
-        if not self._closed:
-            self._close()
-        # TODO: Is this broken (due to always clearing self._session on close?
-        if self._session is not None:
-            self._session.wait_until_stopped()
-
-    def _handle_signal(self, signum, frame):
-        if not self._closed:
-            self._close()
-        sys.exit(0)
-
-    def _handle_session_closing(self, kill=False):
-        debug('handling closing session')
-        if self._server is not None and not kill:
-            self._session = None
-            self._stop_session()
-            return
-
-        if not self._closed:
-            self._close()
-        if kill and self._killonclose and not self._exiting_via_atexit_handler:
-            kill_current_proc()
-
     # internal methods for PyDevdSocket().
 
     def _handle_pydevd_message(self, cmdid, seq, text):
-        if self._session is None:
+        if self.session is None:
             # TODO: Do more than ignore?
             return
         self._session.handle_pydevd_message(cmdid, seq, text)
@@ -409,11 +411,11 @@ class Daemon(object):
         self._close()
 
     def _getpeername(self):
-        if self._session is None:
+        if self.session is None:
             raise NotImplementedError
-        return self._session.socket.getpeername()
+        return self.session.socket.getpeername()
 
     def _getsockname(self):
-        if self._session is None:
+        if self.session is None:
             raise NotImplementedError
-        return self._session.socket.getsockname()
+        return self.session.socket.getsockname()
