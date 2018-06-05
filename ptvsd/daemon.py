@@ -58,10 +58,10 @@ class Daemon(object):
                  addhandlers=True, killonclose=True,
                  singlesession=False):
 
+        self._started = False
         self._closed = False
 
-        self._pydevd = None
-        self._numstarts = 0
+        self._pydevd = None  # set when started
 
         # session-related
 
@@ -94,22 +94,27 @@ class Daemon(object):
         return self._session
 
     @contextlib.contextmanager
-    def started(self, stoponcmexit=True):
-        """A context manager that starts the daemon.
-
-        If there's a failure then the daemon is stopped.  It is also
-        stopped at the end of the with block if "stoponcmexit" is True
-        (the default).
-        """
-        pydevd = self.start()
+    def started(self):
+        """A context manager that starts the daemon and stops it for errors."""
+        self.start()
         try:
-            yield pydevd
+            yield self
         except Exception:
             self._stop_quietly()
             raise
-        else:
-            if stoponcmexit:
-                self._stop_quietly()
+
+    @contextlib.contextmanager
+    def running(self):
+        """A context manager that starts the daemon.
+
+        If there's a failure then the daemon is stopped.  It is also
+        stopped at the end of the with block.
+        """
+        self.start()
+        try:
+            yield self
+        finally:
+            self._stop_quietly()
 
     def is_running(self):
         """Return True if the daemon is running."""
@@ -121,28 +126,21 @@ class Daemon(object):
         """Return the "socket" to use for pydevd after setting it up."""
         if self._closed:
             raise DaemonClosedError()
-        if self._pydevd is not None:
+        if self._started:
             raise RuntimeError('already started')
+        self._started = True
 
         return self._start()
-
-    def stop(self):
-        """Un-start the daemon (i.e. stop the "socket")."""
-        if self._closed:
-            raise DaemonClosedError()
-        if self._pydevd is None:
-            raise RuntimeError('not started')
-
-        self._stop()
 
     def start_server(self, addr, hidebadsessions=True):
         """Return (pydevd "socket", next_session) with a new server socket."""
         addr = Address.from_raw(addr)
-        with self.started(stoponcmexit=False) as pydevd:
+        with self.started():
             assert self._sessionlock is None
             assert self._session is None
             self._server = create_server(addr.host, addr.port)
             self._sessionlock = threading.Lock()
+        pydevd = self._pydevd
 
         def next_session(**kwargs):
             if self._closed:
@@ -190,10 +188,11 @@ class Daemon(object):
     def start_client(self, addr):
         """Return (pydevd "socket", start_session) with a new client socket."""
         addr = Address.from_raw(addr)
-        with self.started(stoponcmexit=False) as pydevd:
+        with self.started():
             assert self._session is None
             client = create_client()
             connect(client, addr)
+        pydevd = self._pydevd
 
         def start_session():
             if self._closed:
@@ -264,7 +263,6 @@ class Daemon(object):
             self._wait_for_user()
 
     def _start(self):
-        self._numstarts += 1
         self._pydevd = wrapper.PydevdSocket(
             self._handle_pydevd_message,
             self._handle_pydevd_close,
