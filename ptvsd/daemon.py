@@ -391,8 +391,8 @@ class Daemon(object):
         if not self._closed:
             self._close()
         # TODO: Is this broken (due to always clearing self._session on close?
-        if self._session is not None:
-            self._session.wait_until_stopped()
+        if self.session is not None:
+            self.session.wait_until_stopped()
 
     def _handle_signal(self, signum, frame):
         if not self._closed:
@@ -406,7 +406,7 @@ class Daemon(object):
         if self.session is None:
             # TODO: Do more than ignore?
             return
-        self._session.handle_pydevd_message(cmdid, seq, text)
+        self.session.handle_pydevd_message(cmdid, seq, text)
 
     def _handle_pydevd_close(self):
         if self._closed:
