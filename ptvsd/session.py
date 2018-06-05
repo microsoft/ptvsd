@@ -44,7 +44,7 @@ class DebugSession(Startable, Closeable):
             def handle_closing(before):
                 if not before:
                     return
-                notify_closing(kill=self._killrequested)
+                notify_closing(self, kill=self._killrequested)
             self.add_close_handler(handle_closing)
 
         self._msgprocessor = None

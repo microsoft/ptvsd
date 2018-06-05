@@ -332,7 +332,7 @@ class Daemon(object):
             self._close()
         sys.exit(0)
 
-    def _handle_session_closing(self, kill=False):
+    def _handle_session_closing(self, session, kill=False):
         debug('handling closing session')
         if self._server is not None and not kill:
             self._session = None
