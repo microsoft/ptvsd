@@ -2018,7 +2018,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         return False
 
     def _should_debug(self, filepath):
-        opts = not self.debug_options.get('DEBUG_STDLIB', False) or \
+        opts = not self.debug_options.get('DEBUG_STDLIB', True) or \
             self.debug_options.get('JUST_MY_CODE', False)
         if opts and self._is_stdlib(filepath):
             return False
@@ -2077,9 +2077,10 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         xframes = list(xml.thread.frame)
         xframe = xframes[0]
         filepath = unquote(xframe['file'])
-        if not self._should_debug(filepath):
-            self.pydevd_notify(pydevd_comm.CMD_THREAD_RUN, pyd_tid)
-            return
+        if reason in STEP_REASONS or reason in EXCEPTION_REASONS:
+            if not self._should_debug(filepath):
+                self.pydevd_notify(pydevd_comm.CMD_THREAD_RUN, pyd_tid)
+                return
 
         try:
             vsc_tid = self.thread_map.to_vscode(pyd_tid, autogen=False)
