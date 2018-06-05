@@ -75,7 +75,7 @@ class Daemon(object):
 
         self._exithandlers = ExitHandlers()
         if addhandlers:
-            self.install_exit_handlers()
+            self._install_exit_handlers()
 
     @property
     def pydevd(self):
@@ -85,25 +85,6 @@ class Daemon(object):
     def session(self):
         """The current session."""
         return self._session
-
-    def install_exit_handlers(self):
-        """Set the placeholder handlers."""
-        self._exithandlers.install()
-
-        try:
-            self._exithandlers.add_atexit_handler(self._handle_atexit)
-        except ValueError:
-            pass
-        for signum in self._exithandlers.SIGNALS:
-            try:
-                self._exithandlers.add_signal_handler(signum,
-                                                      self._handle_signal)
-            except ValueError:
-                # Already added.
-                pass
-            except UnsupportedSignalError:
-                # TODO: This shouldn't happen.
-                pass
 
     @contextlib.contextmanager
     def started(self, stoponcmexit=True):
@@ -268,6 +249,25 @@ class Daemon(object):
         return self._session.re_build_breakpoints()
 
     # internal methods
+
+    def _install_exit_handlers(self):
+        """Set the placeholder handlers."""
+        self._exithandlers.install()
+
+        try:
+            self._exithandlers.add_atexit_handler(self._handle_atexit)
+        except ValueError:
+            pass
+        for signum in self._exithandlers.SIGNALS:
+            try:
+                self._exithandlers.add_signal_handler(signum,
+                                                      self._handle_signal)
+            except ValueError:
+                # Already added.
+                pass
+            except UnsupportedSignalError:
+                # TODO: This shouldn't happen.
+                pass
 
     def _close(self):
         self._closed = True
