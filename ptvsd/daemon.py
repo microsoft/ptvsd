@@ -56,11 +56,10 @@ class Daemon(object):
 
     def __init__(self, wait_for_user=_wait_for_user,
                  addhandlers=True, killonclose=True,
-                 singlesession=False, hidebadsessions=True):
+                 singlesession=False):
         self._wait_for_user = wait_for_user
         self._killonclose = killonclose
         self._singlesession = singlesession
-        self._hidebadsessions = hidebadsessions
 
         self._closed = False
         self._exiting_via_atexit_handler = False
@@ -148,7 +147,7 @@ class Daemon(object):
 
         self._stop()
 
-    def start_server(self, addr):
+    def start_server(self, addr, hidebadsessions=True):
         """Return (pydevd "socket", next_session) with a new server socket."""
         addr = Address.from_raw(addr)
         with self.started(stoponcmexit=False) as pydevd:
@@ -191,7 +190,7 @@ class Daemon(object):
                 debug('session exc:', exc, tb=True)
                 with ignore_errors():
                     self._stop_session()
-                if self._hidebadsessions:
+                if hidebadsessions:
                     debug('hiding bad session')
                     # TODO: Log the error?
                     return None
