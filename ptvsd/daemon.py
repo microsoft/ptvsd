@@ -137,7 +137,7 @@ class Daemon(object):
         addr = Address.from_raw(addr)
         with self.started():
             assert self._sessionlock is None
-            assert self._session is None
+            assert self.session is None
             self._server = create_server(addr.host, addr.port)
             self._sessionlock = threading.Lock()
         pydevd = self._pydevd
@@ -153,7 +153,7 @@ class Daemon(object):
             check_ready()
 
             debug('getting next session')
-            sessionlock.acquire()  # Released in _stop_session().
+            sessionlock.acquire()  # Released in _finish_session().
             debug('session lock acquired')
             # It may have closed or stopped while we waited.
             check_ready()
@@ -162,11 +162,7 @@ class Daemon(object):
             try:
                 debug('getting session socket')
                 client = connect(server, None, **kwargs)
-                session = DebugSession.from_raw(
-                    client,
-                    notify_closing=self._handle_session_closing,
-                    ownsock=True,
-                )
+                self._bind_session(client)
                 debug('starting session')
                 self._start_session(session, 'ptvsd.Server', timeout)
                 debug('session started')
@@ -174,7 +170,7 @@ class Daemon(object):
             except Exception as exc:
                 debug('session exc:', exc, tb=True)
                 with ignore_errors():
-                    self._stop_session()
+                    self._finish_session()
                 if hidebadsessions:
                     debug('hiding bad session')
                     # TODO: Log the error?
@@ -188,7 +184,7 @@ class Daemon(object):
         """Return (pydevd "socket", start_session) with a new client socket."""
         addr = Address.from_raw(addr)
         with self.started():
-            assert self._session is None
+            assert self.session is None
             client = create_client()
             connect(client, addr)
         pydevd = self._pydevd
@@ -201,12 +197,8 @@ class Daemon(object):
                 raise RuntimeError('session stopped')
 
             try:
-                session = DebugSession.from_raw(
-                    client,
-                    notify_closing=self._handle_session_closing,
-                    ownsock=True,
-                )
-                self._start_session(session, 'ptvsd.Client', None)
+                self._bind_session(client)
+                self._start_session('ptvsd.Client', None)
                 return session
             except Exception:
                 self._stop_quietly()
@@ -224,13 +216,9 @@ class Daemon(object):
         if self._server is not None:
             raise RuntimeError('running as server')
 
-        session = DebugSession.from_raw(
-            session,
-            notify_closing=self._handle_session_closing,
-            ownsock=True,
-        )
-        self._start_session(session, threadname, timeout)
-        return session
+        self._bind_session(session)
+        self._start_session(threadname, timeout)
+        return self.session
 
     def close(self):
         """Stop all loops and release all resources."""
@@ -242,9 +230,9 @@ class Daemon(object):
 
     def re_build_breakpoints(self):
         """Restore the breakpoints to their last values."""
-        if self._session is None:
+        if self.session is None:
             return
-        return self._session.re_build_breakpoints()
+        return self.session.re_build_breakpoints()
 
     # internal methods
 
@@ -255,7 +243,7 @@ class Daemon(object):
             raise DaemonStoppedError('never started')
         if self._pydevd is None:
             raise DaemonStoppedError()
-        if self._session is not None:
+        if self.session is not None:
             raise RuntimeError('session already started')
 
     def _close(self):
@@ -282,7 +270,7 @@ class Daemon(object):
         self._server = None
 
         with ignore_errors():
-            self._stop_session()
+            self._finish_session()
 
         if sessionlock is not None:
             try:
@@ -307,8 +295,7 @@ class Daemon(object):
     def _handle_session_closing(self, session, kill=False):
         debug('handling closing session')
         if self._server is not None and not kill:
-            self._session = None
-            self._stop_session()
+            self._finish_session(stop=False)
             return
 
         if not self._closed:  # XXX wrong?
@@ -319,28 +306,31 @@ class Daemon(object):
 
     # internal session-related methods
 
-    def _start_session(self, session, threadname, timeout):
+    def _bind_session(self, session):
+        session = DebugSession.from_raw(
+            session,
+            notify_closing=self._handle_session_closing,
+            ownsock=True,
+        )
         self._session = session
         self._numsessions += 1
+
+    def _start_session(self, threadname, timeout):
         try:
-            session.start(
+            self.session.start(
                 threadname,
                 self._pydevd.pydevd_notify,
                 self._pydevd.pydevd_request,
                 timeout=timeout,
             )
         except Exception:
-            assert self._session is session
             with ignore_errors():
-                self._stop_session()
+                self._finish_session()
             raise
 
-    def _stop_session(self):
-        session = self._session
-        self._session = None
-
+    def _finish_session(self, stop=True):
         try:
-            self._close_session(session)
+            session = self._release_session(stop=stop)
             debug('session stopped')
         finally:
             sessionlock = self._sessionlock
@@ -359,15 +349,19 @@ class Daemon(object):
                 except DaemonClosedError:
                     pass
 
-    def _close_session(self, session):
-        if session is None:
-            return
+    def _release_session(self, stop=True):
+        session = self.session
+        self._session = None  # XXX wrong?
 
-        if self._server is None:
-            session.stop(self.exitcode)
-        else:
-            session.stop()
-        session.close()
+        if stop:
+            exitcode = None
+            if self._server is None:
+                # Trigger a VSC "exited" event.
+                exitcode = self.exitcode or 0
+            session.stop(exitcode)
+            session.close()
+
+        return session
 
     # internal proc-related methods
 
@@ -407,7 +401,7 @@ class Daemon(object):
     # internal methods for PyDevdSocket().
 
     def _handle_pydevd_message(self, cmdid, seq, text):
-        if self.session is None:
+        if self.session is None or self.session.closed:
             # TODO: Do more than ignore?
             return
         self.session.handle_pydevd_message(cmdid, seq, text)
@@ -418,11 +412,11 @@ class Daemon(object):
         self._close()
 
     def _getpeername(self):
-        if self.session is None:
+        if self.session is None or self.session.closed:
             raise NotImplementedError
         return self.session.socket.getpeername()
 
     def _getsockname(self):
-        if self.session is None:
+        if self.session is None or self.session.closed:
             raise NotImplementedError
         return self.session.socket.getsockname()
