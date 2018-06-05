@@ -142,23 +142,22 @@ class Daemon(object):
             self._sessionlock = threading.Lock()
         pydevd = self._pydevd
 
-        def next_session(**kwargs):
-            if self._closed:
-                raise DaemonClosedError()
-            server = self._server
-            if self._pydevd is None or server is None:
-                raise DaemonStoppedError()
-            sessionlock = self._sessionlock
-            if sessionlock is None:
+        def check_ready():
+            self._check_ready_for_session()
+            if self._server is None:
                 raise DaemonStoppedError()
 
+        def next_session(**kwargs):
+            server = self._server
+            sessionlock = self._sessionlock
+            check_ready()
+
             debug('getting next session')
-            sessionlock.acquire()  # Released in _handle_session_closing().
+            sessionlock.acquire()  # Released in _stop_session().
             debug('session lock acquired')
-            if self._closed:
-                raise DaemonClosedError()
-            if self._pydevd is None or self._server is None:
-                raise DaemonStoppedError()
+            # It may have closed or stopped while we waited.
+            check_ready()
+
             timeout = kwargs.pop('timeout', None)
             try:
                 debug('getting session socket')
@@ -195,12 +194,9 @@ class Daemon(object):
         pydevd = self._pydevd
 
         def start_session():
-            if self._closed:
-                raise DaemonClosedError()
-            if self._pydevd is None:
-                raise DaemonStoppedError()
-            if self._session is not None:
-                raise RuntimeError('session already started')
+            self._check_running()
+            if self._server is not None:
+                raise RuntimeError('running as server')
             if self._numsessions:
                 raise RuntimeError('session stopped')
 
@@ -224,14 +220,9 @@ class Daemon(object):
         If "session" is a client socket then a session is created
         from it.
         """
-        if self._closed:
-            raise DaemonClosedError()
-        if self._pydevd is None:
-            raise RuntimeError('not started yet')
+        self._check_ready_for_session()
         if self._server is not None:
             raise RuntimeError('running as server')
-        if self._session is not None:
-            raise RuntimeError('session already started')
 
         session = DebugSession.from_raw(
             session,
@@ -245,6 +236,7 @@ class Daemon(object):
         """Stop all loops and release all resources."""
         if self._closed:
             raise DaemonClosedError('already closed')
+        self._closed = True
 
         self._close()
 
@@ -256,9 +248,21 @@ class Daemon(object):
 
     # internal methods
 
+    def _check_ready_for_session(self):
+        if self._closed:
+            raise DaemonClosedError()
+        if not self._started:
+            raise DaemonStoppedError('never started')
+        if self._pydevd is None:
+            raise DaemonStoppedError()
+        if self._session is not None:
+            raise RuntimeError('session already started')
+
     def _close(self):
-        self._closed = True
         self._stop()
+
+        self._pydevd = None
+
         if self._wait_on_exit(self.exitcode):
             self._wait_for_user()
 
@@ -276,10 +280,7 @@ class Daemon(object):
         self._sessionlock = None
         server = self._server
         self._server = None
-        pydevd = self._pydevd
-        self._pydevd = None
 
-        session = self._session
         with ignore_errors():
             self._stop_session()
 
@@ -293,14 +294,12 @@ class Daemon(object):
             with ignore_errors():
                 close_socket(server)
 
-        if pydevd is not None:
+        if self._pydevd is not None:
             with ignore_errors():
-                close_socket(pydevd)
-
-        return session
+                close_socket(self._pydevd)
 
     def _stop_quietly(self):
-        if self._closed:
+        if self._closed:  # XXX wrong?
             return
         with ignore_errors():
             self._stop()
@@ -312,7 +311,7 @@ class Daemon(object):
             self._stop_session()
             return
 
-        if not self._closed:
+        if not self._closed:  # XXX wrong?
             self._close()
         if kill and self._killonclose:
             if not self._exiting_via_atexit_handler:
@@ -393,14 +392,14 @@ class Daemon(object):
 
     def _handle_atexit(self):
         self._exiting_via_atexit_handler = True
-        if not self._closed:
+        if not self._closed:  # XXX wrong?
             self._close()
         # TODO: Is this broken (due to always clearing self._session on close?
         if self.session is not None:
             self.session.wait_until_stopped()
 
     def _handle_signal(self, signum, frame):
-        if not self._closed:
+        if not self._closed:  # XXX wrong?
             self._close()
         if not self._exiting_via_atexit_handler:
             sys.exit(0)
@@ -414,7 +413,7 @@ class Daemon(object):
         self.session.handle_pydevd_message(cmdid, seq, text)
 
     def _handle_pydevd_close(self):
-        if self._closed:
+        if self._closed:  # XXX wrong?
             return
         self._close()
 
