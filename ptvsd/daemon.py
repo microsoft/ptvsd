@@ -250,25 +250,6 @@ class Daemon(object):
 
     # internal methods
 
-    def _install_exit_handlers(self):
-        """Set the placeholder handlers."""
-        self._exithandlers.install()
-
-        try:
-            self._exithandlers.add_atexit_handler(self._handle_atexit)
-        except ValueError:
-            pass
-        for signum in self._exithandlers.SIGNALS:
-            try:
-                self._exithandlers.add_signal_handler(signum,
-                                                      self._handle_signal)
-            except ValueError:
-                # Already added.
-                pass
-            except UnsupportedSignalError:
-                # TODO: This shouldn't happen.
-                pass
-
     def _close(self):
         self._closed = True
         self._stop()
@@ -318,20 +299,6 @@ class Daemon(object):
             return
         with ignore_errors():
             self._stop()
-
-    def _handle_atexit(self):
-        self._exiting_via_atexit_handler = True
-        if not self._closed:
-            self._close()
-        # TODO: Is this broken (due to always clearing self._session on close?
-        if self._session is not None:
-            self._session.wait_until_stopped()
-
-    def _handle_signal(self, signum, frame):
-        if not self._closed:
-            self._close()
-        if not self._exiting_via_atexit_handler:
-            sys.exit(0)
 
     def _handle_session_closing(self, session, kill=False):
         debug('handling closing session')
@@ -397,6 +364,41 @@ class Daemon(object):
         else:
             session.stop()
         session.close()
+
+    # internal proc-related methods
+
+    def _install_exit_handlers(self):
+        """Set the placeholder handlers."""
+        self._exithandlers.install()
+
+        try:
+            self._exithandlers.add_atexit_handler(self._handle_atexit)
+        except ValueError:
+            pass
+        for signum in self._exithandlers.SIGNALS:
+            try:
+                self._exithandlers.add_signal_handler(signum,
+                                                      self._handle_signal)
+            except ValueError:
+                # Already added.
+                pass
+            except UnsupportedSignalError:
+                # TODO: This shouldn't happen.
+                pass
+
+    def _handle_atexit(self):
+        self._exiting_via_atexit_handler = True
+        if not self._closed:
+            self._close()
+        # TODO: Is this broken (due to always clearing self._session on close?
+        if self._session is not None:
+            self._session.wait_until_stopped()
+
+    def _handle_signal(self, signum, frame):
+        if not self._closed:
+            self._close()
+        if not self._exiting_via_atexit_handler:
+            sys.exit(0)
 
     # internal methods for PyDevdSocket().
 
