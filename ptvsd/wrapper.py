@@ -2006,18 +2006,20 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
     # VS specific custom message handlers
     @async_handler
     def on_setDebuggerProperty(self, request, args):
-        self.debug_options['JUST_MY_CODE'] = args.get('JustMyCodeStepping',
-                                                      False)
+        jmc = int(args.get('JustMyCodeStepping', 0))
+        self.debug_options['JUST_MY_CODE'] = jmc > 0
         self.send_response(request)
 
     def _is_stdlib(self, filepath):
-        if not self.debug_options.get('DEBUG_STDLIB', False):
-            for name in IMPORTLIB_BOOTSTRAP:
-                if filepath.endswith(name):
-                    return True
-            for prefix in STDLIB_PATH_PREFIXES:
-                if prefix != '' and filepath.startswith(prefix):
-                    return True
+        for name in IMPORTLIB_BOOTSTRAP:
+            if filepath.endswith(name):
+                return True
+        for prefix in STDLIB_PATH_PREFIXES:
+            if prefix != '' and filepath.startswith(prefix):
+                return True
+        for name in DONT_TRACE_FILES:
+            if filepath.endswith(name):
+                return True
         return False
 
     def _should_debug(self, filepath):
