@@ -462,7 +462,8 @@ class ExceptionsManager(object):
                 pass
         return 'unhandled'
 
-    def add_exception_break(self, exception, break_raised, break_uncaught):
+    def add_exception_break(self, exception, break_raised, break_uncaught,
+                            skip_stdlib=False):
 
         # notify_always options:
         #   1 is deprecated, you will see a warning message
@@ -479,7 +480,7 @@ class ExceptionsManager(object):
         #   Less than or equal to 0 DO NOT ignore libraries (required
         #   for notify_always)
         #   Greater than 0 ignore libraries
-        ignore_libraries = 0
+        ignore_libraries = 1 if skip_stdlib else 0
         cmdargs = (
             exception,
             notify_always,
@@ -1920,7 +1921,8 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
             break_uncaught = 'uncaught' in filters
             if break_raised or break_uncaught:
                 self.exceptions_mgr.add_exception_break(
-                    'BaseException', break_raised, break_uncaught)
+                    'BaseException', break_raised, break_uncaught,
+                    skip_stdlib=self.debug_options.get('JUST_MY_CODE', True))
         self.send_response(request)
 
     @async_handler
@@ -2010,8 +2012,9 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
 
     def _is_stdlib(self, filepath):
         if not self.debug_options.get('DEBUG_STDLIB', False):
-            if filepath in IMPORTLIB_BOOTSTRAP:
-                return True
+            for name in IMPORTLIB_BOOTSTRAP:
+                if filepath.endswith(name):
+                    return True
             for prefix in STDLIB_PATH_PREFIXES:
                 if prefix != '' and filepath.startswith(prefix):
                     return True
@@ -2081,6 +2084,10 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
             if not self._should_debug(filepath):
                 self.pydevd_notify(pydevd_comm.CMD_THREAD_RUN, pyd_tid)
                 return
+            for filename in IMPORTLIB_BOOTSTRAP:
+                if filepath.endswith(filename):
+                    self.pydevd_notify(pydevd_comm.CMD_THREAD_RUN, pyd_tid)
+                    return
 
         try:
             vsc_tid = self.thread_map.to_vscode(pyd_tid, autogen=False)
