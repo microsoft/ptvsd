@@ -1922,7 +1922,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
             if break_raised or break_uncaught:
                 self.exceptions_mgr.add_exception_break(
                     'BaseException', break_raised, break_uncaught,
-                    skip_stdlib=self.debug_options.get('JUST_MY_CODE', True))
+                    skip_stdlib=self.debug_options.get('JUST_MY_CODE', False))
         self.send_response(request)
 
     @async_handler
