@@ -710,7 +710,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
     """
 
     def __init__(self, socket, pydevd_notify, pydevd_request,
-                 notify_disconnecting, notify_closing,
+                 notify_disconnecting, notify_closing, notify_launch=None,
                  timeout=None, logfile=None,
                  ):
         super(VSCodeMessageProcessor, self).__init__(socket=socket,
@@ -720,6 +720,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
         self.socket = socket
         self._pydevd_notify = pydevd_notify
         self._pydevd_request = pydevd_request
+        self._notify_launch = notify_launch or (lambda: None)
         self._notify_disconnecting = notify_disconnecting
         self._notify_closing = notify_closing
 
@@ -1103,6 +1104,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
     @async_handler
     def on_launch(self, request, args):
         # TODO: docstring
+        self._notify_launch()
         self.start_reason = 'launch'
         self._initialize_path_maps(args)
         options = self.build_debug_options(args.get('debugOptions', []))
