@@ -2,32 +2,28 @@
 # Licensed under the MIT License. See LICENSE in the project root
 # for license information.
 
-import atexit
-import os
-import platform
 import pydevd
-import signal
 import sys
 import time
 import threading
 import traceback
 
-from ptvsd.daemon import DaemonClosedError
-from ptvsd.pydevd_hooks import start_client
-from ptvsd.socket import close_socket
+from ptvsd.daemon import DaemonBase
+from ptvsd.session import DebugSession
 from ptvsd.wrapper import (
     WAIT_FOR_THREAD_FINISH_TIMEOUT, VSCLifecycleMsgProcessor)
 from pydevd import init_stdout_redirect, init_stderr_redirect
 
 
 HOSTNAME = 'localhost'
-WAIT_FOR_LAUNCH_REQUEST_TIMEOUT = 10000
 OUTPUT_POLL_PERIOD = 0.3
 
 
 def run(address, filename, is_module, *args, **kwargs):
+    # TODO: docstring
     # TODO: client/server -> address
-    if not start_message_processor(*address):
+    daemon = Daemon()
+    if not daemon.wait_for_launch(address):
         return
 
     debugger = pydevd.PyDB()
@@ -44,18 +40,8 @@ def run(address, filename, is_module, *args, **kwargs):
     time.sleep(OUTPUT_POLL_PERIOD + 0.1)
 
 
-def start_message_processor(host, port_num):
-    launch_notification = threading.Event()
-
-    daemon = Daemon(
-        notify_launch=launch_notification.set,
-        addhandlers=True, killonclose=True)
-    start_client(daemon, host, port_num)
-
-    return launch_notification.wait(WAIT_FOR_LAUNCH_REQUEST_TIMEOUT)
-
-
 class OutputRedirection(object):
+    # TODO: docstring
 
     def __init__(self, on_output=lambda category, output: None):
         self._on_output = on_output
@@ -63,6 +49,7 @@ class OutputRedirection(object):
         self._thread = None
 
     def start(self):
+        # TODO: docstring
         init_stdout_redirect()
         init_stderr_redirect()
         self._thread = threading.Thread(
@@ -73,6 +60,7 @@ class OutputRedirection(object):
         self._thread.start()
 
     def stop(self):
+        # TODO: docstring
         if self._stopped:
             return
 
@@ -80,7 +68,6 @@ class OutputRedirection(object):
         self._thread.join(WAIT_FOR_THREAD_FINISH_TIMEOUT)
 
     def _run(self):
-        import sys
         while not self._stopped:
             self._check_output(sys.stdoutBuf, 'stdout')
             self._check_output(sys.stderrBuf, 'stderr')
@@ -103,123 +90,33 @@ class OutputRedirection(object):
             traceback.print_exc()
 
 
-# TODO: Inherit from ptvsd.daemon.Daemon.
-
-class Daemon(object):
+class Daemon(DaemonBase):
     """The process-level manager for the VSC protocol debug adapter."""
 
-    def __init__(self,
-                 notify_launch=lambda: None,
-                 addhandlers=True,
-                 killonclose=True):
+    LAUNCH_TIMEOUT = 10000  # seconds
 
-        self.exitcode = 0
-        self.exiting_via_exit_handler = False
+    class SESSION(DebugSession):
+        class MESSAGE_PROCESSOR(VSCLifecycleMsgProcessor):
+            def on_invalid_request(self, request, args):
+                self.send_response(request, success=True)
 
-        self.addhandlers = addhandlers
-        self.killonclose = killonclose
-        self._notify_launch = notify_launch
+    def wait_for_launch(self, addr, timeout=LAUNCH_TIMEOUT):
+        # TODO: docstring
+        launched = threading.Event()
+        _, start_session = self.start_client(addr)
+        start_session(
+            notify_launch=launched.set,
+        )
+        return launched.wait(timeout)
 
-        self._closed = False
-        self._client = None
-        self._adapter = None
-
-    def start(self):
-        if self._closed:
-            raise DaemonClosedError()
-
+    def _start(self):
         self._output_monitor = OutputRedirection(self._send_output)
         self._output_monitor.start()
+        return None  # no debugger socket
 
-        return None
-
-    def start_session(self, client):
-        """Set the client socket to use for the debug adapter.
-
-        A VSC message loop is started for the client.
-        """
-        if self._closed:
-            raise DaemonClosedError()
-        if self._client is not None:
-            raise RuntimeError('connection already set')
-        self._client = client
-
-        self._adapter = VSCodeMessageProcessor(
-            client,
-            notify_disconnecting=self._handle_vsc_disconnect,
-            notify_closing=self._handle_vsc_close,
-            notify_launch=self._notify_launch,
-        )
-        self._adapter.start()
-        if self.addhandlers:
-            self._add_atexit_handler()
-            self._set_signal_handlers()
-        return self._adapter
-
-    def close(self):
-        """Stop all loops and release all resources."""
+    def _close(self):
         self._output_monitor.stop()
-        if self._closed:
-            raise DaemonClosedError('already closed')
-        self._closed = True
-
-        if self._client is not None:
-            self._release_connection()
-
-    # internal methods
-
-    def _add_atexit_handler(self):
-
-        def handler():
-            self.exiting_via_exit_handler = True
-            if not self._closed:
-                self.close()
-            if self._adapter is not None:
-                self._adapter._wait_for_server_thread()
-
-        atexit.register(handler)
-
-    def _set_signal_handlers(self):
-        if platform.system() == 'Windows':
-            return None
-
-        def handler(signum, frame):
-            if not self._closed:
-                self.close()
-            sys.exit(0)
-
-        signal.signal(signal.SIGHUP, handler)
-
-    def _release_connection(self):
-        if self._adapter is not None:
-            self._adapter.handle_stopped(self.exitcode)
-            self._adapter.close()
-        close_socket(self._client)
-
-    # internal methods for VSCLifecycleProcessor
-
-    def _handle_vsc_disconnect(self, kill=False):
-        if not self._closed:
-            self.close()
-        if kill and self.killonclose and not self.exiting_via_exit_handler:
-            os.kill(os.getpid(), signal.SIGTERM)
-
-    def _handle_vsc_close(self):
-        if self._closed:
-            return
-        self.close()
+        super(Daemon, self)._close()
 
     def _send_output(self, category, output):
         self._adapter.send_event('output', category=category, output=output)
-
-
-class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
-    """IPC JSON message processor for VSC debugger protocol.
-
-    This translates between the VSC debugger protocol and the pydevd
-    protocol.
-    """
-
-    def on_invalid_request(self, request, args):
-        # TODO: docstring
-        self.send_response(request, success=True)
