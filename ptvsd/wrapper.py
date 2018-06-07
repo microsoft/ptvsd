@@ -860,6 +860,7 @@ class VSCodeMessageProcessor(ipcjson.SocketIO, ipcjson.IpcChannel):
             self.disconnect_request = None
 
     def _handle_disconnect(self, request):
+        assert self.start_reason == 'launch'
         self.disconnect_request = request
         self.disconnect_request_event.set()
         self._notify_disconnecting(kill=not self._closed)
