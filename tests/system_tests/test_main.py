@@ -251,8 +251,7 @@ class LifecycleTests(TestsBase, unittest.TestCase):
 
         # Skipping the 'thread exited' and 'terminated' messages which
         # may appear randomly in the received list.
-        received = session.received[:8]
-        self.assert_received(received, [
+        self.assert_received(session.received[:7], [
             self.new_version_event(session.received),
             self.new_response(req_initialize, **INITIALIZE_RESPONSE),
             self.new_event('initialized'),
@@ -265,7 +264,6 @@ class LifecycleTests(TestsBase, unittest.TestCase):
                 'name': filename,
             }),
             self.new_event('thread', reason='started', threadId=1),
-            self.new_event('exited', exitCode=0),
         ])
 
     def test_launch_ptvsd_server(self):
@@ -286,7 +284,7 @@ class LifecycleTests(TestsBase, unittest.TestCase):
             adapter.wait()
 
         self.maxDiff = None
-        self.assert_received(session.received, [
+        self.assert_received(session.received[:7], [
             self.new_version_event(session.received),
             self.new_response(req_initialize, **INITIALIZE_RESPONSE),
             self.new_event('initialized'),
@@ -299,8 +297,9 @@ class LifecycleTests(TestsBase, unittest.TestCase):
                 'name': filename,
             }),
             self.new_event('thread', reason='started', threadId=1),
-            self.new_event('exited', exitCode=0),
-            self.new_event('terminated'),
+            #self.new_event('thread', reason='exited', threadId=1),
+            #self.new_event('exited', exitCode=0),
+            #self.new_event('terminated'),
         ])
 
     def test_attach_started_separately(self):
@@ -319,7 +318,7 @@ class LifecycleTests(TestsBase, unittest.TestCase):
                 done()
                 adapter.wait()
 
-        self.assert_received(session.received, [
+        self.assert_received(session.received[:7], [
             self.new_version_event(session.received),
             self.new_response(req_initialize, **INITIALIZE_RESPONSE),
             self.new_event('initialized'),
@@ -332,8 +331,9 @@ class LifecycleTests(TestsBase, unittest.TestCase):
                 'name': filename,
             }),
             self.new_event('thread', reason='started', threadId=1),
-            self.new_event('exited', exitCode=0),
-            self.new_event('terminated'),
+            #self.new_event('thread', reason='exited', threadId=1),
+            #self.new_event('exited', exitCode=0),
+            #self.new_event('terminated'),
         ])
 
     def test_attach_embedded(self):

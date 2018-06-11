@@ -382,12 +382,13 @@ class DaemonBase(object):
 
     def _handle_atexit(self):
         self._exiting_via_atexit_handler = True
+        session = self.session
         try:
             self.close()
         except DaemonClosedError:
             pass
-        if self.session is not None:
-            self.session.wait_until_stopped()
+        if session is not None:
+            session.wait_until_stopped()
 
     def _handle_signal(self, signum, frame):
         try:
