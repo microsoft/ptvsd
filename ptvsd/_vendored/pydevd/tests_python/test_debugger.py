@@ -1378,14 +1378,9 @@ class WriterThreadCaseHandledExceptions(debugger_unittest.AbstractWriterThread):
 
     TEST_FILE = debugger_unittest._get_debugger_test_file('_debugger_case_exceptions.py')
 
-    def get_environ(self):
-        env = os.environ.copy()
-
-        env["IDE_PROJECT_ROOTS"] = os.path.dirname(self.TEST_FILE)
-        return env
-    
     def run(self):
         self.start_socket()
+        self.write_set_project_roots([os.path.dirname(self.TEST_FILE)])
         self.write_add_exception_breakpoint_with_policy(
             'IndexError',
             notify_on_handled_exceptions=2,  # Notify only once
