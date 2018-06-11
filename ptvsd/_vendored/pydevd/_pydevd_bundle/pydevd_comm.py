@@ -725,7 +725,7 @@ class NetCommandFactory:
 
                 abs_path_real_path_and_base = get_abs_path_real_path_and_base_from_frame(curr_frame)
 
-                myFile = pydevd_file_utils.norm_file_to_client(abs_path_real_path_and_base[0])
+                myFile = norm_file_to_client(abs_path_real_path_and_base[0])
                 if file_system_encoding.lower() != "utf-8" and hasattr(myFile, "decode"):
                     # myFile is a byte string encoded using the file system encoding
                     # convert it to utf8
