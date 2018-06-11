@@ -60,7 +60,9 @@ class DaemonBase(object):
                  addhandlers=True, killonclose=True,
                  singlesession=False):
 
+        self._lock = threading.Lock()
         self._started = False
+        self._stopped = False
         self._closed = False
 
         # socket-related
@@ -118,19 +120,21 @@ class DaemonBase(object):
 
     def is_running(self):
         """Return True if the daemon is running."""
-        if self._closed:
-            return False
-        if self._sock is None:
-            return False
-        return True
+        with self._lock:
+            if self._closed:
+                return False
+            if self._sock is None:
+                return False
+            return self._started and not self._stopped
 
     def start(self):
         """Return the "socket" to use for pydevd after setting it up."""
-        if self._closed:
-            raise DaemonClosedError()
-        if self._started:
-            raise RuntimeError('already started')
-        self._started = True
+        with self._lock:
+            if self._closed:
+                raise DaemonClosedError()
+            if self._started:
+                raise RuntimeError('already started')
+            self._started = True
 
         sock = self._start()
         self._sock = sock
@@ -226,23 +230,25 @@ class DaemonBase(object):
 
     def close(self):
         """Stop all loops and release all resources."""
-        if self._closed:
-            raise DaemonClosedError('already closed')
-        self._closed = True
+        with self._lock:
+            if self._closed:
+                raise DaemonClosedError('already closed')
+            self._closed = True
 
         self._close()
 
     # internal methods
 
     def _check_ready_for_session(self, checksession=True):
-        if self._closed:
-            raise DaemonClosedError()
-        if not self._started:
-            raise DaemonStoppedError('never started')
-        if self._sock is None:
-            raise DaemonStoppedError()
-        if checksession and self.session is not None:
-            raise RuntimeError('session already started')
+        with self._lock:
+            if self._closed:
+                raise DaemonClosedError()
+            if not self._started:
+                raise DaemonStoppedError('never started')
+            if self._stopped or self._sock is None:
+                raise DaemonStoppedError()
+            if checksession and self.session is not None:
+                raise RuntimeError('session already started')
 
     def _close(self):
         self._stop()
@@ -253,6 +259,11 @@ class DaemonBase(object):
             self._wait_for_user()
 
     def _stop(self):
+        with self._lock:
+            if self._stopped:
+                return
+            self._stopped = True
+
         sessionlock = self._sessionlock
         self._sessionlock = None
         server = self._server
@@ -276,8 +287,6 @@ class DaemonBase(object):
                 close_socket(self._sock)
 
     def _stop_quietly(self):
-        if self._closed:  # XXX wrong?
-            return
         with ignore_errors():
             self._stop()
 
@@ -287,8 +296,10 @@ class DaemonBase(object):
             self._finish_session(stop=False)
             return
 
-        if not self._closed:  # XXX wrong?
-            self._close()
+        try:
+            self.close()
+        except DaemonClosedError:
+            pass
         if kill and self._killonclose:
             if not self._exiting_via_atexit_handler:
                 kill_current_proc()
@@ -371,14 +382,18 @@ class DaemonBase(object):
 
     def _handle_atexit(self):
         self._exiting_via_atexit_handler = True
-        if not self._closed:  # XXX wrong?
-            self._close()
+        try:
+            self.close()
+        except DaemonClosedError:
+            pass
         if self.session is not None:
             self.session.wait_until_stopped()
 
     def _handle_signal(self, signum, frame):
-        if not self._closed:  # XXX wrong?
-            self._close()
+        try:
+            self.close()
+        except DaemonClosedError:
+            pass
         if not self._exiting_via_atexit_handler:
             sys.exit(0)
 
@@ -437,9 +452,10 @@ class Daemon(DaemonBase):
         self.session.handle_pydevd_message(cmdid, seq, text)
 
     def _handle_pydevd_close(self):
-        if self._closed:  # XXX wrong?
-            return
-        self._close()
+        try:
+            self.close()
+        except DaemonClosedError:
+            pass
 
     def _getpeername(self):
         if self.session is None or self.session.closed:
