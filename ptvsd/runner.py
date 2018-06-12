@@ -112,7 +112,7 @@ class Daemon(DaemonBase):
     def _start(self):
         self._output_monitor = OutputRedirection(self._send_output)
         self._output_monitor.start()
-        return None  # no debugger socket
+        return NoSocket()
 
     def _close(self):
         self._output_monitor.stop()
@@ -120,3 +120,13 @@ class Daemon(DaemonBase):
 
     def _send_output(self, category, output):
         self._adapter.send_event('output', category=category, output=output)
+
+
+class NoSocket(object):
+    """A object with a noop socket lifecycle."""
+
+    def shutdown(self, *args, **kwargs):
+        pass
+
+    def close(self):
+        pass
