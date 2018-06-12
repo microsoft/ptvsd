@@ -948,8 +948,8 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
         if exitcode is not None:
             # Notify the editor that the "debuggee" (e.g. script, app) exited.
             self.send_event('exited', exitCode=exitcode)
-        # Notify the editor that the debugger has stopped.
-        self.send_event('terminated')
+            # Notify the editor that the debugger has stopped.
+            self.send_event('terminated')
 
         # The editor will send a "disconnect" request at this point.
         self._wait_for_disconnect()
