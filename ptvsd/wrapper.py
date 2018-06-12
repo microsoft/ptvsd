@@ -111,28 +111,10 @@ SafeReprPresentationProvider._instance = SafeReprPresentationProvider()
 str_handlers = pydevd_extutil.EXTENSION_MANAGER_INSTANCE.type_to_instance.setdefault(pydevd_extapi.StrPresentationProvider, [])  # noqa
 str_handlers.insert(0, SafeReprPresentationProvider._instance)
 
-DONT_TRACE_FILES = set((os.path.join(*elem) for elem in [
-    ('ptvsd', 'attach_server.py'),
-    ('ptvsd', 'daemon.py'),
-    ('ptvsd', 'debugger.py'),
-    ('ptvsd', 'futures.py'),
-    ('ptvsd', 'ipcjson.py'),
-    ('ptvsd', 'pathutils.py'),
-    ('ptvsd', 'pydevd_hooks.py'),
-    ('ptvsd', 'reraise.py'),
-    ('ptvsd', 'reraise2.py'),
-    ('ptvsd', 'reraise3.py'),
-    ('ptvsd', 'runner.py'),
-    ('ptvsd', 'safe_repr.py'),
-    ('ptvsd', 'socket.py'),
-    ('ptvsd', 'untangle.py'),
-    ('ptvsd', 'version.py'),
-    ('ptvsd', 'wrapper.py'),
-    ('ptvsd', '_main.py'),
-    ('ptvsd', '_version.py'),
-    ('ptvsd', '__init__.py'),
-    ('ptvsd', '__main__.py'),
-]))
+PTVSD_DIR_PATH = os.path.dirname(__file__)
+DONT_TRACE_FILES = set((os.path.join(*elem) for elem in
+                        (('ptvsd', f) for f in os.listdir(PTVSD_DIR_PATH)
+                        if f.endswith('.py'))))
 
 
 def filter_ptvsd_files(file_path):
@@ -465,26 +447,14 @@ class ExceptionsManager(object):
     def add_exception_break(self, exception, break_raised, break_uncaught,
                             skip_stdlib=False):
 
-        # notify_always options:
-        #   1 is deprecated, you will see a warning message
-        #   2 notify on first raise only
-        #   3 or greater, notify always
-        notify_always = 3 if break_raised else 0
-
-        # notify_on_terminate options:
-        #   1 notify on terminate
-        #   Any other value do NOT notify on terminate
-        notify_on_terminate = 1 if break_uncaught else 0
-
-        # ignore_libraries options:
-        #   Less than or equal to 0 DO NOT ignore libraries (required
-        #   for notify_always)
-        #   Greater than 0 ignore libraries
+        notify_on_handled_exceptions = 1 if break_raised else 0
+        notify_on_unhandled_exceptions = 1 if break_uncaught else 0
         ignore_libraries = 1 if skip_stdlib else 0
+
         cmdargs = (
             exception,
-            notify_always,
-            notify_on_terminate,
+            notify_on_handled_exceptions,
+            notify_on_unhandled_exceptions,
             ignore_libraries,
         )
         break_mode = 'never'
@@ -499,7 +469,7 @@ class ExceptionsManager(object):
                 pydevd_comm.CMD_ADD_EXCEPTION_BREAK, msg)
             self.exceptions[exception] = break_mode
 
-    def apply_exception_options(self, exception_options):
+    def apply_exception_options(self, exception_options, skip_stdlib=False):
         """
         Applies exception options after removing any existing exception
         breaks.
@@ -525,7 +495,7 @@ class ExceptionsManager(object):
                     is_category = True
             if is_category:
                 self.add_exception_break(
-                    'BaseException', break_raised, break_uncaught)
+                    'BaseException', break_raised, break_uncaught, skip_stdlib)
             else:
                 path_iterator = iter(exception_paths)
                 # Skip the first one. It will always be the category
@@ -537,7 +507,8 @@ class ExceptionsManager(object):
                         exception_names.append(ex_name)
                 for exception_name in exception_names:
                     self.add_exception_break(
-                        exception_name, break_raised, break_uncaught)
+                        exception_name, break_raised,
+                        break_uncaught, skip_stdlib)
 
     def _is_python_exception_category(self, option):
         """
@@ -1800,7 +1771,10 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
     def on_stepIn(self, request, args):
         # TODO: docstring
         tid = self.thread_map.to_pydevd(int(args['threadId']))
-        self.pydevd_notify(pydevd_comm.CMD_STEP_INTO, tid)
+        if self.debug_options.get('JUST_MY_CODE', False):
+            self.pydevd_notify(pydevd_comm.CMD_STEP_INTO_MY_CODE, tid)
+        else:
+            self.pydevd_notify(pydevd_comm.CMD_STEP_INTO, tid)
         self.send_response(request)
 
     @async_handler
@@ -1912,9 +1886,11 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         # TODO: docstring
         filters = args['filters']
         exception_options = args.get('exceptionOptions', [])
+        jmc = self.debug_options.get('JUST_MY_CODE', False)
 
         if exception_options:
-            self.exceptions_mgr.apply_exception_options(exception_options)
+            self.exceptions_mgr.apply_exception_options(
+                exception_options, jmc)
         else:
             self.exceptions_mgr.remove_all_exception_breaks()
             break_raised = 'raised' in filters
@@ -1922,7 +1898,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
             if break_raised or break_uncaught:
                 self.exceptions_mgr.add_exception_break(
                     'BaseException', break_raised, break_uncaught,
-                    skip_stdlib=self.debug_options.get('JUST_MY_CODE', False))
+                    skip_stdlib=jmc)
         self.send_response(request)
 
     @async_handler
@@ -2008,7 +1984,26 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
     def on_setDebuggerProperty(self, request, args):
         jmc = int(args.get('JustMyCodeStepping', 0))
         self.debug_options['JUST_MY_CODE'] = jmc > 0
+        self._apply_code_stepping_settings()
         self.send_response(request)
+
+    def _apply_code_stepping_settings(self):
+        if self.debug_options.get('JUST_MY_CODE', False):
+            project_dirs = []
+            for path in sys.path + [os.getcwd()]:
+                is_stdlib = False
+                norm_path = os.path.normcase(path)
+                for prefix in STDLIB_PATH_PREFIXES:
+                    if norm_path.startswith(prefix):
+                        is_stdlib = True
+                        break
+                if path.endswith('ptvsd') or path.endswith('site-packages'):
+                    is_stdlib = True
+
+                if not is_stdlib and len(path) > 0:
+                    project_dirs.append(path)
+            self.pydevd_notify(pydevd_comm.CMD_SET_PROJECT_ROOTS,
+                               '\t'.join(project_dirs))
 
     def _is_stdlib(self, filepath):
         for name in IMPORTLIB_BOOTSTRAP:
@@ -2073,6 +2068,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
                 pydevd_comm.CMD_STEP_INTO,
                 pydevd_comm.CMD_STEP_OVER,
                 pydevd_comm.CMD_STEP_RETURN,
+                pydevd_comm.CMD_STEP_INTO_MY_CODE,
         }
         EXCEPTION_REASONS = {
             pydevd_comm.CMD_STEP_CAUGHT_EXCEPTION,
@@ -2086,10 +2082,6 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
             if not self._should_debug(filepath):
                 self.pydevd_notify(pydevd_comm.CMD_THREAD_RUN, pyd_tid)
                 return
-            for filename in IMPORTLIB_BOOTSTRAP:
-                if filepath.endswith(filename):
-                    self.pydevd_notify(pydevd_comm.CMD_THREAD_RUN, pyd_tid)
-                    return
 
         try:
             vsc_tid = self.thread_map.to_vscode(pyd_tid, autogen=False)
