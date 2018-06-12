@@ -191,6 +191,7 @@ class DaemonBase(object):
     def start_client(self, addr):
         """Return ("socket", start_session) with a new client socket."""
         addr = Address.from_raw(addr)
+        self._singlesession = True
         with self.started():
             assert self.session is None
             client = create_client()
@@ -292,7 +293,8 @@ class DaemonBase(object):
 
     def _handle_session_closing(self, session, kill=False):
         debug('handling closing session')
-        if self._server is not None and not kill:
+        if not self._singlesession and not kill:
+            # TODO: Always stop (let the session deal w/ idempotency)?
             self._finish_session(stop=False)
             return
 
@@ -347,12 +349,13 @@ class DaemonBase(object):
     def _release_session(self, stop=True):
         session = self.session
         if not self._singlesession:
+            # TODO: This shouldn't happen if we are exiting?
             self._session = None
 
         if stop and session is not None:
             # Possibly trigger VSC "exited" and "terminated" events.
             exitcode = self.exitcode
-            if self._server is None or self._singlesession:
+            if self._singlesession:
                 exitcode = exitcode or 0
             session.stop(exitcode)
             session.close()

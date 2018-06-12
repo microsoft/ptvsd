@@ -198,7 +198,7 @@ class VSCLifecycle(object):
             self._handshake('attach', **kwargs)
 
     def disconnect(self, exitcode=0, **reqargs):
-        self._fix.exitcode = exitcode
+        self._fix.daemon.exitcode = exitcode
         self._send_request('disconnect', reqargs)
         # TODO: wait for an exit event?
         # TODO: call self._fix.vsc.close()?
@@ -545,7 +545,7 @@ class VSCFixture(FixtureBase):
             return self._lifecycle
 
     @property
-    def _daemon(self):
+    def daemon(self):
         # TODO: This is a horrendous use of internal details!
         return self.fake._adapter.daemon.binder.ptvsd
 
@@ -553,18 +553,10 @@ class VSCFixture(FixtureBase):
     def _proc(self):
         # This is used below in close_ptvsd().
         try:
-            return self._daemon.proc
+            return self.daemon.proc
         except AttributeError:
-            # TODO: Fall back to self._daemon.session._msgprocessor?
+            # TODO: Fall back to self.daemon.session._msgprocessor?
             return None
-
-    @property
-    def exitcode(self):
-        return self._daemon.exitcode
-
-    @exitcode.setter
-    def exitcode(self, value):
-        self._daemon.exitcode = value
 
     def send_request(self, cmd, args=None, handle_response=None, timeout=1):
         kwargs = dict(args or {}, handler=handle_response)
@@ -700,12 +692,8 @@ class HighlevelFixture(object):
         return self._vsc.ishidden and self._pydevd.ishidden
 
     @property
-    def exitcode(self):
-        return self._vsc.exitcode
-
-    @exitcode.setter
-    def exitcode(self, value):
-        self._vsc.exitcode = value
+    def daemon(self):
+        return self._vsc.daemon
 
     @contextlib.contextmanager
     def hidden(self):
@@ -763,8 +751,8 @@ class HighlevelFixture(object):
     def send_debugger_event(self, cmdid, payload):
         self._pydevd.send_event(cmdid, payload)
 
-    def close_ptvsd(self):
-        self._vsc.close_ptvsd()
+    def close_ptvsd(self, **kwargs):
+        self._vsc.close_ptvsd(**kwargs)
 
     # combinations
 

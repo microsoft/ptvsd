@@ -375,8 +375,6 @@ class LifecycleTests(TestsBase, unittest.TestCase):
                 'name': filename,
             }),
             self.new_event('output', output='success!', category='stdout'),
-            self.new_event('exited', exitCode=0),
-            self.new_event('terminated'),
         ])
         self.assertIn('success!', out)
 
@@ -405,7 +403,6 @@ class LifecycleTests(TestsBase, unittest.TestCase):
 
                 adapter.wait()
 
-        # self.maxDiff = None
         self.assert_received(session1.received, [
             self.new_version_event(session1.received),
             self.new_response(reqs[0], **INITIALIZE_RESPONSE),
@@ -420,8 +417,6 @@ class LifecycleTests(TestsBase, unittest.TestCase):
             }),
             self.new_event('thread', reason='started', threadId=1),
             self.new_response(req_disconnect),
-            # TODO: Shouldn't there be a "terminated" event?
-            # self.new_event('terminated'),
         ])
         self.messages.reset_all()
         self.assert_received(session2.received, [
@@ -436,9 +431,12 @@ class LifecycleTests(TestsBase, unittest.TestCase):
                 'startMethod': 'attach',
                 'name': filename,
             }),
-            self.new_event('exited', exitCode=0),
-            self.new_event('terminated'),
         ])
+
+    @unittest.skip('not implemented')
+    def test_attach_exit_during_session(self):
+        # TODO: Ensure we see the "terminated" and "exited" events.
+        raise NotImplementedError
 
     @unittest.skip('re-attach needs fixing')
     def test_attach_unknown(self):
