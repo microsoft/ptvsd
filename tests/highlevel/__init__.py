@@ -20,7 +20,6 @@ from _pydevd_bundle.pydevd_comm import (
     CMD_SET_PROJECT_ROOTS,
 )
 
-from ptvsd import wrapper
 from tests.helpers.pydevd import FakePyDevd, PyDevdMessages
 from tests.helpers.vsc import FakeVSC, VSCMessages
 
@@ -199,7 +198,7 @@ class VSCLifecycle(object):
             self._handshake('attach', **kwargs)
 
     def disconnect(self, exitcode=0, **reqargs):
-        wrapper.ptvsd_sys_exit_code = exitcode
+        self._fix.exitcode = exitcode
         self._send_request('disconnect', reqargs)
         # TODO: wait for an exit event?
         # TODO: call self._fix.vsc.close()?
@@ -546,13 +545,26 @@ class VSCFixture(FixtureBase):
             return self._lifecycle
 
     @property
+    def _daemon(self):
+        # TODO: This is a horrendous use of internal details!
+        return self.fake._adapter.daemon.binder.ptvsd
+
+    @property
     def _proc(self):
         # This is used below in close_ptvsd().
-        # TODO: This is a horrendous use of internal details!
         try:
-            return self.fake._adapter.daemon.binder.ptvsd.proc
+            return self._daemon.proc
         except AttributeError:
+            # TODO: Fall back to self._daemon.session._msgprocessor?
             return None
+
+    @property
+    def exitcode(self):
+        return self._daemon.exitcode
+
+    @exitcode.setter
+    def exitcode(self, value):
+        self._daemon.exitcode = value
 
     def send_request(self, cmd, args=None, handle_response=None, timeout=1):
         kwargs = dict(args or {}, handler=handle_response)
@@ -602,6 +614,7 @@ class VSCFixture(FixtureBase):
         return threads, threads.pop(None)
 
     def close_ptvsd(self):
+        # TODO: Use the session instead.
         if self._proc is None:
             warnings.warn('"proc" not bound')
         else:
@@ -685,6 +698,14 @@ class HighlevelFixture(object):
     @property
     def ishidden(self):
         return self._vsc.ishidden and self._pydevd.ishidden
+
+    @property
+    def exitcode(self):
+        return self._vsc.exitcode
+
+    @exitcode.setter
+    def exitcode(self, value):
+        self._vsc.exitcode = value
 
     @contextlib.contextmanager
     def hidden(self):

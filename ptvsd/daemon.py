@@ -54,7 +54,7 @@ class DaemonBase(object):
 
     SESSION = None
 
-    exitcode = 0
+    exitcode = None
 
     def __init__(self, wait_for_user=_wait_for_user,
                  addhandlers=True, killonclose=True,
@@ -255,7 +255,7 @@ class DaemonBase(object):
 
         self._sock = None
 
-        if self._wait_on_exit(self.exitcode):
+        if self._wait_on_exit(self.exitcode or 0):
             self._wait_for_user()
 
     def _stop(self):
@@ -349,11 +349,11 @@ class DaemonBase(object):
         if not self._singlesession:
             self._session = None
 
-        if stop:
-            exitcode = None
-            if self._server is None:
-                # Trigger a VSC "exited" event.
-                exitcode = self.exitcode or 0
+        if stop and session is not None:
+            # Possibly trigger VSC "exited" and "terminated" events.
+            exitcode = self.exitcode
+            if self._server is None or self._singlesession:
+                exitcode = exitcode or 0
             session.stop(exitcode)
             session.close()
 
