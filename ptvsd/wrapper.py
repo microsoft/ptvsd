@@ -931,7 +931,7 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
         self._notify_launch = notify_launch or (lambda: None)
         self._notify_disconnecting = notify_disconnecting
 
-        self._exited = False
+        self._stopped = False
 
         # adapter state
         self.disconnect_request = None
@@ -941,9 +941,9 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
 
     def handle_session_stopped(self, exitcode=None):
         """Finalize the protocol connection."""
-        if self._exited:
+        if self._stopped:
             return
-        self._exited = True
+        self._stopped = True
 
         if exitcode is not None:
             # Notify the editor that the "debuggee" (e.g. script, app) exited.
