@@ -605,12 +605,14 @@ class VSCFixture(FixtureBase):
         self.send_request('threads', handle_response=handle_response)
         return threads, threads.pop(None)
 
-    def close_ptvsd(self):
+    def close_ptvsd(self, exitcode=None):
         # TODO: Use the session instead.
         if self._proc is None:
             warnings.warn('"proc" not bound')
         else:
             self._proc.close()
+        self.daemon.exitcode = exitcode
+        self.daemon.close()
 
 
 class HighlevelFixture(object):
