@@ -146,15 +146,15 @@ class DaemonBase(object):
             self._sessionlock = threading.Lock()
         sock = self._sock
 
-        def check_ready():
-            self._check_ready_for_session()
+        def check_ready(**kwargs):
+            self._check_ready_for_session(**kwargs)
             if self._server is None:
                 raise DaemonStoppedError()
 
         def next_session(timeout=None, **kwargs):
             server = self._server
             sessionlock = self._sessionlock
-            check_ready()
+            check_ready(checksession=False)
 
             debug('getting next session')
             sessionlock.acquire()  # Released in _finish_session().
@@ -234,14 +234,14 @@ class DaemonBase(object):
 
     # internal methods
 
-    def _check_ready_for_session(self):
+    def _check_ready_for_session(self, checksession=True):
         if self._closed:
             raise DaemonClosedError()
         if not self._started:
             raise DaemonStoppedError('never started')
         if self._sock is None:
             raise DaemonStoppedError()
-        if self.session is not None:
+        if checksession and self.session is not None:
             raise RuntimeError('session already started')
 
     def _close(self):
