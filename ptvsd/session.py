@@ -1,6 +1,6 @@
 from .socket import is_socket, close_socket
 from .wrapper import VSCodeMessageProcessor
-from ._util import Closeable, Startable, debug
+from ._util import ClosedError, Closeable, Startable, debug
 
 
 class DebugSession(Startable, Closeable):
@@ -35,18 +35,18 @@ class DebugSession(Startable, Closeable):
 
         self._sock = sock
         if ownsock:
+            # TODO: Close the socket *after* calling sys.exit() (via notify_closing).
             def handle_closing(before):
                 if before:
                     return
                 close_socket(self._sock)
             self.add_close_handler(handle_closing)
 
-        self._killrequested = False
         if notify_closing is not None:
             def handle_closing(before):
                 if not before:
                     return
-                notify_closing(self, kill=self._killrequested)
+                notify_closing(self)
             self.add_close_handler(handle_closing)
 
         self._msgprocessor = None
@@ -105,7 +105,7 @@ class DebugSession(Startable, Closeable):
         if self._msgprocessor is None:
             return
 
-        # TODO: This is not correct in the "attach" case.
+        debug('proc stopping')
         self._msgprocessor.handle_session_stopped(exitcode)
         self._msgprocessor.close()
         self._msgprocessor = None
@@ -122,10 +122,12 @@ class DebugSession(Startable, Closeable):
 
     # internal methods for VSCodeMessageProcessor
 
-    def _handle_vsc_disconnect(self, kill=False):
-        if kill:
-            self._killrequested = kill
-        self.close()
+    def _handle_vsc_disconnect(self):
+        debug('disconnecting')
+        try:
+            self.close()
+        except ClosedError:
+            pass
 
     def _handle_vsc_close(self):
         debug('processor closing')

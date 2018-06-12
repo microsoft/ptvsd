@@ -839,10 +839,10 @@ class VSCodeMessageProcessorBase(ipcjson.SocketIO, ipcjson.IpcChannel):
 
     def close(self):
         """Stop the message processor and release its resources."""
-        debug('raw closing')
         if self._closed:
             return
         self._closed = True
+        debug('raw closing')
 
         self._notify_closing()
         # Close the editor-side socket.
@@ -984,11 +984,14 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
 
     def on_disconnect(self, request, args):
         # TODO: docstring
-        if self.start_reason == 'launch':
-            self._handle_disconnect(request)
-        else:
-            self.send_response(request)
-            self._notify_disconnecting(kill=False)
+        self.disconnect_request = request
+        self.disconnect_request_event.set()
+        self._notify_disconnecting()
+        # TODO: We should be able drop the remaining lines.
+        if not self._closed and self.start_reason == 'launch':
+            # Closing the socket causes pydevd to resume all threads,
+            # so just terminate the process altogether.
+            sys.exit(0)
 
     # internal methods
 
@@ -1009,16 +1012,6 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
         if self.disconnect_request is not None:
             self.send_response(self.disconnect_request)
             self.disconnect_request = None
-
-    def _handle_disconnect(self, request):
-        assert self.start_reason == 'launch'
-        self.disconnect_request = request
-        self.disconnect_request_event.set()
-        self._notify_disconnecting(kill=not self._closed)
-        if not self._closed:
-            # Closing the socket causes pydevd to resume all threads,
-            # so just terminate the process altogether.
-            sys.exit(0)
 
     def _wait_options(self):
         # In attach scenarios, we can't assume that the process is actually

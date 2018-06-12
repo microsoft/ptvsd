@@ -9,7 +9,7 @@ from .exit_handlers import (
     ExitHandlers, UnsupportedSignalError,
     kill_current_proc)
 from .session import PyDevdDebugSession
-from ._util import ignore_errors, debug
+from ._util import ClosedError, NotRunningError, ignore_errors, debug
 
 
 def _wait_for_user():
@@ -291,20 +291,23 @@ class DaemonBase(object):
         with ignore_errors():
             self._stop()
 
-    def _handle_session_closing(self, session, kill=False):
+    def _handle_session_closing(self, session):
         debug('handling closing session')
-        if not self._singlesession and not kill:
-            # TODO: Always stop (let the session deal w/ idempotency)?
-            self._finish_session(stop=False)
-            return
-
-        try:
-            self.close()
-        except DaemonClosedError:
-            pass
-        if kill and self._killonclose:
-            if not self._exiting_via_atexit_handler:
-                kill_current_proc()
+        if self._singlesession:
+            if self._killonclose:
+                with self._lock:
+                    if not self._exiting_via_atexit_handler:
+                        # Ensure the proc is exiting before closing
+                        # socket.  Note that we kill the proc instead
+                        # of calling sys.exit(0).
+                        kill_current_proc()
+            else:
+                try:
+                    self.close()
+                except DaemonClosedError:
+                    pass
+        else:
+            self._finish_session()
 
     # internal session-related methods
 
@@ -325,9 +328,9 @@ class DaemonBase(object):
                 self._finish_session()
             raise
 
-    def _finish_session(self, stop=True):
+    def _finish_session(self):
         try:
-            session = self._release_session(stop=stop)
+            session = self._release_session()
             debug('session stopped')
         finally:
             sessionlock = self._sessionlock
@@ -346,19 +349,25 @@ class DaemonBase(object):
                 except DaemonClosedError:
                     pass
 
-    def _release_session(self, stop=True):
+    def _release_session(self):
         session = self.session
         if not self._singlesession:
             # TODO: This shouldn't happen if we are exiting?
             self._session = None
 
-        if stop and session is not None:
-            # Possibly trigger VSC "exited" and "terminated" events.
-            exitcode = self.exitcode
-            if self._singlesession:
-                exitcode = exitcode or 0
+        # Possibly trigger VSC "exited" and "terminated" events.
+        exitcode = self.exitcode
+        if exitcode is None:
+            if self._exiting_via_atexit_handler or self._singlesession:
+                exitcode = 0
+        try:
             session.stop(exitcode)
+        except NotRunningError:
+            pass
+        try:
             session.close()
+        except ClosedError:
+            pass
 
         return session
 
@@ -384,7 +393,9 @@ class DaemonBase(object):
                 pass
 
     def _handle_atexit(self):
-        self._exiting_via_atexit_handler = True
+        debug('handling atexit')
+        with self._lock:
+            self._exiting_via_atexit_handler = True
         session = self.session
         try:
             self.close()
@@ -394,6 +405,7 @@ class DaemonBase(object):
             session.wait_until_stopped()
 
     def _handle_signal(self, signum, frame):
+        debug('handling signal')
         try:
             self.close()
         except DaemonClosedError:

@@ -375,6 +375,8 @@ class LifecycleTests(TestsBase, unittest.TestCase):
                 'name': filename,
             }),
             self.new_event('output', output='success!', category='stdout'),
+            self.new_event('exited', exitCode=0),
+            self.new_event('terminated'),
         ])
         self.assertIn('success!', out)
 
@@ -431,6 +433,8 @@ class LifecycleTests(TestsBase, unittest.TestCase):
                 'startMethod': 'attach',
                 'name': filename,
             }),
+            self.new_event('exited', exitCode=0),
+            self.new_event('terminated'),
         ])
 
     @unittest.skip('not implemented')
