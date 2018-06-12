@@ -119,7 +119,11 @@ class Daemon(DaemonBase):
         super(Daemon, self)._close()
 
     def _send_output(self, category, output):
-        self._adapter.send_event('output', category=category, output=output)
+        if self.session is None:
+            return
+        self.session._msgprocessor.send_event('output',
+                                              category=category,
+                                              output=output)
 
 
 class NoSocket(object):
