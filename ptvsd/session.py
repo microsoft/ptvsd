@@ -33,20 +33,20 @@ class DebugSession(Startable, Closeable):
     def __init__(self, sock, notify_closing=None, ownsock=False):
         super(DebugSession, self).__init__()
 
-        self._sock = sock
-        if ownsock:
-            # TODO: Close the socket *after* calling sys.exit() (via notify_closing).
-            def handle_closing(before):
-                if before:
-                    return
-                close_socket(self._sock)
-            self.add_close_handler(handle_closing)
-
         if notify_closing is not None:
             def handle_closing(before):
                 if not before:
                     return
                 notify_closing(self)
+            self.add_close_handler(handle_closing)
+
+        self._sock = sock
+        if ownsock:
+            # Close the socket *after* calling sys.exit() (via notify_closing).
+            def handle_closing(before):
+                if before:
+                    return
+                close_socket(self._sock)
             self.add_close_handler(handle_closing)
 
         self._msgprocessor = None
