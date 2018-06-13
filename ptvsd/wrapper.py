@@ -2008,9 +2008,11 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
     # VS specific custom message handlers
     @async_handler
     def on_setDebuggerProperty(self, request, args):
-        jmc = int(args.get('JustMyCodeStepping', 0)) > 0
-        self.debug_options['DEBUG_STDLIB'] = not jmc
-        self._apply_code_stepping_settings()
+        if 'JustMyCodeStepping' in args:
+            jmc = int(args.get('JustMyCodeStepping', 0)) > 0
+            self.debug_options['DEBUG_STDLIB'] = not jmc
+            self._apply_code_stepping_settings()
+
         self.send_response(request)
 
     # PyDevd protocol event handlers
@@ -2064,14 +2066,6 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
             pydevd_comm.CMD_ADD_EXCEPTION_BREAK
         }
 
-        xframes = list(xml.thread.frame)
-        xframe = xframes[0]
-        filepath = unquote(xframe['file'])
-        if reason in STEP_REASONS or reason in EXCEPTION_REASONS:
-            if not self._should_debug(filepath):
-                self.pydevd_notify(pydevd_comm.CMD_THREAD_RUN, pyd_tid)
-                return
-
         try:
             vsc_tid = self.thread_map.to_vscode(pyd_tid, autogen=False)
         except KeyError:
@@ -2099,6 +2093,8 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         if reason == 'exception':
             # Get exception info from frame
             try:
+                xframes = list(xml.thread.frame)
+                xframe = xframes[0]
                 pyd_fid = xframe['id']
                 cmdargs = '{}\t{}\tFRAME\t__exception__'.format(pyd_tid,
                                                                 pyd_fid)
