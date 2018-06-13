@@ -84,7 +84,6 @@ class DaemonBase(object):
         self._killonclose = killonclose
 
         self._exiting_via_atexit_handler = False
-        self._wait_on_exit = (lambda ec: False)
 
         self._exithandlers = ExitHandlers()
         if addhandlers:
@@ -256,9 +255,6 @@ class DaemonBase(object):
 
         self._sock = None
 
-        if self._wait_on_exit(self.exitcode or 0):
-            self._wait_for_user()
-
     def _stop(self):
         with self._lock:
             if self._stopped:
@@ -287,6 +283,15 @@ class DaemonBase(object):
 
     def _handle_session_closing(self, session):
         debug('handling closing session')
+
+        if self._exiting_via_atexit_handler:
+            # This must be done before we send a disconnect response
+            # (which implies before we close the client socket).
+            # TODO: Call session.wait_on_exit() directly?
+            wait_on_exit = session.get_wait_on_exit()
+            if wait_on_exit(self.exitcode or 0):
+                self._wait_for_user()
+
         if self._singlesession:
             if self._killonclose:
                 with self._lock:
@@ -341,7 +346,6 @@ class DaemonBase(object):
 
             if self._singlesession:
                 debug('closing daemon after single session')
-                self._wait_on_exit = session.get_wait_on_exit()
                 try:
                     self.close()
                 except DaemonClosedError:
