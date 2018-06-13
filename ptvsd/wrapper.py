@@ -112,39 +112,24 @@ str_handlers = pydevd_extutil.EXTENSION_MANAGER_INSTANCE.type_to_instance.setdef
 str_handlers.insert(0, SafeReprPresentationProvider._instance)
 
 PTVSD_DIR_PATH = os.path.dirname(__file__)
-DONT_TRACE_FILES = set((os.path.join(*elem) for elem in
-                        (('ptvsd', f) for f in os.listdir(PTVSD_DIR_PATH)
-                        if f.endswith('.py'))))
 
 
-def filter_ptvsd_files(file_path):
+def dont_trace_ptvsd_files(file_path):
     """
     Returns true if the file should not be traced.
     """
-    ptvsd_path_re = r"(ptvsd[\\\/].*\.py)"
-    matches = re.finditer(ptvsd_path_re, file_path)
-    return any((g in DONT_TRACE_FILES
-                for m in matches
-                for g in m.groups()))
+    return file_path.startswith(PTVSD_DIR_PATH)
 
 
-pydevd_frame.file_tracing_filter = filter_ptvsd_files
+pydevd_frame.file_tracing_filter = dont_trace_ptvsd_files
 
 
 STDLIB_PATH_PREFIXES = [os.path.normcase(sys.prefix)]
-# If we're running in a virtual env, DEBUG_STDLIB should respect this too.
 if hasattr(sys, 'base_prefix'):
     STDLIB_PATH_PREFIXES.append(os.path.normcase(sys.base_prefix))
 if hasattr(sys, 'real_prefix'):
     STDLIB_PATH_PREFIXES.append(os.path.normcase(sys.real_prefix))
-
-IMPORTLIB_BOOTSTRAP = []
-if sys.version_info >= (3, 3):
-    IMPORTLIB_BOOTSTRAP.append(
-        os.path.normcase('<frozen importlib._bootstrap>'))
-if sys.version_info >= (3, 5):
-    IMPORTLIB_BOOTSTRAP.append(
-        os.path.normcase('<frozen importlib._bootstrap_external>'))
+STDLIB_PATH_PREFIXES.append(os.path.normcase(PTVSD_DIR_PATH))
 
 
 class UnsupportedPyDevdCommandError(Exception):
@@ -1983,6 +1968,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
     @async_handler
     def on_setDebuggerProperty(self, request, args):
         jmc = int(args.get('JustMyCodeStepping', 0))
+        # Note: JUST_MY_CODE behavior overides DEBUG_STDLIB.
         self.debug_options['JUST_MY_CODE'] = jmc > 0
         self._apply_code_stepping_settings()
         self.send_response(request)
@@ -2006,14 +1992,8 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
                                '\t'.join(project_dirs))
 
     def _is_stdlib(self, filepath):
-        for name in IMPORTLIB_BOOTSTRAP:
-            if filepath.endswith(name):
-                return True
         for prefix in STDLIB_PATH_PREFIXES:
             if prefix != '' and filepath.startswith(prefix):
-                return True
-        for name in DONT_TRACE_FILES:
-            if filepath.endswith(name):
                 return True
         return False
 
@@ -2086,6 +2066,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         try:
             vsc_tid = self.thread_map.to_vscode(pyd_tid, autogen=False)
         except KeyError:
+            self.pydevd_notify(pydevd_comm.CMD_THREAD_RUN, pyd_tid)
             return
 
         with self.stack_traces_lock:
@@ -2109,7 +2090,6 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         if reason == 'exception':
             # Get exception info from frame
             try:
-                xframe = xframes[0]
                 pyd_fid = xframe['id']
                 cmdargs = '{}\t{}\tFRAME\t__exception__'.format(pyd_tid,
                                                                 pyd_fid)
