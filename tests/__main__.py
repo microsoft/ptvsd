@@ -17,11 +17,15 @@ def parse_cmdline(argv=None):
 
     parser = argparse.ArgumentParser(
         description="Run tests associated to the PTVSD project.",
-        allow_abbrev=False,
         prog="tests",
         usage="python -m %(prog)s OPTS",
         add_help=False
     )
+
+    # allow_abbrev was added in 3.5
+    if sys.version_info >= (3, 5):
+        parser.allow_abbrev = False
+
     parser.add_argument(
         "-c",
         "--coverage",
