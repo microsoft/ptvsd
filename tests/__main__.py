@@ -12,7 +12,7 @@ from xmlrunner import XMLTestRunner
 from . import TEST_ROOT, PROJECT_ROOT, VENDORED_ROOTS
 
 
-def parse_cmdline(argv = None):
+def parse_cmdline(argv=None):
     """Obtain command line arguments and setup the test run accordingly."""
 
     parser = argparse.ArgumentParser(
@@ -78,14 +78,15 @@ def parse_cmdline(argv = None):
               "with Python 2.x."),
         action="store_true"
     )
-    parser.set_defaults(quick=False) # because I have 2 opposing values for this destination (--full and --quick)
-    parser.set_defaults(network=True) # because I have 2 opposing values for this destination (--network and --no-network)
+    # these destinations have 2 switches, be explicit about the default
+    parser.set_defaults(quick=False)
+    parser.set_defaults(network=True)
     config, passthrough_args = parser.parse_known_args(argv)
 
     return config, passthrough_args
 
 
-def convert_argv(argv = None):
+def convert_argv(argv=None):
     """Convert commandling args into unittest/linter/coverage input."""
 
     config, passthru = parse_cmdline(argv)
@@ -150,8 +151,7 @@ def check_lint():
     args = [
         sys.executable,
         '-m', 'flake8',
-        '--ignore', 'E24,E121,E123,E125,E126,E221,E226,E266,E704,E265',
-        '--exclude', ','.join(VENDORED_ROOTS),
+        '--config', '.flake8',
         PROJECT_ROOT,
     ]
     rc = subprocess.call(args)
