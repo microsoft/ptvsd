@@ -12,7 +12,7 @@ from xmlrunner import XMLTestRunner
 from . import TEST_ROOT, PROJECT_ROOT, VENDORED_ROOTS
 
 
-def parse_cmdline():
+def parse_cmdline(argv = None):
     """Obtain command line arguments and setup the test run accordingly."""
 
     parser = argparse.ArgumentParser(
@@ -78,19 +78,21 @@ def parse_cmdline():
               "with Python 2.x."),
         action="store_true"
     )
-
-    config, passthrough_args = parser.parse_known_args()
+    parser.set_defaults(quick=False) # because I have 2 opposing values for this destination (--full and --quick)
+    parser.set_defaults(network=True) # because I have 2 opposing values for this destination (--network and --no-network)
+    config, passthrough_args = parser.parse_known_args(argv)
 
     return config, passthrough_args
 
 
-def convert_argv():
+def convert_argv(argv = None):
     """Convert commandling args into unittest/linter/coverage input."""
 
-    config, passthru = parse_cmdline()
+    config, passthru = parse_cmdline(argv)
 
     modules = set()
     args = []
+    help = False
 
     for arg in passthru:
         # Unittest's main has only flags and positional args.
@@ -107,6 +109,8 @@ def convert_argv():
             mod = mod.replace(os.sep, '.')
             arg = mod if not test else mod + '.' + test
             modules.add(mod)
+        elif arg in ('-h', '--help'):
+            help = True
         args.append(arg)
 
     env = {}
@@ -115,7 +119,7 @@ def convert_argv():
     # We make the "executable" a single arg because unittest.main()
     # doesn't work if we split it into 3 parts.
     cmd = [sys.executable + ' -m unittest']
-    if not modules:
+    if not modules and not help:
         # Do discovery.
         quickroot = os.path.join(TEST_ROOT, 'ptvsd')
         if config.quick:
