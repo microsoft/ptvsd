@@ -789,7 +789,7 @@ class VSCodeMessageProcessorBase(ipcjson.SocketIO, ipcjson.IpcChannel):
     """The base class for VSC message processors."""
 
     def __init__(self, socket, notify_closing,
-                 timeout=None, logfile=None,
+                 timeout=None, logfile=None, own_socket=False
                  ):
         super(VSCodeMessageProcessorBase, self).__init__(
             socket=socket,
@@ -798,6 +798,7 @@ class VSCodeMessageProcessorBase(ipcjson.SocketIO, ipcjson.IpcChannel):
             logfile=logfile,
         )
         self.socket = socket
+        self._own_socket = own_socket
         self._notify_closing = notify_closing
 
         self.server_thread = None
@@ -869,7 +870,7 @@ class VSCodeMessageProcessorBase(ipcjson.SocketIO, ipcjson.IpcChannel):
     def _stop_vsc_message_loop(self):
         self.set_exit()
         self._stop_event_loop()
-        if self.socket:
+        if self.socket is not None and self._own_socket:
             try:
                 self.socket.shutdown(socket.SHUT_RDWR)
                 self.socket.close()
