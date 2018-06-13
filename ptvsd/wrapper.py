@@ -41,7 +41,7 @@ import ptvsd.untangle as untangle  # noqa
 from ptvsd.pathutils import PathUnNormcase  # noqa
 from ptvsd.safe_repr import SafeRepr  # noqa
 from ptvsd.version import __version__  # noqa
-from ptvsd._util import debug  # noqa
+from ptvsd._util import debug, is_locked, lock_release, lock_wait  # noqa
 from ptvsd.socket import TimeoutError  # noqa
 
 
@@ -806,6 +806,37 @@ class VSCodeMessageProcessorBase(ipcjson.SocketIO, ipcjson.IpcChannel):
         self.readylock = threading.Lock()
         self.readylock.acquire()  # Unlock at the end of start().
 
+        self._connected = threading.Lock()
+        self._listening = None
+        self._connlock = threading.Lock()
+
+    @property
+    def connected(self):  # may send responses/events
+        with self._connlock:
+            return is_locked(self._connected)
+
+    @property
+    def listening(self):
+        # TODO: must be disconnected?
+        with self._connlock:
+            if self._listening is None:
+                return False
+            return is_locked(self._listening)
+
+    def wait_while_connected(self, timeout=None):
+        """Wait until the client socket is disconnected."""
+        with self._connlock:
+            lock = self._listening
+        lock_wait(lock, timeout)  # Wait until no longer connected.
+
+    def wait_while_listening(self, timeout=None):
+        """Wait until no longer listening for incoming messages."""
+        with self._connlock:
+            lock = self._listening
+            if lock is None:
+                raise RuntimeError('not listening yet')
+        lock_wait(lock, timeout)  # Wait until no longer listening.
+
     def start(self, threadname):
         # event loop
         self._start_event_loop()
@@ -813,10 +844,15 @@ class VSCodeMessageProcessorBase(ipcjson.SocketIO, ipcjson.IpcChannel):
         # VSC msg processing loop
         def process_messages():
             self.readylock.acquire()
+            with self._connlock:
+                self._listening = threading.Lock()
             try:
                 self.process_messages()
             except (EOFError, TimeoutError):
                 debug('client socket closed')
+                with self._connlock:
+                    lock_release(self._listening)
+                    lock_release(self._connected)
                 self.close()
         self.server_thread = threading.Thread(
             target=process_messages,
@@ -849,6 +885,11 @@ class VSCodeMessageProcessorBase(ipcjson.SocketIO, ipcjson.IpcChannel):
         # Close the editor-side socket.
         self._stop_vsc_message_loop()
 
+        # Ensure that the connection is marked as closed.
+        with self._connlock:
+            lock_release(self._listening)
+            lock_release(self._connected)
+
     # VSC protocol handlers
 
     def send_error_response(self, request, message=None):
@@ -859,6 +900,10 @@ class VSCodeMessageProcessorBase(ipcjson.SocketIO, ipcjson.IpcChannel):
         )
 
     # internal methods
+
+    def _set_disconnected(self):
+        with self._connlock:
+            lock_release(self._connected)
 
     def _wait_for_server_thread(self):
         if self.server_thread is None:
@@ -874,6 +919,7 @@ class VSCodeMessageProcessorBase(ipcjson.SocketIO, ipcjson.IpcChannel):
             try:
                 self.socket.shutdown(socket.SHUT_RDWR)
                 self.socket.close()
+                self._set_disconnected()
             except Exception:
                 # TODO: log the error
                 pass
@@ -936,9 +982,9 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
 
         # adapter state
         self.disconnect_request = None
-        self.debug_options = {}
         self.disconnect_request_event = threading.Event()
         self.start_reason = None
+        self.debug_options = {}
 
     def handle_session_stopped(self, exitcode=None):
         """Finalize the protocol connection."""
@@ -1013,6 +1059,7 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
         if self.disconnect_request is not None:
             self.send_response(self.disconnect_request)
             self.disconnect_request = None
+            self._set_disconnected()
 
     def _wait_options(self):
         # In attach scenarios, we can't assume that the process is actually
