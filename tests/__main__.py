@@ -12,11 +12,15 @@ from xmlrunner import XMLTestRunner
 from . import TEST_ROOT, PROJECT_ROOT, VENDORED_ROOTS
 
 
-def parse_cmdline(argv):
+def parse_cmdline():
     """Obtain command line arguments and setup the test run accordingly."""
 
     parser = argparse.ArgumentParser(
-        description="Run tests associated to the PTVSD project."
+        description="Run tests associated to the PTVSD project.",
+        allow_abbrev=False,
+        prog="tests",
+        usage="python -m %(prog)s OPTS",
+        add_help=False
     )
     parser.add_argument(
         "-c",
@@ -61,7 +65,6 @@ def parse_cmdline(argv):
         action="store_false",
         dest="network"
     )
-    parser.set_defaults(network=True)
     parser.add_argument(
         "-q",
         "--quick",
@@ -69,32 +72,22 @@ def parse_cmdline(argv):
         action="store_true",
         dest="quick"
     )
-    parser.set_defaults(quick=False)
     parser.add_argument(
         "--quick-py2",
         help=("Only do the tests under test/ptvsd, that are compatible "
               "with Python 2.x."),
         action="store_true"
     )
-    parser.add_argument(
-        "-s",
-        "--start-directory",
-        help="Run tests from the directory specified, not from the repo root.",
-        type=str
-    )
-    parser.allow_abbrev = False
-    parser.prog = "tests"
-    parser.usage = "python -m %(prog)s OPTS"
 
-    config, passthrough_args = parser.parse_known_args(argv)
+    config, passthrough_args = parser.parse_known_args()
 
     return config, passthrough_args
 
 
-def convert_argv(argv):
+def convert_argv():
     """Convert commandling args into unittest/linter/coverage input."""
 
-    config, passthru = parse_cmdline(argv)
+    config, passthru = parse_cmdline()
 
     modules = set()
     args = []
@@ -164,9 +157,9 @@ def check_lint():
     print('...done')
 
 
-def run_tests(argv, env, config):
+def run_tests(argv, env, coverage, junit_xml):
     print('running tests...')
-    if config.coverage:
+    if coverage:
         omissions = [os.path.join(root, '*') for root in VENDORED_ROOTS]
         # TODO: Drop the explicit pydevd omit once we move the subtree.
         omissions.append(os.path.join('ptvsd', 'pydevd', '*'))
@@ -188,9 +181,9 @@ def run_tests(argv, env, config):
             print('...coverage failed!')
             sys.exit(rc)
         print('...done')
-    elif config.junit_xml:
+    elif junit_xml:
         os.environ.update(env)
-        with open(config.junit_xml, 'wb') as output:
+        with open(junit_xml, 'wb') as output:
             unittest.main(
                 testRunner=XMLTestRunner(output=output),
                 module=None,
@@ -202,19 +195,20 @@ def run_tests(argv, env, config):
 
 
 if __name__ == '__main__':
-    config, args, env = convert_argv(sys.argv[1:])
+    config, argv, env = convert_argv()
     fix_sys_path()
+
     if config.lint or config.lint_only:
         check_lint()
+
     if not config.lint_only:
-        if config.start_directory:
-            print(
-                '(will look for tests under {})'
-                .format(config.start_directory)
-            )
+        if '--start-directory' in argv:
+            start = argv[argv.index('--start-directory') + 1]
+            print('(will look for tests under {})'.format(start))
 
         run_tests(
-            args,
+            argv,
             env,
-            config
+            config.coverage,
+            config.junit_xml
         )

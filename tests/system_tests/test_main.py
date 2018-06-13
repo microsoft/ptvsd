@@ -141,7 +141,6 @@ class CLITests(TestsBase, unittest.TestCase):
 
 class DebugTests(TestsBase, unittest.TestCase):
 
-    @unittest.skipUnless(os.environ.get('HAS_NETWORK'), 'no network')
     def test_script(self):
         argv = []
         filename = self.write_script('spam.py', """
