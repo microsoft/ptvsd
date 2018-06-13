@@ -1,6 +1,6 @@
 from .socket import is_socket, close_socket
 from .wrapper import VSCodeMessageProcessor
-from ._util import ClosedError, Closeable, Startable, debug
+from ._util import TimeoutError, ClosedError, Closeable, Startable, debug
 
 
 class DebugSession(Startable, Closeable):
@@ -35,9 +35,8 @@ class DebugSession(Startable, Closeable):
 
         if notify_closing is not None:
             def handle_closing(before):
-                if not before:
-                    return
-                notify_closing(self)
+                if before:
+                    notify_closing(self)
             self.add_close_handler(handle_closing)
 
         self._sock = sock
@@ -46,6 +45,12 @@ class DebugSession(Startable, Closeable):
             def handle_closing(before):
                 if before:
                     return
+                proc = self._msgprocessor
+                if proc is not None:
+                    try:
+                        proc.wait_while_connected(10)  # seconds
+                    except TimeoutError:
+                        debug('timed out waiting for disconnect')
                 close_socket(self._sock)
             self.add_close_handler(handle_closing)
 
@@ -61,16 +66,18 @@ class DebugSession(Startable, Closeable):
 
     def wait_options(self):
         """Return (normal, abnormal) based on the session's launch config."""
-        if self._msgprocessor is None:
+        proc = self._msgprocessor
+        if proc is None:
             return (False, False)
-        return self._msgprocessor._wait_options()
+        return proc._wait_options()
 
     def wait_until_stopped(self):
         """Block until all resources (e.g. message processor) have stopped."""
-        if self._msgprocessor is None:
+        proc = self._msgprocessor
+        if proc is None:
             return
         # TODO: Do this in VSCodeMessageProcessor.close()?
-        self._msgprocessor._wait_for_server_thread()
+        proc._wait_for_server_thread()
 
     def get_wait_on_exit(self):
         """Return a wait_on_exit(exitcode) func.
