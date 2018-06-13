@@ -239,7 +239,10 @@ class VSCLifecycle(object):
         # socket (i.e. "daemon").  This is because cloing ptvsd blocks,
         # keeping us from sending the disconnect request we need to send
         # at the end.
-        t = threading.Thread(target=self._fix.close_ptvsd)
+        t = threading.Thread(
+            target=self._fix.close_ptvsd,
+            name='ptvsd.test.lifecycle',
+        )
         with self._fix.wait_for_events(['exited', 'terminated']):
             # The thread runs close_ptvsd(), which sends the two
             # events and then waits for a "disconnect" request.  We send

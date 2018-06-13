@@ -147,7 +147,10 @@ class DebugSession(Closeable):
             else:
                 self._add_handler(*handler)
         self._received = []
-        self._listenerthread = threading.Thread(target=self._listen)
+        self._listenerthread = threading.Thread(
+            target=self._listen,
+            name='ptvsd.test.session',
+        )
         self._listenerthread.start()
 
     @property

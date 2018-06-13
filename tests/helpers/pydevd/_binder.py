@@ -122,6 +122,8 @@ class BinderBase(object):
         def connect():
             if self._thread is not None:
                 raise RuntimeError('already connected')
+            # We do not give this thread a name because we actually do
+            # want ptvsd to track it.
             self._thread = threading.Thread(target=self._run)
             self._thread.start()
             # Wait for ptvsd to start up.
