@@ -767,6 +767,7 @@ def _parse_debug_options(opts):
 
 # TODO: Embed instead of extend (inheritance -> composition).
 
+
 class VSCodeMessageProcessorBase(ipcjson.SocketIO, ipcjson.IpcChannel):
     """The base class for VSC message processors."""
 
@@ -869,17 +870,18 @@ class VSCodeMessageProcessorBase(ipcjson.SocketIO, ipcjson.IpcChannel):
 
 
 INITIALIZE_RESPONSE = dict(
-    supportsExceptionInfoRequest=True,
-    supportsConfigurationDoneRequest=True,
     supportsConditionalBreakpoints=True,
-    supportsHitConditionalBreakpoints=True,
-    supportsSetVariable=True,
-    supportsExceptionOptions=True,
+    supportsConfigurationDoneRequest=True,
+    supportsDebuggerProperties=True,
     supportsEvaluateForHovers=True,
-    supportsValueFormattingOptions=True,
-    supportsSetExpression=True,
-    supportsModulesRequest=True,
+    supportsExceptionInfoRequest=True,
+    supportsExceptionOptions=True,
+    supportsHitConditionalBreakpoints=True,
     supportsLogPoints=True,
+    supportsModulesRequest=True,
+    supportsSetExpression=True,
+    supportsSetVariable=True,
+    supportsValueFormattingOptions=True,
     supportTerminateDebuggee=True,
     exceptionBreakpointFilters=[
         {
@@ -1197,6 +1199,45 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         else:
             redirect_output = ''
         self.pydevd_request(pydevd_comm.CMD_REDIRECT_OUTPUT, redirect_output)
+        self._apply_code_stepping_settings()
+
+    def _is_just_my_code_stepping_enabled(self):
+        """Returns true if just-me-code stepping is enabled.
+
+        Note: for now we consider DEBUG_STDLIB = False as just-my-code.
+        """
+        dbg_stdlib = self.debug_options.get('DEBUG_STDLIB', False)
+        return not dbg_stdlib
+
+    def _apply_code_stepping_settings(self):
+        if self._is_just_my_code_stepping_enabled():
+            project_dirs = []
+            for path in sys.path + [os.getcwd()]:
+                is_stdlib = False
+                norm_path = os.path.normcase(path)
+                for prefix in STDLIB_PATH_PREFIXES:
+                    if norm_path.startswith(prefix):
+                        is_stdlib = True
+                        break
+                if path.endswith('ptvsd') or path.endswith('site-packages'):
+                    is_stdlib = True
+
+                if not is_stdlib and len(path) > 0:
+                    project_dirs.append(path)
+            self.pydevd_notify(pydevd_comm.CMD_SET_PROJECT_ROOTS,
+                               '\t'.join(project_dirs))
+
+    def _is_stdlib(self, filepath):
+        for prefix in STDLIB_PATH_PREFIXES:
+            if prefix != '' and filepath.startswith(prefix):
+                return True
+        return False
+
+    def _should_debug(self, filepath):
+        if self._is_just_my_code_stepping_enabled() and \
+           self._is_stdlib(filepath):
+            return False
+        return True
 
     def _initialize_path_maps(self, args):
         pathMaps = []
@@ -1756,7 +1797,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
     def on_stepIn(self, request, args):
         # TODO: docstring
         tid = self.thread_map.to_pydevd(int(args['threadId']))
-        if self.debug_options.get('JUST_MY_CODE', False):
+        if self._is_just_my_code_stepping_enabled():
             self.pydevd_notify(pydevd_comm.CMD_STEP_INTO_MY_CODE, tid)
         else:
             self.pydevd_notify(pydevd_comm.CMD_STEP_INTO, tid)
@@ -1871,7 +1912,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         # TODO: docstring
         filters = args['filters']
         exception_options = args.get('exceptionOptions', [])
-        jmc = self.debug_options.get('JUST_MY_CODE', False)
+        jmc = self._is_just_my_code_stepping_enabled()
 
         if exception_options:
             self.exceptions_mgr.apply_exception_options(
@@ -1967,42 +2008,10 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
     # VS specific custom message handlers
     @async_handler
     def on_setDebuggerProperty(self, request, args):
-        jmc = int(args.get('JustMyCodeStepping', 0))
-        # Note: JUST_MY_CODE behavior overides DEBUG_STDLIB.
-        self.debug_options['JUST_MY_CODE'] = jmc > 0
+        jmc = int(args.get('JustMyCodeStepping', 0)) > 0
+        self.debug_options['DEBUG_STDLIB'] = not jmc
         self._apply_code_stepping_settings()
         self.send_response(request)
-
-    def _apply_code_stepping_settings(self):
-        if self.debug_options.get('JUST_MY_CODE', False):
-            project_dirs = []
-            for path in sys.path + [os.getcwd()]:
-                is_stdlib = False
-                norm_path = os.path.normcase(path)
-                for prefix in STDLIB_PATH_PREFIXES:
-                    if norm_path.startswith(prefix):
-                        is_stdlib = True
-                        break
-                if path.endswith('ptvsd') or path.endswith('site-packages'):
-                    is_stdlib = True
-
-                if not is_stdlib and len(path) > 0:
-                    project_dirs.append(path)
-            self.pydevd_notify(pydevd_comm.CMD_SET_PROJECT_ROOTS,
-                               '\t'.join(project_dirs))
-
-    def _is_stdlib(self, filepath):
-        for prefix in STDLIB_PATH_PREFIXES:
-            if prefix != '' and filepath.startswith(prefix):
-                return True
-        return False
-
-    def _should_debug(self, filepath):
-        opts = not self.debug_options.get('DEBUG_STDLIB', True) or \
-            self.debug_options.get('JUST_MY_CODE', False)
-        if opts and self._is_stdlib(filepath):
-            return False
-        return True
 
     # PyDevd protocol event handlers
 
