@@ -11,6 +11,7 @@ import os
 import platform
 import pydevd_file_utils
 import re
+import site
 import socket
 import sys
 import threading
@@ -129,7 +130,22 @@ if hasattr(sys, 'base_prefix'):
     STDLIB_PATH_PREFIXES.append(os.path.normcase(sys.base_prefix))
 if hasattr(sys, 'real_prefix'):
     STDLIB_PATH_PREFIXES.append(os.path.normcase(sys.real_prefix))
-STDLIB_PATH_PREFIXES.append(os.path.normcase(PTVSD_DIR_PATH))
+
+if hasattr(site, 'getusersitepackages'):
+    site_paths = site.getusersitepackages()
+    if isinstance(site_paths, list):
+        for site_path in site_paths:
+            STDLIB_PATH_PREFIXES.append(os.path.normcase(site_path))
+    else:
+        STDLIB_PATH_PREFIXES.append(os.path.normcase(site_paths))
+
+if hasattr(site, 'getsitepackages'):
+    site_paths = site.getsitepackages()
+    if isinstance(site_paths, list):
+        for site_path in site_paths:
+            STDLIB_PATH_PREFIXES.append(os.path.normcase(site_path))
+    else:
+        STDLIB_PATH_PREFIXES.append(os.path.normcase(site_paths))
 
 
 class UnsupportedPyDevdCommandError(Exception):
@@ -1219,25 +1235,13 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
                     if norm_path.startswith(prefix):
                         is_stdlib = True
                         break
-                if path.endswith('ptvsd') or path.endswith('site-packages'):
+                if path.endswith('ptvsd'):
                     is_stdlib = True
 
                 if not is_stdlib and len(path) > 0:
                     project_dirs.append(path)
             self.pydevd_notify(pydevd_comm.CMD_SET_PROJECT_ROOTS,
                                '\t'.join(project_dirs))
-
-    def _is_stdlib(self, filepath):
-        for prefix in STDLIB_PATH_PREFIXES:
-            if prefix != '' and filepath.startswith(prefix):
-                return True
-        return False
-
-    def _should_debug(self, filepath):
-        if self._is_just_my_code_stepping_enabled() and \
-           self._is_stdlib(filepath):
-            return False
-        return True
 
     def _initialize_path_maps(self, args):
         pathMaps = []
