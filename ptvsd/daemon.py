@@ -350,6 +350,7 @@ class DaemonBase(object):
                     self.close()
                 except DaemonClosedError:
                     pass
+        return session
 
     def _release_session(self):
         session = self.session
