@@ -265,24 +265,18 @@ class DaemonBase(object):
                 return
             self._stopped = True
 
-        sessionlock = self._sessionlock
-        self._sessionlock = None
         server = self._server
         self._server = None
 
         with ignore_errors():
             self._finish_session()
 
-        if sessionlock is not None:
-            try:
-                sessionlock.release()
-            except Exception:
-                pass
-
+        # TODO: Close the server socket *before* finish the session?
         if server is not None:
             with ignore_errors():
                 close_socket(server)
 
+        # TODO: Close self._sock *before* finishing the session?
         if self._sock is not None:
             with ignore_errors():
                 close_socket(self._sock)
@@ -300,6 +294,8 @@ class DaemonBase(object):
                         # Ensure the proc is exiting before closing
                         # socket.  Note that we kill the proc instead
                         # of calling sys.exit(0).
+                        # Note that this will trigger either the atexit
+                        # handler or the signal handler.
                         kill_current_proc()
             else:
                 try:
@@ -334,12 +330,14 @@ class DaemonBase(object):
             debug('session stopped')
         finally:
             sessionlock = self._sessionlock
-            try:
-                sessionlock.release()
-            except Exception:  # TODO: Make it more specific?
-                debug('session lock not released')
-            else:
-                debug('session lock released')
+            self._sessionlock = None
+            if sessionlock is not None:
+                try:
+                    sessionlock.release()
+                except Exception:  # TODO: Make it more specific?
+                    debug('session lock not released')
+                else:
+                    debug('session lock released')
 
             if self._singlesession:
                 debug('closing daemon after single session')
