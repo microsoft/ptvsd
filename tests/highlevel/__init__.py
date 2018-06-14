@@ -166,24 +166,24 @@ class VSCLifecycle(object):
         self.requests = None
 
     @contextlib.contextmanager
-    def daemon_running(self, port=None, hide=False):
+    def daemon_running(self, port=None, hide=False, disconnect=True):
         with self._fix.hidden() if hide else noop_cm():
             daemon = self._start_daemon(port)
         try:
             yield
         finally:
             with self._fix.hidden() if hide else noop_cm():
-                self._stop_daemon(daemon)
+                self._stop_daemon(daemon, disconnect=disconnect)
 
     @contextlib.contextmanager
-    def launched(self, port=None, hide=False, **kwargs):
-        with self.daemon_running(port, hide=hide):
+    def launched(self, port=None, hide=False, disconnect=True, **kwargs):
+        with self.daemon_running(port, hide=hide, disconnect=disconnect):
             self.launch(**kwargs)
             yield
 
     @contextlib.contextmanager
-    def attached(self, port=None, hide=False, **kwargs):
-        with self.daemon_running(port, hide=hide):
+    def attached(self, port=None, hide=False, disconnect=True, **kwargs):
+        with self.daemon_running(port, hide=hide, disconnect=disconnect):
             self.attach(**kwargs)
             yield
 
@@ -234,7 +234,7 @@ class VSCLifecycle(object):
                 daemon.wait_until_connected()
         return daemon
 
-    def _stop_daemon(self, daemon):
+    def _stop_daemon(self, daemon, disconnect=True):
         # We must close ptvsd directly (rather than closing the external
         # socket (i.e. "daemon").  This is because cloing ptvsd blocks,
         # keeping us from sending the disconnect request we need to send
@@ -250,7 +250,8 @@ class VSCLifecycle(object):
             t.pydev_do_not_trace = True
             t.is_pydev_daemon_thread = True
             t.start()
-        self.disconnect()
+        if disconnect:
+            self.disconnect()
         t.join()
         daemon.close()
 
