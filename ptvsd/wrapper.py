@@ -1031,9 +1031,10 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
 
     def on_disconnect(self, request, args):
         # TODO: docstring
-        self._notify_disconnecting()
-        self.disconnect_request = request
-        self.disconnect_request_event.set()
+        def done():
+            self.disconnect_request = request
+            self.disconnect_request_event.set()
+        self._notify_disconnecting(done)
         # TODO: We should be able drop the remaining lines.
         if not self._closed and self.start_reason == 'launch':
             # Closing the socket causes pydevd to resume all threads,
@@ -1055,7 +1056,9 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
             timeout = WAIT_FOR_DISCONNECT_REQUEST_TIMEOUT
 
         if not self.disconnect_request_event.wait(timeout):
-            warnings.warn('timed out waiting for disconnect request')
+            warnings.warn(('timed out (after {} seconds) '
+                           'waiting for disconnect request'
+                           ).format(timeout))
         if self.disconnect_request is not None:
             self.send_response(self.disconnect_request)
             self.disconnect_request = None

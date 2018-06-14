@@ -283,7 +283,7 @@ class DaemonBase(object):
         with ignore_errors():
             self._stop()
 
-    def _handle_session_closing(self, session):
+    def _handle_session_closing(self, session, can_disconnect=None):
         debug('handling closing session')
 
         if self._exiting_via_atexit_handler:
@@ -293,6 +293,8 @@ class DaemonBase(object):
             wait_on_exit = session.get_wait_on_exit()
             if wait_on_exit(self.exitcode or 0):
                 self._wait_for_user()
+        if can_disconnect is not None:
+            can_disconnect()
 
         if self._singlesession:
             if self._killonclose:

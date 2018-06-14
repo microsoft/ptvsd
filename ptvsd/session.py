@@ -36,7 +36,7 @@ class DebugSession(Startable, Closeable):
         if notify_closing is not None:
             def handle_closing(before):
                 if before:
-                    notify_closing(self)
+                    notify_closing(self, can_disconnect=self._can_disconnect)
             self.add_close_handler(handle_closing)
 
         self._sock = sock
@@ -55,6 +55,7 @@ class DebugSession(Startable, Closeable):
             self.add_close_handler(handle_closing)
 
         self._msgprocessor = None
+        self._can_disconnect = None
 
     @property
     def socket(self):
@@ -129,8 +130,9 @@ class DebugSession(Startable, Closeable):
 
     # internal methods for VSCodeMessageProcessor
 
-    def _handle_vsc_disconnect(self):
+    def _handle_vsc_disconnect(self, can_disconnect=None):
         debug('disconnecting')
+        self._can_disconnect = can_disconnect
         try:
             self.close()
         except ClosedError:
