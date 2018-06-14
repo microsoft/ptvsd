@@ -1227,21 +1227,24 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
 
     def _apply_code_stepping_settings(self):
         if self._is_just_my_code_stepping_enabled():
+            vendored_pydevd = os.path.join('ptvsd', '_vendored', 'pydevd')
             project_dirs = []
             for path in sys.path + [os.getcwd()]:
                 is_stdlib = False
                 norm_path = os.path.normcase(path)
-                for prefix in STDLIB_PATH_PREFIXES:
-                    if norm_path.startswith(prefix):
-                        is_stdlib = True
-                        break
-                if path.endswith('ptvsd'):
+                if path.endswith('ptvsd') or \
+                   path.endswith(vendored_pydevd):
                     is_stdlib = True
+                else:
+                    for prefix in STDLIB_PATH_PREFIXES:
+                        if norm_path.startswith(prefix):
+                            is_stdlib = True
+                            break
 
                 if not is_stdlib and len(path) > 0:
                     project_dirs.append(path)
-            self.pydevd_notify(pydevd_comm.CMD_SET_PROJECT_ROOTS,
-                               '\t'.join(project_dirs))
+            self.pydevd_request(pydevd_comm.CMD_SET_PROJECT_ROOTS,
+                                '\t'.join(project_dirs))
 
     def _initialize_path_maps(self, args):
         pathMaps = []
@@ -2070,11 +2073,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
             pydevd_comm.CMD_ADD_EXCEPTION_BREAK
         }
 
-        try:
-            vsc_tid = self.thread_map.to_vscode(pyd_tid, autogen=False)
-        except KeyError:
-            self.pydevd_notify(pydevd_comm.CMD_THREAD_RUN, pyd_tid)
-            return
+        vsc_tid = self.thread_map.to_vscode(pyd_tid, autogen=False)
 
         with self.stack_traces_lock:
             self.stack_traces[pyd_tid] = xml.thread.frame
