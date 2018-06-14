@@ -99,7 +99,6 @@ class CLITests(TestsBase, unittest.TestCase):
             )
             lifecycle_handshake(session, 'launch')
             lockwait(timeout=2.0)
-            session.send_request('disconnect')
         out = adapter.output
 
         self.assertIn(u"[{!r}, '--eggs']".format(filename),

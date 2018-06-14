@@ -275,4 +275,4 @@ class DebugSession(Closeable):
         try:
             yield
         finally:
-            wait(timeout or self._timeout, handlername)
+            wait(timeout or self._timeout, handlername, fail=True)
