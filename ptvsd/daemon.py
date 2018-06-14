@@ -267,6 +267,8 @@ class DaemonBase(object):
         with ignore_errors():
             self._finish_session()
 
+        self._sessionlock = None  # TODO: Call self._clear_sessionlock?
+
         # TODO: Close the server socket *before* finish the session?
         if server is not None:
             with ignore_errors():
@@ -310,6 +312,18 @@ class DaemonBase(object):
         else:
             self._finish_session()
 
+    def _clear_sessionlock(self, done=False):
+        sessionlock = self._sessionlock
+        if done:
+            self._sessionlock = None
+        if sessionlock is not None:
+            try:
+                sessionlock.release()
+            except Exception:  # TODO: Make it more specific?
+                debug('session lock not released')
+            else:
+                debug('session lock released')
+
     # internal session-related methods
 
     def _bind_session(self, session):
@@ -334,15 +348,7 @@ class DaemonBase(object):
             session = self._release_session()
             debug('session stopped')
         finally:
-            sessionlock = self._sessionlock
-            self._sessionlock = None
-            if sessionlock is not None:
-                try:
-                    sessionlock.release()
-                except Exception:  # TODO: Make it more specific?
-                    debug('session lock not released')
-                else:
-                    debug('session lock released')
+            self._clear_sessionlock()
 
             if self._singlesession:
                 debug('closing daemon after single session')
