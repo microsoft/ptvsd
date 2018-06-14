@@ -113,6 +113,7 @@ str_handlers = pydevd_extutil.EXTENSION_MANAGER_INSTANCE.type_to_instance.setdef
 str_handlers.insert(0, SafeReprPresentationProvider._instance)
 
 PTVSD_DIR_PATH = os.path.dirname(os.path.abspath(__file__)) + os.path.sep
+NORM_PTVSD_DIR_PATH = os.path.normcase(PTVSD_DIR_PATH)
 
 
 def dont_trace_ptvsd_files(file_path):
@@ -1227,12 +1228,15 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
 
     def _apply_code_stepping_settings(self):
         if self._is_just_my_code_stepping_enabled():
-            vendored_pydevd = os.path.join('ptvsd', '_vendored', 'pydevd')
+            vendored_pydevd = os.path.sep + \
+                              os.path.join('ptvsd', '_vendored', 'pydevd')
+            ptvsd_path = os.path.sep + 'ptvsd'
+
             project_dirs = []
             for path in sys.path + [os.getcwd()]:
                 is_stdlib = False
                 norm_path = os.path.normcase(path)
-                if path.endswith('ptvsd') or \
+                if path.endswith(ptvsd_path) or \
                    path.endswith(vendored_pydevd):
                     is_stdlib = True
                 else:
@@ -1245,6 +1249,18 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
                     project_dirs.append(path)
             self.pydevd_request(pydevd_comm.CMD_SET_PROJECT_ROOTS,
                                 '\t'.join(project_dirs))
+
+    def _is_stdlib(self, filepath):
+        for prefix in STDLIB_PATH_PREFIXES:
+            if prefix != '' and filepath.startswith(prefix):
+                return True
+        return filepath.startswith(NORM_PTVSD_DIR_PATH)
+
+    def _should_debug(self, filepath):
+        if self._is_just_my_code_stepping_enabled() and \
+           self._is_stdlib(filepath):
+            return False
+        return True
 
     def _initialize_path_maps(self, args):
         pathMaps = []
@@ -2073,6 +2089,17 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
             pydevd_comm.CMD_ADD_EXCEPTION_BREAK
         }
 
+        # This is needed till https://github.com/Microsoft/ptvsd/issues/477
+        # is done. Remove this after adding the appropriate pydevd commands to
+        # do step over and step out
+        xframes = list(xml.thread.frame)
+        xframe = xframes[0]
+        filepath = unquote(xframe['file'])
+        if reason in STEP_REASONS or reason in EXCEPTION_REASONS:
+            if not self._should_debug(filepath):
+                self.pydevd_notify(pydevd_comm.CMD_THREAD_RUN, pyd_tid)
+                return
+
         vsc_tid = self.thread_map.to_vscode(pyd_tid, autogen=False)
 
         with self.stack_traces_lock:
@@ -2096,8 +2123,6 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         if reason == 'exception':
             # Get exception info from frame
             try:
-                xframes = list(xml.thread.frame)
-                xframe = xframes[0]
                 pyd_fid = xframe['id']
                 cmdargs = '{}\t{}\tFRAME\t__exception__'.format(pyd_tid,
                                                                 pyd_fid)
