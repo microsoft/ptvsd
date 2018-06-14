@@ -26,6 +26,17 @@ from ptvsd.wrapper import INITIALIZE_RESPONSE
 #  * sending an "exit" event.
 
 
+def _get_project_dirs():
+    cwd = os.getcwd()
+    pyd_path = os.path.join('ptvsd', '_vendored', 'pydevd')
+    paths = []
+    if cwd.endswith('ptvsd') or \
+       cwd.endswith(pyd_path):
+        return ''
+    paths.append(cwd)
+    return '\t'.join(paths)
+
+
 class LifecycleTests(HighlevelTest, unittest.TestCase):
     """
     See https://code.visualstudio.com/docs/extensionAPI/api-debugging#_the-vs-code-debug-protocol-in-a-nutshell
@@ -88,7 +99,7 @@ class LifecycleTests(HighlevelTest, unittest.TestCase):
                                            *['1.1', expected_os_id, 'ID']),
             self.debugger_msgs.new_request(CMD_REDIRECT_OUTPUT),
             self.debugger_msgs.new_request(CMD_SET_PROJECT_ROOTS,
-                                           os.getcwd()),
+                                           _get_project_dirs()),
             self.debugger_msgs.new_request(CMD_RUN),
         ])
 
@@ -153,6 +164,6 @@ class LifecycleTests(HighlevelTest, unittest.TestCase):
                                            *['1.1', OS_ID, 'ID']),
             self.debugger_msgs.new_request(CMD_REDIRECT_OUTPUT),
             self.debugger_msgs.new_request(CMD_SET_PROJECT_ROOTS,
-                                           os.getcwd()),
+                                           _get_project_dirs()),
             self.debugger_msgs.new_request(CMD_RUN),
         ])

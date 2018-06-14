@@ -2,7 +2,6 @@ from collections import namedtuple
 import contextlib
 import inspect
 import platform
-import os
 import threading
 import time
 import warnings

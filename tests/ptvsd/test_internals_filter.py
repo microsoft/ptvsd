@@ -35,8 +35,8 @@ class InternalsFilterTests(unittest.TestCase):
 class PtvsdFileTraceFilter(unittest.TestCase):
     def test_basic(self):
         internal_dir = os.path.dirname(
-            os.path.abspath(ptvsd.untangle.__file__)
-        )
+            os.path.abspath(ptvsd.untangle.__file__))
+
         test_paths = {
             os.path.join(internal_dir, 'wrapper.py'): True,
             os.path.join(internal_dir, 'abcd', 'ptvsd', 'wrapper.py'): True,
@@ -51,4 +51,6 @@ class PtvsdFileTraceFilter(unittest.TestCase):
         }
 
         for path, val in test_paths.items():
-            self.assertTrue(val == dont_trace_ptvsd_files(path))
+            self.assertTrue(val == dont_trace_ptvsd_files(path),
+                            msg='Path  : %s\nActual: %s' % (path,
+                                                            internal_dir))

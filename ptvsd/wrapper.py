@@ -112,7 +112,7 @@ SafeReprPresentationProvider._instance = SafeReprPresentationProvider()
 str_handlers = pydevd_extutil.EXTENSION_MANAGER_INSTANCE.type_to_instance.setdefault(pydevd_extapi.StrPresentationProvider, [])  # noqa
 str_handlers.insert(0, SafeReprPresentationProvider._instance)
 
-PTVSD_DIR_PATH = os.path.dirname(__file__)
+PTVSD_DIR_PATH = os.path.dirname(os.path.abspath(__file__)) + os.path.sep
 
 
 def dont_trace_ptvsd_files(file_path):

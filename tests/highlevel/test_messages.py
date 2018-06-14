@@ -29,6 +29,7 @@ from _pydevd_bundle.pydevd_comm import (
     CMD_THREAD_RUN,
     CMD_THREAD_SUSPEND,
     CMD_WRITE_TO_CONSOLE,
+    CMD_STEP_INTO_MY_CODE,
 )
 
 from . import RunningTest
@@ -810,7 +811,7 @@ class NextTests(NormalRequestTest, unittest.TestCase):
 class StepInTests(NormalRequestTest, unittest.TestCase):
 
     COMMAND = 'stepIn'
-    PYDEVD_CMD = CMD_STEP_INTO
+    PYDEVD_CMD = CMD_STEP_INTO_MY_CODE
     PYDEVD_RESP = None
 
     def test_basic(self):
