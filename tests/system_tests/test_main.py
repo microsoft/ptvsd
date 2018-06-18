@@ -297,8 +297,8 @@ class LifecycleTests(TestsBase, unittest.TestCase):
             }),
             self.new_event('thread', reason='started', threadId=1),
             #self.new_event('thread', reason='exited', threadId=1),
-            #self.new_event('exited', exitCode=0),
             #self.new_event('terminated'),
+            #self.new_event('exited', exitCode=0),
         ])
 
     def test_attach_started_separately(self):
@@ -331,8 +331,8 @@ class LifecycleTests(TestsBase, unittest.TestCase):
             }),
             self.new_event('thread', reason='started', threadId=1),
             #self.new_event('thread', reason='exited', threadId=1),
-            #self.new_event('exited', exitCode=0),
             #self.new_event('terminated'),
+            #self.new_event('exited', exitCode=0),
         ])
 
     def test_attach_embedded(self):
@@ -374,8 +374,8 @@ class LifecycleTests(TestsBase, unittest.TestCase):
                 'name': filename,
             }),
             self.new_event('output', output='success!', category='stdout'),
-            self.new_event('exited', exitCode=0),
             self.new_event('terminated'),
+            self.new_event('exited', exitCode=0),
         ])
         self.assertIn('success!', out)
 
@@ -432,8 +432,8 @@ class LifecycleTests(TestsBase, unittest.TestCase):
                 'startMethod': 'attach',
                 'name': filename,
             }),
-            self.new_event('exited', exitCode=0),
             self.new_event('terminated'),
+            self.new_event('exited', exitCode=0),
         ])
 
     @unittest.skip('not implemented')
@@ -473,8 +473,8 @@ class LifecycleTests(TestsBase, unittest.TestCase):
             self.new_event('initialized'),
             self.new_response(req_launch),
             self.new_response(req_config),
-            self.new_event('exited', exitCode=0),
             self.new_event('terminated'),
+            self.new_event('exited', exitCode=0),
         ])
 
     def test_nodebug(self):
@@ -519,6 +519,6 @@ class LifecycleTests(TestsBase, unittest.TestCase):
             self.new_event('output',
                            output='\n',
                            category='stdout'),
-            self.new_event('exited', exitCode=0),
             self.new_event('terminated'),
+            self.new_event('exited', exitCode=0),
         ])

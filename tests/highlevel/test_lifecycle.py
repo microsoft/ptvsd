@@ -161,8 +161,8 @@ class LifecycleTests(HighlevelTest, unittest.TestCase):
             #    isLocalProcess=True,
             #    startMethod='launch',
             #)),
-            self.new_event('exited', exitCode=0),
             self.new_event('terminated'),
+            self.new_event('exited', exitCode=0),
             self.new_response(req_disconnect),
         ])
         self.assert_received(self.debugger, [

@@ -986,6 +986,16 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
         self.start_reason = None
         self.debug_options = {}
 
+    def handle_terminated(self):
+        """Deal with the debugger exiting."""
+        # Notify the editor that the debugger has stopped.
+        self.send_event('terminated')
+
+    def handle_exited(self, exitcode):
+        """Deal with the debuggee exiting."""
+        # Notify the editor that the "debuggee" (e.g. script, app) exited.
+        self.send_event('exited', exitCode=exitcode)
+
     def handle_session_stopped(self, exitcode=None):
         """Finalize the protocol connection."""
         if self._stopped:
@@ -993,10 +1003,8 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
         self._stopped = True
 
         if exitcode is not None:
-            # Notify the editor that the "debuggee" (e.g. script, app) exited.
-            self.send_event('exited', exitCode=exitcode)
-            # Notify the editor that the debugger has stopped.
-            self.send_event('terminated')
+            self.handle_terminated()
+            self.handle_exited(exitcode)
 
         # The editor will send a "disconnect" request at this point.
         self._wait_for_disconnect()
