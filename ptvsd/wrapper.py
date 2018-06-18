@@ -49,7 +49,6 @@ from ptvsd.socket import TimeoutError  # noqa
 #ipcjson._TRACE = ipcjson_trace
 
 
-WAIT_FOR_DISCONNECT_REQUEST_TIMEOUT = 2
 WAIT_FOR_THREAD_FINISH_TIMEOUT = 1
 
 
@@ -1030,7 +1029,7 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
 
     def on_disconnect(self, request, args):
         # TODO: docstring
-        #self._notify_disconnecting()
+        self._notify_disconnecting()
         self.send_response(request)
         self._set_disconnected()
 

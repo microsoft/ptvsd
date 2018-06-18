@@ -30,7 +30,8 @@ class DebugSession(Startable, Closeable):
         client, _ = server.accept()
         return cls(client, ownsock=True, **kwargs)
 
-    def __init__(self, sock, notify_closing=None, ownsock=False):
+    def __init__(self, sock, notify_closing=None, notify_disconnecting=None,
+                 ownsock=False):
         super(DebugSession, self).__init__()
 
         if notify_closing is not None:
@@ -38,6 +39,10 @@ class DebugSession(Startable, Closeable):
                 if before:
                     notify_closing(self)
             self.add_close_handler(handle_closing)
+
+        if notify_disconnecting is None:
+            notify_disconnecting = (lambda _: None)
+        self._notify_disconnecting = notify_disconnecting
 
         self._sock = sock
         if ownsock:
@@ -136,10 +141,7 @@ class DebugSession(Startable, Closeable):
 
     def _handle_vsc_disconnect(self):
         debug('disconnecting')
-        try:
-            self.close()
-        except ClosedError:
-            pass
+        self._notify_disconnecting(self)
 
     def _handle_vsc_close(self):
         debug('processor closing')
