@@ -366,13 +366,8 @@ class DaemonBase(object):
             # TODO: This shouldn't happen if we are exiting?
             self._session = None
 
-        # Possibly trigger VSC "exited" and "terminated" events.
-        exitcode = self.exitcode
-        if exitcode is None:
-            if self._exiting_via_atexit_handler or self._singlesession:
-                exitcode = 0
         try:
-            session.stop(exitcode)
+            session.stop()
         except NotRunningError:
             pass
         try:
@@ -408,6 +403,12 @@ class DaemonBase(object):
         with self._lock:
             self._exiting_via_atexit_handler = True
         session = self.session
+
+        if session is not None:
+            # TODO: Rely on self._stop_debugger().
+            session.handle_debugger_stopped()
+            session.handle_exiting(self.exitcode)
+
         try:
             self.close()
         except DaemonClosedError:

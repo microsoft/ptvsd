@@ -123,15 +123,12 @@ class DebugSession(Startable, Closeable):
         self._msgprocessor.start(threadname)
         return self._msgprocessor_running
 
-    def _stop(self, exitcode=None):
+    def _stop(self):
         proc = self._msgprocessor
         if proc is None:
             return
 
         debug('proc stopping')
-        if exitcode is not None:
-            self.handle_debugger_stopped()
-            self.handle_exiting(exitcode)
         # TODO: We should not need to wait if not exiting.
         # The editor will send a "disconnect" request at this point.
         proc._wait_for_disconnect()
