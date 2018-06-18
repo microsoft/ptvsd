@@ -43,8 +43,8 @@ PYDEVD_FLAGS = {
 }
 
 USAGE = """
-  {0} [-h] [--nodebug] [--host HOST | --server-host HOST] --port PORT -m MODULE [arg ...]
-  {0} [-h] [--nodebug] [--host HOST | --server-host HOST] --port PORT FILENAME [arg ...]
+  {0} [-h] [-V] [--nodebug] [--host HOST | --server-host HOST] --port PORT -m MODULE [arg ...]
+  {0} [-h] [-V] [--nodebug] [--host HOST | --server-host HOST] --port PORT FILENAME [arg ...]
 """  # noqa
 
 
@@ -164,6 +164,8 @@ def _parse_args(prog, argv):
     target.add_argument('filename', nargs='?')
 
     parser.add_argument('--single-session', action='store_true')
+    parser.add_argument('-V', '--version', action='version')
+    parser.version = __version__
 
     args = parser.parse_args(argv)
     ns = vars(args)
