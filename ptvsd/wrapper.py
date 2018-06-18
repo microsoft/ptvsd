@@ -25,7 +25,6 @@ try:
     from functools import reduce
 except Exception:
     pass
-import warnings
 from xml.sax import SAXParseException
 
 import _pydevd_bundle.pydevd_comm as pydevd_comm  # noqa
@@ -981,8 +980,6 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
         self._stopped = False
 
         # adapter state
-        self.disconnect_request = None
-        self.disconnect_request_event = threading.Event()
         self.start_reason = None
         self.debug_options = {}
 
@@ -991,10 +988,17 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
         # Notify the editor that the debugger has stopped.
         self.send_event('terminated')
 
-    def handle_exiting(self, exitcode=None):
+    def handle_exiting(self, exitcode=None, wait=None):
         """Deal with the debuggee exiting."""
         # Notify the editor that the "debuggee" (e.g. script, app) exited.
         self.send_event('exited', exitCode=exitcode or 0)
+
+        if exitcode and wait is not None:
+            normal, abnormal = self._wait_options()
+            if (normal and not exitcode) or (abnormal and exitcode):
+                # This must be done before we send a disconnect response
+                # (which implies before we close the client socket).
+                wait()
 
     # VSC protocol handlers
 
@@ -1026,10 +1030,10 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
 
     def on_disconnect(self, request, args):
         # TODO: docstring
-        def done():
-            self.disconnect_request = request
-            self.disconnect_request_event.set()
-        self._notify_disconnecting(done)
+        #self._notify_disconnecting()
+        self.send_response(request)
+        self._set_disconnected()
+
         # TODO: We should be able drop the remaining lines.
         if not self._closed and self.start_reason == 'launch':
             # Closing the socket causes pydevd to resume all threads,
@@ -1045,19 +1049,6 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
         )
 
     # methods related to shutdown
-
-    def _wait_for_disconnect(self, timeout=None):
-        if timeout is None:
-            timeout = WAIT_FOR_DISCONNECT_REQUEST_TIMEOUT
-
-        if not self.disconnect_request_event.wait(timeout):
-            warnings.warn(('timed out (after {} seconds) '
-                           'waiting for disconnect request'
-                           ).format(timeout))
-        if self.disconnect_request is not None:
-            self.send_response(self.disconnect_request)
-            self.disconnect_request = None
-            self._set_disconnected()
 
     def _wait_options(self):
         # In attach scenarios, we can't assume that the process is actually

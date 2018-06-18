@@ -36,7 +36,7 @@ class DebugSession(Startable, Closeable):
         if notify_closing is not None:
             def handle_closing(before):
                 if before:
-                    notify_closing(self, can_disconnect=self._can_disconnect)
+                    notify_closing(self)
             self.add_close_handler(handle_closing)
 
         self._sock = sock
@@ -55,7 +55,6 @@ class DebugSession(Startable, Closeable):
             self.add_close_handler(handle_closing)
 
         self._msgprocessor = None
-        self._can_disconnect = None
 
     @property
     def socket(self):
@@ -79,12 +78,12 @@ class DebugSession(Startable, Closeable):
             return
         proc.handle_debugger_stopped()
 
-    def handle_exiting(self, exitcode=None):
+    def handle_exiting(self, exitcode=None, wait=None):
         """Deal with the debuggee exiting."""
         proc = self._msgprocessor
         if proc is None:
             return
-        proc.handle_exiting(exitcode)
+        proc.handle_exiting(exitcode, wait)
 
     def wait_until_stopped(self):
         """Block until all resources (e.g. message processor) have stopped."""
@@ -93,18 +92,6 @@ class DebugSession(Startable, Closeable):
             return
         # TODO: Do this in VSCodeMessageProcessor.close()?
         proc._wait_for_server_thread()
-
-    def get_wait_on_exit(self):
-        """Return a wait_on_exit(exitcode) func.
-
-        The func returns True if process should wait for the user
-        before exiting.
-        """
-        normal, abnormal = self.wait_options()
-
-        def wait_on_exit(exitcode):
-            return (normal and not exitcode) or (abnormal and exitcode)
-        return wait_on_exit
 
     # internal methods
 
@@ -147,9 +134,8 @@ class DebugSession(Startable, Closeable):
 
     # internal methods for VSCodeMessageProcessor
 
-    def _handle_vsc_disconnect(self, can_disconnect=None):
+    def _handle_vsc_disconnect(self):
         debug('disconnecting')
-        self._can_disconnect = can_disconnect
         try:
             self.close()
         except ClosedError:
@@ -157,7 +143,10 @@ class DebugSession(Startable, Closeable):
 
     def _handle_vsc_close(self):
         debug('processor closing')
-        self.close()
+        try:
+            self.close()
+        except ClosedError:
+            pass
 
 
 class PyDevdDebugSession(DebugSession):
