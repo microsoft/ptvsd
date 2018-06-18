@@ -133,7 +133,7 @@ class DebugSession(Startable, Closeable):
         # The editor will send a "disconnect" request at this point.
         proc._wait_for_disconnect()
         proc.close()
-        proc = None
+        self._msgprocessor = None
 
     def _close(self):
         debug('session closing')
