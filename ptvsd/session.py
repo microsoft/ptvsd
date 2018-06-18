@@ -72,6 +72,20 @@ class DebugSession(Startable, Closeable):
             return (False, False)
         return proc._wait_options()
 
+    def handle_debugger_stopped(self):
+        """Deal with the debugger exiting."""
+        proc = self._msgprocessor
+        if proc is None:
+            return
+        proc.handle_debugger_stopped()
+
+    def handle_exiting(self, exitcode=None):
+        """Deal with the debuggee exiting."""
+        proc = self._msgprocessor
+        if proc is None:
+            return
+        proc.handle_exiting(exitcode)
+
     def wait_until_stopped(self):
         """Block until all resources (e.g. message processor) have stopped."""
         proc = self._msgprocessor
@@ -116,8 +130,8 @@ class DebugSession(Startable, Closeable):
 
         debug('proc stopping')
         if exitcode is not None:
-            proc.handle_debugger_stopped()
-            proc.handle_exiting(exitcode)
+            self.handle_debugger_stopped()
+            self.handle_exiting(exitcode)
         # TODO: We should not need to wait if not exiting.
         # The editor will send a "disconnect" request at this point.
         proc._wait_for_disconnect()
