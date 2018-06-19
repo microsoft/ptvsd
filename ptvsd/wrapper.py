@@ -1102,12 +1102,6 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
     # methods related to shutdown
 
     def _wait_options(self):
-        # In attach scenarios, we can't assume that the process is actually
-        # interactive and has a console, so ignore these options.
-        # In launch scenarios, we only want "press any key" to show up when
-        # program terminates by itself, not when user explicitly stops it.
-        if self.disconnect_request or self.start_reason != 'launch':
-            return False, False
         normal = self.debug_options.get('WAIT_ON_NORMAL_EXIT', False)
         abnormal = self.debug_options.get('WAIT_ON_ABNORMAL_EXIT', False)
         return normal, abnormal
