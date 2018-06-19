@@ -984,6 +984,9 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
         self._statelock = threading.Lock()
         self._debugging = debugging
         self._debuggerstopped = False
+        self._exitlock = threading.Lock()
+        self._exitlock.acquire()  # released in handle_exiting()
+        self._exiting = False
 
     def handle_debugger_stopped(self):
         """Deal with the debugger exiting."""
@@ -996,6 +999,11 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
     def handle_exiting(self, exitcode=None, wait=None):
         """Deal with the debuggee exiting."""
         # Notify the editor that the "debuggee" (e.g. script, app) exited.
+        with self._statelock:
+            if self._exiting:
+                return
+            self._exiting = True
+
         self.send_event('exited', exitCode=exitcode or 0)
 
         if wait is not None:
@@ -1004,6 +1012,9 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
                 # This must be done before we send a disconnect response
                 # (which implies before we close the client socket).
                 wait()
+
+        if self._exitlock is not None:
+            lock_release(self._exitlock)
 
     # VSC protocol handlers
 
