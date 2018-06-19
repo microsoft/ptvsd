@@ -998,7 +998,7 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
         # Notify the editor that the "debuggee" (e.g. script, app) exited.
         self.send_event('exited', exitCode=exitcode or 0)
 
-        if exitcode and wait is not None:
+        if wait is not None:
             normal, abnormal = self._wait_options()
             if (normal and not exitcode) or (abnormal and exitcode):
                 # This must be done before we send a disconnect response
