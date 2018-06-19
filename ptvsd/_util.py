@@ -51,10 +51,25 @@ def call_all(callables, *args, **kwargs):
 # threading stuff
 
 try:
-    TimeoutError = __builtins__.TimeoutError
+    base = __builtins__.TimeoutError
 except AttributeError:
-    class TimeoutError(OSError):
-        """Timeout expired."""
+    base = OSError
+class TimeoutError(base):  # noqa
+    """Timeout expired."""
+    timeout = None
+    reason = None
+
+    @classmethod
+    def from_timeout(cls, timeout, reason=None):
+        """Return a TimeoutError with the given timeout."""
+        msg = 'timed out (after {} seconds)'.format(timeout)
+        if reason is not None:
+            msg += ' ' + reason
+        self = cls(msg)
+        self.timeout = timeout
+        self.reason = reason
+        return self
+del base  # noqa
 
 
 def is_locked(lock):
@@ -80,7 +95,7 @@ def lock_release(lock):
 def lock_wait(lock, timeout=None):
     """Wait until the lock is not locked."""
     if not _lock_acquire(lock, timeout):
-        raise TimeoutError
+        raise TimeoutError.from_timeout(timeout, 'waiting for lock')
     lock_release(lock)
 
 
