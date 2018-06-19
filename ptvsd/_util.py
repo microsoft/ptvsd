@@ -72,6 +72,19 @@ class TimeoutError(base):  # noqa
 del base  # noqa
 
 
+def wait(check, timeout=None, reason=None):
+    """Wait for the given func to return True.
+
+    If a timeout is given and reached then raise TimeoutError.
+    """
+    if timeout is None or timeout <= 0:
+        while not check():
+            time.sleep(0.01)
+    else:
+        if not _wait(check, timeout):
+            raise TimeoutError.from_timeout(timeout, reason)
+
+
 def is_locked(lock):
     """Return True if the lock is locked."""
     if lock is None:
@@ -92,10 +105,10 @@ def lock_release(lock):
         pass
 
 
-def lock_wait(lock, timeout=None):
+def lock_wait(lock, timeout=None, reason='waiting for lock'):
     """Wait until the lock is not locked."""
     if not _lock_acquire(lock, timeout):
-        raise TimeoutError.from_timeout(timeout, 'waiting for lock')
+        raise TimeoutError.from_timeout(timeout, reason)
     lock_release(lock)
 
 
@@ -108,14 +121,21 @@ else:
     def _lock_acquire(lock, timeout):
         if timeout is None or timeout <= 0:
             return lock.acquire()
-        if lock.acquire(False):
+
+        def check():
+            return lock.acquire(False)
+        return _wait(check, timeout)
+
+
+def _wait(check, timeout):
+    if check():
+        return True
+    for _ in range(int(timeout * 100)):
+        time.sleep(0.01)
+        if check():
             return True
-        for _ in range(int(timeout * 100)):
-            time.sleep(0.01)
-            if lock.acquire(False):
-                return True
-        else:
-            return False
+    else:
+        return False
 
 
 ########################
