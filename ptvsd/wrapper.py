@@ -35,22 +35,25 @@ import _pydevd_bundle.pydevd_frame as pydevd_frame # noqa
 #from _pydevd_bundle.pydevd_comm import pydevd_log
 from _pydevd_bundle.pydevd_additional_thread_info import PyDBAdditionalThreadInfo # noqa
 
+from ptvsd import _util
 import ptvsd.ipcjson as ipcjson  # noqa
 import ptvsd.futures as futures  # noqa
 import ptvsd.untangle as untangle  # noqa
 from ptvsd.pathutils import PathUnNormcase  # noqa
 from ptvsd.safe_repr import SafeRepr  # noqa
 from ptvsd.version import __version__  # noqa
-from ptvsd._util import debug, is_locked, lock_release, lock_wait  # noqa
 from ptvsd.socket import TimeoutError  # noqa
+
+
+WAIT_FOR_THREAD_FINISH_TIMEOUT = 1  # seconds
+
+
+debug = _util.debug
 
 
 #def ipcjson_trace(s):
 #    print(s)
 #ipcjson._TRACE = ipcjson_trace
-
-
-WAIT_FOR_THREAD_FINISH_TIMEOUT = 1  # seconds
 
 
 def is_debugger_internal_thread(thread_name):
@@ -812,7 +815,7 @@ class VSCodeMessageProcessorBase(ipcjson.SocketIO, ipcjson.IpcChannel):
     @property
     def connected(self):  # may send responses/events
         with self._connlock:
-            return is_locked(self._connected)
+            return _util.is_locked(self._connected)
 
     @property
     def listening(self):
@@ -820,13 +823,13 @@ class VSCodeMessageProcessorBase(ipcjson.SocketIO, ipcjson.IpcChannel):
         with self._connlock:
             if self._listening is None:
                 return False
-            return is_locked(self._listening)
+            return _util.is_locked(self._listening)
 
     def wait_while_connected(self, timeout=None):
         """Wait until the client socket is disconnected."""
         with self._connlock:
             lock = self._listening
-        lock_wait(lock, timeout)  # Wait until no longer connected.
+        _util.lock_wait(lock, timeout)  # Wait until no longer connected.
 
     def wait_while_listening(self, timeout=None):
         """Wait until no longer listening for incoming messages."""
@@ -834,7 +837,7 @@ class VSCodeMessageProcessorBase(ipcjson.SocketIO, ipcjson.IpcChannel):
             lock = self._listening
             if lock is None:
                 raise RuntimeError('not listening yet')
-        lock_wait(lock, timeout)  # Wait until no longer listening.
+        _util.lock_wait(lock, timeout)  # Wait until no longer listening.
 
     def start(self, threadname):
         # event loop
@@ -850,8 +853,8 @@ class VSCodeMessageProcessorBase(ipcjson.SocketIO, ipcjson.IpcChannel):
             except (EOFError, TimeoutError):
                 debug('client socket closed')
                 with self._connlock:
-                    lock_release(self._listening)
-                    lock_release(self._connected)
+                    _util.lock_release(self._listening)
+                    _util.lock_release(self._connected)
                 self.close()
         self.server_thread = threading.Thread(
             target=process_messages,
@@ -886,8 +889,8 @@ class VSCodeMessageProcessorBase(ipcjson.SocketIO, ipcjson.IpcChannel):
 
         # Ensure that the connection is marked as closed.
         with self._connlock:
-            lock_release(self._listening)
-            lock_release(self._connected)
+            _util.lock_release(self._listening)
+            _util.lock_release(self._connected)
 
     # VSC protocol handlers
 
@@ -902,7 +905,7 @@ class VSCodeMessageProcessorBase(ipcjson.SocketIO, ipcjson.IpcChannel):
 
     def _set_disconnected(self):
         with self._connlock:
-            lock_release(self._connected)
+            _util.lock_release(self._connected)
 
     def _wait_for_server_thread(self):
         if self.server_thread is None:
@@ -1029,7 +1032,7 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
         self._ensure_debugger_stopped()
 
         if self._exitlock is not None:
-            lock_release(self._exitlock)
+            _util.lock_release(self._exitlock)
 
     # VSC protocol handlers
 
@@ -1095,8 +1098,8 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
         if lock is None:
             return
         try:
-            lock_wait(lock, timeout, 'waiting for process exit')
-        except TimeoutError as exc:
+            _util.lock_wait(lock, timeout, 'waiting for process exit')
+        except _util.TimeoutError as exc:
             warnings.warn(str(exc))
 
     # methods related to shutdown
