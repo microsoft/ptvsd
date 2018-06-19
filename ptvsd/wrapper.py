@@ -965,7 +965,7 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
 
     def __init__(self, socket,
                  notify_disconnecting, notify_closing, notify_launch=None,
-                 timeout=None, logfile=None,
+                 timeout=None, logfile=None, debugging=True,
                  ):
         super(VSCLifecycleMsgProcessor, self).__init__(
             socket=socket,
@@ -981,11 +981,17 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
         # adapter state
         self.start_reason = None
         self.debug_options = {}
+        self._statelock = threading.Lock()
+        self._debugging = debugging
+        self._debuggerstopped = False
 
     def handle_debugger_stopped(self):
         """Deal with the debugger exiting."""
         # Notify the editor that the debugger has stopped.
-        self.send_event('terminated')
+        if not self._debugging:
+            # TODO: Fail?  If this gets called then we must be debugging.
+            return
+        self._ensure_debugger_stopped()
 
     def handle_exiting(self, exitcode=None, wait=None):
         """Deal with the debuggee exiting."""
@@ -1046,6 +1052,15 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
             args.get('options'),
             args.get('debugOptions'),
         )
+
+    def _ensure_debugger_stopped(self):
+        if not self._debugging:
+            return
+        with self._statelock:
+            if self._debuggerstopped:
+                return
+            self._debuggerstopped = True
+        self.send_event('terminated')
 
     # methods related to shutdown
 
