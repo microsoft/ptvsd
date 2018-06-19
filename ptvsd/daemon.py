@@ -9,7 +9,8 @@ from .exit_handlers import (
     ExitHandlers, UnsupportedSignalError,
     kill_current_proc)
 from .session import PyDevdDebugSession
-from ._util import ClosedError, NotRunningError, ignore_errors, debug
+from ._util import (
+    ClosedError, NotRunningError, ignore_errors, debug, lock_wait)
 
 
 def _wait_for_user():
@@ -414,9 +415,19 @@ class DaemonBase(object):
         session = self.session
 
         if session is not None:
+            lock = threading.Lock()
+            lock.acquire()
+
+            def wait_debugger(timeout=None):
+                lock_wait(lock, timeout)
+
+            def wait_exiting(cfg):
+                if cfg:
+                    self._wait_for_user()
+                lock.release()
             # TODO: Rely on self._stop_debugger().
-            session.handle_debugger_stopped()
-            session.handle_exiting(self.exitcode, self._wait_for_user)
+            session.handle_debugger_stopped(wait_debugger)
+            session.handle_exiting(self.exitcode, wait_exiting)
 
         try:
             self.close()

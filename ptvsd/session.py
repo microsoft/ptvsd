@@ -69,12 +69,12 @@ class DebugSession(Startable, Closeable):
     def msgprocessor(self):
         return self._msgprocessor
 
-    def handle_debugger_stopped(self):
+    def handle_debugger_stopped(self, wait=None):
         """Deal with the debugger exiting."""
         proc = self._msgprocessor
         if proc is None:
             return
-        proc.handle_debugger_stopped()
+        proc.handle_debugger_stopped(wait)
 
     def handle_exiting(self, exitcode=None, wait=None):
         """Deal with the debuggee exiting."""

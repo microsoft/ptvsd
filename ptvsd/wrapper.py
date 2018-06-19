@@ -994,19 +994,21 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
         self._exitlock.acquire()  # released in handle_exiting()
         self._exiting = False
 
-    def handle_debugger_stopped(self, exitwait=None):
+    def handle_debugger_stopped(self, wait=None):
         """Deal with the debugger exiting."""
         # Notify the editor that the debugger has stopped.
-        if exitwait is None:
-            exitwait = self.EXITWAIT
         if not self._debugging:
             # TODO: Fail?  If this gets called then we must be debugging.
             return
 
-        # Since pydevd is embedded in the debuggee process, always
-        # make sure the exited event is sent first.
+        # We run this in a thread to allow handle_exiting() to be called
+        # at the same time.
         def stop():
-            self._wait_until_exiting(exitwait)
+            if wait is not None:
+                wait()
+            # Since pydevd is embedded in the debuggee process, always
+            # make sure the exited event is sent first.
+            self._wait_until_exiting(self.EXITWAIT)
             self._ensure_debugger_stopped()
         t = threading.Thread(target=stop, name='ptvsd.stopping')
         t.start()
@@ -1021,12 +1023,13 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
 
         self.send_event('exited', exitCode=exitcode or 0)
 
+        self._waiting = True
         if wait is not None:
             normal, abnormal = self._wait_options()
-            if (normal and not exitcode) or (abnormal and exitcode):
-                # This must be done before we send a disconnect response
-                # (which implies before we close the client socket).
-                wait()
+            cfg = (normal and not exitcode) or (abnormal and exitcode)
+            # This must be done before we send a disconnect response
+            # (which implies before we close the client socket).
+            wait(cfg)
 
         # If we are exiting then pydevd must have stopped.
         self._ensure_debugger_stopped()
