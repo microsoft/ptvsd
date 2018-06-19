@@ -25,6 +25,7 @@ try:
     from functools import reduce
 except Exception:
     pass
+import warnings
 from xml.sax import SAXParseException
 
 import _pydevd_bundle.pydevd_comm as pydevd_comm  # noqa
@@ -963,6 +964,8 @@ INITIALIZE_RESPONSE = dict(
 class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
     """Handles adapter lifecycle messages of the VSC debugger protocol."""
 
+    EXITWAIT = 1
+
     def __init__(self, socket,
                  notify_disconnecting, notify_closing, notify_launch=None,
                  timeout=None, logfile=None, debugging=True,
@@ -1046,6 +1049,8 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
 
     def on_disconnect(self, request, args):
         # TODO: docstring
+        if self._debuggerstopped:  # A "terminated" event must have been sent.
+            self._wait_until_exiting(self.EXITWAIT)
         self._notify_disconnecting()
         self.send_response(request)
         self._set_disconnected()
@@ -1072,6 +1077,15 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
                 return
             self._debuggerstopped = True
         self.send_event('terminated')
+
+    def _wait_until_exiting(self, timeout):
+        lock = self._exitlock
+        if lock is None:
+            return
+        try:
+            lock_wait(lock, timeout, 'waiting for process exit')
+        except TimeoutError as exc:
+            warnings.warn(str(exc))
 
     # methods related to shutdown
 
