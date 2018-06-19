@@ -50,7 +50,7 @@ from ptvsd.socket import TimeoutError  # noqa
 #ipcjson._TRACE = ipcjson_trace
 
 
-WAIT_FOR_THREAD_FINISH_TIMEOUT = 1
+WAIT_FOR_THREAD_FINISH_TIMEOUT = 1  # seconds
 
 
 def is_debugger_internal_thread(thread_name):
@@ -991,13 +991,22 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
         self._exitlock.acquire()  # released in handle_exiting()
         self._exiting = False
 
-    def handle_debugger_stopped(self):
+    def handle_debugger_stopped(self, exitwait=None):
         """Deal with the debugger exiting."""
         # Notify the editor that the debugger has stopped.
+        if exitwait is None:
+            exitwait = self.EXITWAIT
         if not self._debugging:
             # TODO: Fail?  If this gets called then we must be debugging.
             return
-        self._ensure_debugger_stopped()
+
+        # Since pydevd is embedded in the debuggee process, always
+        # make sure the exited event is sent first.
+        def stop():
+            self._wait_until_exiting(exitwait)
+            self._ensure_debugger_stopped()
+        t = threading.Thread(target=stop, name='ptvsd.stopping')
+        t.start()
 
     def handle_exiting(self, exitcode=None, wait=None):
         """Deal with the debuggee exiting."""
