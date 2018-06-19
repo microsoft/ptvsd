@@ -51,6 +51,12 @@ def call_all(callables, *args, **kwargs):
 # threading stuff
 
 try:
+    ThreadError = threading.ThreadError
+except AttributeError:
+    ThreadError = RuntimeError
+
+
+try:
     base = __builtins__.TimeoutError
 except AttributeError:
     base = OSError
@@ -101,7 +107,7 @@ def lock_release(lock):
         return
     try:
         lock.release()
-    except RuntimeError:  # already unlocked
+    except ThreadError:  # already unlocked
         pass
 
 
@@ -112,7 +118,7 @@ def lock_wait(lock, timeout=None, reason='waiting for lock'):
     lock_release(lock)
 
 
-if sys.version_info > (2,):
+if sys.version_info >= (3,):
     def _lock_acquire(lock, timeout):
         if timeout is None:
             timeout = -1
