@@ -1016,6 +1016,9 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
                 # (which implies before we close the client socket).
                 wait()
 
+        # If we are exiting then pydevd must have stopped.
+        self._ensure_debugger_stopped()
+
         if self._exitlock is not None:
             lock_release(self._exitlock)
 
