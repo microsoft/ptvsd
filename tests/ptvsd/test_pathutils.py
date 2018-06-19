@@ -8,18 +8,18 @@ from ptvsd.pathutils import PathUnNormcase
 
 def _find_file(filename):
     filename = os.path.normcase(os.path.normpath(filename))
+    drive = os.path.splitdrive(filename)[0]
     found = []
     while True:
         dirname, basename = os.path.split(filename)
-        for name in os.listdir(dirname):
+        for name in os.listdir(dirname or '.'):
             if os.path.normcase(name) == basename:
                 found.insert(0, name)
                 break
         else:
-            raise Exception('oops')
+            raise Exception('oops: {}'.format(dirname))
 
-        drive = os.path.splitdrive(dirname)[0]
-        if dirname == drive or dirname == drive + os.path.sep:
+        if not dirname or dirname == drive or dirname == drive + os.path.sep:
             return dirname.upper() + os.path.sep.join(found)
         filename = dirname
 
