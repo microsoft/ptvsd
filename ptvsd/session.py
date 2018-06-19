@@ -69,13 +69,6 @@ class DebugSession(Startable, Closeable):
     def msgprocessor(self):
         return self._msgprocessor
 
-    def wait_options(self):
-        """Return (normal, abnormal) based on the session's launch config."""
-        proc = self._msgprocessor
-        if proc is None:
-            return (False, False)
-        return proc._wait_options()
-
     def handle_debugger_stopped(self):
         """Deal with the debugger exiting."""
         proc = self._msgprocessor
