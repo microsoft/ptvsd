@@ -4,6 +4,9 @@ import sys
 from . import Closeable
 
 
+_NOT_SET = object()
+
+
 class Proc(Closeable):
     """A wrapper around a subprocess.Popen object."""
 
@@ -27,7 +30,7 @@ class Proc(Closeable):
         return cls.start(argv, **kwargs)
 
     @classmethod
-    def start(cls, argv, env=None, stdout=None, stderr=None):
+    def start(cls, argv, env=None, stdout=_NOT_SET, stderr=_NOT_SET):
         if env is None:
             env = {}
         if cls.VERBOSE:
@@ -37,9 +40,9 @@ class Proc(Closeable):
 
     @classmethod
     def _start(cls, argv, env, stdout, stderr):
-        if stdout is None:
+        if stdout is _NOT_SET:
             stdout = subprocess.PIPE
-        if stderr is None:
+        if stderr is _NOT_SET:
             stderr = subprocess.STDOUT
         proc = subprocess.Popen(
             argv,
@@ -73,6 +76,7 @@ class Proc(Closeable):
             # TODO: Could there be more?
             return self._output
         except AttributeError:
+            self._proc.stdout.flush()
             # TODO: Wait until proc done?  (piped output blocks)
             self._output = self._proc.stdout.read()
             return self._output
