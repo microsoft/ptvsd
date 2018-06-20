@@ -13,18 +13,21 @@ class Proc(Closeable):
     VERBOSE = False
     #VERBOSE = True
 
+    ARGV = [
+        sys.executable,
+        '-u',  # stdout/stderr unbuffered
+        ]
+
     @classmethod
     def start_python_script(cls, filename, argv, **kwargs):
-        argv = [
-            sys.executable,
+        argv = list(cls.ARGV) + [
             filename,
         ] + argv
         return cls.start(argv, **kwargs)
 
     @classmethod
     def start_python_module(cls, module, argv, **kwargs):
-        argv = [
-            sys.executable,
+        argv = list(cls.ARGV) + [
             '-m', module,
         ] + argv
         return cls.start(argv, **kwargs)
@@ -66,6 +69,17 @@ class Proc(Closeable):
     #        raise AttributeError(name)
     #    return val
 
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        line = self._proc.stdout.readline()
+        if not line and self._proc.poll() is not None:
+            raise StopIteration
+        return line
+
+    next = __next__  # for Python 2.7
+
     @property
     def pid(self):
         return self._proc.pid
@@ -76,16 +90,34 @@ class Proc(Closeable):
             # TODO: Could there be more?
             return self._output
         except AttributeError:
-            self._proc.stdout.flush()
             # TODO: Wait until proc done?  (piped output blocks)
-            self._output = self._proc.stdout.read()
+            try:
+                self._output = self._proc.stdout.read()
+            except AttributeError:
+                if self._proc.stdout is None:
+                    return ''
+                raise
+
             return self._output
 
     @property
     def exitcode(self):
+        # TODO: Use proc.poll()?
         return self._proc.returncode
 
+    def readline(self, stdout=True):
+        if stdout or self._proc.stderr is None:
+            try:
+                return self._proc.stdout.readline()
+            except AttributeError:
+                if self._proc.stdout is None:
+                    return ''
+                raise
+        else:
+            return self._proc.stderr.readline()
+
     def wait(self):
+        # TODO: Use proc.communicate()?
         self._proc.wait()
 
     # internal methods
