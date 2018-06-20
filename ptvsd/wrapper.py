@@ -2149,8 +2149,8 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         except KeyError:
             # NOTE: We should add the thread to VSC thread map only if the
             # thread is seen here for the first time in 'attach' scenario.
-            # If we are here in 'launch' scenario that means that there is
-            # a issue in reporting of thread creation.
+            # If we are here in 'launch' scenario then there is an issue in
+            # reporting of thread creation.
             if self.start_reason == 'attach':
                 vsc_tid = self.thread_map.to_vscode(pyd_tid, autogen=True)
             else:
