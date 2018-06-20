@@ -2144,7 +2144,17 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
                 self.pydevd_notify(pydevd_comm.CMD_THREAD_RUN, pyd_tid)
                 return
 
-        vsc_tid = self.thread_map.to_vscode(pyd_tid, autogen=False)
+        try:
+            vsc_tid = self.thread_map.to_vscode(pyd_tid, autogen=False)
+        except KeyError:
+            # NOTE: We should add the thread to VSC thread map only if the
+            # thread is seen here for the first time in 'attach' scenario.
+            # If we are here in 'launch' scenario that means that there is
+            # a issue in reporting of thread creation.
+            if self.start_reason == 'attach':
+                vsc_tid = self.thread_map.to_vscode(pyd_tid, autogen=True)
+            else:
+                raise
 
         with self.stack_traces_lock:
             self.stack_traces[pyd_tid] = xml.thread.frame
