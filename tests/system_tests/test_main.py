@@ -73,28 +73,35 @@ def _get_version(received, actual=ptvsd.__version__):
     return version
 
 
-def _strip_output_event(received, output, newline=True):
+def _strip_messages(received, match_msg):
     msgs = iter(received)
     for msg in msgs:
-        if _match_event(msg, 'output', output=output):
+        if match_msg(msg):
             break
         yield msg
-    else:  # given output event not found
-        return
-    if newline:
-        # The newline output event might not be the very next one,
-        # so we look for it in the remaining messages.
-        for msg in msgs:
-            if _match_event(msg, 'output', output='\n'):
-                break
-            yield msg._replace(seq=msg.seq - 1)
+    stripped = 1
+    for msg in msgs:
+        if match_msg(msg):
+            stripped += 1
         else:
-            raise ValueError(r'matching "\n" output event not found')
-        for msg in msgs:
-            yield msg._replace(seq=msg.seq - 2)
-    else:
-        for msg in msgs:
-            yield msg._replace(seq=msg.seq - 1)
+            yield msg._replace(seq=msg.seq - stripped)
+
+
+def _strip_output_event(received, output):
+    matched = False
+
+    def match(msg):
+        if matched:
+            return False
+        else:
+            return _match_event(msg, 'output', output=output)
+    return _strip_messages(received, match)
+
+
+def _strip_newline_output_events(received):
+    def match(msg):
+        return _match_event(msg, 'output', output='\n')
+    return _strip_messages(received, match)
 
 
 def _strip_pydevd_output(out):
@@ -319,7 +326,8 @@ class LifecycleTests(TestsBase, unittest.TestCase):
             wait_for_started()
         out = adapter.output.decode('utf-8')
 
-        self.assert_received(session.received, [
+        received = list(_strip_newline_output_events(session.received))
+        self.assert_received(received, [
             self.new_version_event(session.received),
         ])
         out = _strip_pydevd_output(out)
@@ -346,7 +354,8 @@ class LifecycleTests(TestsBase, unittest.TestCase):
 
         # Skipping the 'thread exited' and 'terminated' messages which
         # may appear randomly in the received list.
-        self.assert_received(session.received[:7], [
+        received = list(_strip_newline_output_events(session.received))
+        self.assert_received(received[:7], [
             self.new_version_event(session.received),
             self.new_response(req_initialize, **INITIALIZE_RESPONSE),
             self.new_event('initialized'),
@@ -378,8 +387,8 @@ class LifecycleTests(TestsBase, unittest.TestCase):
             done()
             adapter.wait()
 
-        self.maxDiff = None
-        self.assert_received(session.received[:7], [
+        received = list(_strip_newline_output_events(session.received))
+        self.assert_received(received[:7], [
             self.new_version_event(session.received),
             self.new_response(req_initialize, **INITIALIZE_RESPONSE),
             self.new_event('initialized'),
@@ -413,7 +422,8 @@ class LifecycleTests(TestsBase, unittest.TestCase):
                 done()
                 adapter.wait()
 
-        self.assert_received(session.received[:7], [
+        received = list(_strip_newline_output_events(session.received))
+        self.assert_received(received[:7], [
             self.new_version_event(session.received),
             self.new_response(req_initialize, **INITIALIZE_RESPONSE),
             self.new_event('initialized'),
@@ -457,7 +467,8 @@ class LifecycleTests(TestsBase, unittest.TestCase):
                 adapter.wait()
         out = adapter.output.decode('utf-8')
 
-        self.assert_received(session.received, [
+        received = list(_strip_newline_output_events(session.received))
+        self.assert_received(received, [
             self.new_version_event(session.received),
             self.new_response(req_initialize, **INITIALIZE_RESPONSE),
             self.new_event('initialized'),
@@ -500,7 +511,8 @@ class LifecycleTests(TestsBase, unittest.TestCase):
 
                 adapter.wait()
 
-        self.assert_received(session1.received, [
+        received = list(_strip_newline_output_events(session1.received))
+        self.assert_received(received, [
             self.new_version_event(session1.received),
             self.new_response(reqs[0], **INITIALIZE_RESPONSE),
             self.new_event('initialized'),
@@ -516,7 +528,8 @@ class LifecycleTests(TestsBase, unittest.TestCase):
             self.new_response(req_disconnect),
         ])
         self.messages.reset_all()
-        self.assert_received(session2.received, [
+        received = list(_strip_newline_output_events(session2.received))
+        self.assert_received(received, [
             self.new_version_event(session2.received),
             self.new_response(req_initialize, **INITIALIZE_RESPONSE),
             self.new_event('initialized'),
@@ -563,7 +576,8 @@ class LifecycleTests(TestsBase, unittest.TestCase):
             done()
             adapter.wait()
 
-        self.assert_received(session.received, [
+        received = list(_strip_newline_output_events(session.received))
+        self.assert_received(received, [
             self.new_version_event(session.received),
             self.new_response(req_initialize, **INITIALIZE_RESPONSE),
             self.new_event('initialized'),
@@ -665,9 +679,7 @@ class LifecycleTests(TestsBase, unittest.TestCase):
         # So we ignore it by removing it from the message list.
         received = list(_strip_output_event(session.received,
                                             'waiting for attach'))
-        if _match_event(received[0], 'output', output='\n'):
-            received = [msg._replace(seq=msg.seq - 1)
-                        for msg in received[1:]]
+        received = list(_strip_newline_output_events(received))
         self.assert_received(received, [
             self.new_version_event(session.received),
             self.new_response(req_init, **INITIALIZE_RESPONSE),
@@ -751,11 +763,6 @@ class LifecycleTests(TestsBase, unittest.TestCase):
                 output='attached!',
             ),
             self.new_event(
-                'output',
-                category='stdout',
-                output='\n',
-            ),
-            self.new_event(
                 'stopped',
                 threadId=tid,
                 reason='breakpoint',
@@ -787,11 +794,6 @@ class LifecycleTests(TestsBase, unittest.TestCase):
                 'output',
                 category='stdout',
                 output='done waiting',
-            ),
-            self.new_event(
-                'output',
-                category='stdout',
-                output='\n',
             ),
             self.new_event(
                 'thread',
@@ -836,7 +838,8 @@ class LifecycleTests(TestsBase, unittest.TestCase):
             done()
             adapter.wait()
 
-        self.assert_received(session.received[:11], [
+        received = list(_strip_newline_output_events(session.received))
+        self.assert_received(received[:9], [
             self.new_version_event(session.received),
             self.new_response(req_initialize, **INITIALIZE_RESPONSE),
             self.new_event('initialized'),
@@ -844,15 +847,9 @@ class LifecycleTests(TestsBase, unittest.TestCase):
             self.new_event('output',
                            output='+ before',
                            category='stdout'),
-            self.new_event('output',
-                           output='\n',
-                           category='stdout'),
             self.new_response(req_config),
             self.new_event('output',
                            output='+ after',
-                           category='stdout'),
-            self.new_event('output',
-                           output='\n',
                            category='stdout'),
             self.new_event('exited', exitCode=0),
             self.new_event('terminated'),
