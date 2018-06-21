@@ -202,8 +202,15 @@ class LifecycleTests(TestsBase, unittest.TestCase):
 
     def new_version_event(self, received):
         version = ptvsd.__version__
-        if received[0].body['data']['version'] != version:
-            version = '0+unknown'
+        for msg in received:
+            try:
+                rversion = msg.body['data']['version']
+            except KeyError:
+                pass
+            else:
+                if rversion != version:
+                    version = '0+unknown'
+                break
         return self.new_event(
             'output',
             category='telemetry',
