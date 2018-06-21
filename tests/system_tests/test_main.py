@@ -99,7 +99,7 @@ def _strip_exit(received):
             return True
         if _match_event(msg, 'terminated'):
             return True
-        if _match_event(msg, 'thread', reason='exited'):
+        if _match_event(msg, 'thread', reason=u'exited'):
             return True
         return False
     return _strip_messages(received, match)
@@ -118,7 +118,7 @@ def _strip_output_event(received, output):
 
 def _strip_newline_output_events(received):
     def match(msg):
-        return _match_event(msg, 'output', output='\n')
+        return _match_event(msg, 'output', output=u'\n')
     return _strip_messages(received, match)
 
 
@@ -698,7 +698,7 @@ class LifecycleTests(TestsBase, unittest.TestCase):
         # be sent at a relatively arbitrary time (or not at all).
         # So we ignore it by removing it from the message list.
         received = list(_strip_output_event(session.received,
-                                            'waiting for attach'))
+                                            u'waiting for attach'))
         received = list(_strip_newline_output_events(received))
         # There's an ordering race with continue/continued that pops
         # up occasionally.  We work around that by manually fixing the
