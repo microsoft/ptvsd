@@ -460,6 +460,10 @@ class BreakpointTests(VSCFlowTest, unittest.TestCase):
         self.assertIn('ka-boom', out)
 
 
+class UnicodeBreakpointTests(BreakpointTests):
+    FILENAME = '汉语a2.py'
+
+
 class LogpointTests(TestBase, unittest.TestCase):
     FILENAME = 'spam.py'
     SOURCE = """
