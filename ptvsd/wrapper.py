@@ -1491,6 +1491,8 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
                 # This means the stack was requested before the
                 # thread was suspended
                 xframes = []
+            else:
+                xframes = list(xframes)
         totalFrames = len(xframes)
 
         if levels == 0:
