@@ -66,6 +66,15 @@ def is_debugger_internal_thread(thread_name):
     return False
 
 
+try:
+    unicode
+    def is_instance_of_unicode(value):
+        return isinstance(value, unicode)
+except Exception:
+    def is_instance_of_unicode(value):
+        return False
+
+
 class SafeReprPresentationProvider(pydevd_extapi.StrPresentationProvider):
     """
     Computes string representation of Python values by delegating them
@@ -396,7 +405,10 @@ class PydevdSocket(object):
         with self.lock:
             seq = self.seq
             self.seq += 1
-        s = '{}\t{}\t{}\n'.format(cmd_id, seq, args)
+        if is_instance_of_unicode(cmd_id) or is_instance_of_unicode(args):
+            s = u'{}\t{}\t{}\n'.format(cmd_id, seq, args)
+        else:
+            s = '{}\t{}\t{}\n'.format(cmd_id, seq, args)
         return seq, s
 
     def pydevd_notify(self, cmd_id, args):
@@ -1509,7 +1521,8 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
             key = (pyd_tid, int(xframe['id']))
             fid = self.frame_map.to_vscode(key, autogen=True)
             name = unquote(xframe['name'])
-            norm_path = self.path_casing.un_normcase(unquote(xframe['file']))
+            # pydevd encodes if necessary and then uses urllib.quote.
+            norm_path = self.path_casing.un_normcase(unquote(str(xframe['file'])))
             source_reference = self.get_source_reference(norm_path)
             if not self.internals_filter.is_internal_path(norm_path):
                 module = self.modules_mgr.add_or_get_from_path(norm_path)
@@ -1974,6 +1987,8 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
 
         cmd = pydevd_comm.CMD_SET_BREAK
         msgfmt = '{}\t{}\t{}\t{}\tNone\t{}\t{}\t{}\t{}'
+        if is_instance_of_unicode(path):
+            msgfmt = unicode(msgfmt)
         for src_bp in src_bps:
             line = src_bp['line']
             vsc_bpid = self.bp_map.add(
