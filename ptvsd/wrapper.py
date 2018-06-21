@@ -1491,8 +1491,6 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
                 # This means the stack was requested before the
                 # thread was suspended
                 xframes = []
-            else:
-                xframes = list(xframes)
         totalFrames = len(xframes)
 
         if levels == 0:
@@ -2186,7 +2184,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         vsc_tid = self.thread_map.to_vscode(pyd_tid, autogen=False)
 
         with self.stack_traces_lock:
-            self.stack_traces[pyd_tid] = xml.thread.frame
+            self.stack_traces[pyd_tid] = list(xml.thread.frame)
 
         description = None
         text = None
