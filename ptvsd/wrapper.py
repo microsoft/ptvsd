@@ -1520,7 +1520,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
             fid = self.frame_map.to_vscode(key, autogen=True)
             name = unquote(xframe['name'])
             # pydevd encodes if necessary and then uses urllib.quote.
-            norm_path = self.path_casing.un_normcase(unquote(str(xframe['file'])))  #noqa
+            norm_path = self.path_casing.un_normcase(unquote(str(xframe['file'])))  # noqa
             source_reference = self.get_source_reference(norm_path)
             if not self.internals_filter.is_internal_path(norm_path):
                 module = self.modules_mgr.add_or_get_from_path(norm_path)
