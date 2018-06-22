@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import contextlib
 import os
 import sys
@@ -461,7 +463,7 @@ class BreakpointTests(VSCFlowTest, unittest.TestCase):
 
 
 class UnicodeBreakpointTests(BreakpointTests):
-    FILENAME = '汉语a2.py'
+    FILENAME = u'汉语a2.py'
 
 
 class LogpointTests(TestBase, unittest.TestCase):
