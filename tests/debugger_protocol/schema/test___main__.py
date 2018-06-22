@@ -1,5 +1,6 @@
 import contextlib
 import io
+import sys
 from textwrap import dedent
 import unittest
 
@@ -34,6 +35,24 @@ class CommandRegistryTests(unittest.TestCase):
             })
 
 
+class internal_redirect_stderr:
+    """Context manager for temporarily redirecting stderr to another file
+    """
+
+    def __init__(self, new_target):
+        self._new_target = new_target
+        # We use a list of old targets to make this CM re-entrant
+        self._old_targets = []
+
+    def __enter__(self):
+        self._old_targets.append(sys.stdout)
+        sys.stdout = self._new_target
+        return self._new_target
+
+    def __exit__(self, exctype, excinst, exctb):
+        sys.stdout = self._old_targets.pop()
+
+
 class HandleDownloadTests(unittest.TestCase):
 
     def test_default_args(self):
@@ -45,8 +64,13 @@ class HandleDownloadTests(unittest.TestCase):
         opener = StubOpener(schemafile, outfile, buf, metafile)
 
         stdout = io.StringIO()
+        try:
+            redirect_stderr = contextlib.redirect_stderr
+        except AttributeError:
+            redirect_stderr = internal_redirect_stderr
+
         with contextlib.redirect_stdout(stdout):
-            with contextlib.redirect_stderr(stdout):
+            with redirect_stderr(stdout):
                 handle_download(
                         _open=opener.open, _open_url=opener.open)
         metadata = '\n'.join(line
@@ -86,8 +110,13 @@ class HandleCheckTests(unittest.TestCase):
                 )
 
         stdout = io.StringIO()
+        try:
+            redirect_stderr = contextlib.redirect_stderr
+        except AttributeError:
+            redirect_stderr = internal_redirect_stderr
+
         with contextlib.redirect_stdout(stdout):
-            with contextlib.redirect_stderr(stdout):
+            with redirect_stderr(stdout):
                 handle_check(
                         _open=opener.open, _open_url=opener.open)
 
