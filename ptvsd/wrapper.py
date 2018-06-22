@@ -67,10 +67,10 @@ def is_debugger_internal_thread(thread_name):
 
 
 try:
-    unicode # pylint: disable=E0602
+    unicode  # noqa
 
     def needs_unicode(value):
-        return isinstance(value, unicode) # pylint: disable=E0602
+        return isinstance(value, unicode)  # noqa
 except Exception:
     def needs_unicode(value):
         return False
@@ -1520,7 +1520,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
             fid = self.frame_map.to_vscode(key, autogen=True)
             name = unquote(xframe['name'])
             # pydevd encodes if necessary and then uses urllib.quote.
-            norm_path = self.path_casing.un_normcase(unquote(str(xframe['file']))) #noqa
+            norm_path = self.path_casing.un_normcase(unquote(str(xframe['file'])))  #noqa
             source_reference = self.get_source_reference(norm_path)
             if not self.internals_filter.is_internal_path(norm_path):
                 module = self.modules_mgr.add_or_get_from_path(norm_path)
@@ -1986,7 +1986,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         cmd = pydevd_comm.CMD_SET_BREAK
         msgfmt = '{}\t{}\t{}\t{}\tNone\t{}\t{}\t{}\t{}'
         if needs_unicode(path):
-            msgfmt = unicode(msgfmt) # pylint: disable=E0602
+            msgfmt = unicode(msgfmt)   # noqa
         for src_bp in src_bps:
             line = src_bp['line']
             vsc_bpid = self.bp_map.add(
