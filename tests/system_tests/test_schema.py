@@ -85,8 +85,8 @@ class DownloadCommandTests(unittest.TestCase):
     @unittest.skipUnless(os.environ.get('HAS_NETWORK'), 'no network')
     def test_default_source(self):
         res = _run_subprocess(self.args,
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
+                              stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE)
 
         self.assertEqual(res.returncode, 0)
         self.assertEqual(res.stdout.decode(), self.get_expected_stdout([
@@ -101,8 +101,8 @@ class DownloadCommandTests(unittest.TestCase):
         with http.Server(handler) as srv:
             upstream = 'http://{}/schema.json'.format(srv.address)
             res = _run_subprocess(self.args + ['--source', upstream],
-                                 stdout=subprocess.PIPE,
-                                 stderr=subprocess.PIPE)
+                                  stdout=subprocess.PIPE,
+                                  stderr=subprocess.PIPE)
         stdout = res.stdout.decode() if res.stdout else ''
         stderr = res.stderr.decode() if res.stderr else ''
 
@@ -183,8 +183,8 @@ class CheckCommandTests(unittest.TestCase):
                 '--upstream', upstream,
             ]
             res = _run_subprocess(args,
-                                 stdout=subprocess.PIPE,
-                                 stderr=subprocess.PIPE)
+                                  stdout=subprocess.PIPE,
+                                  stderr=subprocess.PIPE)
         stdout = res.stdout.decode() if res.stdout else ''
         stderr = res.stderr.decode() if res.stderr else ''
 
@@ -209,8 +209,8 @@ class CheckCommandTests(unittest.TestCase):
             '--upstream', '<a URL>',
         ]
         res = _run_subprocess(args,
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
+                              stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE)
         stdout = res.stdout.decode() if res.stdout else ''
         stderr = res.stderr.decode() if res.stderr else ''
 
@@ -251,8 +251,8 @@ class CheckCommandTests(unittest.TestCase):
             '--upstream', '<a URL>',
         ]
         res = _run_subprocess(args,
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
+                              stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE)
         stdout = res.stdout.decode() if res.stdout else ''
         stderr = res.stderr.decode() if res.stderr else ''
 
@@ -278,8 +278,8 @@ class CheckCommandTests(unittest.TestCase):
                 '--upstream', upstream,
             ]
             res = _run_subprocess(args,
-                                 stdout=subprocess.PIPE,
-                                 stderr=subprocess.PIPE)
+                                  stdout=subprocess.PIPE,
+                                  stderr=subprocess.PIPE)
         stdout = res.stdout.decode() if res.stdout else ''
         stderr = res.stderr.decode() if res.stderr else ''
 
@@ -306,8 +306,8 @@ class CheckCommandTests(unittest.TestCase):
                 '--upstream', upstream,
             ]
             res = _run_subprocess(args,
-                                 stdout=subprocess.PIPE,
-                                 stderr=subprocess.PIPE)
+                                  stdout=subprocess.PIPE,
+                                  stderr=subprocess.PIPE)
         stdout = res.stdout.decode() if res.stdout else ''
         stderr = res.stderr.decode() if res.stderr else ''
 
