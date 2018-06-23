@@ -2243,10 +2243,10 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
                         if _util.is_py34():
                             # NOTE: In 3.4.* format_list requires the text
                             # to be passed in the tuple list.
-                            text = _util.get_text_for_traceback(file_path,
-                                                                line_no)
+                            line_text = _util.get_line_for_traceback(file_path,
+                                                                     line_no)
                             frame_data.append((file_path, line_no,
-                                               func_name, text))
+                                               func_name, line_text))
                         else:
                             frame_data.append((file_path, line_no,
                                                func_name, None))
