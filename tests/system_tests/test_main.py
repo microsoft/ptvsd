@@ -17,6 +17,22 @@ from tests.helpers.workspace import Workspace, PathEntry
 ROOT = os.path.dirname(os.path.dirname(ptvsd.__file__))
 
 
+def attempt_with_retries(func, numretries=10, handle_failure=None):
+    if numretries > 0:
+        for _ in range(numretries - 1):
+            try:
+                return func()
+            except Exception as exc:
+                if handle_failure is not None:
+                    res = handle_failure(exc)
+                    if res is None or res:
+                        continue
+                    raise
+                #print('retrying', repr(exc))
+    # Try one last time.
+    return func()
+
+
 class ANYType(object):
     def __repr__(self):
         return 'ANY'
@@ -640,15 +656,10 @@ class LifecycleTests(TestsBase, unittest.TestCase):
 
         adapter = DebugAdapter.start_embedded(addr, filename)
         with adapter:
-            out1 = next(adapter.output)  # "waiting for attach"
-            line = adapter.output.readline()
-            while line:
-                out1 += line
-                line = adapter.output.readline()
-            done1()
-
             with DebugClient() as editor:
-                session = editor.attach_socket(addr, adapter)
+                session = attempt_with_retries(
+                    (lambda: editor.attach_socket(addr, adapter, timeout=0.1)),
+                )
 
                 # TODO: There appears to be a small race that may
                 # cause the test to fail here.
@@ -660,6 +671,14 @@ class LifecycleTests(TestsBase, unittest.TestCase):
                              ) = lifecycle_handshake(session, 'attach',
                                                      breakpoints=breakpoints,
                                                      threads=True)
+
+                            # Grab the initial output.
+                            out1 = next(adapter.output)  # "waiting for attach"
+                            line = adapter.output.readline()
+                            while line:
+                                out1 += line
+                                line = adapter.output.readline()
+                            done1()
                         req_bps, = reqs_bps  # There should only be one.
                     tid = result['msg'].body['threadId']
                 req_threads2 = session.send_request('threads')
