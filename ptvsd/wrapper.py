@@ -860,13 +860,10 @@ class VSCodeMessageProcessorBase(ipcjson.SocketIO, ipcjson.IpcChannel):
                     _util.lock_release(self._listening)
                     _util.lock_release(self._connected)
                 self.close()
-        self.server_thread = threading.Thread(
+        self.server_thread = _util.new_hidden_thread(
             target=process_messages,
             name=threadname,
         )
-        self.server_thread.pydev_do_not_trace = True
-        self.server_thread.is_pydev_daemon_thread = True
-        self.server_thread.daemon = True
         self.server_thread.start()
 
         # special initialization
@@ -1016,7 +1013,11 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
             # make sure the exited event is sent first.
             self._wait_until_exiting(self.EXITWAIT)
             self._ensure_debugger_stopped()
-        t = threading.Thread(target=stop, name='ptvsd.stopping')
+        t = _util.new_hidden_thread(
+            target=stop,
+            name='stopping',
+            daemon=False,
+        )
         t.start()
 
     def handle_exiting(self, exitcode=None, wait=None):
@@ -1189,13 +1190,10 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
 
     def _start_event_loop(self):
         self.loop = futures.EventLoop()
-        self.event_loop_thread = threading.Thread(
+        self.event_loop_thread = _util.new_hidden_thread(
             target=self.loop.run_forever,
-            name='ptvsd.EventLoop',
+            name='EventLoop',
         )
-        self.event_loop_thread.pydev_do_not_trace = True
-        self.event_loop_thread.is_pydev_daemon_thread = True
-        self.event_loop_thread.daemon = True
         self.event_loop_thread.start()
 
     def _stop_event_loop(self):
