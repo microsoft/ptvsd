@@ -30,7 +30,10 @@ class DebugSession(Startable, Closeable):
         client, _ = server.accept()
         return cls(client, ownsock=True, **kwargs)
 
-    def __init__(self, sock, notify_closing=None, notify_disconnecting=None,
+    def __init__(self, sock,
+                 notify_closing=None,
+                 notify_disconnecting=None,
+                 notify_debugging=None,
                  ownsock=False):
         super(DebugSession, self).__init__()
 
@@ -43,6 +46,15 @@ class DebugSession(Startable, Closeable):
         if notify_disconnecting is None:
             notify_disconnecting = (lambda _: None)
         self._notify_disconnecting = notify_disconnecting
+
+        def notify_debugging(session, _notify=notify_debugging):
+            if self._notified_debugging:
+                return
+            self._notified_debugging = True
+            if _notify is not None:
+                _notify(session)
+        self._notified_debugging = False
+        self._notify_debugging = notify_debugging
 
         self._sock = sock
         if ownsock:
@@ -96,6 +108,7 @@ class DebugSession(Startable, Closeable):
     def _new_msg_processor(self, **kwargs):
         return self.MESSAGE_PROCESSOR(
             self._sock,
+            notify_debugging=self._handle_vsc_debugging,
             notify_disconnecting=self._handle_vsc_disconnect,
             notify_closing=self._handle_vsc_close,
             **kwargs
@@ -131,6 +144,10 @@ class DebugSession(Startable, Closeable):
         return True
 
     # internal methods for VSCodeMessageProcessor
+
+    def _handle_vsc_debugging(self):
+        debug('debugging')
+        self._notify_debugging(self)
 
     def _handle_vsc_disconnect(self):
         debug('disconnecting')

@@ -970,7 +970,8 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
     EXITWAIT = 1
 
     def __init__(self, socket,
-                 notify_disconnecting, notify_closing, notify_launch=None,
+                 notify_debugging, notify_disconnecting, notify_closing,
+                 notify_launch=None,
                  timeout=None, logfile=None, debugging=True,
                  ):
         super(VSCLifecycleMsgProcessor, self).__init__(
@@ -980,6 +981,7 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
             logfile=logfile,
         )
         self._notify_launch = notify_launch or (lambda: None)
+        self._notify_debugging = notify_debugging
         self._notify_disconnecting = notify_disconnecting
 
         self._stopped = False
@@ -1056,6 +1058,7 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
         self._process_debug_options(self.debug_options)
         self._handle_configurationDone(args)
         _util.lock_release(self._handshakelock)
+        self._notify_debugging()
 
     def on_attach(self, request, args):
         # TODO: docstring
@@ -1142,11 +1145,12 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
     """
 
     def __init__(self, socket, pydevd_notify, pydevd_request,
-                 notify_disconnecting, notify_closing,
+                 notify_debugging, notify_disconnecting, notify_closing,
                  timeout=None, logfile=None,
                  ):
         super(VSCodeMessageProcessor, self).__init__(
             socket=socket,
+            notify_debugging=notify_debugging,
             notify_disconnecting=notify_disconnecting,
             notify_closing=notify_closing,
             timeout=timeout,
