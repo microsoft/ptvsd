@@ -17,22 +17,6 @@ from tests.helpers.workspace import Workspace, PathEntry
 ROOT = os.path.dirname(os.path.dirname(ptvsd.__file__))
 
 
-def attempt_with_retries(func, numretries=10, handle_failure=None):
-    if numretries > 0:
-        for _ in range(numretries - 1):
-            try:
-                return func()
-            except Exception as exc:
-                if handle_failure is not None:
-                    res = handle_failure(exc)
-                    if res is None or res:
-                        continue
-                    raise
-                #print('retrying', repr(exc))
-    # Try one last time.
-    return func()
-
-
 class ANYType(object):
     def __repr__(self):
         return 'ANY'
@@ -654,12 +638,11 @@ class LifecycleTests(TestsBase, unittest.TestCase):
             ],
         }]
 
+        #DebugAdapter.VERBOSE = True
         adapter = DebugAdapter.start_embedded(addr, filename)
         with adapter:
             with DebugClient() as editor:
-                session = attempt_with_retries(
-                    (lambda: editor.attach_socket(addr, adapter, timeout=0.1)),
-                )
+                session = editor.attach_socket(addr, adapter, timeout=1)
 
                 # TODO: There appears to be a small race that may
                 # cause the test to fail here.
