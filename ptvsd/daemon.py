@@ -58,7 +58,6 @@ class DaemonBase(object):
     exitcode = None
 
     def __init__(self, wait_for_user=_wait_for_user,
-                 notify_ready_to_debug=None,
                  addhandlers=True, killonclose=True,
                  singlesession=False):
 
@@ -74,7 +73,6 @@ class DaemonBase(object):
 
         # session-related
 
-        self._notify_ready_to_debug = notify_ready_to_debug
         self._singlesession = singlesession
 
         self._session = None
@@ -286,11 +284,6 @@ class DaemonBase(object):
         with ignore_errors():
             self._stop()
 
-    def _handle_session_ready_to_debug(self, session):
-        debug('handling started debugging')
-        if self._notify_ready_to_debug is not None:
-            self._notify_ready_to_debug(session)
-
     def _handle_session_disconnecting(self, session):
         debug('handling disconnecting session')
         if self._singlesession:
@@ -350,8 +343,8 @@ class DaemonBase(object):
             session,
             notify_closing=self._handle_session_closing,
             notify_disconnecting=self._handle_session_disconnecting,
-            notify_ready_to_debug=self._handle_session_ready_to_debug,
             ownsock=True,
+            **self._session_kwargs() or {}
         )
         self._session = session
         self._numsessions += 1
@@ -466,11 +459,21 @@ class DaemonBase(object):
             **kwargs
         )
 
+    def _session_kwargs(self):
+        return None
+
 
 class Daemon(DaemonBase):
     """The process-level manager for the VSC protocol debug adapter."""
 
     SESSION = PyDevdDebugSession
+
+    def __init__(self, wait_for_user=_wait_for_user,
+                 notify_session_ready_to_debug=None,
+                 **kwargs):
+        super(Daemon, self).__init__(wait_for_user, **kwargs)
+
+        self._notify_session_ready_to_debug = notify_session_ready_to_debug
 
     @property
     def pydevd(self):
@@ -498,6 +501,15 @@ class Daemon(DaemonBase):
             pydevd_notify=self.pydevd.pydevd_notify,
             pydevd_request=self.pydevd.pydevd_request,
             **kwargs
+        )
+
+    def _session_kwargs(self):
+        def ready_to_debug(session):
+            if self._notify_session_ready_to_debug is not None:
+                self._notify_session_ready_to_debug(session)
+
+        return dict(
+            notify_ready_to_debug=ready_to_debug,
         )
 
     # internal methods for PyDevdSocket().

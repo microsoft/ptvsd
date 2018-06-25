@@ -30,13 +30,15 @@ def enable_attach(address, redirect_output=True,
         client, _ = server.accept()
         daemon.start_session(client, 'ptvsd.Server')
 
-        daemon.re_build_breakpoints()
+    def notify_ready_to_debug(session):
+        session.re_build_breakpoints()
         on_attach()
 
     daemon = _install(_pydevd,
                       address,
                       start_server=None,
                       start_client=(lambda daemon, h, port: daemon.start()),
+                      notify_session_ready_to_debug=notify_ready_to_debug,
                       singlesession=False,
                       **kwargs)
 

@@ -33,7 +33,6 @@ class DebugSession(Startable, Closeable):
     def __init__(self, sock,
                  notify_closing=None,
                  notify_disconnecting=None,
-                 notify_ready_to_debug=None,
                  ownsock=False):
         super(DebugSession, self).__init__()
 
@@ -46,15 +45,6 @@ class DebugSession(Startable, Closeable):
         if notify_disconnecting is None:
             notify_disconnecting = (lambda _: None)
         self._notify_disconnecting = notify_disconnecting
-
-        def notify_ready_to_debug(session, _notify=notify_ready_to_debug):
-            if self._notified_ready_to_debug:
-                return
-            self._notified_ready_to_debug = True
-            if _notify is not None:
-                _notify(session)
-        self._notified_ready_to_debug = False
-        self._notify_ready_to_debug = notify_ready_to_debug
 
         self._sock = sock
         if ownsock:
@@ -108,7 +98,6 @@ class DebugSession(Startable, Closeable):
     def _new_msg_processor(self, **kwargs):
         return self.MESSAGE_PROCESSOR(
             self._sock,
-            notify_ready_to_debug=self._handle_vsc_ready_to_debug,
             notify_disconnecting=self._handle_vsc_disconnect,
             notify_closing=self._handle_vsc_close,
             **kwargs
@@ -145,10 +134,6 @@ class DebugSession(Startable, Closeable):
 
     # internal methods for VSCodeMessageProcessor
 
-    def _handle_vsc_ready_to_debug(self):
-        debug('ready to debug')
-        self._notify_ready_to_debug(self)
-
     def _handle_vsc_disconnect(self):
         debug('disconnecting')
         self._notify_disconnecting(self)
@@ -166,6 +151,20 @@ class PyDevdDebugSession(DebugSession):
 
     MESSAGE_PROCESSOR = VSCodeMessageProcessor
 
+    def __init__(self, sock,
+                 notify_ready_to_debug=None,
+                 **kwargs):
+        super(PyDevdDebugSession, self).__init__(sock, **kwargs)
+
+        def notify_ready_to_debug(session, _notify=notify_ready_to_debug):
+            if self._notified_ready_to_debug:
+                return
+            self._notified_ready_to_debug = True
+            if _notify is not None:
+                _notify(session)
+        self._notified_ready_to_debug = False
+        self._notify_ready_to_debug = notify_ready_to_debug
+
     def handle_pydevd_message(self, cmdid, seq, text):
         if self._msgprocessor is None:
             # TODO: Do more than ignore?
@@ -177,3 +176,17 @@ class PyDevdDebugSession(DebugSession):
         if self._msgprocessor is None:
             return
         return self._msgprocessor.re_build_breakpoints()
+
+    # internal methods
+
+    def _new_msg_processor(self, **kwargs):
+        return super(PyDevdDebugSession, self)._new_msg_processor(
+            notify_ready_to_debug=self._handle_vsc_ready_to_debug,
+            **kwargs
+        )
+
+    # internal methods for VSCodeMessageProcessor
+
+    def _handle_vsc_ready_to_debug(self):
+        debug('ready to debug')
+        self._notify_ready_to_debug(self)

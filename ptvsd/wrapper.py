@@ -56,6 +56,10 @@ debug = _util.debug
 #ipcjson._TRACE = ipcjson_trace
 
 
+def NOOP(*args, **kwargs):
+    pass
+
+
 def is_debugger_internal_thread(thread_name):
     # TODO: docstring
     if thread_name:
@@ -970,8 +974,8 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
     EXITWAIT = 1
 
     def __init__(self, socket,
-                 notify_ready_to_debug, notify_disconnecting, notify_closing,
-                 notify_launch=None,
+                 notify_disconnecting, notify_closing,
+                 notify_launch=None, notify_ready=None,
                  timeout=None, logfile=None, debugging=True,
                  ):
         super(VSCLifecycleMsgProcessor, self).__init__(
@@ -980,8 +984,8 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
             timeout=timeout,
             logfile=logfile,
         )
-        self._notify_launch = notify_launch or (lambda: None)
-        self._notify_ready_to_debug = notify_ready_to_debug
+        self._notify_launch = notify_launch or NOOP
+        self._notify_ready = notify_ready or NOOP
         self._notify_disconnecting = notify_disconnecting
 
         self._stopped = False
@@ -991,8 +995,6 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
         self.debug_options = {}
         self._statelock = threading.Lock()
         self._debugging = debugging
-        self._handshakelock = threading.Lock()
-        self._handshakelock.acquire()  # released in on_configurationDone()
         self._debuggerstopped = False
         self._exitlock = threading.Lock()
         self._exitlock.acquire()  # released in handle_exiting()
@@ -1041,23 +1043,12 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
         if self._exitlock is not None:
             _util.lock_release(self._exitlock)
 
-    def wait_until_ready(self):
-        """Wait until the protocol handshake is complete."""
-        _util.lock_wait(self._handshakelock)
-
     # VSC protocol handlers
 
     def on_initialize(self, request, args):
         # TODO: docstring
         self.send_response(request, **INITIALIZE_RESPONSE)
         self.send_event('initialized')
-
-    def on_configurationDone(self, request, args):
-        # TODO: docstring
-        self.send_response(request)
-        self._process_debug_options(self.debug_options)
-        self._handle_configurationDone(args)
-        _util.lock_release(self._handshakelock)
 
     def on_attach(self, request, args):
         # TODO: docstring
@@ -1073,6 +1064,13 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
         self._notify_launch()
         self._handle_launch(args)
         self.send_response(request)
+
+    def on_configurationDone(self, request, args):
+        # TODO: docstring
+        self.send_response(request)
+        self._process_debug_options(self.debug_options)
+        self._handle_configurationDone(args)
+        self._notify_ready()
 
     def on_disconnect(self, request, args):
         # TODO: docstring
@@ -1127,8 +1125,7 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
         pass
 
     def _handle_configurationDone(self, args):
-        if self._debugging:
-            self._notify_ready_to_debug()
+        pass
 
     def _handle_attach(self, args):
         pass
@@ -1150,7 +1147,6 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
                  ):
         super(VSCodeMessageProcessor, self).__init__(
             socket=socket,
-            notify_ready_to_debug=notify_ready_to_debug,
             notify_disconnecting=notify_disconnecting,
             notify_closing=notify_closing,
             timeout=timeout,
@@ -1158,6 +1154,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         )
         self._pydevd_notify = pydevd_notify
         self._pydevd_request = pydevd_request
+        self._notify_ready_to_debug = notify_ready_to_debug
 
         self.loop = None
         self.event_loop_thread = None
@@ -1287,7 +1284,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
     # VSC protocol handlers
 
     def _handle_configurationDone(self, args):
-        super(VSCodeMessageProcessor, self)._handle_configurationDone(args)
+        self._notify_ready_to_debug()
         self.pydevd_request(pydevd_comm.CMD_RUN, '')
 
         if self.start_reason == 'attach':
@@ -1956,7 +1953,6 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         return hit_condition
 
     def re_build_breakpoints(self):
-        self.wait_until_ready()
         if self.bkpoints is None:
             return
         self.on_setBreakpoints(None, self.bkpoints)
