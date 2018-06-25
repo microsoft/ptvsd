@@ -12,7 +12,7 @@ matrix:
   include:
     - python: 3.6
       env: TARGET=ci-lint
-    - python: "3.6-dev"
+    - python: 3.6
       env: TARGET=ci-coverage
       after_success:
         - bash <(curl -s https://codecov.io/bash)
