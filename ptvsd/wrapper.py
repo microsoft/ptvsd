@@ -1080,11 +1080,14 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
         self.send_response(request)
         self._set_disconnected()
 
-        # TODO: We should be able drop the remaining lines.
-        if not self._closed and self.start_reason == 'launch':
-            # Closing the socket causes pydevd to resume all threads,
-            # so just terminate the process altogether.
-            sys.exit(0)
+        if self.start_reason == 'attach' and not self._debuggerstopped:
+            self._handle_detach()
+        # TODO: We should be able drop the "launch" branch.
+        elif self.start_reason == 'launch':
+            if not self._closed:
+                # Closing the socket causes pydevd to resume all threads,
+                # so just terminate the process altogether.
+                sys.exit(0)
 
     # internal methods
 
@@ -1131,6 +1134,9 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
         pass
 
     def _handle_launch(self, args):
+        pass
+
+    def _handle_detach(self):
         pass
 
 
@@ -1381,6 +1387,10 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
     def _handle_launch(self, args):
         self._initialize_path_maps(args)
         yield self._send_cmd_version_command()
+
+    # TODO: Implement _handle_detach() (see GH-285):
+    #   Remove all breakpoints.
+    #   Resume if stopped.
 
     def send_process_event(self, start_method):
         # TODO: docstring
