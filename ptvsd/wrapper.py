@@ -1287,10 +1287,16 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
             provider._lock.release()
         yield futures.Result(context())
 
+    def _wait_for_pydevd_ready(self):
+        # TODO: Possibly send a request and wait for a response.
+        # See GH-448.
+        pass
+
     # VSC protocol handlers
 
     def _handle_configurationDone(self, args):
         self.pydevd_request(pydevd_comm.CMD_RUN, '')
+        self._wait_for_pydevd_ready()
         self._notify_debugger_ready()
 
         if self.start_reason == 'attach':
