@@ -1992,7 +1992,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
                 condition = None
                 expressions = re.findall('\{.*?\}', logMessage)
                 if len(expressions) == 0:
-                    expression = 'print({})'.format(repr(logMessage)) # noqa
+                    expression = '{}'.format(repr(logMessage)) # noqa
                 else:
                     raw_text = reduce(lambda a, b: a.replace(b, '{}'), expressions, logMessage) # noqa
                     raw_text = raw_text.replace('"', '\\"')
