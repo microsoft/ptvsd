@@ -609,7 +609,6 @@ class LifecycleTests(TestsBase, unittest.TestCase):
         # See https://github.com/Microsoft/ptvsd/issues/448.
         addr = Address('localhost', 8888)
         filename = self.write_script('spam.py', """
-            import time
             import sys
             sys.path.insert(0, {!r})
             import ptvsd
@@ -617,7 +616,6 @@ class LifecycleTests(TestsBase, unittest.TestCase):
             addr = {}
             ptvsd.enable_attach(addr)
             print('waiting for attach')
-            time.sleep(0.1)
             # <waiting>
             ptvsd.wait_for_attach()
             # <attached>
@@ -642,7 +640,7 @@ class LifecycleTests(TestsBase, unittest.TestCase):
 
         adapter = DebugAdapter.start_embedded(addr, filename)
         with adapter:
-            out1 = next(adapter.output)
+            out1 = next(adapter.output)  # "waiting for attach"
             line = adapter.output.readline()
             while line:
                 out1 += line
