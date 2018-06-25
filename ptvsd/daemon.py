@@ -479,12 +479,6 @@ class Daemon(DaemonBase):
     def pydevd(self):
         return self._sock
 
-    def re_build_breakpoints(self):
-        """Restore the breakpoints to their last values."""
-        if self.session is None:
-            return
-        return self.session.re_build_breakpoints()
-
     # internal methods
 
     def _start(self):

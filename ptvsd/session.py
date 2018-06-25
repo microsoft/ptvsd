@@ -171,12 +171,6 @@ class PyDevdDebugSession(DebugSession):
             return
         return self._msgprocessor.on_pydevd_event(cmdid, seq, text)
 
-    def re_build_breakpoints(self):
-        """Restore the breakpoints to their last values."""
-        if self._msgprocessor is None:
-            return
-        return self._msgprocessor.re_build_breakpoints()
-
     # internal methods
 
     def _new_msg_processor(self, **kwargs):
