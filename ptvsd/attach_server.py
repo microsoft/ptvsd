@@ -63,7 +63,11 @@ def enable_attach(address=(DEFAULT_HOST, DEFAULT_PORT), redirect_output=True):
     if get_global_debugger() is not None:
         return
     _attached.clear()
-    ptvsd_enable_attach(address, redirect_output, on_attach=_attached.set)
+    ptvsd_enable_attach(
+        address,
+        on_attach=_attached.set,
+        redirect_output=redirect_output,
+    )
 
 # TODO: Add disable_attach()?
 
