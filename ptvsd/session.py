@@ -33,7 +33,7 @@ class DebugSession(Startable, Closeable):
     def __init__(self, sock,
                  notify_closing=None,
                  notify_disconnecting=None,
-                 notify_debugging=None,
+                 notify_ready_to_debug=None,
                  ownsock=False):
         super(DebugSession, self).__init__()
 
@@ -47,14 +47,14 @@ class DebugSession(Startable, Closeable):
             notify_disconnecting = (lambda _: None)
         self._notify_disconnecting = notify_disconnecting
 
-        def notify_debugging(session, _notify=notify_debugging):
-            if self._notified_debugging:
+        def notify_ready_to_debug(session, _notify=notify_ready_to_debug):
+            if self._notified_ready_to_debug:
                 return
-            self._notified_debugging = True
+            self._notified_ready_to_debug = True
             if _notify is not None:
                 _notify(session)
-        self._notified_debugging = False
-        self._notify_debugging = notify_debugging
+        self._notified_ready_to_debug = False
+        self._notify_ready_to_debug = notify_ready_to_debug
 
         self._sock = sock
         if ownsock:
@@ -108,7 +108,7 @@ class DebugSession(Startable, Closeable):
     def _new_msg_processor(self, **kwargs):
         return self.MESSAGE_PROCESSOR(
             self._sock,
-            notify_debugging=self._handle_vsc_debugging,
+            notify_ready_to_debug=self._handle_vsc_ready_to_debug,
             notify_disconnecting=self._handle_vsc_disconnect,
             notify_closing=self._handle_vsc_close,
             **kwargs
@@ -145,9 +145,9 @@ class DebugSession(Startable, Closeable):
 
     # internal methods for VSCodeMessageProcessor
 
-    def _handle_vsc_debugging(self):
-        debug('debugging')
-        self._notify_debugging(self)
+    def _handle_vsc_ready_to_debug(self):
+        debug('ready to debug')
+        self._notify_ready_to_debug(self)
 
     def _handle_vsc_disconnect(self):
         debug('disconnecting')

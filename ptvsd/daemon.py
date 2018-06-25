@@ -57,7 +57,8 @@ class DaemonBase(object):
 
     exitcode = None
 
-    def __init__(self, wait_for_user=_wait_for_user, notify_debugging=None,
+    def __init__(self, wait_for_user=_wait_for_user,
+                 notify_ready_to_debug=None,
                  addhandlers=True, killonclose=True,
                  singlesession=False):
 
@@ -73,7 +74,7 @@ class DaemonBase(object):
 
         # session-related
 
-        self._notify_debugging = notify_debugging
+        self._notify_ready_to_debug = notify_ready_to_debug
         self._singlesession = singlesession
 
         self._session = None
@@ -285,10 +286,10 @@ class DaemonBase(object):
         with ignore_errors():
             self._stop()
 
-    def _handle_session_debugging(self, session):
+    def _handle_session_ready_to_debug(self, session):
         debug('handling started debugging')
-        if self._notify_debugging is not None:
-            self._notify_debugging(session)
+        if self._notify_ready_to_debug is not None:
+            self._notify_ready_to_debug(session)
 
     def _handle_session_disconnecting(self, session):
         debug('handling disconnecting session')
@@ -349,7 +350,7 @@ class DaemonBase(object):
             session,
             notify_closing=self._handle_session_closing,
             notify_disconnecting=self._handle_session_disconnecting,
-            notify_debugging=self._handle_session_debugging,
+            notify_ready_to_debug=self._handle_session_ready_to_debug,
             ownsock=True,
         )
         self._session = session
