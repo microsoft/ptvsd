@@ -469,11 +469,11 @@ class Daemon(DaemonBase):
     SESSION = PyDevdDebugSession
 
     def __init__(self, wait_for_user=_wait_for_user,
-                 notify_session_ready_to_debug=None,
+                 notify_session_debugger_ready=None,
                  **kwargs):
         super(Daemon, self).__init__(wait_for_user, **kwargs)
 
-        self._notify_session_ready_to_debug = notify_session_ready_to_debug
+        self._notify_session_debugger_ready = notify_session_debugger_ready
 
     @property
     def pydevd(self):
@@ -498,12 +498,12 @@ class Daemon(DaemonBase):
         )
 
     def _session_kwargs(self):
-        def ready_to_debug(session):
-            if self._notify_session_ready_to_debug is not None:
-                self._notify_session_ready_to_debug(session)
+        def debugger_ready(session):
+            if self._notify_session_debugger_ready is not None:
+                self._notify_session_debugger_ready(session)
 
         return dict(
-            notify_ready_to_debug=ready_to_debug,
+            notify_debugger_ready=debugger_ready,
         )
 
     # internal methods for PyDevdSocket().

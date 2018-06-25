@@ -1142,7 +1142,8 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
     """
 
     def __init__(self, socket, pydevd_notify, pydevd_request,
-                 notify_ready_to_debug, notify_disconnecting, notify_closing,
+                 notify_debugger_ready,
+                 notify_disconnecting, notify_closing,
                  timeout=None, logfile=None,
                  ):
         super(VSCodeMessageProcessor, self).__init__(
@@ -1154,7 +1155,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         )
         self._pydevd_notify = pydevd_notify
         self._pydevd_request = pydevd_request
-        self._notify_ready_to_debug = notify_ready_to_debug
+        self._notify_debugger_ready = notify_debugger_ready
 
         self.loop = None
         self.event_loop_thread = None
@@ -1283,8 +1284,8 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
     # VSC protocol handlers
 
     def _handle_configurationDone(self, args):
-        self._notify_ready_to_debug()
         self.pydevd_request(pydevd_comm.CMD_RUN, '')
+        self._notify_debugger_ready()
 
         if self.start_reason == 'attach':
             # Send event notifying the creation of the process.

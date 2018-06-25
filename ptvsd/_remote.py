@@ -24,7 +24,7 @@ def enable_attach(address,
         address,
         start_server=None,
         start_client=(lambda daemon, h, p: daemon.start()),
-        notify_session_ready_to_debug=(lambda s: on_attach()),
+        notify_session_debugger_ready=(lambda s: on_attach()),
         singlesession=False,
         **kwargs
     )
