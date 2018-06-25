@@ -46,6 +46,7 @@ class TestBase(VSCTest):
     FIXTURE = Fixture
 
     FILENAME = None
+    MODULENAME = None
     SOURCE = ''
 
     def setUp(self):
@@ -55,6 +56,9 @@ class TestBase(VSCTest):
         self._filename = None
         if self.FILENAME is not None:
             self.set_source_file(self.FILENAME, self.SOURCE)
+        if self.MODULENAME is not None:
+            # self._pathentry = PathEntry(self.MODULENAME.split('.')[0])
+            self.set_module(self.MODULENAME, self.SOURCE)
 
     def tearDown(self):
         super(TestBase, self).tearDown()
@@ -92,10 +96,21 @@ class TestBase(VSCTest):
 
     def set_module(self, name, content=None):
         self.assertIsNone(self._fix)
+        # Create __main__ && __init__ for modules
+        if not name.endswith('__main__'):
+            parent = name[:-9] if name.endswith('__init__') else name
+            self.pathentry.write_module(parent + '.__main__', '')
+        if not name.endswith('__init__'):
+            parent = name[:-9] if name.endswith('__main__') else name
+            self.pathentry.write_module(parent + '.__init__', '')
         if content is not None:
-            self.write_module(name, content)
+            filename = self.pathentry.write_module(name, content)
         self.pathentry.install()
-        self._filename = 'module:' + name
+        self._filePath = filename
+        if name.endswith('__init__') or name.endswith('__main__'):
+            self._filename = 'module:' + name[:-9]
+        else:
+            self._filename = 'module:' + name
 
 ##################################
 # lifecycle tests
@@ -160,6 +175,11 @@ class LifecycleTests(TestBase, unittest.TestCase):
             #self.new_event('exited', exitCode=0),
             #self.new_event('terminated'),
         ])
+
+class LifecycleTestsModule(LifecycleTests):
+
+    FILENAME = None
+    MODULENAME = 'mymod.__init__'
 
 ##################################
 # "normal operation" tests
@@ -460,6 +480,11 @@ class BreakpointTests(VSCFlowTest, unittest.TestCase):
         self.assertIn('ka-boom', out)
 
 
+class BreakpointTestsModule(BreakpointTests):
+    FILENAME = None
+    MODULENAME = 'mymod.__init__'
+
+
 class LogpointTests(TestBase, unittest.TestCase):
     FILENAME = 'spam.py'
     SOURCE = """
@@ -560,3 +585,8 @@ class LogpointTests(TestBase, unittest.TestCase):
                 output='\n',
             )),
         ])
+
+
+class LogpointTestsModule(LogpointTests):
+    FILENAME = None
+    MODULENAME = 'mymod.__init__'
