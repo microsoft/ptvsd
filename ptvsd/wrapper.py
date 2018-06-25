@@ -2024,6 +2024,9 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
                 'verified': True,
                 'line': line,
             })
+        # Ensure that all breakpoint requests have been handled
+        # (see GH-448).
+        yield self._send_cmd_version_command()
 
         if request is not None:
             self.send_response(request, breakpoints=bps)
