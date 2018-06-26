@@ -857,7 +857,7 @@ class VSCodeMessageProcessorBase(ipcjson.SocketIO, ipcjson.IpcChannel):
                 self._listening = threading.Lock()
             try:
                 self.process_messages()
-            except (EOFError, TimeoutError):
+            except (EOFError, TimeoutError) as exc:
                 debug('client socket closed')
                 with self._connlock:
                     _util.lock_release(self._listening)
@@ -1084,8 +1084,9 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
         self.send_response(request)
         self._set_disconnected()
 
-        if self.start_reason == 'attach' and not self._debuggerstopped:
-            self._handle_detach()
+        if self.start_reason == 'attach':
+            if not self._debuggerstopped:
+                self._handle_detach()
         # TODO: We should be able drop the "launch" branch.
         elif self.start_reason == 'launch':
             if not self._closed:
@@ -1190,6 +1191,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
 
         # adapter state
         self.path_casing = PathUnNormcase()
+        self._detached = False
 
     def _start_event_loop(self):
         self.loop = futures.EventLoop()
@@ -1265,11 +1267,14 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
 
     def on_pydevd_event(self, cmd_id, seq, args):
         # TODO: docstring
-        try:
-            f = self.pydevd_events[cmd_id]
-        except KeyError:
-            raise UnsupportedPyDevdCommandError(cmd_id)
-        return f(self, seq, args)
+        if not self._detached:
+            try:
+                f = self.pydevd_events[cmd_id]
+            except KeyError:
+                raise UnsupportedPyDevdCommandError(cmd_id)
+            return f(self, seq, args)
+        else:
+            return None
 
     @staticmethod
     def parse_xml_response(args):
@@ -1403,9 +1408,27 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         self._initialize_path_maps(args)
         yield self._send_cmd_version_command()
 
-    # TODO: Implement _handle_detach() (see GH-285):
-    #   Remove all breakpoints.
-    #   Resume if stopped.
+    def _handle_detach(self):
+        debug('detaching')
+        self._detached = True
+        self._clear_breakpoints()
+        self._resume_all_threads()
+
+    def _clear_breakpoints(self, filename=None):
+        cmd = pydevd_comm.CMD_REMOVE_BREAK
+        for pyd_bpid, vsc_bpid in self.bp_map.pairs():
+            if filename is None:
+                filename = pyd_bpid[0]
+            elif pyd_bpid[0] != filename:
+                continue
+            msg = '{}\t{}\t{}'.format('python-line', filename, vsc_bpid)
+            self.pydevd_notify(cmd, msg)
+            self.bp_map.remove(pyd_bpid, vsc_bpid)
+        # TODO: Wait until the last request has been handled?
+
+    def _resume_all_threads(self):
+        for tid in self.stack_traces:
+            self.pydevd_notify(pydevd_comm.CMD_THREAD_RUN, tid)
 
     def send_process_event(self, start_method):
         # TODO: docstring
@@ -1993,6 +2016,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
                 bp_type = 'jinja2-line'
 
         # First, we must delete all existing breakpoints in that source.
+        # TODO: Call self._clear_breakpoints(path) instead?
         cmd = pydevd_comm.CMD_REMOVE_BREAK
         for pyd_bpid, vsc_bpid in self.bp_map.pairs():
             if pyd_bpid[0] == path:
