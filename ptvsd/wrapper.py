@@ -1289,9 +1289,17 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         yield futures.Result(context())
 
     def _wait_for_pydevd_ready(self):
-        # TODO: Possibly send a request and wait for a response.
-        # See GH-448.
+        # TODO: Call self._ensure_pydevd_requests_handled?
         pass
+
+    def _ensure_pydevd_requests_handled(self):
+        # PyDevd guarantees that a response means all previous requests
+        # have been handled.  (PyDevd handles messages sequentially.)
+        # See GH-448.
+        #
+        # This is particularly useful for those requests that do not
+        # have responses (e.g. CMD_SET_BREAK).
+        return self._send_cmd_version_command()
 
     # VSC protocol handlers
 
@@ -2027,9 +2035,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
                 'verified': True,
                 'line': line,
             })
-        # Ensure that all breakpoint requests have been handled
-        # (see GH-448).
-        yield self._send_cmd_version_command()
+        yield self._ensure_pydevd_requests_handled()
 
         if request is not None:
             self.send_response(request, breakpoints=bps)
