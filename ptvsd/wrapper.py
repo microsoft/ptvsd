@@ -1410,9 +1410,21 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
 
     def _handle_detach(self):
         debug('detaching')
+        # TODO: Skip if already detached?
         self._detached = True
+
+        self._clear_output_redirection()
+        self._reset_project_roots()
         self._clear_breakpoints()
+        self.exceptions_mgr.remove_all_exception_breaks()
         self._resume_all_threads()
+
+    def _clear_output_redirection(self):
+        self.pydevd_request(pydevd_comm.CMD_REDIRECT_OUTPUT, '')
+
+    def _reset_project_roots(self):
+        # We leave the "project roots" alone (see CMD_SET_PROJECT_ROOTS).
+        pass
 
     def _clear_breakpoints(self, filename=None):
         cmd = pydevd_comm.CMD_REMOVE_BREAK
