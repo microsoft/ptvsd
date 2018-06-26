@@ -389,6 +389,127 @@ class LifecycleTests(TestsBase, unittest.TestCase):
             self.new_event('thread', reason='started', threadId=1),
         ])
 
+    def test_launch_ptvsd_client_with_output(self):
+        argv = []
+        waitscript = dedent("""
+            import sys
+            sys.stdout.write('ok')
+            sys.stderr.write('ex')
+            """)
+        options = {'debugOptions':['RedirectOutput']}
+        filename = self.write_script('spam.py', waitscript)
+        script = self.write_debugger_script(filename, 9876, run_as='script')
+        with DebugClient(port=9876) as editor:
+            adapter, session = editor.host_local_debugger(
+                argv,
+                script,
+
+            )
+            with session.wait_for_event('exited'):
+                with session.wait_for_event('thread'):
+                    (req_initialize, req_launch, req_config, _, _, _
+                     ) = lifecycle_handshake(session, 'launch', options=options)
+
+                adapter.wait()
+
+        # Skipping the 'thread exited' and 'terminated' messages which
+        # may appear randomly in the received list.
+        received = list(_strip_newline_output_events(session.received))
+        self.assert_received(received, [
+            self.new_version_event(session.received),
+            self.new_response(req_initialize, **INITIALIZE_RESPONSE),
+            self.new_event('initialized'),
+            self.new_response(req_launch),
+            self.new_response(req_config),
+            self.new_event('process', **{
+                'isLocalProcess': True,
+                'systemProcessId': adapter.pid,
+                'startMethod': 'launch',
+                'name': filename,
+            }),
+            self.new_event('thread', reason='started', threadId=1),
+            self.new_event('output', category='stdout',  output='ok'),
+            self.new_event('output', category='stderr',  output='ex'),
+            self.new_event('thread', reason='exited', threadId=1),
+            self.new_event('exited', exitCode=0),
+            self.new_event('terminated'),
+        ])
+
+
+    def test_launch_ptvsd_client_with_break_points(self):
+        argv = []
+        waitscript = dedent("""
+            a = 1
+            b = 2
+            c = 3
+            """)
+        options = {'debugOptions':['RedirectOutput']}
+        filename = self.write_script('spam.py', waitscript)
+        script = self.write_debugger_script(filename, 9876, run_as='script')
+        breakpoints = [{
+            'source': {'path': filename},
+            'breakpoints': [
+                {'line': 3}
+            ],
+        }]
+
+        with DebugClient(port=9876, connecttimeout=3.0) as editor:
+            adapter, session = editor.host_local_debugger(
+                argv,
+                script,
+
+            )
+            with session.wait_for_event('terminated'):
+                with session.wait_for_event('stopped') as result:
+                    (req_initialize, req_launch, req_config, reqs_bps, _, req_thread
+                    ) = lifecycle_handshake(session, 'launch',
+                                            breakpoints=breakpoints,
+                                            options=options,
+                                            threads=True)
+                tid = result['msg'].body['threadId']
+                req_stacktrace2 = session.send_request(
+                    'stackTrace',
+                    threadId=tid,
+                )
+
+                with session.wait_for_event('continued'):
+                    session.send_request('continue', threadId= 1)
+
+                # adapter.wait()
+        print('Start testing')
+        # Skipping the 'thread exited' and 'terminated' messages which
+        # may appear randomly in the received list.
+        received = list(_strip_newline_output_events(session.received))
+        for line in received:
+            print(line)
+        self.assert_received(received, [
+            self.new_version_event(session.received),
+            self.new_response(req_initialize, **INITIALIZE_RESPONSE),
+            self.new_event('initialized'),
+            self.new_response(req_launch),
+            self.new_response(req_thread),
+            self.new_response(reqs_bps),
+            self.new_response(req_config),
+            self.new_event('process', **{
+                'isLocalProcess': True,
+                'systemProcessId': adapter.pid,
+                'startMethod': 'launch',
+                'name': filename,
+            }),
+            self.new_event('thread', reason='started', threadId=tid),
+            self.new_event('stopped', reason='breakpoint', threadId=tid),
+            self.new_event('module'),
+            self.new_event('module'),
+            self.new_response(req_stacktrace2, **{
+                'totalFrames':2,
+
+            }),
+            self.new_event('output', category='stdout',  output='bye'),
+            self.new_event('thread', reason='exited', threadId=tid),
+            self.new_event('exited', exitCode=0),
+            self.new_event('terminated'),
+        ])
+
     def test_launch_ptvsd_server(self):
         lockfile = self.workspace.lockfile()
         done, waitscript = lockfile.wait_in_script()

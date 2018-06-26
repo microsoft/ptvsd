@@ -1356,6 +1356,8 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
             redirect_output = 'STDOUT\tSTDERR'
         else:
             redirect_output = ''
+        with open('/Users/don/Desktop/Development/vscode/ptvsd/log.log', 'a') as fs:
+            fs.write('REDIRECTOUTPUT = {}\n'.format(redirect_output))
         self.pydevd_request(pydevd_comm.CMD_REDIRECT_OUTPUT, redirect_output)
         self._apply_code_stepping_settings()
 
