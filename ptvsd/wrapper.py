@@ -383,6 +383,7 @@ class PydevdSocket(object):
         cmd_id, seq, args = data.split('\t', 2)
         cmd_id = int(cmd_id)
         seq = int(seq)
+        _util.log_pydevd_msg(cmd_id, seq, args, inbound=True)
         with self.lock:
             loop, fut = self.requests.pop(seq, (None, None))
         if fut is None:
@@ -405,12 +406,14 @@ class PydevdSocket(object):
 
     def pydevd_notify(self, cmd_id, args):
         # TODO: docstring
-        _, s = self.make_packet(cmd_id, args)
+        seq, s = self.make_packet(cmd_id, args)
+        _util.log_pydevd_msg(cmd_id, seq, args, inbound=False)
         os.write(self.pipe_w, s.encode('utf8'))
 
     def pydevd_request(self, loop, cmd_id, args):
         # TODO: docstring
         seq, s = self.make_packet(cmd_id, args)
+        _util.log_pydevd_msg(cmd_id, seq, args, inbound=False)
         fut = loop.create_future()
         with self.lock:
             self.requests[seq] = loop, fut
