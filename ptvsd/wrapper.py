@@ -1087,10 +1087,18 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
         if self._debuggerstopped:  # A "terminated" event must have been sent.
             self._wait_until_exiting(self.EXITWAIT)
 
-        self._notify_disconnecting(
-            pre_socket_close=(lambda: self.send_response(request)))
-        if not self.closed:
+        status = {'sent': False}
+
+        def disconnect_response():
+            if status['sent']:
+                return
             self.send_response(request)
+            status['sent'] = True
+
+        self._notify_disconnecting(
+            pre_socket_close=disconnect_response,
+        )
+        disconnect_response()
 
         self._set_disconnected()
 
