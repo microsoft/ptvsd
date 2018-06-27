@@ -997,6 +997,9 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
 
         self._stopped = False
 
+        # This is overridden in tests.
+        self._kill_current_proc = kill_current_proc
+
         # adapter state
         self.start_reason = None
         self.debug_options = {}
@@ -1102,7 +1105,7 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
                     # threads, so just terminate the process altogether.
                     # TODO: The wrapper should not be responsible for
                     # managing the process (e.g. killing it).
-                    kill_current_proc()
+                    self._kill_current_proc()
 
             self._set_disconnected()
             if self.start_reason == 'attach':
