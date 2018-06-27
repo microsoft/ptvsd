@@ -1080,8 +1080,8 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
         # TODO: docstring
         if self._debuggerstopped:  # A "terminated" event must have been sent.
             self._wait_until_exiting(self.EXITWAIT)
-        self._notify_disconnecting()
-        self.send_response(request)
+        self._notify_disconnecting(
+            pre_socket_close=(lambda: self.send_response(request)))
         self._set_disconnected()
 
         if self.start_reason == 'attach':
