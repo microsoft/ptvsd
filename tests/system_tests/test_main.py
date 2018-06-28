@@ -16,7 +16,7 @@ from tests.helpers.workspace import Workspace, PathEntry
 
 from . import (_get_version, _strip_pydevd_output,
     _strip_newline_output_events, lifecycle_handshake, TestsBase,
-    LifecycleTestsBase, _strip_output_event, _strip_exit)
+    LifecycleTestsBase, _strip_output_event, _strip_exit, _find_events)
 
 ROOT = os.path.dirname(os.path.dirname(ptvsd.__file__))
 

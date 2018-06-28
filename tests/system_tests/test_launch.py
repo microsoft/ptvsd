@@ -89,8 +89,7 @@ class LifecycleTests(LifecycleTestsBase):
                 with session.wait_for_event('stopped') as result:
                     (req_initialize, req_launch, req_config, reqs_bps, _, _
                     ) = lifecycle_handshake(session, 'launch',
-                                            breakpoints=breakpoints,
-                                            options=options)
+                                            breakpoints=breakpoints)
                 req_bps, = reqs_bps  # There should only be one.
                 tid = result['msg'].body['threadId']
 
