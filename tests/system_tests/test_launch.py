@@ -344,30 +344,33 @@ class FileLifecycleTests(LifecycleTestsBase):
             ],
         )
 
-    @unittest.skip("conditional breakpoints needs fixing")
     def test_with_conditional_break_points(self):
-        bp_line = 4
-        script = dedent("""
+        source = dedent("""
             a = 1
             b = 2
-            for i in range(10):
+            for i in range(5):
+                # <Token>
                 print(i)
             """)
-        filename = self.create_source_file("spam.py", script)
-        argv = [filename]
+        (filename, filepath, env, expected_module, is_module, argv,
+         cwd) = self.get_test_info(source)
+        bp_line = self.find_line(filepath, 'Token')
         breakpoints = [{
             "source": {
-                "path": filename
+                "path": filepath,
+                "name": filename
             },
             "breakpoints": [{
                 "line": bp_line,
-                "condition": "i == 5"
+                "condition": "i == 2"
             }],
+            "lines": [bp_line]
         }]
         options = {"debugOptions": ["RedirectOutput"]}
 
         with DebugClient(port=PORT, connecttimeout=3.0) as editor:
-            adapter, session = editor.host_local_debugger(argv)
+            adapter, session = editor.host_local_debugger(
+                argv, env=env, cwd=cwd)
             with session.wait_for_event("terminated"):
                 with session.wait_for_event("stopped") as result:
                     (
@@ -385,12 +388,95 @@ class FileLifecycleTests(LifecycleTestsBase):
                 req_bps, = reqs_bps  # There should only be one.
                 tid = result["msg"].body["threadId"]
 
-                session.send_request("stackTrace", threadId=tid)
+                # with session.wait_for_response("stopped") as result:
+                req_stacktrace = session.send_request("stackTrace",
+                                                      threadId=tid,
+                                                      wait=True)
 
                 with session.wait_for_event("continued"):
-                    session.send_request("continue", threadId=tid)
+                    req_continue = session.send_request("continue",
+                                                        threadId=tid)
 
             adapter.wait()
+        # Skipping the 'thread exited' and 'terminated' messages which
+        # may appear randomly in the received list.
+        received = list(_strip_newline_output_events(session.received))
+        received = list(_strip_newline_output_events(session.received))
+        del received[12]  # Module info for runpy.py
+        stack_frames = received[12].body.get("stackFrames")
+        stack_frames[1]["id"] = 1
+        del stack_frames[1:len(stack_frames)]  # Ignore non-user stack trace.
+        received[12].body["totalFrames"] = 1
+
+        # Skipping the 'thread exited' and 'terminated' messages which
+        # may appear randomly in the received list.
+        self.assert_received(
+            received[:-3],
+            [
+                self.new_version_event(session.received),
+                self.new_response(req_initialize, **INITIALIZE_RESPONSE),
+                self.new_event("initialized"),
+                self.new_response(req_launch),
+                self.new_response(
+                    req_bps, **{
+                        "breakpoints": [{
+                            "id": 1,
+                            "line": bp_line,
+                            "verified": True
+                        }]
+                    }),
+                self.new_response(req_config),
+                self.new_event(
+                    "process", **{
+                        "isLocalProcess": True,
+                        "systemProcessId": adapter.pid,
+                        "startMethod": "launch",
+                        "name": expected_module,
+                    }),
+                self.new_event("thread", reason="started", threadId=tid),
+                self.new_event("output", category="stdout", output="0"),
+                self.new_event("output", category="stdout", output="1"),
+                self.new_event(
+                    "stopped",
+                    reason="breakpoint",
+                    threadId=tid,
+                    text=None,
+                    description=None,
+                ),
+                self.new_event(
+                    "module",
+                    module={
+                        "id": 1,
+                        "name": "__main__",
+                        "path": filepath,
+                        "package": None,
+                    },
+                    reason="new",
+                ),
+                self.new_response(
+                    req_stacktrace,
+                    seq=13,
+                    **{
+                        "totalFrames":
+                        1,
+                        "stackFrames": [{
+                            "id": 1,
+                            "name": "<module>",
+                            "source": {
+                                "path": filepath,
+                                "sourceReference": 0
+                            },
+                            "line": bp_line,
+                            "column": 1,
+                        }],
+                    }),
+                self.new_response(req_continue, seq=14),
+                self.new_event("continued", seq=15, threadId=tid),
+                self.new_event("output", category="stdout", output="2", seq=16), # noqa
+                self.new_event("output", category="stdout", output="3", seq=17), # noqa
+                self.new_event("output", category="stdout", output="4", seq=18), # noqa
+            ],
+        )
 
     @unittest.skip("termination needs fixing")
     def test_terminating_program(self):
@@ -433,11 +519,7 @@ class ModuleLifecycleTests(FileLifecycleTests):
         argv = ["-m", module_name]
 
         return (filename, filepath, env, expected_module, True, argv,
-                self.get_cwd())  # noqa
-
-    # @unittest.skip('Needs fixing in Modules')
-    # def test_with_log_points(self):
-    #     pass
+                self.get_cwd())
 
 
 class ModuleWithCWDLifecycleTests(ModuleLifecycleTests,
