@@ -179,8 +179,7 @@ class EasyDebugClient(DebugClient):
             wait_for_connect=wait,
             detachable=False,
             env=env,
-            cwd=cwd,
-            **kwargs
+            cwd=cwd
         )
 
         return self._adapter, self._session
