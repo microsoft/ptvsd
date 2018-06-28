@@ -7,6 +7,7 @@ import ptvsd
 from ptvsd.wrapper import INITIALIZE_RESPONSE  # noqa
 from tests.helpers.debugclient import EasyDebugClient as DebugClient
 from tests.helpers.script import find_line
+from tests.helpers.vsc import Response, Event
 
 from . import (
     _strip_newline_output_events,
@@ -37,6 +38,40 @@ class FileLifecycleTests(LifecycleTestsBase):
         argv = [filepath]
         return ("spam.py", filepath, env, expected_module, False, argv,
                 self.get_cwd())
+
+    def find_events(self, responses, event, condition=lambda x: True):
+        responses = list(response for response in responses
+                         if isinstance(response, Event) and
+                         response.event == event and
+                         condition(response.body)) # noqa
+        error_message = 'Event {}, not found'.format(event) # noqa
+        self.assertGreater(len(responses), 0, error_message)
+        return responses
+
+    def find_responses(self, responses, command, condition=lambda x: True):
+        responses = list(response for response in responses
+                         if isinstance(response, Response) and
+                         response.command == command and
+                         condition(response.body))
+        error_message = 'Response for the command {}, not found'.format(command) # noqa
+        self.assertGreater(len(responses), 0, error_message)
+        return responses
+
+    def fix_module_events(self, responses):
+        module_events = self.find_events(responses, 'module') # noqa
+        # Ensure package is None, changes based on version of Python.
+        module_events[0].body["module"]["package"] = None
+        self.remove_messages(responses, module_events[1:])
+
+    def fix_stack_traces(self, responses):
+        stack_trace = self.find_responses(responses, 'stackTrace')[0]
+        stack_frames = stack_trace.body.get("stackFrames")
+        del stack_frames[1:len(stack_frames)]  # Ignore non-user stack trace.
+        stack_trace.body["totalFrames"] = 1
+
+    def remove_messages(self, responses, messages):
+        for msg in messages:
+            responses.remove(msg)
 
     def test_with_output(self):
         source = dedent("""
@@ -192,13 +227,10 @@ class FileLifecycleTests(LifecycleTestsBase):
             adapter.wait()
 
         received = list(_strip_newline_output_events(session.received))
-        del received[10]  # Module info for runpy.py
-        stack_frames = received[10].body.get("stackFrames")
-        stack_frames[1]["id"] = 1
-        del stack_frames[1:len(stack_frames)]  # Ignore non-user stack trace.
-        received[10].body["totalFrames"] = 1
-        # Ensure package is None, changes based on version of Python.
-        received[9].body["module"]["package"] = None
+
+        # Cleanup.
+        self.fix_module_events(received)
+        self.fix_stack_traces(received)
 
         # Skipping the 'thread exited' and 'terminated' messages which
         # may appear randomly in the received list.
@@ -247,8 +279,7 @@ class FileLifecycleTests(LifecycleTestsBase):
                     req_stacktrace,
                     seq=11,
                     **{
-                        "totalFrames":
-                        1,
+                        "totalFrames": 1,
                         "stackFrames": [{
                             "id": 1,
                             "name": "<module>",
@@ -398,17 +429,12 @@ class FileLifecycleTests(LifecycleTestsBase):
                                                         threadId=tid)
 
             adapter.wait()
-        # Skipping the 'thread exited' and 'terminated' messages which
-        # may appear randomly in the received list.
+
         received = list(_strip_newline_output_events(session.received))
-        received = list(_strip_newline_output_events(session.received))
-        del received[12]  # Module info for runpy.py
-        stack_frames = received[12].body.get("stackFrames")
-        stack_frames[1]["id"] = 1
-        del stack_frames[1:len(stack_frames)]  # Ignore non-user stack trace.
-        received[12].body["totalFrames"] = 1
-        # Ensure package is None, changes based on version of Python.
-        received[11].body["module"]["package"] = None
+
+        # Cleanup.
+        self.fix_module_events(received)
+        self.fix_stack_traces(received)
 
         # Skipping the 'thread exited' and 'terminated' messages which
         # may appear randomly in the received list.
