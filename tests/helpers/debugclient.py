@@ -111,7 +111,7 @@ class _LifecycleClient(Closeable):
             start = DebugAdapter.start
         new_addr = Address.as_server if detachable else Address.as_client
         addr = new_addr(None, self._addr.port)
-        self._adapter = start(argv, addr=addr, env=env, cwd=cwd, **kwargs)
+        self._adapter = start(argv, addr=addr, env=env, cwd=cwd)
 
         if wait_for_connect:
             wait_for_connect()
