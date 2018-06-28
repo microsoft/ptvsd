@@ -170,7 +170,7 @@ class PathEntry(Workspace):
 
         initpy = os.path.join(dirname, '__init__.py')
         if not os.path.exists(initpy):
-            os.mkdirs(dirname)
+            os.makedirs(dirname)
             with open(initpy, 'w'):
                 pass
 
