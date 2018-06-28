@@ -6,6 +6,7 @@ import unittest
 import ptvsd
 from ptvsd.wrapper import INITIALIZE_RESPONSE  # noqa
 from tests.helpers.debugclient import EasyDebugClient as DebugClient
+from tests.helpers.script import find_line
 
 from . import (
     _strip_newline_output_events,
@@ -23,6 +24,11 @@ class FileLifecycleTests(LifecycleTestsBase):
 
     def get_cwd(self):
         return None
+
+    def find_line(self, filepath, label):
+        with open(filepath) as scriptfile:
+            script = scriptfile.read()
+        return find_line(script, label)
 
     def get_test_info(self, source):
         filepath = self.create_source_file("spam.py", source)
@@ -143,12 +149,13 @@ class FileLifecycleTests(LifecycleTestsBase):
         source = dedent("""
             a = 1
             b = 2
+            # <Token>
             c = 3
             """)
         (filename, filepath, env, expected_module, is_module, argv,
          cwd) = self.get_test_info(source)
 
-        bp_line = 4
+        bp_line = self.find_line(filepath, 'Token')
         breakpoints = [{
             "source": {
                 "path": filepath
@@ -256,6 +263,85 @@ class FileLifecycleTests(LifecycleTestsBase):
             ],
         )
 
+    def test_with_log_points(self):
+        source = dedent("""
+            print('foo')
+            a = 1
+            for i in range(2):
+                # <Token>
+                b = i
+            print('bar')
+            """)
+        (filename, filepath, env, expected_module, is_module, argv,
+         cwd) = self.get_test_info(source)
+        bp_line = self.find_line(filepath, 'Token')
+        breakpoints = [{
+            "source": {
+                "path": filepath,
+                "name": filename
+            },
+            "breakpoints": [{
+                "line": bp_line,
+                "logMessage": "{a + i}"
+            }],
+            "lines": [bp_line]
+        }]
+        options = {"debugOptions": ["RedirectOutput"]}
+
+        with DebugClient(port=PORT, connecttimeout=3.0) as editor:
+            adapter, session = editor.host_local_debugger(
+                argv, env=env, cwd=cwd)
+            with session.wait_for_event("terminated"):
+                (
+                    req_initialize,
+                    req_launch,
+                    req_config,
+                    reqs_bps,
+                    _,
+                    _,
+                ) = lifecycle_handshake(
+                    session,
+                    "launch",
+                    breakpoints=breakpoints,
+                    options=options)
+                req_bps, = reqs_bps  # There should only be one.
+
+            adapter.wait()
+
+        # Skipping the 'thread exited' and 'terminated' messages which
+        # may appear randomly in the received list.
+        received = list(_strip_newline_output_events(session.received))
+        self.assert_received(
+            received[:-3],
+            [
+                self.new_version_event(session.received),
+                self.new_response(req_initialize, **INITIALIZE_RESPONSE),
+                self.new_event("initialized"),
+                self.new_response(req_launch),
+                self.new_response(
+                    req_bps, **{
+                        "breakpoints": [{
+                            "id": 1,
+                            "line": bp_line,
+                            "verified": True
+                        }]
+                    }),
+                self.new_response(req_config),
+                self.new_event(
+                    "process", **{
+                        "isLocalProcess": True,
+                        "systemProcessId": adapter.pid,
+                        "startMethod": "launch",
+                        "name": expected_module,
+                    }),
+                self.new_event("thread", reason="started", threadId=1),
+                self.new_event("output", category="stdout", output="foo"),
+                self.new_event("output", category="stdout", output="1" + os.linesep), # noqa
+                self.new_event("output", category="stdout", output="2" + os.linesep), # noqa
+                self.new_event("output", category="stdout", output="bar"),
+            ],
+        )
+
     @unittest.skip("conditional breakpoints needs fixing")
     def test_with_conditional_break_points(self):
         bp_line = 4
@@ -346,6 +432,10 @@ class ModuleLifecycleTests(FileLifecycleTests):
 
         return (filename, filepath, env, expected_module, True, argv,
                 self.get_cwd())  # noqa
+
+    # @unittest.skip('Needs fixing in Modules')
+    # def test_with_log_points(self):
+    #     pass
 
 
 class ModuleWithCWDLifecycleTests(ModuleLifecycleTests,
