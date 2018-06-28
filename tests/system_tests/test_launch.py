@@ -197,6 +197,8 @@ class FileLifecycleTests(LifecycleTestsBase):
         stack_frames[1]["id"] = 1
         del stack_frames[1:len(stack_frames)]  # Ignore non-user stack trace.
         received[10].body["totalFrames"] = 1
+        # Ensure package is None, changes based on version of Python.
+        received[9].body["module"]["package"] = None
 
         # Skipping the 'thread exited' and 'terminated' messages which
         # may appear randomly in the received list.
