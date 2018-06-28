@@ -202,11 +202,6 @@ class SocketIO(object):
         # read content, utf-8 encoded
         content = self._buffered_read_as_utf8(length)
         try:
-            with open('/Users/don/Desktop/Development/vscode/ptvsd/log.log', 'a') as fs:
-                fs.write(content + '\n')
-        except:
-            print('kaboom')
-        try:
             msg = json.loads(content)
             self._receive_message(msg)
         except ValueError:
