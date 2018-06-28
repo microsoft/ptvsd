@@ -427,7 +427,6 @@ class LogpointTests(TestBase, unittest.TestCase):
         b = 2
         c = 3
         d = 4
-        print('bye')
         """
 
     @contextlib.contextmanager
@@ -515,13 +514,5 @@ class LogpointTests(TestBase, unittest.TestCase):
             self.new_event('output', **dict(
                 category='stdout',
                 output='1+2=3' + os.linesep,
-            )),
-            self.new_event('output', **dict(
-                category='stdout',
-                output='bye',
-            )),
-            self.new_event('output', **dict(
-                category='stdout',
-                output=os.linesep,
             )),
         ])
