@@ -180,7 +180,7 @@ class EasyDebugClient(DebugClient):
             detachable=False,
             env=env,
             cwd=cwd,
-            **kwargs,
+            **kwargs
         )
 
         return self._adapter, self._session
