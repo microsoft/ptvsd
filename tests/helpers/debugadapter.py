@@ -98,7 +98,7 @@ class DebugAdapter(Closeable):
         return cls._start(new_proc, argv, **kwargs)
 
     @classmethod
-    def start_wrapper_script(cls, filename, argv, env=None, cwd=None, **kwargs):
+    def start_wrapper_script(cls, filename, argv, env=None, cwd=None, **kwargs): # noqa
         def new_proc(argv, addr, **kwds):
             env_vars = _copy_env(verbose=cls.VERBOSE, env=env)
             return Proc.start_python_script(

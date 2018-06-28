@@ -150,7 +150,7 @@ class EasyDebugClient(DebugClient):
         self._adapter = DebugAdapter.start(argv, port=self._port)
         return self._adapter
 
-    def host_local_debugger(self, argv, script=None, env=None, cwd=None, **kwargs):
+    def host_local_debugger(self, argv, script=None, env=None, cwd=None, **kwargs): # noqa
         if self.closed:
             raise RuntimeError('debug client closed')
         if self._adapter is not None:
