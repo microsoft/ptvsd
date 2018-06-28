@@ -10,11 +10,9 @@ from tests.helpers.debugadapter import DebugAdapter
 from tests.helpers.debugclient import EasyDebugClient as DebugClient
 from tests.helpers.lock import LockTimeoutError
 from tests.helpers.script import find_line, set_lock, set_release
-from tests.helpers.threading import get_locked_and_waiter
-from tests.helpers.vsc import parse_message, VSCMessages
-from tests.helpers.workspace import Workspace, PathEntry
 
-from . import (_get_version, _strip_pydevd_output,
+from . import (
+    _strip_pydevd_output,
     _strip_newline_output_events, lifecycle_handshake, TestsBase,
     LifecycleTestsBase, _strip_output_event, _strip_exit, _find_events)
 

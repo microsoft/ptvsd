@@ -6,6 +6,7 @@ from tests.helpers.threading import get_locked_and_waiter
 from tests.helpers.workspace import Workspace, PathEntry
 from tests.helpers.vsc import parse_message, VSCMessages
 
+
 class ANYType(object):
     def __repr__(self):
         return 'ANY'
