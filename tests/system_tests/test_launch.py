@@ -309,7 +309,7 @@ class FileLifecycleTests(LifecycleTestsBase):
 
     def test_with_break_points_across_files(self):
         source = dedent("""
-            import bar
+            from . import bar
             def foo():
                 # <Token>
                 bar.do_something()
@@ -350,6 +350,7 @@ class FileLifecycleTests(LifecycleTestsBase):
                         _,
                     ) = lifecycle_handshake(
                         session, "launch", breakpoints=breakpoints)
+
                 req_bps, = reqs_bps  # There should only be one.
                 tid = result["msg"].body["threadId"]
 
@@ -406,8 +407,8 @@ class FileLifecycleTests(LifecycleTestsBase):
                     "module",
                     module={
                         "id": 1,
-                        "name": "bar",
-                        "path": bar_filepath,
+                        "name": "mymod.bar" if is_module else "bar",
+                        "path": None if is_module else bar_filepath,
                         "package": None,
                     },
                     reason="new",
@@ -421,7 +422,7 @@ class FileLifecycleTests(LifecycleTestsBase):
                             "id": 1,
                             "name": "do_something",
                             "source": {
-                                "path": bar_filepath,
+                                "path": None if is_module else bar_filepath,
                                 "sourceReference": 0
                             },
                             "line": bp_line,
@@ -702,10 +703,6 @@ class ModuleLifecycleTests(FileLifecycleTests):
 
         return ("__init__.py", filepath, env, expected_module, True, argv,
                 self.get_cwd())
-
-    @unittest.skip('Needs fixing')
-    def test_with_break_points_across_files(self):
-        pass
 
 
 class ModuleWithCWDLifecycleTests(ModuleLifecycleTests,
