@@ -7,6 +7,19 @@ from ptvsd.runner import run as no_debug_runner
 from ptvsd.socket import Address
 
 
+PYDEVD_DEFAULTS = {
+    '--qt-support=auto',
+}
+
+
+def _set_pydevd_defaults(pydevd_args):
+    args_to_append = []
+    for arg in PYDEVD_DEFAULTS:
+        if arg not in pydevd_args:
+            args_to_append.append(arg)
+    return pydevd_args + args_to_append
+
+
 ########################
 # high-level functions
 
@@ -57,6 +70,7 @@ def _run_argv(address, filename, extra, _prog=sys.argv[0]):
         pydevd = []
         extra = list(extra)
 
+    pydevd = _set_pydevd_defaults(pydevd)
     host, port = address
     argv = [
         _prog,
