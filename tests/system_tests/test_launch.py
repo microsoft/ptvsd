@@ -119,7 +119,7 @@ class FileLifecycleTests(LifecycleTestsBase):
         # Skipping the 'thread exited' and 'terminated' messages which
         # may appear randomly in the received list.
         received = list(_strip_newline_output_events(session.received))
-        self.assert_received(
+        self.assert_contains(
             received[:-3],
             [
                 self.new_version_event(session.received),
