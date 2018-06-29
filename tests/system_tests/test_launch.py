@@ -687,25 +687,25 @@ class FileWithCWDLifecycleTests(FileLifecycleTests):
         return os.path.dirname(__file__)
 
 
-class ModuleLifecycleTests(FileLifecycleTests):
-    def create_source_file(self, file_name, source):
-        return self.write_script(os.path.join('mymod', file_name), source)
+# class ModuleLifecycleTests(FileLifecycleTests):
+#     def create_source_file(self, file_name, source):
+#         return self.write_script(os.path.join('mymod', file_name), source)
 
-    def get_test_info(self, source):
-        module_name = "mymod"
-        self.workspace.ensure_dir(module_name)
-        self.create_source_file("__main__.py", "")
+#     def get_test_info(self, source):
+#         module_name = "mymod"
+#         self.workspace.ensure_dir(module_name)
+#         self.create_source_file("__main__.py", "")
 
-        filepath = self.create_source_file("__init__.py", source)
-        env = {"PYTHONPATH": os.path.dirname(os.path.dirname(filepath))}
-        expected_module = module_name + ":"
-        argv = ["-m", module_name]
+#         filepath = self.create_source_file("__init__.py", source)
+#         env = {"PYTHONPATH": os.path.dirname(os.path.dirname(filepath))}
+#         expected_module = module_name + ":"
+#         argv = ["-m", module_name]
 
-        return ("__init__.py", filepath, env, expected_module, True, argv,
-                self.get_cwd())
+#         return ("__init__.py", filepath, env, expected_module, True, argv,
+#                 self.get_cwd())
 
 
-class ModuleWithCWDLifecycleTests(ModuleLifecycleTests,
-                                  FileWithCWDLifecycleTests):  # noqa
-    def get_cwd(self):
-        return os.path.dirname(__file__)
+# class ModuleWithCWDLifecycleTests(ModuleLifecycleTests,
+#                                   FileWithCWDLifecycleTests):  # noqa
+#     def get_cwd(self):
+#         return os.path.dirname(__file__)
