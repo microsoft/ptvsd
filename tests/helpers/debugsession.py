@@ -133,7 +133,7 @@ class DebugSession(Closeable):
     def create_server(cls, addr=None, **kwargs):
         if addr is None:
             addr = (cls.HOST, cls.PORT)
-        conn = DebugSessionConnection.create_server(addr)
+        conn = DebugSessionConnection.create_server(addr, **kwargs)
         return cls(conn, owned=True, **kwargs)
 
     def __init__(self, conn, seq=1000, handlers=(), timeout=None, owned=False):
