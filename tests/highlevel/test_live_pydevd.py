@@ -461,6 +461,7 @@ class BreakpointTests(VSCFlowTest, unittest.TestCase):
         self.assertIn('2 4 4', out)
         self.assertIn('ka-boom', out)
 
+
 @unittest.skip('Needs fixing when running with code coverage')
 class UnicodeBreakpointTests(BreakpointTests):
     FILENAME = u'汉语a2.py'
