@@ -60,3 +60,16 @@ def assert_messages_equal(received, expected):
                 msg.append('!%2d: %s != %s' % (i, a, b))
 
         raise AssertionError('\n'.join(msg))
+
+def assert_contains_messages(received, expected):
+    error_message = ['']
+    received_copy = list(msg._replace(seq=0) for msg in received)
+    for msg in (msg._replace(seq=0) for msg in expected):
+        if msg in received_copy:
+            del received_copy[received_copy.index(msg)]
+        else:
+            error_message.append('Not found:')
+            error_message.append(str(msg))
+
+    if len(error_message) > 1:
+        raise AssertionError('\n'.join(error_message))
