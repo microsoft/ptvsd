@@ -120,7 +120,7 @@ class FileLifecycleTests(LifecycleTestsBase):
         # may appear randomly in the received list.
         received = list(_strip_newline_output_events(session.received))
         self.assert_contains(
-            received[:-3],
+            received,
             [
                 self.new_version_event(session.received),
                 self.new_response(req_initialize, **INITIALIZE_RESPONSE),
@@ -172,8 +172,8 @@ class FileLifecycleTests(LifecycleTestsBase):
         # Skipping the 'thread exited' and 'terminated' messages which
         # may appear randomly in the received list.
         received = list(_strip_newline_output_events(session.received))
-        self.assert_received(
-            received[:-3],
+        self.assert_contains(
+            received,
             [
                 self.new_version_event(session.received),
                 self.new_response(req_initialize, **INITIALIZE_RESPONSE),
@@ -252,8 +252,8 @@ class FileLifecycleTests(LifecycleTestsBase):
 
         # Skipping the 'thread exited' and 'terminated' messages which
         # may appear randomly in the received list.
-        self.assert_received(
-            received[:-3],
+        self.assert_contains(
+            received,
             [
                 self.new_version_event(session.received),
                 self.new_response(req_initialize, **INITIALIZE_RESPONSE),
@@ -385,11 +385,16 @@ class FileLifecycleTests(LifecycleTestsBase):
         self.fix_stack_traces(received, 2)
         self.fix_paths(received)
         self.reset_seq(received)
+        module_event = self.find_events(received, 'module')[0]
+        module_event.body["module"]["path"] = None
+        resp_stacktrace = self.find_responses(received, 'stackTrace')[0]
+        resp_stacktrace.body["stackFrames"][0]["source"]["path"] = None
+        resp_stacktrace.body["stackFrames"][1]["source"]["path"] = None
 
         # Skipping the 'thread exited' and 'terminated' messages which
         # may appear randomly in the received list.
-        self.assert_received(
-            received[:-3],
+        self.assert_contains(
+            received,
             [
                 self.new_version_event(session.received),
                 self.new_response(req_initialize, **INITIALIZE_RESPONSE),
@@ -424,7 +429,7 @@ class FileLifecycleTests(LifecycleTestsBase):
                     module={
                         "id": 1,
                         "name": "mymod.bar" if self.IS_MODULE else "bar",
-                        "path": None if self.IS_MODULE else bar_filepath,
+                        "path": None,
                         "package": None,
                     },
                     reason="new",
@@ -437,7 +442,7 @@ class FileLifecycleTests(LifecycleTestsBase):
                             "id": 1,
                             "name": "do_something",
                             "source": {
-                                "path": None if self.IS_MODULE else bar_filepath, # noqa
+                                "path": None,
                                 "sourceReference": 0
                             },
                             "line": bp_line,
@@ -506,8 +511,8 @@ class FileLifecycleTests(LifecycleTestsBase):
         # Skipping the 'thread exited' and 'terminated' messages which
         # may appear randomly in the received list.
         received = list(_strip_newline_output_events(session.received))
-        self.assert_received(
-            received[:-3],
+        self.assert_contains(
+            received,
             [
                 self.new_version_event(session.received),
                 self.new_response(req_initialize, **INITIALIZE_RESPONSE),
@@ -604,8 +609,8 @@ class FileLifecycleTests(LifecycleTestsBase):
 
         # Skipping the 'thread exited' and 'terminated' messages which
         # may appear randomly in the received list.
-        self.assert_received(
-            received[:-3],
+        self.assert_contains(
+            received,
             [
                 self.new_version_event(session.received),
                 self.new_response(req_initialize, **INITIALIZE_RESPONSE),
