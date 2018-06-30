@@ -234,11 +234,11 @@ class FileLifecycleTests(LifecycleTestsBase):
                 req_bps, = reqs_bps  # There should only be one.
                 tid = result["msg"].body["threadId"]
 
-                req_stacktrace = session.send_request(
+                req_stacktrace, _ = session.send_request(
                     "stackTrace", threadId=tid)
 
                 with session.wait_for_event("continued"):
-                    req_continue = session.send_request(
+                    req_continue, _ = session.send_request(
                         "continue", threadId=tid)
 
             adapter.wait()
@@ -369,11 +369,11 @@ class FileLifecycleTests(LifecycleTestsBase):
                 req_bps, = reqs_bps  # There should only be one.
                 tid = result["msg"].body["threadId"]
 
-                req_stacktrace = session.send_request(
+                req_stacktrace, _ = session.send_request(
                     "stackTrace", threadId=tid)
 
                 with session.wait_for_event("continued"):
-                    req_continue = session.send_request(
+                    req_continue, _ = session.send_request(
                         "continue", threadId=tid)
 
             adapter.wait()
@@ -591,11 +591,11 @@ class FileLifecycleTests(LifecycleTestsBase):
                 tid = result["msg"].body["threadId"]
 
                 # with session.wait_for_response("stopped") as result:
-                req_stacktrace = session.send_request(
+                req_stacktrace, _ = session.send_request(
                     "stackTrace", threadId=tid, wait=True)
 
                 with session.wait_for_event("continued"):
-                    req_continue = session.send_request(
+                    req_continue, _ = session.send_request(
                         "continue", threadId=tid)
 
             adapter.wait()

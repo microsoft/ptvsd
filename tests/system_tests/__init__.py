@@ -126,20 +126,20 @@ def lifecycle_handshake(session, command='launch', options=None,
         req_initialize = session.send_request(
             'initialize',
             adapterID='spam',
-        )
-    req_command = session.send_request(command, **options or {})
-    req_threads = session.send_request('threads') if threads else None
+        )[0]
+    req_command = session.send_request(command, **options or {})[0]
+    req_threads = session.send_request('threads')[0] if threads else None
 
     reqs_bps = []
     reqs_exc = []
     for req in breakpoints or ():
         reqs_bps.append(
-            session.send_request('setBreakpoints', **req))
+            session.send_request('setBreakpoints', **req)[0])
     for req in excbreakpoints or ():
         reqs_bps.append(
-            session.send_request('setExceptionBreakpoints', **req))
+            session.send_request('setExceptionBreakpoints', **req)[0])
 
-    req_done = session.send_request('configurationDone')
+    req_done = session.send_request('configurationDone')[0]
     return (req_initialize, req_command, req_done,
             reqs_bps, reqs_exc, req_threads)
 

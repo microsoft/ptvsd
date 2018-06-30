@@ -178,11 +178,12 @@ class DebugSession(Closeable):
             'arguments': args,
         }
         if wait:
-            with self.wait_for_response(req):
+            with self.wait_for_response(req) as resp:
                 self._conn.send(req)
         else:
             self._conn.send(req)
-        return req
+            resp = None
+        return req, resp
 
     def add_handler(self, handler, **kwargs):
         if self.closed:
@@ -212,14 +213,16 @@ class DebugSession(Closeable):
             command, seq = req.command, req.seq
         except AttributeError:
             command, seq = req['command'], req['seq']
+        result = {'msg': None}
 
         def match(msg):
             if msg.type != 'response':
                 return False
+            result['msg'] = msg
             return msg.request_seq == seq
         handlername = 'response (cmd:{} seq:{})'.format(command, seq)
         with self._wait_for_message(match, handlername, **kwargs):
-            yield
+            yield result
 
     # internal methods
 

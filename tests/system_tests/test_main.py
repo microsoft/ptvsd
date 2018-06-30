@@ -300,7 +300,7 @@ class LifecycleTests(LifecycleTestsBase):
                 with session1.wait_for_event('thread'):
                     reqs = lifecycle_handshake(session1, 'attach')
                     done1()
-                req_disconnect = session1.send_request('disconnect')
+                req_disconnect, _ = session1.send_request('disconnect')
                 editor.detach(adapter)
 
                 # Re-attach
@@ -392,7 +392,7 @@ class LifecycleTests(LifecycleTestsBase):
                                                  threads=True)
                 tid1 = result['msg'].body['threadId']
 
-                req_bps = session1.send_request('setBreakpoints', **{
+                req_bps, _ = session1.send_request('setBreakpoints', **{
                     'source': {'path': filename},
                     'breakpoints': [
                         {'line': bp1},
@@ -401,15 +401,15 @@ class LifecycleTests(LifecycleTestsBase):
                 })
                 with session1.wait_for_event('stopped'):
                     done1()
-                req_threads2 = session1.send_request('threads')
-                req_stacktrace1 = session1.send_request(
+                req_threads2, _ = session1.send_request('threads')
+                req_stacktrace1, _ = session1.send_request(
                     'stackTrace',
                     threadId=tid1,
                 )
                 out1 = str(adapter.output)
 
                 # Detach with execution stopped and 1 breakpoint left.
-                req_disconnect = session1.send_request('disconnect')
+                req_disconnect, _ = session1.send_request('disconnect')
                 editor.detach(adapter)
                 try:
                     wait2()
@@ -650,8 +650,8 @@ class LifecycleTests(LifecycleTestsBase):
                             done1()
                         req_bps, = reqs_bps  # There should only be one.
                     tid = result['msg'].body['threadId']
-                req_threads2 = session.send_request('threads')
-                req_stacktrace1 = session.send_request(
+                req_threads2, _ = session.send_request('threads')
+                req_stacktrace1, _ = session.send_request(
                     'stackTrace',
                     threadId=tid,
                 )
@@ -660,19 +660,19 @@ class LifecycleTests(LifecycleTestsBase):
                 done2()
                 with session.wait_for_event('stopped'):
                     with session.wait_for_event('continued'):
-                        req_continue1 = session.send_request(
+                        req_continue1, _ = session.send_request(
                             'continue',
                             threadId=tid,
                         )
-                req_threads3 = session.send_request('threads')
-                req_stacktrace2 = session.send_request(
+                req_threads3, _ = session.send_request('threads')
+                req_stacktrace2, _ = session.send_request(
                     'stackTrace',
                     threadId=tid,
                 )
                 out3 = str(adapter.output)
 
                 with session.wait_for_event('continued'):
-                    req_continue2 = session.send_request(
+                    req_continue2, _ = session.send_request(
                         'continue',
                         threadId=tid,
                     )
