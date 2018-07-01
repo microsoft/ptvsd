@@ -31,9 +31,10 @@ def debug_main(address, name, kind, *extra, **kwargs):
 
 
 def run_main(address, name, kind, *extra, **kwargs):
-    sys.argv[:] = _run_main_argv(address, name, extra)
-    print(sys.argv)
-    no_debug_runner(address, name, kind == 'module', *extra, **kwargs)
+    addr = Address.from_raw(address)
+    sys.argv[:] = _run_main_argv(name, extra)
+    runner = kwargs.pop('_runner', no_debug_runner)
+    runner(addr, name, kind == 'module', *extra, **kwargs)
 
 
 ########################
@@ -87,7 +88,7 @@ def _run_argv(address, filename, extra, _prog=sys.argv[0]):
     ] + extra
 
 
-def _run_main_argv(address, filename, extra):
+def _run_main_argv(filename, extra):
     if '--' in extra:
         pydevd = list(extra[:extra.index('--')])
         extra = list(extra[len(pydevd) + 1:])

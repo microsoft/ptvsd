@@ -5,7 +5,7 @@ from _pydevd_bundle import pydevd_comm
 
 import ptvsd.pydevd_hooks
 from ptvsd.socket import Address
-from ptvsd._local import run_module, run_file
+from ptvsd._local import run_module, run_file, run_main
 from tests.helpers.argshelper import _get_args
 
 
@@ -34,6 +34,14 @@ class RunBase(object):
     def _run(self, argv, addr, **kwargs):
         self.argv = argv
         self.addr = addr
+        self.kwargs = kwargs
+
+    def _no_debug_runner(self, addr, filename, is_module, *extras, **kwargs):
+        self.addr = addr
+        self.argv = sys.argv
+        self.filename = filename
+        self.is_module = is_module
+        self.args = extras
         self.kwargs = kwargs
 
 
@@ -287,3 +295,55 @@ class IntegratedRunTests(unittest.TestCase):
                           '(module {})'.format(mod.__name__))
             self.assertIs(start_client, expected_client,
                           '(module {})'.format(mod.__name__))
+
+
+class NoDebugRunTests(RunBase, unittest.TestCase):
+    def test_nodebug_script_args(self):
+        addr = (None, 8888)
+        args = ('--one', '--two', '--three')
+        run_main(addr, 'spam.py', 'script', *args,
+                 _runner=self._no_debug_runner)
+
+        self.assertEqual(self.argv, ['spam.py'] + list(args))
+
+        self.assertEqual(self.addr, Address.as_server(*addr))
+        self.assertFalse(self.is_module)
+        self.assertEqual(self.args, args)
+        self.assertEqual(self.kwargs, {})
+
+    def test_nodebug_script_no_args(self):
+        addr = Address.as_server('10.0.1.1', 8888)
+        run_main(addr, 'spam.py', 'script',
+                 _runner=self._no_debug_runner)
+
+        self.assertEqual(self.argv, ['spam.py'])
+
+        self.assertEqual(self.addr, Address.as_server(*addr))
+        self.assertFalse(self.is_module)
+        self.assertEqual(self.args, ())
+        self.assertEqual(self.kwargs, {})
+
+    def test_nodebug_module_args(self):
+        addr = (None, 8888)
+        args = ('--one', '--two', '--three')
+        run_main(addr, 'spam.py', 'module', *args,
+                 _runner=self._no_debug_runner)
+
+        self.assertEqual(self.argv, ['spam.py'] + list(args))
+
+        self.assertEqual(self.addr, Address.as_server(*addr))
+        self.assertTrue(self.is_module)
+        self.assertEqual(self.args, args)
+        self.assertEqual(self.kwargs, {})
+
+    def test_nodebug_module_no_args(self):
+        addr = Address.as_server('10.0.1.1', 8888)
+        run_main(addr, 'spam.py', 'module',
+                 _runner=self._no_debug_runner)
+
+        self.assertEqual(self.argv, ['spam.py'])
+
+        self.assertEqual(self.addr, Address.as_server(*addr))
+        self.assertTrue(self.is_module)
+        self.assertEqual(self.args, ())
+        self.assertEqual(self.kwargs, {})
