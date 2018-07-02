@@ -653,17 +653,6 @@ class FileLifecycleTests(LifecycleTestsBase):
                     text=None,
                     description=None,
                 ),
-                self.new_event(
-                    "module",
-                    module={
-                        "id": 1,
-                        "name": "__main__",
-                        # "path": filepath,
-                        "path": None,
-                        "package": None,
-                    },
-                    reason="new",
-                ),
                 self.new_response(cont.req),
                 self.new_event("continued", threadId=tid),
                 self.new_event("output", category="stdout", output="2"),

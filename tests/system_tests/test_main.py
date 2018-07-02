@@ -517,7 +517,7 @@ class LifecycleTests(LifecycleTestsBase):
         # Sometimes the proc ends before the exited and terminated
         # events are received.
         received = list(_strip_exit(received))
-        self.assert_received(received, [
+        self.assert_contains(received, [
             self.new_version_event(session2.received),
             self.new_response(req_init2.req, **INITIALIZE_RESPONSE),
             self.new_event('initialized'),
