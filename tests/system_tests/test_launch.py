@@ -681,6 +681,7 @@ class ModuleLifecycleTests(FileLifecycleTests):
     def test_with_break_points(self):
         pass
 
+
 class ModuleWithCWDLifecycleTests(ModuleLifecycleTests,
                                   FileWithCWDLifecycleTests):  # noqa
     def get_cwd(self):
