@@ -374,8 +374,8 @@ class FileLifecycleTests(LifecycleTestsBase):
             Awaitable.wait_all(exited, terminated, stacktrace, exited, thread_exit)
 
         received = list(_strip_newline_output_events(session.received))
-        import time
-        # time.sleep(100000)
+
+
         # One for foo and one for bar, others for Python/ptvsd stuff.
         module_events = self.find_events(received, 'module')
         self.assertGreaterEqual(len(module_events), 2)
@@ -699,6 +699,8 @@ class FileWithCWDLifecycleTests(FileLifecycleTests):
 
 
 class ModuleLifecycleTests(FileLifecycleTests):
+    IS_MODULE = True
+
     def create_source_file(self, file_name, source):
         self.workspace.ensure_dir('mymod')
         return self.write_script(os.path.join('mymod', file_name), source)
@@ -716,7 +718,7 @@ class ModuleLifecycleTests(FileLifecycleTests):
         return ("__init__.py", filepath, env, expected_module, argv, self.get_cwd())
 
 
-# class ModuleWithCWDLifecycleTests(ModuleLifecycleTests,
-#                                   FileWithCWDLifecycleTests):  # noqa
-#     def get_cwd(self):
-#         return os.path.dirname(__file__)
+class ModuleWithCWDLifecycleTests(ModuleLifecycleTests,
+                                  FileWithCWDLifecycleTests):  # noqa
+    def get_cwd(self):
+        return os.path.dirname(__file__)
