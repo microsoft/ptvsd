@@ -10,6 +10,7 @@ from tests.helpers.debugadapter import DebugAdapter
 from tests.helpers.debugclient import EasyDebugClient as DebugClient
 from tests.helpers.lock import LockTimeoutError
 from tests.helpers.script import find_line, set_lock, set_release
+from tests.helpers.debugsession import Awaitable
 
 from . import (
     _strip_pydevd_output,
@@ -410,6 +411,7 @@ class LifecycleTests(LifecycleTestsBase):
 
                 # Detach with execution stopped and 1 breakpoint left.
                 req_disconnect = session1.send_request('disconnect')
+                Awaitable.wait_all(req_threads2, req_stacktrace1, req_disconnect)
                 editor.detach(adapter)
                 try:
                     wait2()
@@ -433,7 +435,7 @@ class LifecycleTests(LifecycleTestsBase):
             out3 = str(adapter.output)
 
         received = list(_strip_newline_output_events(session1.received))
-        self.assert_received(received, [
+        self.assert_contains(received, [
             self.new_version_event(session1.received),
             self.new_response(req_init1.req, **INITIALIZE_RESPONSE),
             self.new_event('initialized'),
@@ -474,7 +476,7 @@ class LifecycleTests(LifecycleTestsBase):
                 description=None,
                 text=None,
             ),
-            self.new_response(req_threads2, **{
+            self.new_response(req_threads2.req, **{
                 'threads': [{
                     'id': 1,
                     'name': 'MainThread',
@@ -490,7 +492,7 @@ class LifecycleTests(LifecycleTestsBase):
                 },
                 reason='new',
             ),
-            self.new_response(req_stacktrace1, **{
+            self.new_response(req_stacktrace1.req, **{
                 'totalFrames': 1,
                 'stackFrames': [{
                     'id': 1,
@@ -503,7 +505,7 @@ class LifecycleTests(LifecycleTestsBase):
                     'column': 1,
                 }],
             }),
-            self.new_response(req_disconnect),
+            self.new_response(req_disconnect.req),
         ])
         self.messages.reset_all()
         received = list(_strip_newline_output_events(session2.received))
