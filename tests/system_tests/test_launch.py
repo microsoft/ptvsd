@@ -17,9 +17,12 @@ from . import (
 
 ROOT = os.path.dirname(os.path.dirname(ptvsd.__file__))
 PORT = 9876
+CONNECT_TIMEOUT = 3.0
 
 
 class FileLifecycleTests(LifecycleTestsBase):
+    IS_MODULE = False
+
     def create_source_file(self, file_name, source):
         return self.write_script(file_name, source)
 
@@ -36,8 +39,12 @@ class FileLifecycleTests(LifecycleTestsBase):
         env = None
         expected_module = filepath
         argv = [filepath]
-        return ("spam.py", filepath, env, expected_module, False, argv,
+        return ("spam.py", filepath, env, expected_module, argv,
                 self.get_cwd())
+
+    def reset_seq(self, responses):
+        for i, msg in enumerate(responses):
+            responses[i] = msg._replace(seq=i)
 
     def find_events(self, responses, event, condition=lambda x: True):
         return list(
@@ -90,12 +97,12 @@ class FileLifecycleTests(LifecycleTestsBase):
             sys.stderr.write('ex')
             """)
         options = {"debugOptions": ["RedirectOutput"]}
-        (filename, filepath, env, expected_module, is_module, argv,
+        (filename, filepath, env, expected_module, argv,
          cwd) = self.get_test_info(source)
 
-        with DebugClient(port=PORT) as editor:
+        with DebugClient(port=PORT, connecttimeout=CONNECT_TIMEOUT) as editor:
             adapter, session = editor.host_local_debugger(
-                argv, env=env, cwd=cwd)
+                argv, env=env, cwd=cwd, timeout=CONNECT_TIMEOUT)
             with session.wait_for_event("exited"):
                 with session.wait_for_event("thread"):
                     (
@@ -113,8 +120,8 @@ class FileLifecycleTests(LifecycleTestsBase):
         # Skipping the 'thread exited' and 'terminated' messages which
         # may appear randomly in the received list.
         received = list(_strip_newline_output_events(session.received))
-        self.assert_received(
-            received[:-3],
+        self.assert_contains(
+            received,
             [
                 self.new_version_event(session.received),
                 self.new_response(req_initialize, **INITIALIZE_RESPONSE),
@@ -142,12 +149,13 @@ class FileLifecycleTests(LifecycleTestsBase):
                 print(arg)
             """)
         options = {"debugOptions": ["RedirectOutput"]}
-        (filename, filepath, env, expected_module, is_module, argv,
+        (filename, filepath, env, expected_module, argv,
          cwd) = self.get_test_info(source)
 
-        with DebugClient(port=PORT) as editor:
+        with DebugClient(port=PORT, connecttimeout=CONNECT_TIMEOUT) as editor:
             adapter, session = editor.host_local_debugger(
-                argv=argv + ["1", "Hello", "World"], env=env, cwd=cwd)
+                argv=argv + ["1", "Hello", "World"], env=env,
+                cwd=cwd, timeout=CONNECT_TIMEOUT)
             with session.wait_for_event("exited"):
                 with session.wait_for_event("thread"):
                     (
@@ -165,8 +173,8 @@ class FileLifecycleTests(LifecycleTestsBase):
         # Skipping the 'thread exited' and 'terminated' messages which
         # may appear randomly in the received list.
         received = list(_strip_newline_output_events(session.received))
-        self.assert_received(
-            received[:-3],
+        self.assert_contains(
+            received,
             [
                 self.new_version_event(session.received),
                 self.new_response(req_initialize, **INITIALIZE_RESPONSE),
@@ -197,7 +205,7 @@ class FileLifecycleTests(LifecycleTestsBase):
             # <Token>
             c = 3
             """)
-        (filename, filepath, env, expected_module, is_module, argv,
+        (filename, filepath, env, expected_module, argv,
          cwd) = self.get_test_info(source)
 
         bp_line = self.find_line(filepath, 'Token')
@@ -210,9 +218,9 @@ class FileLifecycleTests(LifecycleTestsBase):
             }]
         }]
 
-        with DebugClient(port=PORT, connecttimeout=3.0) as editor:
+        with DebugClient(port=PORT, connecttimeout=CONNECT_TIMEOUT) as editor:
             adapter, session = editor.host_local_debugger(
-                argv, env=env, cwd=cwd)
+                argv, env=env, cwd=cwd, timeout=CONNECT_TIMEOUT)
             with session.wait_for_event("terminated"):
                 with session.wait_for_event("stopped") as result:
                     (
@@ -241,11 +249,12 @@ class FileLifecycleTests(LifecycleTestsBase):
         # Cleanup.
         self.fix_module_events(received)
         self.fix_stack_traces(received)
+        self.reset_seq(received)
 
         # Skipping the 'thread exited' and 'terminated' messages which
         # may appear randomly in the received list.
-        self.assert_received(
-            received[:-3],
+        self.assert_contains(
+            received,
             [
                 self.new_version_event(session.received),
                 self.new_response(req_initialize, **INITIALIZE_RESPONSE),
@@ -287,7 +296,6 @@ class FileLifecycleTests(LifecycleTestsBase):
                 ),
                 self.new_response(
                     req_stacktrace,
-                    seq=11,
                     **{
                         "totalFrames":
                         1,
@@ -302,24 +310,12 @@ class FileLifecycleTests(LifecycleTestsBase):
                             "column": 1,
                         }],
                     }),
-                self.new_response(req_continue, seq=12),
-                self.new_event("continued", seq=13, threadId=tid),
+                self.new_response(req_continue),
+                self.new_event("continued", threadId=tid),
             ],
         )
 
-    @unittest.skip('Needs fixing')
     def test_with_break_points_across_files(self):
-        source = dedent("""
-            from . import bar
-            def foo():
-                # <Token>
-                bar.do_something()
-            foo()
-            """)
-        (filename, filepath, env, expected_module, is_module, argv,
-         cwd) = self.get_test_info(source)
-        foo_line = self.find_line(filepath, 'Token')
-
         source = dedent("""
             def do_something():
                 # <Token>
@@ -327,6 +323,25 @@ class FileLifecycleTests(LifecycleTestsBase):
             """)
         bar_filepath = self.create_source_file("bar.py", source)
         bp_line = self.find_line(bar_filepath, 'Token')
+
+        source_module = dedent("""
+            from . import bar
+            def foo():
+                # <Token>
+                bar.do_something()
+            foo()
+            """)
+        source_file = dedent("""
+            import bar
+            def foo():
+                # <Token>
+                bar.do_something()
+            foo()
+            """)
+        (filename, filepath, env, expected_module, argv,
+         cwd) = self.get_test_info(source_module if self.IS_MODULE else source_file) # noqa
+        foo_line = self.find_line(filepath, 'Token')
+
         breakpoints = [{
             "source": {
                 "path": bar_filepath
@@ -337,9 +352,9 @@ class FileLifecycleTests(LifecycleTestsBase):
             "lines": [bp_line]
         }]
 
-        with DebugClient(port=PORT, connecttimeout=3.0) as editor:
+        with DebugClient(port=PORT, connecttimeout=CONNECT_TIMEOUT) as editor:
             adapter, session = editor.host_local_debugger(
-                argv, env=env, cwd=cwd)
+                argv, env=env, cwd=cwd, timeout=CONNECT_TIMEOUT)
             with session.wait_for_event("terminated"):
                 with session.wait_for_event("stopped") as result:
                     (
@@ -370,11 +385,17 @@ class FileLifecycleTests(LifecycleTestsBase):
         self.fix_module_events(received)
         self.fix_stack_traces(received, 2)
         self.fix_paths(received)
+        self.reset_seq(received)
+        module_event = self.find_events(received, 'module')[0]
+        module_event.body["module"]["path"] = None
+        resp_stacktrace = self.find_responses(received, 'stackTrace')[0]
+        resp_stacktrace.body["stackFrames"][0]["source"]["path"] = None
+        resp_stacktrace.body["stackFrames"][1]["source"]["path"] = None
 
         # Skipping the 'thread exited' and 'terminated' messages which
         # may appear randomly in the received list.
-        self.assert_received(
-            received[:-3],
+        self.assert_contains(
+            received,
             [
                 self.new_version_event(session.received),
                 self.new_response(req_initialize, **INITIALIZE_RESPONSE),
@@ -408,22 +429,21 @@ class FileLifecycleTests(LifecycleTestsBase):
                     "module",
                     module={
                         "id": 1,
-                        "name": "mymod.bar" if is_module else "bar",
-                        "path": None if is_module else bar_filepath,
+                        "name": "mymod.bar" if self.IS_MODULE else "bar",
+                        "path": None,
                         "package": None,
                     },
                     reason="new",
                 ),
                 self.new_response(
                     req_stacktrace,
-                    seq=12,
                     **{
                         "totalFrames": 2,
                         "stackFrames": [{
                             "id": 1,
                             "name": "do_something",
                             "source": {
-                                "path": None if is_module else bar_filepath,
+                                "path": None,
                                 "sourceReference": 0
                             },
                             "line": bp_line,
@@ -439,8 +459,8 @@ class FileLifecycleTests(LifecycleTestsBase):
                             "column": 1,
                         }],
                     }),
-                self.new_response(req_continue, seq=13),
-                self.new_event("continued", seq=14, threadId=tid),
+                self.new_response(req_continue),
+                self.new_event("continued", threadId=tid),
             ],
         )
 
@@ -453,7 +473,7 @@ class FileLifecycleTests(LifecycleTestsBase):
                 b = i
             print('bar')
             """)
-        (filename, filepath, env, expected_module, is_module, argv,
+        (filename, filepath, env, expected_module, argv,
          cwd) = self.get_test_info(source)
         bp_line = self.find_line(filepath, 'Token')
         breakpoints = [{
@@ -469,9 +489,9 @@ class FileLifecycleTests(LifecycleTestsBase):
         }]
         options = {"debugOptions": ["RedirectOutput"]}
 
-        with DebugClient(port=PORT, connecttimeout=3.0) as editor:
+        with DebugClient(port=PORT, connecttimeout=CONNECT_TIMEOUT) as editor:
             adapter, session = editor.host_local_debugger(
-                argv, env=env, cwd=cwd)
+                argv, env=env, cwd=cwd, timeout=CONNECT_TIMEOUT)
             with session.wait_for_event("terminated"):
                 (
                     req_initialize,
@@ -492,8 +512,8 @@ class FileLifecycleTests(LifecycleTestsBase):
         # Skipping the 'thread exited' and 'terminated' messages which
         # may appear randomly in the received list.
         received = list(_strip_newline_output_events(session.received))
-        self.assert_received(
-            received[:-3],
+        self.assert_contains(
+            received,
             [
                 self.new_version_event(session.received),
                 self.new_response(req_initialize, **INITIALIZE_RESPONSE),
@@ -535,7 +555,7 @@ class FileLifecycleTests(LifecycleTestsBase):
                 # <Token>
                 print(i)
             """)
-        (filename, filepath, env, expected_module, is_module, argv,
+        (filename, filepath, env, expected_module, argv,
          cwd) = self.get_test_info(source)
         bp_line = self.find_line(filepath, 'Token')
         breakpoints = [{
@@ -551,9 +571,9 @@ class FileLifecycleTests(LifecycleTestsBase):
         }]
         options = {"debugOptions": ["RedirectOutput"]}
 
-        with DebugClient(port=PORT, connecttimeout=3.0) as editor:
+        with DebugClient(port=PORT, connecttimeout=CONNECT_TIMEOUT) as editor:
             adapter, session = editor.host_local_debugger(
-                argv, env=env, cwd=cwd)
+                argv, env=env, cwd=cwd, timeout=CONNECT_TIMEOUT)
             with session.wait_for_event("terminated"):
                 with session.wait_for_event("stopped") as result:
                     (
@@ -586,11 +606,12 @@ class FileLifecycleTests(LifecycleTestsBase):
         # Cleanup.
         self.fix_module_events(received)
         self.fix_stack_traces(received)
+        self.reset_seq(received)
 
         # Skipping the 'thread exited' and 'terminated' messages which
         # may appear randomly in the received list.
-        self.assert_received(
-            received[:-3],
+        self.assert_contains(
+            received,
             [
                 self.new_version_event(session.received),
                 self.new_response(req_initialize, **INITIALIZE_RESPONSE),
@@ -634,7 +655,6 @@ class FileLifecycleTests(LifecycleTestsBase):
                 ),
                 self.new_response(
                     req_stacktrace,
-                    seq=13,
                     **{
                         "totalFrames":
                         1,
@@ -649,14 +669,11 @@ class FileLifecycleTests(LifecycleTestsBase):
                             "column": 1,
                         }],
                     }),
-                self.new_response(req_continue, seq=14),
-                self.new_event("continued", seq=15, threadId=tid),
-                self.new_event(
-                    "output", category="stdout", output="2", seq=16),  # noqa
-                self.new_event(
-                    "output", category="stdout", output="3", seq=17),  # noqa
-                self.new_event(
-                    "output", category="stdout", output="4", seq=18),  # noqa
+                self.new_response(req_continue),
+                self.new_event("continued", threadId=tid),
+                self.new_event("output", category="stdout", output="2"),
+                self.new_event("output", category="stdout", output="3"),
+                self.new_event("output", category="stdout", output="4"),
             ],
         )
 
@@ -671,7 +688,7 @@ class FileLifecycleTests(LifecycleTestsBase):
         (filename, filepath, env, expected_module, argv,
          module_name) = self.get_test_info(source)
 
-        with DebugClient(port=PORT, connecttimeout=3.0) as editor:
+        with DebugClient(port=PORT, connecttimeout=CONNECT_TIMEOUT) as editor:
             adapter, session = editor.host_local_debugger(argv)
             with session.wait_for_event("terminated"):
                 (req_initialize, req_launch, req_config, _, _,
