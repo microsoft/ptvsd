@@ -394,6 +394,7 @@ class LifecycleTests(LifecycleTestsBase):
                                                  threads=True)
                 tid1 = result['msg'].body['threadId']
 
+                stopped_event = session1.get_awaiter_for_event('stopped')
                 req_bps = session1.send_request('setBreakpoints', **{
                     'source': {'path': filename},
                     'breakpoints': [
@@ -401,8 +402,11 @@ class LifecycleTests(LifecycleTestsBase):
                         {'line': bp2},
                     ],
                 })
-                with session1.wait_for_event('stopped'):
-                    done1()
+                req_bps.wait()
+
+                done1()
+                stopped_event.wait()
+
                 req_threads2 = session1.send_request('threads')
                 req_stacktrace1 = session1.send_request(
                     'stackTrace',
