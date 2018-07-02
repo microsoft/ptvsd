@@ -219,10 +219,10 @@ class FileLifecycleTests(LifecycleTestsBase):
 
             stacktrace = session.send_request("stackTrace", threadId=tid)
 
-            with session.wait_for_event("continued"):
-                cont = session.send_request("continue", threadId=tid)
+            continued = session.get_awaiter_for_event('continued')
+            cont = session.send_request("continue", threadId=tid)
 
-            Awaitable.wait_all(terminated, exited, thread_exit)
+            Awaitable.wait_all(terminated, exited, thread_exit, continued)
             adapter.wait()
 
         received = list(_strip_newline_output_events(session.received))

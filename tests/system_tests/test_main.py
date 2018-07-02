@@ -314,6 +314,7 @@ class LifecycleTests(LifecycleTestsBase):
                 adapter.wait()
 
         received = list(_strip_newline_output_events(session1.received))
+        print(received)
         self.assert_contains(received, [
             self.new_version_event(session1.received),
             self.new_response(reqs[0].req, **INITIALIZE_RESPONSE),
@@ -331,6 +332,7 @@ class LifecycleTests(LifecycleTestsBase):
         ])
         self.messages.reset_all()
         received = list(_strip_newline_output_events(session2.received))
+        print(received)
         self.assert_contains(received, [
             self.new_version_event(session2.received),
             self.new_response(req_initialize.req, **INITIALIZE_RESPONSE),
