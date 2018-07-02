@@ -61,6 +61,7 @@ def assert_messages_equal(received, expected):
 
         raise AssertionError('\n'.join(msg))
 
+
 def assert_contains_messages(received, expected):
     error_message = ['']
     received_copy = list(msg._replace(seq=0) for msg in received)
@@ -73,3 +74,48 @@ def assert_contains_messages(received, expected):
 
     if len(error_message) > 1:
         raise AssertionError('\n'.join(error_message))
+
+
+def assert_message_is_subset(received_message, expected_message):
+    message = [
+        'Message subset comparison failed',
+        'Received: {}'.format(received_message),
+        'Expected: {}'.format(expected_message),
+    ]
+    def assert_is_subset(received, expected, current_path=''):
+        try:
+            if received == expected:
+                return
+            elif type(expected) is dict:
+                try:
+                    iterator = expected.iteritems()
+                except:
+                    iterator = expected.items()
+                parent_path = current_path
+                for pkey, pvalue in iterator:
+                    current_path = '{}.{}'.format(parent_path, pkey)
+                    assert_is_subset(received[pkey], pvalue, current_path)
+            elif type(expected) is list:
+                parent_path = current_path
+                for i, pvalue in enumerate(expected):
+                    current_path = '{}[{}]'.format(parent_path, i)
+                    assert_is_subset(received[i], pvalue, current_path)
+            else:
+                if received != expected:
+                    raise ValueError
+                return True
+        except ValueError:
+            message.append('Path: body{}'.format(current_path))
+            message.append('Expected:{}'.format(received))
+            message.append('Receievd:{}'.format(expected))
+            raise AssertionError('\n'.join(message))
+        except KeyError:
+            message.append('Key not found: body{}'.format(current_path))
+            raise AssertionError('\n'.join(message))
+        except IndexError:
+            message.append('Index not found: body'.format(current_path))
+            raise AssertionError('\n'.join(message))
+
+    received = received_message.body
+    expected = expected_message.body
+    assert_is_subset(received, expected)

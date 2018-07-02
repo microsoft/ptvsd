@@ -126,20 +126,20 @@ def lifecycle_handshake(session, command='launch', options=None,
         req_initialize = session.send_request(
             'initialize',
             adapterID='spam',
-        )[0]
-    req_command = session.send_request(command, **options or {})[0]
-    req_threads = session.send_request('threads')[0] if threads else None
+        )
+    req_command = session.send_request(command, **options or {})
+    req_threads = session.send_request('threads') if threads else None
 
     reqs_bps = []
     reqs_exc = []
     for req in breakpoints or ():
         reqs_bps.append(
-            session.send_request('setBreakpoints', **req)[0])
+            session.send_request('setBreakpoints', **req))
     for req in excbreakpoints or ():
         reqs_bps.append(
-            session.send_request('setExceptionBreakpoints', **req)[0])
+            session.send_request('setExceptionBreakpoints', **req))
 
-    req_done = session.send_request('configurationDone')[0]
+    req_done = session.send_request('configurationDone')
     return (req_initialize, req_command, req_done,
             reqs_bps, reqs_exc, req_threads)
 
@@ -235,6 +235,12 @@ class LifecycleTestsBase(TestsBase, unittest.TestCase):
         received = [parse_message(msg) for msg in received]
         expected = [parse_message(msg) for msg in expected]
         assert_contains_messages(received, expected)
+
+    def assert_is_subset(self, received, expected):
+        from tests.helpers.message import assert_message_is_subset
+        received = parse_message(received)
+        expected = parse_message(expected)
+        assert_message_is_subset(received, expected)
 
     def new_version_event(self, received):
         version = _get_version(received)
