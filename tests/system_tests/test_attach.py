@@ -23,7 +23,7 @@ ENV = {'PYTHONPATH': ROOT}
 
 class AttachLifecycleTests(LifecycleTestsBase):
     IS_MODULE = False
-        
+
     def test_with_output(self):
         addr = Address('localhost', PORT)
         script = dedent("""
