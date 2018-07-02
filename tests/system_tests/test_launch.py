@@ -59,30 +59,6 @@ class FileLifecycleTests(LifecycleTestsBase):
                     response.command == command and
                     condition(response.body))
 
-    def hack_module_events(self, responses):
-        # TODO: This is a hack and must be fixed.
-        # https://github.com/Microsoft/ptvsd/issues/553
-        module_events = self.find_events(responses, 'module')
-        # Ensure package is None, changes based on version of Python.
-        module_events[0].body["module"]["package"] = None
-        module_events[0].body["module"]["path"] = None
-        self.remove_messages(responses, module_events[1:])
-
-    def fix_paths(self, responses):
-        for msg in self.find_events(responses, 'module'):
-            msg.body["module"]["path"] = self.fix_path(msg.body["module"]["path"]) # noqa
-        for msg in self.find_responses(responses, 'stackTrace'):
-            for frame in msg.body["stackFrames"]:
-                frame["source"]["path"] = self.fix_path(frame["source"]["path"]) # noqa
-
-    def fix_path(self, path):
-        # Sometimes, the temp paths on mac get prefixed with /private/
-        # So, during creation of the file its in /var/, but when debugging,
-        # paths CAN soemtimes get returned with the /private/ prefix.
-        # Here we just remove them.
-        if path.startswith('/private/'):
-            return path[len('/private'):]
-
     def remove_messages(self, responses, messages):
         for msg in messages:
             responses.remove(msg)
@@ -251,8 +227,6 @@ class FileLifecycleTests(LifecycleTestsBase):
 
         received = list(_strip_newline_output_events(session.received))
 
-        self.hack_module_events(received)
-
         self.assertGreaterEqual(stacktrace.resp.body["totalFrames"], 1)
         self.assert_is_subset(stacktrace.resp, self.new_response(
                     stacktrace.req,
@@ -386,8 +360,6 @@ class FileLifecycleTests(LifecycleTestsBase):
                     module={
                         "id": 1,
                         "name": "mymod.bar" if self.IS_MODULE else "bar",
-                        # "path": None,
-                        # "package": None,
                     },
                     reason="new",
                 ))
@@ -598,9 +570,6 @@ class FileLifecycleTests(LifecycleTestsBase):
             Awaitable.wait_all(terminated, exited, thread_exit)
 
         received = list(_strip_newline_output_events(session.received))
-
-        # Cleanup.
-        self.hack_module_events(received)
 
         self.assertGreaterEqual(stacktrace.resp.body["totalFrames"], 1)
         self.assert_is_subset(stacktrace.resp, self.new_response(
