@@ -61,6 +61,7 @@ def assert_messages_equal(received, expected):
 
         raise AssertionError('\n'.join(msg))
 
+
 def assert_contains_messages(received, expected):
     error_message = ['']
     received_copy = list(msg._replace(seq=0) for msg in received)

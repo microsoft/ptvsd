@@ -19,6 +19,7 @@ ROOT = os.path.dirname(os.path.dirname(ptvsd.__file__))
 PORT = 9876
 CONNECT_TIMEOUT = 3.0
 
+
 class FileLifecycleTests(LifecycleTestsBase):
     IS_MODULE = False
 
