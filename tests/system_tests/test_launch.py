@@ -65,6 +65,7 @@ class FileLifecycleTests(LifecycleTestsBase):
         module_events = self.find_events(responses, 'module')
         # Ensure package is None, changes based on version of Python.
         module_events[0].body["module"]["package"] = None
+        module_events[0].body["module"]["path"] = None
         self.remove_messages(responses, module_events[1:])
 
     def fix_paths(self, responses):
@@ -245,8 +246,8 @@ class FileLifecycleTests(LifecycleTestsBase):
             with session.wait_for_event("continued"):
                 cont = session.send_request("continue", threadId=tid)
 
-            adapter.wait()
             Awaitable.wait_all(terminated, exited, thread_exit)
+            adapter.wait()
 
         received = list(_strip_newline_output_events(session.received))
 
@@ -657,7 +658,8 @@ class FileLifecycleTests(LifecycleTestsBase):
                     module={
                         "id": 1,
                         "name": "__main__",
-                        "path": filepath,
+                        # "path": filepath,
+                        "path": None,
                         "package": None,
                     },
                     reason="new",
