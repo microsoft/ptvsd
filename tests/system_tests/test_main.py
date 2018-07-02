@@ -756,7 +756,7 @@ class LifecycleTests(LifecycleTestsBase):
                 },
                 reason='new',
             ),
-            self.new_response(req_stacktrace1, **{
+            self.new_response(req_stacktrace1.req, **{
                 'totalFrames': 1,
                 'stackFrames': [{
                     'id': 1,
@@ -783,13 +783,13 @@ class LifecycleTests(LifecycleTestsBase):
                 description=None,
                 text=None,
             ),
-            self.new_response(req_threads3, **{
+            self.new_response(req_threads3.req, **{
                 'threads': [{
                     'id': 1,
                     'name': 'MainThread',
                 }],
             }),
-            self.new_response(req_stacktrace2, **{
+            self.new_response(req_stacktrace2.req, **{
                 'totalFrames': 1,
                 'stackFrames': [{
                     'id': 2,  # TODO: Isn't this the same frame as before?
