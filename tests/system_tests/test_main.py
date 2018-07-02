@@ -302,6 +302,7 @@ class LifecycleTests(LifecycleTestsBase):
                     reqs = lifecycle_handshake(session1, 'attach')
                     done1()
                 req_disconnect = session1.send_request('disconnect')
+                req_disconnect.wait()
                 editor.detach(adapter)
 
                 # Re-attach
@@ -522,13 +523,13 @@ class LifecycleTests(LifecycleTestsBase):
                 threadId=tid2,
                 reason='started',
             ),
-            self.new_response(req_threads3, **{
+            self.new_response(req_threads3.req, **{
                 'threads': [{
                     'id': 1,
                     'name': 'MainThread',
                 }],
             }),
-            self.new_response(req_config2),
+            self.new_response(req_config2.req),
             self.new_event('process', **{
                 'isLocalProcess': True,
                 'systemProcessId': adapter.pid,
@@ -699,7 +700,7 @@ class LifecycleTests(LifecycleTestsBase):
         # Sometimes the proc ends before the exited and terminated
         # events are received.
         received = list(_strip_exit(received))
-        self.assert_received(received, [
+        self.assert_contains(received, [
             self.new_version_event(session.received),
             self.new_response(req_init.req, **INITIALIZE_RESPONSE),
             self.new_event('initialized'),
@@ -853,7 +854,7 @@ class LifecycleTests(LifecycleTestsBase):
             adapter.wait()
 
         received = list(_strip_newline_output_events(session.received))
-        self.assert_received(received[:9], [
+        self.assert_contains(received[:9], [
             self.new_version_event(session.received),
             self.new_response(req_initialize.req, **INITIALIZE_RESPONSE),
             self.new_event('initialized'),
