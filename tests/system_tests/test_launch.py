@@ -612,7 +612,7 @@ class FileLifecycleTests(LifecycleTestsBase):
 
             Awaitable.wait_all(req_launch, session.get_awaiter_for_event('thread')) # noqa
             disconnect = session.send_request("disconnect")
-            
+
             Awaitable.wait_all(exited, terminated, disconnect)
             adapter.wait()
 
