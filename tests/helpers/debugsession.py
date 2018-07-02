@@ -333,7 +333,7 @@ class DebugSession(Closeable):
                 return msg, False
             event.set()
             return msg, True
-        self._add_handler(handler, handlername)
+        self._add_handler(handler, handlername, False)
         return event
 
 
