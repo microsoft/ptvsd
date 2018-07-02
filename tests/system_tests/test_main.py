@@ -411,7 +411,7 @@ class LifecycleTests(LifecycleTestsBase):
 
                 # Detach with execution stopped and 1 breakpoint left.
                 req_disconnect = session1.send_request('disconnect')
-                Awaitable.wait_all(req_threads2, req_stacktrace1, req_disconnect)
+                Awaitable.wait_all(req_threads2, req_stacktrace1, req_disconnect) # noqa
                 editor.detach(adapter)
                 try:
                     wait2()
