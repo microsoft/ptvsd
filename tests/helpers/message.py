@@ -82,6 +82,7 @@ def assert_message_is_subset(received_message, expected_message):
         'Received: {}'.format(received_message),
         'Expected: {}'.format(expected_message),
     ]
+
     def assert_is_subset(received, expected, current_path=''):
         try:
             if received == expected:
@@ -89,7 +90,7 @@ def assert_message_is_subset(received_message, expected_message):
             elif type(expected) is dict:
                 try:
                     iterator = expected.iteritems()
-                except:
+                except AttributeError:
                     iterator = expected.items()
                 parent_path = current_path
                 for pkey, pvalue in iterator:

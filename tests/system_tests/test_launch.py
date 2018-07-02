@@ -100,7 +100,7 @@ class FileLifecycleTests(LifecycleTestsBase):
             adapter, session = editor.host_local_debugger(
                 argv, env=env, cwd=cwd, timeout=CONNECT_TIMEOUT)
             terminated = session.get_awaiter_for_event('terminated')
-            thread_exit = session.get_awaiter_for_event('thread', lambda msg: msg.body.get("reason", "") == "exited")
+            thread_exit = session.get_awaiter_for_event('thread', lambda msg: msg.body.get("reason", "") == "exited") # noqa
             with session.wait_for_event("exited"):
                 with session.wait_for_event("thread"):
                     (
@@ -156,7 +156,7 @@ class FileLifecycleTests(LifecycleTestsBase):
                 argv=argv + ["1", "Hello", "World"], env=env,
                 cwd=cwd, timeout=CONNECT_TIMEOUT)
             terminated = session.get_awaiter_for_event('terminated')
-            thread_exit = session.get_awaiter_for_event('thread', lambda msg: msg.body.get("reason", "") == "exited")
+            thread_exit = session.get_awaiter_for_event('thread', lambda msg: msg.body.get("reason", "") == "exited") # noqa
             with session.wait_for_event("exited"):
                 with session.wait_for_event("thread"):
                     (
@@ -192,7 +192,7 @@ class FileLifecycleTests(LifecycleTestsBase):
                     }),
                 self.new_event("thread", reason="started", threadId=1),
                 self.new_event("output", category="stdout", output="4"),
-                self.new_event("output", category="stdout", output=expected_module),
+                self.new_event("output", category="stdout", output=expected_module), # noqa
                 self.new_event("output", category="stdout", output="1"),
                 self.new_event("output", category="stdout", output="Hello"),
                 self.new_event("output", category="stdout", output="World"),
@@ -225,7 +225,7 @@ class FileLifecycleTests(LifecycleTestsBase):
 
             terminated = session.get_awaiter_for_event('terminated')
             exited = session.get_awaiter_for_event('exited')
-            thread_exit = session.get_awaiter_for_event('thread', lambda msg: msg.body.get("reason", "") == "exited")
+            thread_exit = session.get_awaiter_for_event('thread', lambda msg: msg.body.get("reason", "") == "exited") # noqa
 
             with session.wait_for_event("stopped") as result:
                 (
@@ -351,7 +351,7 @@ class FileLifecycleTests(LifecycleTestsBase):
 
             terminated = session.get_awaiter_for_event('terminated')
             exited = session.get_awaiter_for_event('exited')
-            thread_exit = session.get_awaiter_for_event('thread', lambda msg: msg.body.get("reason", "") == "exited")
+            thread_exit = session.get_awaiter_for_event('thread', lambda msg: msg.body.get("reason", "") == "exited") # noqa
 
             with session.wait_for_event("stopped") as result:
                 (
@@ -372,10 +372,9 @@ class FileLifecycleTests(LifecycleTestsBase):
                 cont = session.send_request("continue", threadId=tid)
 
             adapter.wait()
-            Awaitable.wait_all(exited, terminated, stacktrace, exited, thread_exit)
+            Awaitable.wait_all(exited, terminated, stacktrace, exited, thread_exit) # noqa
 
         received = list(_strip_newline_output_events(session.received))
-
 
         # One for foo and one for bar, others for Python/ptvsd stuff.
         module_events = self.find_events(received, 'module')
@@ -488,7 +487,7 @@ class FileLifecycleTests(LifecycleTestsBase):
             adapter, session = editor.host_local_debugger(
                 argv, env=env, cwd=cwd, timeout=CONNECT_TIMEOUT)
             exited = session.get_awaiter_for_event('exited')
-            thread_exit = session.get_awaiter_for_event('thread', lambda msg: msg.body.get("reason", "") == "exited")
+            thread_exit = session.get_awaiter_for_event('thread', lambda msg: msg.body.get("reason", "") == "exited") # noqa
             with session.wait_for_event("terminated"):
                 (
                     req_initialize,
@@ -571,7 +570,7 @@ class FileLifecycleTests(LifecycleTestsBase):
 
             exited = session.get_awaiter_for_event('exited')
             terminated = session.get_awaiter_for_event('terminated')
-            thread_exit = session.get_awaiter_for_event('thread', lambda msg: msg.body.get("reason", "") == "exited")
+            thread_exit = session.get_awaiter_for_event('thread', lambda msg: msg.body.get("reason", "") == "exited") # noqa
 
             with session.wait_for_event("stopped") as result:
                 (
@@ -716,7 +715,7 @@ class ModuleLifecycleTests(FileLifecycleTests):
         expected_module = module_name + ":"
         argv = ["-m", module_name]
 
-        return ("__init__.py", filepath, env, expected_module, argv, self.get_cwd())
+        return ("__init__.py", filepath, env, expected_module, argv, self.get_cwd()) # noqa
 
 
 class ModuleWithCWDLifecycleTests(ModuleLifecycleTests,

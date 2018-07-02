@@ -18,7 +18,7 @@ from .socket import (
     Connection, create_server, create_client, close,
     recv_as_read, send_as_write,
     timeout as socket_timeout)
-from .threading import get_locked_and_waiter, acquire_with_timeout
+from .threading import get_locked_and_waiter
 from .vsc import parse_message
 
 
@@ -209,14 +209,14 @@ class DebugSession(Closeable):
         with self._wait_for_message(match, handlername, **kwargs):
             yield result
 
-    def get_awaiter_for_event(self, event, condition=lambda msg: True, **kwargs):
+    def get_awaiter_for_event(self, event, condition=lambda msg: True, **kwargs): # noqa
         if self.closed:
             raise RuntimeError('session closed')
         result = {'msg': None}
 
         def match(msg):
             result['msg'] = msg
-            return msg.type == 'event' and msg.event == event and condition(msg) == True
+            return msg.type == 'event' and msg.event == event and condition(msg) # noqa
         handlername = 'event {!r}'.format(event)
         evt = self._get_message_handle(match, handlername)
 
@@ -345,8 +345,8 @@ class Awaitable(object):
         messages = []
         for _ in range(int(timeout * 10)):
             time.sleep(0.1)
-            messages=[]
-            not_ready = (a for a in awaitables if a._event is not None and a._event.is_set() == False)
+            messages = []
+            not_ready = (a for a in awaitables if a._event is not None and not a._event.is_set()) # noqa
             for awaitable in not_ready:
                 if isinstance(awaitable, AwaitableEvent):
                     messages.append('Event {}'.format(awaitable.name))
@@ -355,7 +355,7 @@ class Awaitable(object):
             if len(messages) == 0:
                 return
         else:
-            raise TimeoutError('Timeout waiting for {}'.format(','.join(messages)))
+            raise TimeoutError('Timeout waiting for {}'.format(','.join(messages))) # noqa
 
     def __init__(self, name, event=None):
         self._event = event
@@ -366,11 +366,12 @@ class Awaitable(object):
             return
         if not self._event.wait(timeout):
             message = 'Timeout waiting for '
-            if isinstance(awaitable, AwaitableEvent):
+            if isinstance(self, AwaitableEvent):
                 message += 'Event {}'.format(self.name)
             else:
                 message += 'Response {}'.format(self.name)
             raise TimeoutError(message)
+
 
 class AwaitableResponse(Awaitable):
 
@@ -382,6 +383,7 @@ class AwaitableResponse(Awaitable):
     @property
     def resp(self):
         return self._result_getter()
+
 
 class AwaitableEvent(Awaitable):
 
