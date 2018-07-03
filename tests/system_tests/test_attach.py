@@ -186,7 +186,7 @@ class AttachLifecycleTests(LifecycleTestsBase):
             import ptvsd
             ptvsd.enable_attach({})
             ptvsd.wait_for_attach()
-            
+
             try:
                 raise ArithmeticError('Hello')
             except Exception:
@@ -212,4 +212,3 @@ class AttachLifecycleTests(LifecycleTestsBase):
 
                 Awaitable.wait_all(req_attach, output, terminated, exited)
                 adapter.wait()
-
