@@ -13,7 +13,6 @@ from tests.helpers.script import find_line, set_lock, set_release
 from tests.helpers.debugsession import Awaitable
 
 from . import (
-    _strip_pydevd_output,
     _strip_newline_output_events, lifecycle_handshake, TestsBase,
     LifecycleTestsBase, _strip_output_event, _strip_exit, _find_events)
 
