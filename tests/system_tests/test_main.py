@@ -105,25 +105,6 @@ class DebugTests(TestsBase, unittest.TestCase):
 
 class LifecycleTests(LifecycleTestsBase):
 
-    def test_pre_init(self):
-        filename = self.pathentry.write_module('spam', '')
-        handlers, wait_for_started = self._wait_for_started()
-        with DebugClient() as editor:
-            adapter, session = editor.launch_script(
-                filename,
-                handlers=handlers,
-                timeout=3.0,
-            )
-            wait_for_started()
-        out = adapter.output.decode('utf-8')
-
-        received = list(_strip_newline_output_events(session.received))
-        self.assert_received(received, [
-            self.new_version_event(session.received),
-        ])
-        out = _strip_pydevd_output(out)
-        self.assertEqual(out, '')
-
     def test_launch_ptvsd_client(self):
         argv = []
         lockfile = self.workspace.lockfile()
