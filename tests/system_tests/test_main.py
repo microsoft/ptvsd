@@ -300,6 +300,7 @@ class LifecycleTests(LifecycleTestsBase):
                 session1 = editor.attach_socket(addr, adapter)
                 with session1.wait_for_event('thread'):
                     reqs = lifecycle_handshake(session1, 'attach')
+                    reqs[1].wait()
                     done1()
                 req_disconnect = session1.send_request('disconnect')
                 req_disconnect.wait()
