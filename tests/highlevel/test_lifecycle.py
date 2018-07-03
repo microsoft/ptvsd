@@ -3,7 +3,6 @@ import ptvsd
 import sys
 import unittest
 
-from tests.helpers.vsc._fake import Awaitable
 from _pydevd_bundle.pydevd_comm import (
     CMD_REDIRECT_OUTPUT,
     CMD_RUN,
