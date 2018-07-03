@@ -146,8 +146,7 @@ class VariableLifecycleTests(LifecycleTestsBase):
                                 {
                                     "name": "__package__",
                                     "type": "NoneType",
-                                    "value": "None"
-                                    ,
+                                    "value": "None",
                                     "evaluateName": "__package__"
                                 },
                                 {
