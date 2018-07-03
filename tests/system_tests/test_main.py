@@ -488,7 +488,7 @@ class LifecycleTests(LifecycleTestsBase):
                     'name': '<module>',
                     'source': {
                         'path': filename,
-                        'sourceReference': 1,
+                        'sourceReference': 0,
                     },
                     'line': bp1,
                     'column': 1,
