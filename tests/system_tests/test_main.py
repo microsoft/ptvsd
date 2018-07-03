@@ -622,6 +622,8 @@ class LifecycleTests(LifecycleTestsBase):
                     "remoteRoot": os.path.dirname(filename)
                 },
                 # This specific mapping is for Mac.
+                # For some reason temp paths on Mac get prefixed with
+                # `private` when returned from ptvsd.
                 {
                     "localRoot": os.path.dirname(filename),
                     "remoteRoot": '/private' + os.path.dirname(filename)
@@ -692,6 +694,8 @@ class LifecycleTests(LifecycleTestsBase):
         received = list(_strip_output_event(session.received,
                                             u'waiting for attach'))
         received = list(_strip_newline_output_events(received))
+        for i, line in enumerate(received):
+            print(i, line)
         # There's an ordering race with continue/continued that pops
         # up occasionally.  We work around that by manually fixing the
         # order.
