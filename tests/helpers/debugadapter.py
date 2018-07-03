@@ -79,8 +79,6 @@ def wait_for_socket_server(addr, timeout=3.0, **kwargs):
     start_time = time.time()
     while True:
         try:
-            print('inside wait')
-            print(addr.host, addr.port)
             sock = socket.create_connection((addr.host, addr.port))
             sock.close()
             return
