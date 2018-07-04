@@ -21,6 +21,8 @@ ROOT = os.path.dirname(os.path.dirname(ptvsd.__file__))
 PORT = 9876
 CONNECT_TIMEOUT = 3.0
 ENV = {'PYTHONPATH': ROOT}
+TEST_FILES_DIR = os.path.join(ROOT, 'tests', 'resources', 'system_tests',
+                              'test_attach')
 
 
 class AttachLifecycleTests(LifecycleTestsBase):
@@ -44,8 +46,8 @@ class AttachLifecycleTests(LifecycleTestsBase):
                 terminated = session.get_awaiter_for_event('terminated')
                 exited = session.get_awaiter_for_event('exited')
 
-                (req_initialize, req_launch, req_config, _, _, _
-                 ) = lifecycle_handshake(session, 'attach')
+                (req_initialize, req_launch, req_config, _, _,
+                 _) = lifecycle_handshake(session, 'attach')
 
                 Awaitable.wait_all(req_launch, terminated, exited)
                 adapter.wait()
@@ -57,12 +59,13 @@ class AttachLifecycleTests(LifecycleTestsBase):
             self.new_event('initialized'),
             self.new_response(req_launch.req),
             self.new_response(req_config.req),
-            self.new_event('process', **{
-                'isLocalProcess': True,
-                'systemProcessId': adapter.pid,
-                'startMethod': 'attach',
-                'name': filename,
-            }),
+            self.new_event(
+                'process', **{
+                    'isLocalProcess': True,
+                    'systemProcessId': adapter.pid,
+                    'startMethod': 'attach',
+                    'name': filename,
+                }),
             self.new_event('output', output='ok', category='stdout'),
             self.new_event('output', output='ex', category='stderr'),
             self.new_event('exited', exitCode=0),
@@ -203,12 +206,60 @@ class AttachLifecycleTests(LifecycleTestsBase):
 
                 terminated = session.get_awaiter_for_event('terminated')
                 exited = session.get_awaiter_for_event('exited')
-                output = session.get_awaiter_for_event('output', lambda e: e.body["category"] == "stdout") # noqa
+                output = session.get_awaiter_for_event(
+                    'output', lambda e: e.body["category"] == "stdout")
 
-                (
-                    _, req_attach, _, _, _, _
-                ) = lifecycle_handshake(session, 'attach',
-                                        excbreakpoints=excbreakpoints)
+                (_, req_attach, _, _, _, _) = lifecycle_handshake(
+                    session, 'attach', excbreakpoints=excbreakpoints)
 
                 Awaitable.wait_all(req_attach, output, terminated, exited)
                 adapter.wait()
+
+    def test_with_raised_exceptions(self):
+        addr = Address('localhost', PORT)
+        filename = os.path.join(TEST_FILES_DIR,
+                                'test_with_raised_exceptions.py')
+        excbreakpoints = [{"filters": ["raised", "uncaught"]}]
+        with DebugAdapter.start_embedded(
+                addr, filename, argv=['localhost', str(PORT)],
+                env=ENV) as adapter:
+            with DebugClient() as editor:
+                session = editor.attach_socket(addr, adapter)
+
+                stopped = session.get_awaiter_for_event('stopped')
+
+                (_, req_attach, _, _, _, _) = lifecycle_handshake(
+                    session, 'attach', excbreakpoints=excbreakpoints)
+
+                stopped.wait()
+
+                thread_id = stopped.event.body["threadId"]
+                ex_info = session.send_request(
+                    'exceptionInfo', threadId=thread_id)
+                ex_info.wait()
+
+                terminated = session.get_awaiter_for_event('terminated')
+                exited = session.get_awaiter_for_event('exited')
+                output = session.get_awaiter_for_event(
+                    'output', lambda e: e.body["category"] == "stdout")
+                continued = session.get_awaiter_for_event('continued')
+                session.send_request("continue", threadId=thread_id)
+
+                Awaitable.wait_all(req_attach, output, terminated, exited,
+                                   continued)
+                adapter.wait()
+
+        expected_trace = "  File \"{}\", line 7, in <module>\n    raise ArithmeticError('Hello')\n".format(  # noqa
+            filename)
+        self.assert_is_subset(
+            ex_info.resp.body, {
+                "exceptionId": "ArithmeticError",
+                "description": "ArithmeticError('Hello',)",
+                "breakMode": "always",
+                "details": {
+                    "typeName": "ArithmeticError",
+                    "message": "ArithmeticError('Hello',)",
+                    "stackTrace": expected_trace,
+                    "source": filename
+                }
+            })

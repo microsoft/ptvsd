@@ -172,7 +172,7 @@ class DebugAdapter(Closeable):
         return cls.start(argv, addr=addr, **kwargs)
 
     @classmethod
-    def start_embedded(cls, addr, filename, **kwargs):
+    def start_embedded(cls, addr, filename, argv=[], **kwargs):
         addr = Address.as_server(*addr)
         with open(filename, 'r+') as scriptfile:
             content = scriptfile.read()
@@ -180,7 +180,7 @@ class DebugAdapter(Closeable):
             assert 'ptvsd.enable_attach' in content
         adapter = cls.start_wrapper_script(
             filename,
-            argv=[],
+            argv=argv,
             addr=addr,
             **kwargs
         )
