@@ -54,7 +54,7 @@ class PathUnNormcase(object):
         else:
             test_name = [sep + dirs[0]]
         for d in dirs[1:]:
-            test_name += ["{}[{}]".format(d[: - 1], d[-1])]
+            test_name += ["{}[{}]".format(d[:-1], d[-1])]
         path = glob(sep.join(test_name))[0]
         res = glob(sep.join((path, filename)))
         if not res:
