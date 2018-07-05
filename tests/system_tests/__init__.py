@@ -2,6 +2,7 @@ import contextlib
 import os
 import ptvsd
 import signal
+import time
 import unittest
 
 from collections import namedtuple
@@ -238,6 +239,7 @@ class LifecycleTestsBase(TestsBase, unittest.TestCase):
                     env=env,
                     cwd=cwd) as adapter:
                 with DebugClient() as editor:
+                    time.sleep(2)
                     session = editor.attach_socket(addr, adapter)
                     try:
                         yield Debugger(session=session, adapter=adapter)
@@ -256,6 +258,7 @@ class LifecycleTestsBase(TestsBase, unittest.TestCase):
                     env=env,
                     cwd=cwd) as adapter:
                 with DebugClient() as editor:
+                    time.sleep(2)
                     session = editor.attach_socket(addr, adapter)
                     try:
                         yield Debugger(session=session, adapter=adapter)
@@ -279,6 +282,7 @@ class LifecycleTestsBase(TestsBase, unittest.TestCase):
                     env=env,
                     cwd=cwd) as adapter:
                 with DebugClient() as editor:
+                    time.sleep(2)
                     session = editor.attach_socket(addr, adapter)
                     try:
                         yield Debugger(session=session, adapter=adapter)
@@ -294,6 +298,7 @@ class LifecycleTestsBase(TestsBase, unittest.TestCase):
             with DebugClient(
                     port=debug_info.port,
                     connecttimeout=CONNECT_TIMEOUT) as editor:
+                time.sleep(2)
                 adapter, session = editor.host_local_debugger(
                     argv, cwd=cwd, env=env)
                 try:
