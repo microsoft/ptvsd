@@ -549,6 +549,10 @@ class LaunchModuleLifecycleTests(LaunchLifecycleTests):
             DebugInfo(modulename=module_name, cwd=cwd, env=env), first_file,
             second_file, 2, expected_modules, expected_stacktrace)
 
+    @unittest.skip('Not required')
+    def test_conditional_break_points(self):
+        pass
+
 
 class ServerAttachLifecycleTests(LaunchLifecycleTests):
     def test_with_break_points(self):
@@ -563,6 +567,10 @@ class ServerAttachLifecycleTests(LaunchLifecycleTests):
 
     @unittest.skip('Not required')
     def test_with_break_points_across_files(self):
+        pass
+
+    @unittest.skip('Not required')
+    def test_conditional_break_points(self):
         pass
 
 
@@ -583,6 +591,10 @@ class PTVSDAttachLifecycleTests(LaunchLifecycleTests):
 
     @unittest.skip('Not required')
     def test_with_break_points_across_files(self):
+        pass
+
+    @unittest.skip('Not required')
+    def test_conditional_break_points(self):
         pass
 
 
@@ -607,6 +619,10 @@ class ServerAttachModuleLifecycleTests(LaunchLifecycleTests):  # noqa
     def test_with_break_points_across_files(self):
         pass
 
+    @unittest.skip('Not required')
+    def test_conditional_break_points(self):
+        pass
+
 
 @unittest.skip('Needs fixing')
 class PTVSDAttachModuleLifecycleTests(LaunchLifecycleTests):  # noqa
@@ -629,4 +645,8 @@ class PTVSDAttachModuleLifecycleTests(LaunchLifecycleTests):  # noqa
 
     @unittest.skip('Not required')
     def test_with_break_points_across_files(self):
+        pass
+
+    @unittest.skip('Not required')
+    def test_conditional_break_points(self):
         pass
