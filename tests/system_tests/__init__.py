@@ -314,21 +314,10 @@ class LifecycleTestsBase(TestsBase, unittest.TestCase):
     def create_source_file(self, file_name, source):
         return self.write_script(file_name, source)
 
-    def get_cwd(self):
-        return None
-
     def find_line(self, filepath, label):
         with open(filepath) as scriptfile:
             script = scriptfile.read()
         return find_line(script, label)
-
-    def get_test_info(self, source):
-        filepath = self.create_source_file("spam.py", source)
-        env = None
-        expected_module = filepath
-        argv = [filepath]
-        return ("spam.py", filepath, env, expected_module, argv,
-                self.get_cwd())
 
     def reset_seq(self, responses):
         for i, msg in enumerate(responses):
