@@ -13,11 +13,15 @@ from .debugsession import DebugSession
 
 
 class _LifecycleClient(Closeable):
+
+    SESSION = DebugSession
+
     def __init__(self,
                  addr=None,
                  port=8888,
                  breakpoints=None,
-                 connecttimeout=1.0):
+                 connecttimeout=1.0,
+                 ):
         super(_LifecycleClient, self).__init__()
         self._addr = Address.from_raw(addr, defaultport=port)
         self._connecttimeout = connecttimeout
@@ -131,7 +135,7 @@ class _LifecycleClient(Closeable):
         if addr is None:
             addr = self._addr
         assert addr.host == 'localhost'
-        self._session = DebugSession.create_client(addr, **kwargs)
+        self._session = self.SESSION.create_client(addr, **kwargs)
 
     def _detach(self):
         self._session.close()
@@ -172,8 +176,7 @@ class EasyDebugClient(DebugClient):
         addr = ('localhost', self._addr.port)
 
         def run():
-            self._session = DebugSession.create_server(addr, **kwargs)
-
+            self._session = self.SESSION.create_server(addr, **kwargs)
         t = new_hidden_thread(
             target=run,
             name='test.client',
