@@ -60,7 +60,7 @@ def collect_lines(stream, buf=None, notify_received=None, **kwargs):
 class TimeoutException(Exception):
     def __init__(self, *args, **kwargs):
         Exception.__init__(self, *args, **kwargs)
-        
+
 
 class ProcOutput(object):
     """A tracker for a process's std* output."""

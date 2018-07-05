@@ -33,7 +33,7 @@
 #         (filename, filepath, env, expected_module, argv,
 #          cwd) = self.get_test_info(source)
 
-#         with DebugClient(port=PORT, connecttimeout=CONNECT_TIMEOUT) as editor:
+#         with DebugClient(port=PORT, connecttimeout=CONNECT_TIMEOUT) as editor: # noqa
 #             adapter, session = editor.host_local_debugger(
 #                 argv=argv + ["1", "Hello", "World"], env=env,
 #                 cwd=cwd, timeout=CONNECT_TIMEOUT)

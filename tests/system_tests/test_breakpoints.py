@@ -1,15 +1,11 @@
 import os
 import os.path
-from textwrap import dedent
 import unittest
 
-import ptvsd
 from ptvsd.wrapper import INITIALIZE_RESPONSE  # noqa
-from tests.helpers.debugclient import EasyDebugClient as DebugClient
-from tests.helpers.debugsession import Awaitable
 
 from . import (_strip_newline_output_events, lifecycle_handshake,
-               LifecycleTestsBase, DebugInfo, ROOT, PORT, CONNECT_TIMEOUT)
+               LifecycleTestsBase, DebugInfo, ROOT, PORT)
 
 TEST_FILES_DIR = os.path.join(ROOT, 'tests', 'resources', 'system_tests',
                               'test_breakpoints')
@@ -27,7 +23,7 @@ class LaunchLifecycleTests(LifecycleTestsBase):
     #     (filename, filepath, env, expected_module, argv,
     #      cwd) = self.get_test_info(source)
 
-    #     with DebugClient(port=PORT, connecttimeout=CONNECT_TIMEOUT) as editor:
+    #     with DebugClient(port=PORT, connecttimeout=CONNECT_TIMEOUT) as editor: # noqa
     #         adapter, session = editor.host_local_debugger(
     #             argv=argv + ["1", "Hello", "World"], env=env,
     #             cwd=cwd, timeout=CONNECT_TIMEOUT)
@@ -191,7 +187,7 @@ class LaunchLifecycleTests(LifecycleTestsBase):
     #         "lines": [bp_line]
     #     }]
 
-    #     with DebugClient(port=PORT, connecttimeout=CONNECT_TIMEOUT) as editor:
+    #     with DebugClient(port=PORT, connecttimeout=CONNECT_TIMEOUT) as editor: # noqa
     #         adapter, session = editor.host_local_debugger(
     #             argv, env=env, cwd=cwd, timeout=CONNECT_TIMEOUT)
 
@@ -337,7 +333,7 @@ class LaunchLifecycleTests(LifecycleTestsBase):
     #     }]
     #     options = {"debugOptions": ["RedirectOutput"]}
 
-    #     with DebugClient(port=PORT, connecttimeout=CONNECT_TIMEOUT) as editor:
+    #     with DebugClient(port=PORT, connecttimeout=CONNECT_TIMEOUT) as editor: # noqa
     #         adapter, session = editor.host_local_debugger(
     #             argv, env=env, cwd=cwd, timeout=CONNECT_TIMEOUT)
     #         exited = session.get_awaiter_for_event('exited')
@@ -424,7 +420,7 @@ class LaunchLifecycleTests(LifecycleTestsBase):
     #     }]
     #     options = {"debugOptions": ["RedirectOutput"]}
 
-    #     with DebugClient(port=PORT, connecttimeout=CONNECT_TIMEOUT) as editor:
+    #     with DebugClient(port=PORT, connecttimeout=CONNECT_TIMEOUT) as editor: # noqa
     #         adapter, session = editor.host_local_debugger(
     #             argv, env=env, cwd=cwd, timeout=CONNECT_TIMEOUT)
 
@@ -532,7 +528,7 @@ class LaunchLifecycleTests(LifecycleTestsBase):
     #     (filename, filepath, env, expected_module, argv,
     #      module_name) = self.get_test_info(source)
 
-    #     with DebugClient(port=PORT, connecttimeout=CONNECT_TIMEOUT) as editor:
+    #     with DebugClient(port=PORT, connecttimeout=CONNECT_TIMEOUT) as editor: # noqa
     #         adapter, session = editor.host_local_debugger(argv)
 
     #         exited = session.get_awaiter_for_event('exited')
@@ -627,4 +623,3 @@ class PTVSDAttachModuleLifecycleTests(LaunchLifecycleTests):  # noqa
                 starttype='attach'),
             bp_filename,
             bp_line=6)
-
