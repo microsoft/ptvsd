@@ -126,6 +126,19 @@ class DebugAdapter(Closeable):
             )
         return cls._start(new_proc, argv, **kwargs)
 
+    @classmethod
+    def start_wrapper_module(cls, modulename, argv, env=None, cwd=None, **kwargs): # noqa
+        def new_proc(argv, addr, **kwds):
+            env_vars = _copy_env(verbose=cls.VERBOSE, env=env)
+            return Proc.start_python_module(
+                modulename,
+                argv,
+                env=env_vars,
+                cwd=cwd,
+                **kwds
+            )
+        return cls._start(new_proc, argv, **kwargs)
+
     # specific factory cases
 
     @classmethod
@@ -235,8 +248,8 @@ class DebugAdapter(Closeable):
     def exitcode(self):
         return self._proc.exitcode
 
-    def wait(self):
-        self._proc.wait()
+    def wait(self, *argv):
+        self._proc.wait(*argv)
 
     # internal methods
 
