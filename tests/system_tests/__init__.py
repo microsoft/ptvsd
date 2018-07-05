@@ -7,7 +7,7 @@ import unittest
 
 from collections import namedtuple
 from ptvsd.socket import Address
-from tests.helpers.debugadapter import DebugAdapter
+from tests.helpers.debugadapter import DebugAdapter, wait_for_port_to_free
 from tests.helpers.debugclient import EasyDebugClient as DebugClient
 from tests.helpers.script import find_line
 from tests.helpers.threading import get_locked_and_waiter
@@ -219,8 +219,7 @@ class LifecycleTestsBase(TestsBase, unittest.TestCase):
         addr = Address('localhost', debug_info.port)
         cwd = debug_info.cwd
         env = debug_info.env
-        # wait for any pending sockets to close
-        time.sleep(DELAY_WAITING_FOR_SOCKETS)
+        wait_for_port_to_free(debug_info.port)
 
         def _kill_proc(pid):
             """If debugger does not end gracefully, then kill proc and
