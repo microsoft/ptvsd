@@ -1099,8 +1099,8 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
         self._notify_ready()
 
     def on_disconnect(self, request, args):
-        args = request.get('arguments', {'restart': False})
-        self._restart_debugger = args['restart']
+        args = request.get('arguments', {})
+        self._restart_debugger = args.get('restart', False)
 
         # TODO: docstring
         if self._debuggerstopped:  # A "terminated" event must have been sent.
