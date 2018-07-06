@@ -41,7 +41,7 @@ class RestartVSCTests(LifecycleTestsBase):
 
             req_launch.wait()
 
-            dbg.session.send_request('disconnect', restart=False)
+            dbg.session.send_request('disconnect', restart=True)
 
         received = list(_strip_newline_output_events(dbg.session.received))
         evts = self.find_events(received, 'terminated')
