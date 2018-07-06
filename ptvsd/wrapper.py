@@ -1016,6 +1016,7 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
         self._statelock = threading.Lock()
         self._debugging = debugging
         self._debuggerstopped = False
+        self._restart_debugger = False
         self._exitlock = threading.Lock()
         self._exitlock.acquire()  # released in handle_exiting()
         self._exiting = False
@@ -1071,6 +1072,7 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
 
     def on_initialize(self, request, args):
         # TODO: docstring
+        self._restart_debugger = False
         self.send_response(request, **INITIALIZE_RESPONSE)
         self.send_event('initialized')
 
@@ -1097,6 +1099,9 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
         self._notify_ready()
 
     def on_disconnect(self, request, args):
+        args = request.get('arguments', {'restart': False})
+        self._restart_debugger = args['restart']
+
         # TODO: docstring
         if self._debuggerstopped:  # A "terminated" event must have been sent.
             self._wait_until_exiting(self.EXITWAIT)
@@ -1143,7 +1148,8 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
             if self._debuggerstopped:
                 return
             self._debuggerstopped = True
-        self.send_event('terminated')
+        if not self._restart_debugger:
+            self.send_event('terminated')
 
     def _wait_until_exiting(self, timeout):
         lock = self._exitlock
