@@ -205,8 +205,8 @@ class BreakpointTests(LifecycleTestsBase):
             hits = kwargs['hits']
             count = 0
             while count < hits:
-                with session.wait_for_event("stopped") as result:
-                    if count == 0:
+                if count == 0:
+                    with session.wait_for_event("stopped") as result:
                         (
                             _,
                             _,
@@ -235,7 +235,11 @@ class BreakpointTests(LifecycleTestsBase):
                                if v['name'] == 'i')
                 i_values.append(i_value[0] if len(i_value) > 0 else None)
                 count = count + 1
-                session.send_request("continue", threadId=tid)
+                if count < hits:
+                    with session.wait_for_event("stopped") as result:
+                        session.send_request("continue", threadId=tid)
+                else:
+                    session.send_request("continue", threadId=tid)
         self.assertEqual(i_values, kwargs['expected'])
 
     def run_test_logpoints(self, debug_info):
