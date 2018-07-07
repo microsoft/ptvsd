@@ -1,18 +1,12 @@
 import os
 import os.path
 import socket
-import unittest
-
-from ptvsd.wrapper import INITIALIZE_RESPONSE  # noqa
-from tests.helpers.debugsession import Awaitable
 
 from . import (_strip_newline_output_events, lifecycle_handshake,
                LifecycleTestsBase, DebugInfo, ROOT, PORT)
 
 TEST_FILES_DIR = os.path.join(ROOT, 'tests', 'resources', 'system_tests',
                               'test_basic')
-TEST_TERMINATION_FILES_DIR = os.path.join(ROOT, 'tests', 'resources',
-                                          'system_tests', 'test_terminate')
 
 
 class RemoteTests(LifecycleTestsBase):
