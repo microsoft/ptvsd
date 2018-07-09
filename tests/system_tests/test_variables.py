@@ -31,15 +31,9 @@ class VariableTests(LifecycleTestsBase):
         with self.start_debugging(debug_info) as dbg:
             session = dbg.session
             with session.wait_for_event('stopped') as result:
-                (
-                    _,
-                    req_launch_attach,
-                    _,
-                    reqs_bps,
-                    _,
-                    _,
-                ) = lifecycle_handshake(
-                    session, debug_info.starttype, breakpoints=breakpoints)
+                (_, req_launch_attach, _, reqs_bps, _, _,
+                 ) = lifecycle_handshake(session, debug_info.starttype,
+                                         breakpoints=breakpoints)
 
                 req_launch_attach.wait()
 
@@ -176,15 +170,9 @@ class VariableTests(LifecycleTestsBase):
         with self.start_debugging(debug_info) as dbg:
             session = dbg.session
             with session.wait_for_event('stopped') as result:
-                (
-                    _,
-                    req_launch_attach,
-                    _,
-                    reqs_bps,
-                    _,
-                    _,
-                ) = lifecycle_handshake(
-                    session, debug_info.starttype, breakpoints=breakpoints)
+                (_, req_launch_attach, _, reqs_bps, _, _,
+                 ) = lifecycle_handshake(session, debug_info.starttype,
+                                         breakpoints=breakpoints)
 
                 req_launch_attach.wait()
 

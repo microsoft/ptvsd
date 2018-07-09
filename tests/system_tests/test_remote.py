@@ -16,8 +16,8 @@ class RemoteTests(LifecycleTestsBase):
         options = {'debugOptions': ['RedirectOutput']}
 
         with self.start_debugging(debug_info) as dbg:
-            (_, _, _, _, _, _) = lifecycle_handshake(
-                dbg.session, debug_info.starttype, options=options)
+            lifecycle_handshake(dbg.session, debug_info.starttype,
+                                options=options)
 
         received = list(_strip_newline_output_events(dbg.session.received))
         self.assert_contains(

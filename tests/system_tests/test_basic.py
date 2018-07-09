@@ -20,8 +20,8 @@ class BasicTests(LifecycleTestsBase):
         options = {'debugOptions': ['RedirectOutput']}
 
         with self.start_debugging(debug_info) as dbg:
-            (_, _, _, _, _, _) = lifecycle_handshake(
-                dbg.session, debug_info.starttype, options=options)
+            lifecycle_handshake(dbg.session, debug_info.starttype,
+                                options=options)
 
         received = list(_strip_newline_output_events(dbg.session.received))
         self.assert_contains(
@@ -36,8 +36,8 @@ class BasicTests(LifecycleTestsBase):
         options = {'debugOptions': ['RedirectOutput']}
 
         with self.start_debugging(debug_info) as dbg:
-            (_, _, _, _, _, _) = lifecycle_handshake(
-                dbg.session, debug_info.starttype, options=options)
+            lifecycle_handshake(dbg.session, debug_info.starttype,
+                                options=options)
 
         received = list(_strip_newline_output_events(dbg.session.received))
         expected_output = '{}, {}'.format(len(expected_args), expected_args)
@@ -56,8 +56,9 @@ class BasicTests(LifecycleTestsBase):
             exited = session.get_awaiter_for_event('exited')
             terminated = session.get_awaiter_for_event('terminated')
 
-            (_, req_launch, _, _, _, _) = lifecycle_handshake(
-                dbg.session, debug_info.starttype, threads=True)
+            (_, req_launch, _, _, _, _
+             ) = lifecycle_handshake(dbg.session, debug_info.starttype,
+                                     threads=True)
 
             Awaitable.wait_all(req_launch,
                                session.get_awaiter_for_event('thread'))
@@ -69,11 +70,9 @@ class BasicTests(LifecycleTestsBase):
         options = {'debugOptions': ['RedirectOutput']}
 
         with self.start_debugging(debug_info) as dbg:
-            (_, _, _, _, _, _) = lifecycle_handshake(
-                dbg.session,
-                debug_info.starttype,
-                options=options,
-                threads=True)
+            lifecycle_handshake(dbg.session, debug_info.starttype,
+                                options=options,
+                                threads=True)
 
         received = list(_strip_newline_output_events(dbg.session.received))
 

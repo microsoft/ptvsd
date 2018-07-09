@@ -19,11 +19,10 @@ class ExceptionTests(LifecycleTestsBase):
         options = {'debugOptions': ['RedirectOutput']}
 
         with self.start_debugging(debug_info) as dbg:
-            (_, req_attach, _, _, _, _) = lifecycle_handshake(
-                dbg.session,
-                debug_info.starttype,
-                excbreakpoints=excbreakpoints,
-                options=options)
+            (_, req_attach, _, _, _, _
+             ) = lifecycle_handshake(dbg.session, debug_info.starttype,
+                                     excbreakpoints=excbreakpoints,
+                                     options=options)
 
         received = list(_strip_newline_output_events(dbg.session.received))
         self.assert_contains(
@@ -41,12 +40,11 @@ class ExceptionTests(LifecycleTestsBase):
 
         with self.start_debugging(debug_info) as dbg:
             stopped = dbg.session.get_awaiter_for_event('stopped')
-            (_, req_launch_attach, _, _, _, _) = lifecycle_handshake(
-                dbg.session,
-                debug_info.starttype,
-                excbreakpoints=excbreakpoints,
-                options=options,
-                threads=True)
+            (_, req_launch_attach, _, _, _, _
+             ) = lifecycle_handshake(dbg.session, debug_info.starttype,
+                                     excbreakpoints=excbreakpoints,
+                                     options=options,
+                                     threads=True)
 
             Awaitable.wait_all(req_launch_attach, stopped)
             self.assertEqual(stopped.event.body['text'], 'ArithmeticError')

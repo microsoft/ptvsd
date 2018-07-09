@@ -19,8 +19,8 @@ class RestartVSCTests(LifecycleTestsBase):
         debug_info = DebugInfo(filename=filename, cwd=cwd)
 
         with self.start_debugging(debug_info) as dbg:
-            (_, req_launch, _, _, _, _) = lifecycle_handshake(
-                dbg.session, debug_info.starttype)
+            (_, req_launch, _, _, _, _
+             ) = lifecycle_handshake(dbg.session, debug_info.starttype)
 
             req_launch.wait()
 
@@ -36,8 +36,8 @@ class RestartVSCTests(LifecycleTestsBase):
         debug_info = DebugInfo(filename=filename, cwd=cwd)
 
         with self.start_debugging(debug_info) as dbg:
-            (_, req_launch, _, _, _, _) = lifecycle_handshake(
-                dbg.session, debug_info.starttype)
+            (_, req_launch, _, _, _, _
+             ) = lifecycle_handshake(dbg.session, debug_info.starttype)
 
             req_launch.wait()
 
