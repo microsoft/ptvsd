@@ -298,9 +298,9 @@ class LifecycleTestsBase(TestsBase, unittest.TestCase):
                     env=env,
                     cwd=cwd) as adapter:
                 with DebugClient() as editor:
-                    time.sleep(DELAY_WAITING_FOR_SOCKETS)
                     try:
                         session = editor.attach_socket(addr, adapter)
+                        time.sleep(DELAY_WAITING_FOR_SOCKETS)
                         yield Debugger(session=session, adapter=adapter)
                         adapter.wait()
                     except Exception as ex:
@@ -316,9 +316,9 @@ class LifecycleTestsBase(TestsBase, unittest.TestCase):
                     env=env,
                     cwd=cwd) as adapter:
                 with DebugClient() as editor:
-                    time.sleep(DELAY_WAITING_FOR_SOCKETS)
                     try:
                         session = editor.attach_socket(addr, adapter)
+                        time.sleep(DELAY_WAITING_FOR_SOCKETS)
                         yield Debugger(session=session, adapter=adapter)
                         adapter.wait()
                     except Exception as ex:
@@ -377,7 +377,7 @@ class LifecycleTestsBase(TestsBase, unittest.TestCase):
                     raise
                 else:
                     # Wait for any pending connections to close.
-                    time.sleep(1)
+                    time.sleep(1 * (i+1))
 
     @property
     def messages(self):

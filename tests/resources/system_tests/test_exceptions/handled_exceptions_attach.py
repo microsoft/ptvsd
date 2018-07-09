@@ -1,6 +1,6 @@
 import sys
 import ptvsd
-ptvsd.enable_attach((('localhost', 9876)))
+ptvsd.enable_attach((('localhost', 9877)))
 ptvsd.wait_for_attach()
 
 try:
