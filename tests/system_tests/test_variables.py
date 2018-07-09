@@ -2,18 +2,19 @@ import os
 import os.path
 
 from tests.helpers.debugsession import Awaitable
+from tests.helpers.resource import TestResources
+from . import (
+    lifecycle_handshake, LifecycleTestsBase, DebugInfo,
+)
 
-from . import (lifecycle_handshake, LifecycleTestsBase, DebugInfo, ROOT)
 
-
-TEST_FILES_DIR = os.path.join(ROOT, 'tests', 'resources', 'system_tests',
-                              'test_variables')
+TEST_FILES = TestResources.from_module(__name__)
 
 
 class VariableTests(LifecycleTestsBase):
 
     def test_variables(self):
-        filename = os.path.join(TEST_FILES_DIR, 'simple.py')
+        filename = TEST_FILES.resolve('simple.py')
         cwd = os.path.dirname(filename)
         self.run_test_variables(DebugInfo(filename=filename, cwd=cwd))
 
@@ -166,7 +167,7 @@ class VariableTests(LifecycleTestsBase):
         }
 
     def test_variable_sorting(self):
-        filename = os.path.join(TEST_FILES_DIR, 'for_sorting.py')
+        filename = TEST_FILES.resolve('for_sorting.py')
         cwd = os.path.dirname(filename)
         self.run_test_variable_sorting(DebugInfo(filename=filename, cwd=cwd))
 

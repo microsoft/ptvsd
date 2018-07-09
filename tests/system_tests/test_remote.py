@@ -1,13 +1,16 @@
 import os
 import os.path
 
+from tests.helpers.resource import TestResources
 from tests.helpers.socket import resolve_hostname
-from . import (_strip_newline_output_events, lifecycle_handshake,
-               LifecycleTestsBase, DebugInfo, ROOT, PORT)
+from . import (
+    _strip_newline_output_events, lifecycle_handshake,
+    LifecycleTestsBase, DebugInfo, PORT,
+)
 
 
-TEST_FILES_DIR = os.path.join(ROOT, 'tests', 'resources', 'system_tests',
-                              'test_basic')
+TEST_FILES = TestResources.from_module(__name__)
+WITH_OUTPUT = TEST_FILES.sub('test_output')
 
 
 class RemoteTests(LifecycleTestsBase):
@@ -29,8 +32,7 @@ class RemoteTests(LifecycleTestsBase):
 class AttachFileTests(RemoteTests):
 
     def test_attach_localhost(self):
-        filename = os.path.join(TEST_FILES_DIR, 'test_output',
-                                'attach_output.py')
+        filename = WITH_OUTPUT.resolve('attach_output.py')
         cwd = os.path.dirname(filename)
         argv = ['localhost', str(PORT)]
         self.run_test_attach(
@@ -44,8 +46,7 @@ class AttachFileTests(RemoteTests):
         )
 
     def test_attach_127001(self):
-        filename = os.path.join(TEST_FILES_DIR, 'test_output',
-                                'attach_output.py')
+        filename = WITH_OUTPUT.resolve('attach_output.py')
         cwd = os.path.dirname(filename)
         argv = ['127.0.0.1', str(PORT)]
         self.run_test_attach(
@@ -59,8 +60,7 @@ class AttachFileTests(RemoteTests):
         )
 
     def test_attach_0000(self):
-        filename = os.path.join(TEST_FILES_DIR, 'test_output',
-                                'attach_output.py')
+        filename = WITH_OUTPUT.resolve('attach_output.py')
         cwd = os.path.dirname(filename)
         argv = ['0.0.0.0', str(PORT)]
         self.run_test_attach(
@@ -74,8 +74,7 @@ class AttachFileTests(RemoteTests):
         )
 
     def test_attach_byip(self):
-        filename = os.path.join(TEST_FILES_DIR, 'test_output',
-                                'attach_output.py')
+        filename = WITH_OUTPUT.resolve('attach_output.py')
         cwd = os.path.dirname(filename)
         argv = ['0.0.0.0', str(PORT)]
         ip = resolve_hostname()

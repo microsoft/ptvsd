@@ -2,19 +2,21 @@ import os
 import os.path
 import unittest
 
-from . import (_strip_newline_output_events, lifecycle_handshake,
-               LifecycleTestsBase, DebugInfo, ROOT)
+from tests.helpers.resource import TestResources
+from . import (
+    _strip_newline_output_events, lifecycle_handshake,
+    LifecycleTestsBase, DebugInfo,
+)
 
 
-TEST_FILES_DIR = os.path.join(ROOT, 'tests', 'resources', 'system_tests',
-                              'test_forever')
+TEST_FILES = TestResources.from_module('tests.system_tests.test_forever')
 
 
 @unittest.skip('Needs fixing in #530')
 class RestartVSCTests(LifecycleTestsBase):
 
     def test_disconnect_without_restart(self):
-        filename = os.path.join(TEST_FILES_DIR, 'launch_forever.py')
+        filename = TEST_FILES.resolve('launch_forever.py')
         cwd = os.path.dirname(filename)
         debug_info = DebugInfo(filename=filename, cwd=cwd)
 
@@ -30,7 +32,7 @@ class RestartVSCTests(LifecycleTestsBase):
         self.assertEqual(len(evts), 1)
 
     def test_disconnect_with_restart(self):
-        filename = os.path.join(TEST_FILES_DIR, 'launch_forever.py')
+        filename = TEST_FILES.resolve('launch_forever.py')
         cwd = os.path.dirname(filename)
         debug_info = DebugInfo(filename=filename, cwd=cwd)
 

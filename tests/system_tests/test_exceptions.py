@@ -3,13 +3,14 @@ import os.path
 import unittest
 
 from tests.helpers.debugsession import Awaitable
+from tests.helpers.resource import TestResources
+from . import (
+    _strip_newline_output_events, lifecycle_handshake,
+    LifecycleTestsBase, DebugInfo, PORT,
+)
 
-from . import (_strip_newline_output_events, lifecycle_handshake,
-               LifecycleTestsBase, DebugInfo, ROOT, PORT)
 
-
-TEST_FILES_DIR = os.path.join(ROOT, 'tests', 'resources', 'system_tests',
-                              'test_exceptions')
+TEST_FILES = TestResources.from_module(__name__)
 
 
 class ExceptionTests(LifecycleTestsBase):
@@ -84,13 +85,13 @@ class ExceptionTests(LifecycleTestsBase):
 class LaunchFileTests(ExceptionTests):
 
     def test_not_breaking_into_handled_exceptions(self):
-        filename = os.path.join(TEST_FILES_DIR, 'handled_exceptions_launch.py')
+        filename = TEST_FILES.resolve('handled_exceptions_launch.py')
         cwd = os.path.dirname(filename)
         self.run_test_not_breaking_into_handled_exceptions(
             DebugInfo(filename=filename, cwd=cwd))
 
     def test_breaking_into_handled_exceptions(self):
-        filename = os.path.join(TEST_FILES_DIR, 'handled_exceptions_launch.py')
+        filename = TEST_FILES.resolve('handled_exceptions_launch.py')
         cwd = os.path.dirname(filename)
         self.run_test_breaking_into_handled_exceptions(
             DebugInfo(filename=filename, cwd=cwd))
@@ -100,15 +101,15 @@ class LaunchModuleExceptionLifecycleTests(ExceptionTests):
 
     def test_breaking_into_handled_exceptions(self):
         module_name = 'mymod_launch1'
-        env = {'PYTHONPATH': TEST_FILES_DIR}
-        cwd = os.path.dirname(TEST_FILES_DIR)
+        env = TEST_FILES.env_with_py_path()
+        cwd = TEST_FILES.parent.root
         self.run_test_breaking_into_handled_exceptions(
             DebugInfo(modulename=module_name, env=env, cwd=cwd))
 
     def test_not_breaking_into_handled_exceptions(self):
         module_name = 'mymod_launch1'
-        env = {'PYTHONPATH': TEST_FILES_DIR}
-        cwd = os.path.dirname(TEST_FILES_DIR)
+        env = TEST_FILES.env_with_py_path()
+        cwd = TEST_FILES.parent.root
         self.run_test_not_breaking_into_handled_exceptions(
             DebugInfo(modulename=module_name, env=env, cwd=cwd))
 
@@ -116,7 +117,7 @@ class LaunchModuleExceptionLifecycleTests(ExceptionTests):
 class ServerAttachExceptionLifecycleTests(ExceptionTests):
 
     def test_breaking_into_handled_exceptions(self):
-        filename = os.path.join(TEST_FILES_DIR, 'handled_exceptions_launch.py')
+        filename = TEST_FILES.resolve('handled_exceptions_launch.py')
         cwd = os.path.dirname(filename)
         argv = ['localhost', str(PORT)]
         self.run_test_breaking_into_handled_exceptions(
@@ -128,7 +129,7 @@ class ServerAttachExceptionLifecycleTests(ExceptionTests):
             ))
 
     def test_not_breaking_into_handled_exceptions(self):
-        filename = os.path.join(TEST_FILES_DIR, 'handled_exceptions_launch.py')
+        filename = TEST_FILES.resolve('handled_exceptions_launch.py')
         cwd = os.path.dirname(filename)
         argv = ['localhost', str(PORT)]
         self.run_test_not_breaking_into_handled_exceptions(
@@ -143,7 +144,7 @@ class ServerAttachExceptionLifecycleTests(ExceptionTests):
 class PTVSDAttachExceptionLifecycleTests(ExceptionTests):
 
     def test_breaking_into_handled_exceptions(self):
-        filename = os.path.join(TEST_FILES_DIR, 'handled_exceptions_attach.py')
+        filename = TEST_FILES.resolve('handled_exceptions_attach.py')
         cwd = os.path.dirname(filename)
         argv = ['localhost', str(PORT)]
         self.run_test_breaking_into_handled_exceptions(
@@ -157,7 +158,7 @@ class PTVSDAttachExceptionLifecycleTests(ExceptionTests):
 
     @unittest.skip('Needs fixing in #609')
     def test_not_breaking_into_handled_exceptions(self):
-        filename = os.path.join(TEST_FILES_DIR, 'handled_exceptions_attach.py')
+        filename = TEST_FILES.resolve('handled_exceptions_attach.py')
         cwd = os.path.dirname(filename)
         argv = ['localhost', str(PORT)]
         self.run_test_not_breaking_into_handled_exceptions(
@@ -174,8 +175,8 @@ class ServerAttachModuleExceptionLifecycleTests(ExceptionTests):
 
     def test_breaking_into_handled_exceptions(self):
         module_name = 'mymod_launch1'
-        env = {'PYTHONPATH': TEST_FILES_DIR}
-        cwd = TEST_FILES_DIR
+        env = TEST_FILES.env_with_py_path()
+        cwd = TEST_FILES.root
         argv = ['localhost', str(PORT)]
         self.run_test_breaking_into_handled_exceptions(
             DebugInfo(
@@ -188,8 +189,8 @@ class ServerAttachModuleExceptionLifecycleTests(ExceptionTests):
 
     def test_not_breaking_into_handled_exceptions(self):
         module_name = 'mymod_launch1'
-        env = {'PYTHONPATH': TEST_FILES_DIR}
-        cwd = TEST_FILES_DIR
+        env = TEST_FILES.env_with_py_path()
+        cwd = TEST_FILES.root
         argv = ['localhost', str(PORT)]
         self.run_test_not_breaking_into_handled_exceptions(
             DebugInfo(
@@ -206,8 +207,8 @@ class PTVSDAttachModuleExceptionLifecycleTests(ExceptionTests):
 
     def test_breaking_into_handled_exceptions(self):
         module_name = 'mymod_attach1'
-        env = {'PYTHONPATH': TEST_FILES_DIR}
-        cwd = TEST_FILES_DIR
+        env = TEST_FILES.env_with_py_path()
+        cwd = TEST_FILES.root
         argv = ['localhost', str(PORT)]
         self.run_test_breaking_into_handled_exceptions(
             DebugInfo(
@@ -221,8 +222,8 @@ class PTVSDAttachModuleExceptionLifecycleTests(ExceptionTests):
 
     def test_not_breaking_into_handled_exceptions(self):
         module_name = 'mymod_attach1'
-        env = {'PYTHONPATH': TEST_FILES_DIR}
-        cwd = TEST_FILES_DIR
+        env = TEST_FILES.env_with_py_path()
+        cwd = TEST_FILES.root
         argv = ['localhost', str(PORT)]
         self.run_test_not_breaking_into_handled_exceptions(
             DebugInfo(

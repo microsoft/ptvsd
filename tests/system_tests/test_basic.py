@@ -3,15 +3,19 @@ import os.path
 import unittest
 
 from tests.helpers.debugsession import Awaitable
+from tests.helpers.resource import TestResources
+from . import (
+    _strip_newline_output_events, lifecycle_handshake,
+    LifecycleTestsBase, DebugInfo, PORT,
+)
 
-from . import (_strip_newline_output_events, lifecycle_handshake,
-               LifecycleTestsBase, DebugInfo, ROOT, PORT)
 
-
-TEST_FILES_DIR = os.path.join(ROOT, 'tests', 'resources', 'system_tests',
-                              'test_basic')
-TEST_TERMINATION_FILES_DIR = os.path.join(ROOT, 'tests', 'resources',
-                                          'system_tests', 'test_terminate')
+TEST_FILES = TestResources.from_module(__name__)
+WITH_OUTPUT = TEST_FILES.sub('test_output')
+WITHOUT_OUTPUT = TEST_FILES.sub('test_without_output')
+WITH_ARGS = TEST_FILES.sub('test_args')
+TEST_TERMINATION_FILES = TestResources.from_module(
+    'tests.system_tests.test_terminate')
 
 
 class BasicTests(LifecycleTestsBase):
@@ -78,13 +82,12 @@ class BasicTests(LifecycleTestsBase):
 class LaunchFileTests(BasicTests):
 
     def test_with_output(self):
-        filename = os.path.join(TEST_FILES_DIR, 'test_output', 'output.py')
+        filename = WITH_OUTPUT.resolve('output.py')
         cwd = os.path.dirname(filename)
         self.run_test_output(DebugInfo(filename=filename, cwd=cwd))
 
     def test_arguments(self):
-        filename = os.path.join(TEST_FILES_DIR, 'test_args',
-                                'launch_with_args.py')
+        filename = WITH_ARGS.resolve('launch_with_args.py')
         cwd = os.path.dirname(filename)
         argv = ['arg1', 'arg2']
         self.run_test_arguments(
@@ -94,15 +97,14 @@ class LaunchFileTests(BasicTests):
 
     @unittest.skip('Broken')
     def test_termination(self):
-        filename = os.path.join(TEST_TERMINATION_FILES_DIR, 'simple.py')
+        filename = TEST_TERMINATION_FILES.resolve('simple.py')
         cwd = os.path.dirname(filename)
         self.run_test_termination(
             DebugInfo(filename=filename, cwd=cwd),
         )
 
     def test_without_output(self):
-        filename = os.path.join(TEST_FILES_DIR, 'test_without_output',
-                                'output.py')
+        filename = WITHOUT_OUTPUT.resolve('output.py')
         cwd = os.path.dirname(filename)
         self.run_test_without_output(
             DebugInfo(filename=filename, cwd=cwd),
@@ -113,16 +115,16 @@ class LaunchModuleTests(BasicTests):
 
     def test_with_output(self):
         module_name = 'mymod_launch1'
-        cwd = os.path.join(TEST_FILES_DIR, 'test_output')
-        env = {'PYTHONPATH': cwd}
+        cwd = WITH_OUTPUT.root
+        env = WITH_OUTPUT.env_with_py_path()
         self.run_test_output(
             DebugInfo(modulename=module_name, env=env, cwd=cwd),
         )
 
     def test_without_output(self):
         module_name = 'mymod_launch1'
-        cwd = os.path.join(TEST_FILES_DIR, 'test_without_output')
-        env = {'PYTHONPATH': cwd}
+        cwd = WITHOUT_OUTPUT.root
+        env = WITHOUT_OUTPUT.env_with_py_path()
         self.run_test_without_output(
             DebugInfo(modulename=module_name, env=env, cwd=cwd),
         )
@@ -130,8 +132,8 @@ class LaunchModuleTests(BasicTests):
     @unittest.skip('Broken')
     def test_termination(self):
         module_name = 'mymod_launch1'
-        cwd = TEST_TERMINATION_FILES_DIR
-        env = {'PYTHONPATH': cwd}
+        cwd = TEST_TERMINATION_FILES.root
+        env = TEST_TERMINATION_FILES.env_with_py_path()
         self.run_test_output(
             DebugInfo(modulename=module_name, env=env, cwd=cwd),
         )
@@ -142,8 +144,8 @@ class LaunchModuleTests(BasicTests):
     @unittest.skip('Broken')
     def test_arguments(self):
         module_name = 'mymod_launch1'
-        cwd = os.path.join(TEST_FILES_DIR, 'test_args')
-        env = {'PYTHONPATH': cwd}
+        cwd = WITH_ARGS.root
+        env = WITH_ARGS.env_with_py_path()
         argv = ['arg1', 'arg2']
         self.run_test_arguments(
             DebugInfo(modulename=module_name, env=env, cwd=cwd, argv=argv),
@@ -154,7 +156,7 @@ class LaunchModuleTests(BasicTests):
 class ServerAttachTests(BasicTests):
 
     def test_with_output(self):
-        filename = os.path.join(TEST_FILES_DIR, 'test_output', 'output.py')
+        filename = WITH_OUTPUT.resolve('output.py')
         cwd = os.path.dirname(filename)
         argv = ['localhost', str(PORT)]
         self.run_test_output(
@@ -167,8 +169,7 @@ class ServerAttachTests(BasicTests):
         )
 
     def test_without_output(self):
-        filename = os.path.join(TEST_FILES_DIR, 'test_without_output',
-                                'output.py')
+        filename = WITHOUT_OUTPUT.resolve('output.py')
         cwd = os.path.dirname(filename)
         argv = ['localhost', str(PORT)]
         self.run_test_without_output(
@@ -184,8 +185,7 @@ class ServerAttachTests(BasicTests):
 class PTVSDAttachTests(BasicTests):
 
     def test_with_output(self):
-        filename = os.path.join(TEST_FILES_DIR, 'test_output',
-                                'attach_output.py')
+        filename = WITH_OUTPUT.resolve('attach_output.py')
         cwd = os.path.dirname(filename)
         argv = ['localhost', str(PORT)]
         self.run_test_output(
@@ -199,8 +199,7 @@ class PTVSDAttachTests(BasicTests):
         )
 
     def test_without_output(self):
-        filename = os.path.join(TEST_FILES_DIR, 'test_without_output',
-                                'attach_output.py')
+        filename = WITHOUT_OUTPUT.resolve('attach_output.py')
         cwd = os.path.dirname(filename)
         argv = ['localhost', str(PORT)]
         self.run_test_without_output(
@@ -218,8 +217,8 @@ class ServerAttachModuleTests(BasicTests):
 
     def test_with_output(self):
         module_name = 'mymod_launch1'
-        cwd = os.path.join(TEST_FILES_DIR, 'test_output')
-        env = {'PYTHONPATH': cwd}
+        cwd = WITH_OUTPUT.root
+        env = WITH_OUTPUT.env_with_py_path()
         argv = ['localhost', str(PORT)]
         self.run_test_output(
             DebugInfo(
@@ -233,8 +232,8 @@ class ServerAttachModuleTests(BasicTests):
 
     def test_without_output(self):
         module_name = 'mymod_launch1'
-        cwd = os.path.join(TEST_FILES_DIR, 'test_without_output')
-        env = {'PYTHONPATH': cwd}
+        cwd = WITHOUT_OUTPUT.root
+        env = WITHOUT_OUTPUT.env_with_py_path()
         argv = ['localhost', str(PORT)]
         self.run_test_without_output(
             DebugInfo(
@@ -252,8 +251,8 @@ class PTVSDAttachModuleTests(BasicTests):
     def test_with_output(self):
         #self.enable_verbose()
         module_name = 'mymod_attach1'
-        cwd = os.path.join(TEST_FILES_DIR, 'test_output')
-        env = {'PYTHONPATH': cwd}
+        cwd = WITH_OUTPUT.root
+        env = WITH_OUTPUT.env_with_py_path()
         argv = ['localhost', str(PORT)]
         self.run_test_output(
             DebugInfo(
@@ -268,8 +267,8 @@ class PTVSDAttachModuleTests(BasicTests):
 
     def test_without_output(self):
         module_name = 'mymod_attach1'
-        cwd = os.path.join(TEST_FILES_DIR, 'test_without_output')
-        env = {'PYTHONPATH': cwd}
+        cwd = WITHOUT_OUTPUT.root
+        env = WITHOUT_OUTPUT.env_with_py_path()
         argv = ['localhost', str(PORT)]
         self.run_test_without_output(
             DebugInfo(

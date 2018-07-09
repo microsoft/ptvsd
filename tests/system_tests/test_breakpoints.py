@@ -2,12 +2,14 @@ import os
 import os.path
 import unittest
 
-from . import (_strip_newline_output_events, lifecycle_handshake,
-               LifecycleTestsBase, DebugInfo, ROOT, PORT)
+from tests.helpers.resource import TestResources
+from . import (
+    _strip_newline_output_events, lifecycle_handshake,
+    LifecycleTestsBase, DebugInfo, PORT,
+)
 
 
-TEST_FILES_DIR = os.path.join(ROOT, 'tests', 'resources', 'system_tests',
-                              'test_breakpoints')
+TEST_FILES = TestResources.from_module(__name__)
 
 
 class BreakpointTests(LifecycleTestsBase):
@@ -275,7 +277,7 @@ class BreakpointTests(LifecycleTestsBase):
 class LaunchFileTests(BreakpointTests):
 
     def test_with_break_points(self):
-        filename = os.path.join(TEST_FILES_DIR, 'output.py')
+        filename = TEST_FILES.resolve('output.py')
         cwd = os.path.dirname(filename)
         self.run_test_with_break_points(
             DebugInfo(filename=filename, cwd=cwd),
@@ -284,8 +286,8 @@ class LaunchFileTests(BreakpointTests):
         )
 
     def test_with_break_points_across_files(self):
-        first_file = os.path.join(TEST_FILES_DIR, 'foo.py')
-        second_file = os.path.join(TEST_FILES_DIR, 'bar.py')
+        first_file = TEST_FILES.resolve('foo.py')
+        second_file = TEST_FILES.resolve('bar.py')
         cwd = os.path.dirname(first_file)
         expected_modules = [{
             'reason': 'new',
@@ -338,19 +340,19 @@ class LaunchFileTests(BreakpointTests):
         )
 
     def test_conditional_break_points(self):
-        filename = os.path.join(TEST_FILES_DIR, 'loopy.py')
+        filename = TEST_FILES.resolve('loopy.py')
         cwd = os.path.dirname(filename)
         self.run_test_conditional_break_points(
             DebugInfo(filename=filename, cwd=cwd))
 
     def test_logpoints(self):
-        filename = os.path.join(TEST_FILES_DIR, 'loopy.py')
+        filename = TEST_FILES.resolve('loopy.py')
         cwd = os.path.dirname(filename)
         self.run_test_logpoints(
             DebugInfo(filename=filename, cwd=cwd))
 
     def test_hit_conditional_break_points_equal(self):
-        filename = os.path.join(TEST_FILES_DIR, 'loopy.py')
+        filename = TEST_FILES.resolve('loopy.py')
         cwd = os.path.dirname(filename)
         self.run_test_hit_conditional_break_points(
             DebugInfo(filename=filename, cwd=cwd),
@@ -360,7 +362,7 @@ class LaunchFileTests(BreakpointTests):
         )
 
     def test_hit_conditional_break_points_equal2(self):
-        filename = os.path.join(TEST_FILES_DIR, 'loopy.py')
+        filename = TEST_FILES.resolve('loopy.py')
         cwd = os.path.dirname(filename)
         self.run_test_hit_conditional_break_points(
             DebugInfo(filename=filename, cwd=cwd),
@@ -370,7 +372,7 @@ class LaunchFileTests(BreakpointTests):
         )
 
     def test_hit_conditional_break_points_greater(self):
-        filename = os.path.join(TEST_FILES_DIR, 'loopy.py')
+        filename = TEST_FILES.resolve('loopy.py')
         cwd = os.path.dirname(filename)
         self.run_test_hit_conditional_break_points(
             DebugInfo(filename=filename, cwd=cwd),
@@ -380,7 +382,7 @@ class LaunchFileTests(BreakpointTests):
         )
 
     def test_hit_conditional_break_points_greater_or_equal(self):
-        filename = os.path.join(TEST_FILES_DIR, 'loopy.py')
+        filename = TEST_FILES.resolve('loopy.py')
         cwd = os.path.dirname(filename)
         self.run_test_hit_conditional_break_points(
             DebugInfo(filename=filename, cwd=cwd),
@@ -390,7 +392,7 @@ class LaunchFileTests(BreakpointTests):
         )
 
     def test_hit_conditional_break_points_lesser(self):
-        filename = os.path.join(TEST_FILES_DIR, 'loopy.py')
+        filename = TEST_FILES.resolve('loopy.py')
         cwd = os.path.dirname(filename)
         self.run_test_hit_conditional_break_points(
             DebugInfo(filename=filename, cwd=cwd),
@@ -400,7 +402,7 @@ class LaunchFileTests(BreakpointTests):
         )
 
     def test_hit_conditional_break_points_lesser_or_equal(self):
-        filename = os.path.join(TEST_FILES_DIR, 'loopy.py')
+        filename = TEST_FILES.resolve('loopy.py')
         cwd = os.path.dirname(filename)
         self.run_test_hit_conditional_break_points(
             DebugInfo(filename=filename, cwd=cwd),
@@ -410,7 +412,7 @@ class LaunchFileTests(BreakpointTests):
         )
 
     def test_hit_conditional_break_points_mod(self):
-        filename = os.path.join(TEST_FILES_DIR, 'loopy.py')
+        filename = TEST_FILES.resolve('loopy.py')
         cwd = os.path.dirname(filename)
         self.run_test_hit_conditional_break_points(
             DebugInfo(filename=filename, cwd=cwd),
@@ -424,8 +426,8 @@ class LaunchModuleTests(BreakpointTests):
 
     def test_with_break_points(self):
         module_name = 'mymod_launch1'
-        cwd = os.path.join(TEST_FILES_DIR)
-        env = {'PYTHONPATH': cwd}
+        env = TEST_FILES.env_with_py_path()
+        cwd = TEST_FILES.root
         bp_filename = os.path.join(cwd, module_name, '__init__.py')
         self.run_test_with_break_points(
             DebugInfo(modulename=module_name, env=env, cwd=cwd),
@@ -435,10 +437,10 @@ class LaunchModuleTests(BreakpointTests):
 
     def test_with_break_points_across_files(self):
         module_name = 'mymod_foo'
-        first_file = os.path.join(TEST_FILES_DIR, module_name, '__init__.py')
-        second_file = os.path.join(TEST_FILES_DIR, 'mymod_bar', 'bar.py')
-        cwd = os.path.join(TEST_FILES_DIR)
-        env = {'PYTHONPATH': cwd}
+        first_file = TEST_FILES.resolve(module_name, '__init__.py')
+        second_file = TEST_FILES.resolve('mymod_bar', 'bar.py')
+        env = TEST_FILES.env_with_py_path()
+        cwd = TEST_FILES.root
         expected_modules = [{
             'reason': 'new',
             'module': {
@@ -494,7 +496,7 @@ class LaunchModuleTests(BreakpointTests):
 class ServerAttachTests(BreakpointTests):
 
     def test_with_break_points(self):
-        filename = os.path.join(TEST_FILES_DIR, 'output.py')
+        filename = TEST_FILES.resolve('output.py')
         cwd = os.path.dirname(filename)
         argv = ['localhost', str(PORT)]
         self.run_test_with_break_points(
@@ -512,7 +514,7 @@ class ServerAttachTests(BreakpointTests):
 class PTVSDAttachTests(BreakpointTests):
 
     def test_with_break_points(self):
-        filename = os.path.join(TEST_FILES_DIR, 'attach_output.py')
+        filename = TEST_FILES.resolve('attach_output.py')
         cwd = os.path.dirname(filename)
         argv = ['localhost', str(PORT)]
         self.run_test_with_break_points(
@@ -532,8 +534,8 @@ class ServerAttachModuleTests(BreakpointTests):
 
     def test_with_break_points(self):
         module_name = 'mymod_launch1'
-        cwd = os.path.join(TEST_FILES_DIR)
-        env = {'PYTHONPATH': cwd}
+        env = TEST_FILES.env_with_py_path()
+        cwd = TEST_FILES.root
         argv = ['localhost', str(PORT)]
         bp_filename = os.path.join(cwd, module_name, '__init__.py')
         self.run_test_with_break_points(
@@ -554,8 +556,8 @@ class PTVSDAttachModuleTests(BreakpointTests):
 
     def test_with_break_points(self):
         module_name = 'mymod_attach1'
-        cwd = os.path.join(TEST_FILES_DIR)
-        env = {'PYTHONPATH': cwd}
+        env = TEST_FILES.env_with_py_path()
+        cwd = TEST_FILES.root
         argv = ['localhost', str(PORT)]
         bp_filename = os.path.join(cwd, module_name, '__init__.py')
         self.run_test_with_break_points(
