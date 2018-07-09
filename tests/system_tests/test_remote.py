@@ -1,7 +1,7 @@
 import os
 import os.path
-import socket
 
+from tests.helpers.socket import resolve_hostname
 from . import (_strip_newline_output_events, lifecycle_handshake,
                LifecycleTestsBase, DebugInfo, ROOT, PORT)
 
@@ -72,7 +72,8 @@ class AttachFileTests(RemoteTests):
                                 'attach_output.py')
         cwd = os.path.dirname(filename)
         argv = ['0.0.0.0', str(PORT)]
-        ip = socket.gethostbyname(socket.gethostname())
+        ip = resolve_hostname()
+
         self.run_test_attach(
             DebugInfo(
                 filename=filename,
