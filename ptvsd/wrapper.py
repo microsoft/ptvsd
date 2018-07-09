@@ -728,6 +728,7 @@ DEBUG_OPTIONS_BY_FLAG = {
     'FixFilePathCase': 'FIX_FILE_PATH_CASE=True',
     'DebugStdLib': 'DEBUG_STDLIB=True',
     'WindowsClient': 'WINDOWS_CLIENT=True',
+    'NonWindowsClient': 'WINDOWS_CLIENT=False',
 }
 
 
@@ -1440,13 +1441,13 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
 
     @async_handler
     def _handle_attach(self, args):
-        self._initialize_path_maps(args)
         yield self._send_cmd_version_command()
+        self._initialize_path_maps(args)
 
     @async_handler
     def _handle_launch(self, args):
-        self._initialize_path_maps(args)
         yield self._send_cmd_version_command()
+        self._initialize_path_maps(args)
 
     def _handle_detach(self):
         debug('detaching')
@@ -1560,31 +1561,21 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         try:
             return self.source_map.to_vscode(filename, autogen=False)
         except KeyError:
-            # If attaching to a local process (then remote and local are same)
-            for local_prefix, remote_prefix in pydevd_file_utils.PATHS_FROM_ECLIPSE_TO_PYTHON:  # noqa
-                if local_prefix != remote_prefix:
-                    continue
-                if filename.startswith(local_prefix): # noqa
-                    return 0
-                if platform.system() == 'Windows' and filename.upper().startswith(local_prefix.upper()): # noqa
-                    return 0
+            pass
 
         client_filename = pydevd_file_utils.norm_file_to_client(filename)
+        print('filename = ' + filename)
+        print('client_filename = ' + client_filename)
 
         # If the mapped file is the same as the file we provided,
-        # then we can generate a soure reference.
+        # this means path mappings were not provided or didn't find one.
         if client_filename == filename:
-            return 0
+            return self.source_map.to_vscode(filename, autogen=True)
         elif platform.system() == 'Windows' and \
             client_filename.upper() == filename.upper():
-            return 0
-        elif client_filename.replace('\\', '/') == filename.replace('\\', '/'):
-            # If remote is Unix and local is Windows, then PyDevD will
-            #   replace the path separator in remote with with
-            #   the os path separator of remote client
-            return 0
-        else:
             return self.source_map.to_vscode(filename, autogen=True)
+        else:
+            return 0
 
     @async_handler
     def on_stackTrace(self, request, args):
