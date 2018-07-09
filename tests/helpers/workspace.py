@@ -80,6 +80,9 @@ class Workspace(FSTreeBase):
     def _new_root(cls):
         return tempfile.mkdtemp(prefix=cls.PREFIX)
 
+    def __init__(self, root=None):
+        super(Workspace, self).__init__(root)
+
     def cleanup(self):
         """Release and destroy the workspace."""
         if self._owned:
