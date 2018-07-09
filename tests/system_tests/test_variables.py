@@ -90,7 +90,7 @@ class VariableTests(LifecycleTestsBase):
             session.send_request('continue', threadId=tid)
 
         # Variables for a, b, __file__, __main__
-        self.assertGreaterEqual(len(variables.resp.body['variables']), 3)
+        self.assertGreaterEqual(len(variables), 3)
         self.assert_is_subset(variables, [{
             'name': 'a',
             'type': 'int',
@@ -206,7 +206,7 @@ class VariableTests(LifecycleTestsBase):
             )
             req_scopes.wait()
             scopes = req_scopes.resp.body['scopes']
-            variables_reference = scopes['variablesReference']
+            variables_reference = scopes[0]['variablesReference']
             req_variables = session.send_request(
                 'variables',
                 variablesReference=variables_reference,
