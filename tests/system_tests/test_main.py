@@ -10,7 +10,6 @@ from tests.helpers.debugadapter import DebugAdapter
 from tests.helpers.debugclient import EasyDebugClient as DebugClient
 from tests.helpers.lock import LockTimeoutError
 from tests.helpers.script import find_line, set_lock, set_release
-from tests.helpers.debugsession import Awaitable
 
 from . import (
     _strip_newline_output_events, lifecycle_handshake, TestsBase,
@@ -280,17 +279,14 @@ class LifecycleTests(LifecycleTestsBase):
                 session1 = editor.attach_socket(addr, adapter)
                 with session1.wait_for_event('thread'):
                     reqs = lifecycle_handshake(session1, 'attach')
-                    reqs[1].wait()
                     done1()
-                req_disconnect = session1.send_request('disconnect')
-                req_disconnect.wait()
+                req_disconnect = session1.send_request_and_wait('disconnect')
                 editor.detach(adapter)
 
                 # Re-attach
                 session2 = editor.attach_socket(addr, adapter)
                 (req_initialize, req_launch, req_config, _, _, _
                  ) = lifecycle_handshake(session2, 'attach')
-                req_launch.wait()
                 done2()
 
                 adapter.wait()
@@ -378,30 +374,26 @@ class LifecycleTests(LifecycleTestsBase):
                                                  threads=True)
                 tid1 = event.body['threadId']
 
-                stopped_event = session1.get_awaiter_for_event('stopped')
-                req_bps = session1.send_request(
-                    'setBreakpoints',
-                    source={'path': filename},
-                    breakpoints=[
-                        {'line': bp1},
-                        {'line': bp2},
-                    ],
-                )
-                req_bps.wait()
+                with self.wait_for_event('stopped'):
+                    req_bps = session1.send_request_and_wait(
+                        'setBreakpoints',
+                        source={'path': filename},
+                        breakpoints=[
+                            {'line': bp1},
+                            {'line': bp2},
+                        ],
+                    )
+                    done1()
 
-                done1()
-                stopped_event.wait()
-
-                req_threads2 = session1.send_request('threads')
-                req_stacktrace1 = session1.send_request(
+                req_threads2 = session1.send_request_and_wait('threads')
+                req_stacktrace1 = session1.send_request_and_wait(
                     'stackTrace',
                     threadId=tid1,
                 )
                 out1 = str(adapter.output)
 
                 # Detach with execution stopped and 1 breakpoint left.
-                req_disconnect = session1.send_request('disconnect')
-                Awaitable.wait_all(req_threads2, req_stacktrace1, req_disconnect) # noqa
+                req_disconnect = session1.send_request_and_wait('disconnect')
                 editor.detach(adapter)
                 try:
                     wait2()
@@ -659,8 +651,8 @@ class LifecycleTests(LifecycleTestsBase):
                             done1()
                         req_bps, = reqs_bps  # There should only be one.
                     tid = event.body['threadId']
-                req_threads2 = session.send_request('threads')
-                req_stacktrace1 = session.send_request(
+                req_threads2 = session.send_request_and_wait('threads')
+                req_stacktrace1 = session.send_request_and_wait(
                     'stackTrace',
                     threadId=tid,
                 )
@@ -669,19 +661,19 @@ class LifecycleTests(LifecycleTestsBase):
                 done2()
                 with session.wait_for_event('stopped'):
                     with session.wait_for_event('continued'):
-                        req_continue1 = session.send_request(
+                        req_continue1 = session.send_request_and_wait(
                             'continue',
                             threadId=tid,
                         )
-                req_threads3 = session.send_request('threads')
-                req_stacktrace2 = session.send_request(
+                req_threads3 = session.send_request_and_wait('threads')
+                req_stacktrace2 = session.send_request_and_wait(
                     'stackTrace',
                     threadId=tid,
                 )
                 out3 = str(adapter.output)
 
                 with session.wait_for_event('continued'):
-                    req_continue2 = session.send_request(
+                    req_continue2 = session.send_request_and_wait(
                         'continue',
                         threadId=tid,
                     )

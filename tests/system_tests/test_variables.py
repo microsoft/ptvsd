@@ -1,7 +1,6 @@
 import os
 import os.path
 
-from tests.helpers.debugsession import Awaitable
 from tests.helpers.resource import TestResources
 from . import (
     lifecycle_handshake, LifecycleTestsBase, DebugInfo,
@@ -32,31 +31,26 @@ class VariableTests(LifecycleTestsBase):
         with self.start_debugging(debug_info) as dbg:
             session = dbg.session
             with session.wait_for_event('stopped') as event:
-                (_, req_launch_attach, _, _, _, _,
-                 ) = lifecycle_handshake(session, debug_info.starttype,
-                                         breakpoints=breakpoints)
-                req_launch_attach.wait()
+                lifecycle_handshake(session, debug_info.starttype,
+                                    breakpoints=breakpoints)
             tid = event.body['threadId']
 
-            req_stacktrace = session.send_request(
+            req_stacktrace = session.send_request_and_wait(
                 'stackTrace',
                 threadId=tid,
             )
-            req_stacktrace.wait()
             frames = req_stacktrace.resp.body['stackFrames']
             frame_id = frames[0]['id']
-            req_scopes = session.send_request(
+            req_scopes = session.send_request_and_wait(
                 'scopes',
                 frameId=frame_id,
             )
-            req_scopes.wait()
             scopes = req_scopes.resp.body['scopes']
             variables_reference = scopes[0]['variablesReference']
-            req_variables = session.send_request(
+            req_variables = session.send_request_and_wait(
                 'variables',
                 variablesReference=variables_reference,
             )
-            req_variables.wait()
             variables = req_variables.resp.body['variables']
 
             var_b = list(b for b in variables if b['name'] == 'b')
@@ -65,28 +59,26 @@ class VariableTests(LifecycleTestsBase):
                 var_b_variables = None
             else:
                 var_b_ref = var_b['variablesReference']
-                req_variables = session.send_request(
+                req_variables = session.send_request_and_wait(
                     'variables',
                     variablesReference=var_b_ref,
                 )
-                req_variables.wait()
                 var_b_variables = req_variables.resp.body['variables']
 
-            req_evaluate1 = session.send_request(
+            req_evaluate1 = session.send_request_and_wait(
                 'evaluate',
                 expression='a',
                 frameId=frame_id,
             )
-            req_evaluate2 = session.send_request(
+            req_evaluate2 = session.send_request_and_wait(
                 'evaluate',
                 expression="b['one']",
                 frameId=frame_id,
             )
-            Awaitable.wait_all(req_evaluate1, req_evaluate2)
             var_a_evaluate = req_evaluate1.resp.body
             var_b_one_evaluate = req_evaluate2.resp.body
 
-            session.send_request('continue', threadId=tid)
+            session.send_request_and_wait('continue', threadId=tid)
 
         # Variables for a, b, __file__, __main__
         self.assertGreaterEqual(len(variables), 3)
@@ -184,31 +176,26 @@ class VariableTests(LifecycleTestsBase):
         with self.start_debugging(debug_info) as dbg:
             session = dbg.session
             with session.wait_for_event('stopped') as event:
-                (_, req_launch_attach, _, _, _, _,
-                 ) = lifecycle_handshake(session, debug_info.starttype,
-                                         breakpoints=breakpoints)
-                req_launch_attach.wait()
+                lifecycle_handshake(session, debug_info.starttype,
+                                    breakpoints=breakpoints)
             tid = event.body['threadId']
 
-            req_stacktrace = session.send_request(
+            req_stacktrace = session.send_request_and_wait(
                 'stackTrace',
                 threadId=tid,
             )
-            req_stacktrace.wait()
             frames = req_stacktrace.resp.body['stackFrames']
             frame_id = frames[0]['id']
-            req_scopes = session.send_request(
+            req_scopes = session.send_request_and_wait(
                 'scopes',
                 frameId=frame_id,
             )
-            req_scopes.wait()
             scopes = req_scopes.resp.body['scopes']
             variables_reference = scopes[0]['variablesReference']
-            req_variables = session.send_request(
+            req_variables = session.send_request_and_wait(
                 'variables',
                 variablesReference=variables_reference,
             )
-            req_variables.wait()
             variables = req_variables.resp.body['variables']
 
             b_dict_vars = list(v for v in variables if v['name'] == 'b_test')
@@ -217,11 +204,10 @@ class VariableTests(LifecycleTestsBase):
             else:
                 b_dict_var, = b_dict_vars
                 b_dict_var_ref = b_dict_var['variablesReference']
-                req_variables = session.send_request(
+                req_variables = session.send_request_and_wait(
                     'variables',
                     variablesReference=b_dict_var_ref,
                 )
-                req_variables.wait()
                 b_dict_var_items = req_variables.resp.body['variables']
 
             #c_dict_vars = list(v for v in variables if v['name'] == 'c_test')
@@ -230,14 +216,14 @@ class VariableTests(LifecycleTestsBase):
             #else:
             #    c_dict_var, = c_dict_vars
             #    c_dict_var_ref = c_dict_var['variablesReference']
-            #    req_variables = session.send_request(
+            #    req_variables = session.send_request_and_wait(
             #        'variables',
             #        variablesReference=c_dict_var_ref,
             #    )
             #    req_variables.wait()
             #    c_dict_var_items = req_variables.resp.body['variables']
 
-            session.send_request('continue', threadId=tid)
+            session.send_request_and_wait('continue', threadId=tid)
 
         variables_to_check = list(v['name']
                                   for v in variables

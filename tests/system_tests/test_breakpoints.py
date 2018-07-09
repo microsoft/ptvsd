@@ -35,14 +35,13 @@ class BreakpointTests(LifecycleTestsBase):
                 req_launch_attach.wait()
             tid = event.body['threadId']
 
-            req_stacktrace = session.send_request(
+            req_stacktrace = session.send_request_and_wait(
                 'stackTrace',
                 threadId=tid,
             )
-            req_stacktrace.wait()
             stacktrace = req_stacktrace.resp.body
 
-            session.send_request(
+            session.send_request_and_wait(
                 'continue',
                 threadId=tid,
             )
@@ -94,20 +93,17 @@ class BreakpointTests(LifecycleTestsBase):
         with self.start_debugging(debug_info) as dbg:
             session = dbg.session
             with session.wait_for_event('stopped') as event:
-                (_, req_launch_attach, _, _, _, _,
-                 ) = lifecycle_handshake(session, debug_info.starttype,
-                                         breakpoints=breakpoints)
-                req_launch_attach.wait()
+                lifecycle_handshake(session, debug_info.starttype,
+                                    breakpoints=breakpoints)
             tid = event.body['threadId']
 
-            req_stacktrace = session.send_request(
+            req_stacktrace = session.send_request_and_wait(
                 'stackTrace',
                 threadId=tid,
             )
-            req_stacktrace.wait()
             stacktrace = req_stacktrace.resp.body
 
-            session.send_request('continue', threadId=tid)
+            session.send_request_and_wait('continue', threadId=tid)
 
         received = list(_strip_newline_output_events(session.received))
 
@@ -115,7 +111,7 @@ class BreakpointTests(LifecycleTestsBase):
             found_mod = self.find_events(received, 'module', mod)
             self.assertEqual(len(found_mod),
                              1,
-                             'Modul not found {}'.format(mod))
+                             'Module not found {}'.format(mod))
 
         self.assert_is_subset(stacktrace, expected_stacktrace)
 
@@ -138,28 +134,25 @@ class BreakpointTests(LifecycleTestsBase):
                                     breakpoints=breakpoints)
             tid = event.body['threadId']
 
-            req_stacktrace = session.send_request(
+            req_stacktrace = session.send_request_and_request(
                 'stackTrace',
                 threadId=tid,
             )
-            req_stacktrace.wait()
             frames = req_stacktrace.resp.body['stackFrames']
             frame_id = frames[0]['id']
-            req_scopes = session.send_request(
+            req_scopes = session.send_request_and_request(
                 'scopes',
                 frameId=frame_id,
             )
-            req_scopes.wait()
             scopes = req_scopes.resp.body['scopes']
             variables_reference = scopes[0]['variablesReference']
-            req_variables = session.send_request(
+            req_variables = session.send_request_and_request(
                 'variables',
                 variablesReference=variables_reference,
             )
-            req_variables.wait()
             variables = req_variables.resp.body['variables']
 
-            session.send_request('continue', threadId=tid)
+            session.send_request_and_request('continue', threadId=tid)
 
         self.assert_is_subset(variables, [{
             'name': 'a',
@@ -207,25 +200,22 @@ class BreakpointTests(LifecycleTestsBase):
                                             breakpoints=breakpoints)
                 tid = event.body['threadId']
 
-                req_stacktrace = session.send_request(
+                req_stacktrace = session.send_request_and_wait(
                     'stackTrace',
                     threadId=tid,
                 )
-                req_stacktrace.wait()
                 frames = req_stacktrace.resp.body['stackFrames']
                 frame_id = frames[0]['id']
-                req_scopes = session.send_request(
+                req_scopes = session.send_request_and_wait(
                     'scopes',
                     frameId=frame_id,
                 )
-                req_scopes.wait()
                 scopes = req_scopes.resp.body['scopes']
                 variables_reference = scopes[0]['variablesReference']
-                req_variables = session.send_request(
+                req_variables = session.send_request_and_wait(
                     'variables',
                     variablesReference=variables_reference,
                 )
-                req_variables.wait()
                 variables = req_variables.resp.body['variables']
                 i_value = list(int(v['value'])
                                for v in variables
@@ -234,9 +224,9 @@ class BreakpointTests(LifecycleTestsBase):
                 count = count + 1
                 if count < hits:
                     with session.wait_for_event('stopped') as event:
-                        session.send_request('continue', threadId=tid)
+                        session.send_request_and_wait('continue', threadId=tid)
                 else:
-                    session.send_request('continue', threadId=tid)
+                    session.send_request_and_wait('continue', threadId=tid)
         self.assertEqual(i_values, kwargs['expected'])
 
     def run_test_logpoints(self, debug_info):

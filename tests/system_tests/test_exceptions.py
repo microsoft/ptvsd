@@ -50,11 +50,10 @@ class ExceptionTests(LifecycleTestsBase):
                           stopped.event.body['description'])
 
             thread_id = stopped.event.body['threadId']
-            req_exc_info = dbg.session.send_request(
+            req_exc_info = dbg.session.send_request_and_wait(
                 'exceptionInfo',
                 threadId=thread_id,
             )
-            req_exc_info.wait()
             exc_info = req_exc_info.resp.body
 
             self.assert_is_subset(exc_info, {
@@ -67,10 +66,10 @@ class ExceptionTests(LifecycleTestsBase):
             })
 
             continued = dbg.session.get_awaiter_for_event('continued')
-            dbg.session.send_request(
+            dbg.session.send_request_and_wait(
                 'continue',
                 threadId=thread_id,
-            ).wait()
+            )
             Awaitable.wait_all(continued)
 
         received = list(_strip_newline_output_events(dbg.session.received))

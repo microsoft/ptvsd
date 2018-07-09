@@ -60,9 +60,9 @@ class BasicTests(LifecycleTestsBase):
 
             Awaitable.wait_all(req_launch,
                                session.get_awaiter_for_event('thread'))
-            disconnect = session.send_request('disconnect')
+            session.send_request_and_wait('disconnect')
 
-            Awaitable.wait_all(exited, terminated, disconnect)
+            Awaitable.wait_all(exited, terminated)
 
     def run_test_without_output(self, debug_info):
         options = {'debugOptions': ['RedirectOutput']}
