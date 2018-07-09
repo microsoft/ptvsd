@@ -220,11 +220,6 @@ class DebugSession(Closeable):
         self._add_pending_handler(match, pending, handlername)
         return pending
 
-    # TODO: Drop get_awaiter_for_event().
-
-    def get_awaiter_for_event(self, event, condition=lambda msg: True, **kwargs): # noqa
-        return self.add_pending_event(event, match_body=condition)
-
     # internal methods
 
     def _close(self):
@@ -461,12 +456,3 @@ class SentRequest(dict):
         if self._pending is None:
             return False
         return self._pending.wait(timeout)
-
-
-# TODO: Drop Awaitable.
-
-class Awaitable(object):
-
-    @classmethod
-    def wait_all(cls, *awaitables):
-        wait_all(awaitables)

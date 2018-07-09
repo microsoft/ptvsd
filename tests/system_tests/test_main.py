@@ -374,7 +374,7 @@ class LifecycleTests(LifecycleTestsBase):
                                                  threads=True)
                 tid1 = event.body['threadId']
 
-                with self.wait_for_event('stopped'):
+                with session1.wait_for_event('stopped'):
                     req_bps = session1.send_request_and_wait(
                         'setBreakpoints',
                         source={'path': filename},

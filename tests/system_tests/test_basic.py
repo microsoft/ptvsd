@@ -2,7 +2,6 @@ import os
 import os.path
 import unittest
 
-from tests.helpers.debugsession import Awaitable
 from tests.helpers.resource import TestResources
 from . import (
     _strip_newline_output_events, lifecycle_handshake,
@@ -50,19 +49,10 @@ class BasicTests(LifecycleTestsBase):
     def run_test_termination(self, debug_info):
         with self.start_debugging(debug_info) as dbg:
             session = dbg.session
-
-            exited = session.get_awaiter_for_event('exited')
-            terminated = session.get_awaiter_for_event('terminated')
-
-            (_, req_launch, _, _, _, _
-             ) = lifecycle_handshake(dbg.session, debug_info.starttype,
-                                     threads=True)
-
-            Awaitable.wait_all(req_launch,
-                               session.get_awaiter_for_event('thread'))
-            session.send_request_and_wait('disconnect')
-
-            Awaitable.wait_all(exited, terminated)
+            with self.wait_for_exit(session):
+                lifecycle_handshake(session, debug_info.starttype,
+                                    threads=True)
+                session.send_request_and_wait("disconnect")
 
     def run_test_without_output(self, debug_info):
         options = {'debugOptions': ['RedirectOutput']}
