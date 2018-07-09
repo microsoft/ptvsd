@@ -38,36 +38,39 @@ class VariableTests(LifecycleTestsBase):
             event = result['msg']
             tid = event.body['threadId']
 
-            stacktrace = session.send_request('stackTrace', threadId=tid)
-            stacktrace.wait()
-            frame_id = stacktrace.resp.body['stackFrames'][0]['id']
-            scopes = session.send_request('scopes', frameId=frame_id)
-            scopes.wait()
-            variables_reference = scopes.resp.body['scopes'][0][
-                'variablesReference']  # noqa
-            variables = session.send_request(
+            req_stacktrace = session.send_request('stackTrace', threadId=tid)
+            req_stacktrace.wait()
+            frames = req_stacktrace.resp.body['stackFrames']
+            frame_id = frames[0]['id']
+            req_scopes = session.send_request('scopes', frameId=frame_id)
+            req_scopes.wait()
+            scopes = req_scopes.resp.body['scopes']
+            variables_reference = scopes[0]['variablesReference']
+            req_variables = session.send_request(
                 'variables', variablesReference=variables_reference)  # noqa
-            variables.wait()
+            req_variables.wait()
+            variables = req_variables.resp.body['variables']
 
-            var_b = list(b for b in variables.resp.body['variables']
-                         if b['name'] == 'b')  # noqa
+            var_b = list(b for b in variables if b['name'] == 'b')
             var_b = var_b[0] if len(var_b) == 1 else None
             if var_b is None:
                 var_b_variables = None
             else:
                 var_b_ref = var_b['variablesReference']
-                var_b_variables = session.send_request(
+                req_variables = session.send_request(
                     'variables', variablesReference=var_b_ref)  # noqa
-                var_b_variables.wait()
+                req_variables.wait()
+                var_b_variables = req_variables.resp.body
 
-            var_a_evaluate = session.send_request(
+            req_evaluate1 = session.send_request(
                 'evaluate', expression='a', frameId=frame_id)
-            var_b_one_evaluate = session.send_request(
+            req_evaluate2 = session.send_request(
                 'evaluate',
                 expression="b['one']",  # noqa
                 frameId=frame_id)
-
-            Awaitable.wait_all(var_a_evaluate, var_b_one_evaluate)
+            Awaitable.wait_all(req_evaluate1, req_evaluate2)
+            var_a_evaluate = req_evaluate1.resp.body
+            var_b_one_evaluate = req_evaluate2.resp.body
 
             session.send_request('continue', threadId=tid)
 
@@ -122,10 +125,9 @@ class VariableTests(LifecycleTestsBase):
             'value': 'None',
             'evaluateName': '__spec__'
         }]
-        self.assert_is_subset(variables.resp.body['variables'],
-                              expected_variables)  # noqa
+        self.assert_is_subset(variables, expected_variables)
         expected_var_a_eval = {'type': 'int', 'result': '1'}
-        var_a_evaluate.resp.body == expected_var_a_eval
+        var_a_evaluate == expected_var_a_eval
 
         assert var_b_variables is not None
         expected_var_b = {
@@ -144,11 +146,10 @@ class VariableTests(LifecycleTestsBase):
                 'evaluateName': 'b.__len__'
             }]
         }
-        self.assert_is_subset(var_b_variables.resp.body,
-                              expected_var_b)  # noqa
+        self.assert_is_subset(var_b_variables, expected_var_b)
 
         expected_var_b_eval = {'type': ' int', 'result': '1'}
-        var_b_one_evaluate.resp.body == expected_var_b_eval
+        var_b_one_evaluate == expected_var_b_eval
 
     def test_variable_sorting(self):
         filename = os.path.join(TEST_FILES_DIR, 'for_sorting.py')
@@ -177,41 +178,47 @@ class VariableTests(LifecycleTestsBase):
             event = result['msg']
             tid = event.body['threadId']
 
-            stacktrace = session.send_request('stackTrace', threadId=tid)
-            stacktrace.wait()
-            frame_id = stacktrace.resp.body['stackFrames'][0]['id']
-            scopes = session.send_request('scopes', frameId=frame_id)
-            scopes.wait()
-            variables_reference = scopes.resp.body['scopes'][0][
-                'variablesReference']  # noqa
-            variables = session.send_request(
+            req_stacktrace = session.send_request('stackTrace', threadId=tid)
+            req_stacktrace.wait()
+            frames = req_stacktrace.resp.body['stackFrames']
+            frame_id = frames[0]['id']
+            req_scopes = session.send_request('scopes', frameId=frame_id)
+            req_scopes.wait()
+            scopes = req_scopes.resp.body['scopes']
+            variables_reference = scopes['variablesReference']
+            req_variables = session.send_request(
                 'variables', variablesReference=variables_reference)  # noqa
-            variables.wait()
+            req_variables.wait()
+            variables = req_variables.resp.body['variables']
 
-            try:
-                b_dict_var = list(v for v in variables.resp.body['variables']
-                                  if v['name'] == 'b_test')[0]
-                b_dict_var_ref = b_dict_var['variablesReference']
-                b_dict_var_items = session.send_request(
-                    'variables', variablesReference=b_dict_var_ref)  # noqa
-                b_dict_var_items.wait()
-            except IndexError:
+            b_dict_vars = list(v for v in variables if v['name'] == 'b_test')
+            if not b_dict_vars:
                 b_dict_var_items = None
+            else:
+                b_dict_var, = b_dict_vars
+                b_dict_var_ref = b_dict_var['variablesReference']
+                req_variables = session.send_request(
+                    'variables', variablesReference=b_dict_var_ref)  # noqa
+                req_variables.wait()
+                b_dict_var_items = req_variables.resp.body['variables']
 
-            try:
-                c_dict_var = list(v for v in variables.resp.body['variables']
-                                  if v['name'] == 'c_test')[0]
-                c_dict_var_ref = c_dict_var['variablesReference']
-                c_dict_var_items = session.send_request(
-                    'variables', variablesReference=c_dict_var_ref)  # noqa
-                c_dict_var_items.wait()
-            except IndexError:
-                c_dict_var_items = None
+            #c_dict_vars = list(v for v in variables if v['name'] == 'c_test')
+            #if not c_dict_vars:
+            #    c_dict_var_items = None
+            #else:
+            #    c_dict_var, = c_dict_vars
+            #    c_dict_var_ref = c_dict_var['variablesReference']
+            #    req_variables = session.send_request(
+            #        'variables',
+            #        variablesReference=c_dict_var_ref,
+            #    )
+            #    req_variables.wait()
+            #    c_dict_var_items = req_variables.resp.body['variables']
 
             session.send_request('continue', threadId=tid)
 
         variables_to_check = list(v['name']
-                                  for v in variables.resp.body['variables']
+                                  for v in variables
                                   if v['name'].find('_test') > 0)
         expected_var_order = [
             'a_test', 'b_test', 'c_test', '_a_test', '_b_test', '_c_test',
@@ -223,14 +230,13 @@ class VariableTests(LifecycleTestsBase):
         # Dict keys are sorted normally, i.e., the '_' rules don't apply
         # TODO: v['name'][1:5] is needed due to bug #45
         b_dict_var_keys = list(v['name'][1:5]
-                               for v in b_dict_var_items.resp.body['variables']
-                               if not v['name'].startswith('__'))  # noqa
+                               for v in b_dict_var_items
+                               if not v['name'].startswith('__'))
         expected_b_dict_var_keys_order = ['abcd', 'eggs', 'spam']
         self.assertEqual(b_dict_var_keys, expected_b_dict_var_keys_order)
 
         # TODO: Numeric dict keys have following issues
         # bug: #45 and #213
-        # c_dict_var_keys = list(v['name']
-        #                      for v in c_dict_var_items.resp.body['variables'])  # noqa
+        # c_dict_var_keys = list(v['name'] for v in c_dict_var_items)
         # expected_c_dict_var_keys_order = ['1', '2', '10', '__len__']
         # self.assertEqual(c_dict_var_keys, expected_c_dict_var_keys_order)

@@ -52,12 +52,13 @@ class ExceptionTests(LifecycleTestsBase):
                           stopped.event.body['description'])
 
             thread_id = stopped.event.body['threadId']
-            ex_info = dbg.session.send_request(
+            req_exc_info = dbg.session.send_request(
                 'exceptionInfo', threadId=thread_id)
-            ex_info.wait()
+            req_exc_info.wait()
+            exc_info = req_exc_info.resp.body
 
             self.assert_is_subset(
-                ex_info.resp.body,
+                exc_info,
                 {
                     'exceptionId': 'ArithmeticError',
                     'breakMode': 'always',

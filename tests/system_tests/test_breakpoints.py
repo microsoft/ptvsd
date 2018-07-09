@@ -34,15 +34,17 @@ class BreakpointTests(LifecycleTestsBase):
             event = result['msg']
             tid = event.body['threadId']
 
-            stacktrace = session.send_request('stackTrace', threadId=tid)
-            stacktrace.wait()
+            req_stacktrace = session.send_request('stackTrace', threadId=tid)
+            req_stacktrace.wait()
+            stacktrace = req_stacktrace.resp.body
+
             session.send_request('continue', threadId=tid)
 
         received = list(_strip_newline_output_events(session.received))
 
-        self.assertGreaterEqual(stacktrace.resp.body['totalFrames'], 1)
+        self.assertGreaterEqual(stacktrace['totalFrames'], 1)
         self.assert_is_subset(
-            stacktrace.resp.body,
+            stacktrace,
             {
                 # We get Python and PTVSD frames as well.
                 # 'totalFrames': 2,
@@ -97,8 +99,9 @@ class BreakpointTests(LifecycleTestsBase):
             event = result['msg']
             tid = event.body['threadId']
 
-            stacktrace = session.send_request('stackTrace', threadId=tid)
-            stacktrace.wait()
+            req_stacktrace = session.send_request('stackTrace', threadId=tid)
+            req_stacktrace.wait()
+            stacktrace = req_stacktrace.resp.body
             session.send_request('continue', threadId=tid)
 
         received = list(_strip_newline_output_events(session.received))
@@ -108,7 +111,7 @@ class BreakpointTests(LifecycleTestsBase):
             self.assertEqual(
                 len(found_mod), 1, 'Modul not found {}'.format(mod))
 
-        self.assert_is_subset(stacktrace.resp, expected_stacktrace)
+        self.assert_is_subset(stacktrace, expected_stacktrace)
 
     def run_test_conditional_break_points(self, debug_info):
         breakpoints = [{
@@ -130,20 +133,21 @@ class BreakpointTests(LifecycleTestsBase):
             event = result['msg']
             tid = event.body['threadId']
 
-            stacktrace = session.send_request('stackTrace', threadId=tid)
-            stacktrace.wait()
-
-            frame_id = stacktrace.resp.body['stackFrames'][0]['id']
-            scopes = session.send_request('scopes', frameId=frame_id)
-            scopes.wait()
-            variables_reference = scopes.resp.body['scopes'][0][
-                'variablesReference']
-            variables = session.send_request(
+            req_stacktrace = session.send_request('stackTrace', threadId=tid)
+            req_stacktrace.wait()
+            frames = req_stacktrace.resp.body['stackFrames']
+            frame_id = frames[0]['id']
+            req_scopes = session.send_request('scopes', frameId=frame_id)
+            req_scopes.wait()
+            scopes = req_scopes.resp.body['scopes']
+            variables_reference = scopes[0]['variablesReference']
+            req_variables = session.send_request(
                 'variables', variablesReference=variables_reference)
-            variables.wait()
+            req_variables.wait()
+            variables = req_variables.resp.body['variables']
             session.send_request('continue', threadId=tid)
 
-        self.assert_is_subset(variables.resp.body['variables'],
+        self.assert_is_subset(variables,
                               [{
                                   'name': 'a',
                                   'type': 'int',
@@ -191,19 +195,20 @@ class BreakpointTests(LifecycleTestsBase):
                 event = result['msg']
                 tid = event.body['threadId']
 
-                stacktrace = session.send_request('stackTrace', threadId=tid)
-                stacktrace.wait()
-
-                frame_id = stacktrace.resp.body['stackFrames'][0]['id']
-                scopes = session.send_request('scopes', frameId=frame_id)
-                scopes.wait()
-                variables_reference = scopes.resp.body['scopes'][0][
-                    'variablesReference']
-                variables = session.send_request(
+                req_stacktrace = session.send_request('stackTrace', threadId=tid)
+                req_stacktrace.wait()
+                frames = req_stacktrace.resp.body['stackFrames']
+                frame_id = frames[0]['id']
+                req_scopes = session.send_request('scopes', frameId=frame_id)
+                req_scopes.wait()
+                scopes = req_scopes.resp.body['scopes']
+                variables_reference = scopes[0]['variablesReference']
+                req_variables = session.send_request(
                     'variables', variablesReference=variables_reference)
-                variables.wait()
+                req_variables.wait()
+                variables = req_variables.resp.body['variables']
                 i_value = list(int(v['value'])
-                               for v in variables.resp.body['variables']
+                               for v in variables
                                if v['name'] == 'i')
                 i_values.append(i_value[0] if len(i_value) > 0 else None)
                 count = count + 1
