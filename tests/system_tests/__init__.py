@@ -2,13 +2,15 @@ import contextlib
 import os
 import ptvsd
 import signal
+import sys
 import time
+import traceback
 import unittest
 
 from collections import namedtuple
 from ptvsd.socket import Address
 from tests.helpers.debugadapter import DebugAdapter, wait_for_port_to_free
-from tests.helpers.debugclient import EasyDebugClient as DebugClient
+from tests.helpers.debugclient import EasyDebugClient as DebugClient, ConnectionTimeoutError # noqa
 from tests.helpers.message import assert_is_subset
 from tests.helpers.script import find_line
 from tests.helpers.threading import get_locked_and_waiter
@@ -216,7 +218,14 @@ class TestsBase(object):
 
 class LifecycleTestsBase(TestsBase, unittest.TestCase):
     @contextlib.contextmanager
-    def start_debugging(self, debug_info):
+    def _start_debugging(self, debug_info):
+        """This isn't the cleanest bit of code. However It
+        provides the following functionality:
+        1. Ability to properly dispose resources.
+        2. Ability to uniquely identify connection errors.
+        3. Easy & simple way to to launch the debugger in various configs.
+        4. When errors are raised, include session messages in error."""
+
         addr = Address('localhost', debug_info.port)
         cwd = debug_info.cwd
         env = debug_info.env
@@ -224,32 +233,61 @@ class LifecycleTestsBase(TestsBase, unittest.TestCase):
 
         def _kill_proc(pid):
             """If debugger does not end gracefully, then kill proc and
-            wait for socket connections to die out. """
+            wait for socket connections to die out."""
             try:
-                os.kill(pid, signal.SIGTERM)
+                os.kill(pid, signal.SIGKILL)
             except Exception:
                 pass
-            import time
             time.sleep(1) # wait for socket connections to die out. # noqa
 
-        def _wrap_and_reraise(ex, session):
+        def _close_resources(adapter, session, editor):
+            try:
+                adapter = editor._adapter if adapter is None else adapter
+                _kill_proc(adapter.pid)
+            except Exception:
+                pass
+            try:
+                session.close()
+            except Exception:
+                pass
+
+        def _wrap_and_reraise(ex, messages):
+            """If we have connetion errors, then re-raised wrapped in
+            ConnectionTimeoutError. If using py3, then chain exceptions so
+            we do not loose the original exception, else try hack approach
+            for py27."""
             messages = []
+            exc_type, exc_value, exc_traceback = sys.exc_info()
+            formatted_ex = ''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)) # noqa
+            messages = os.linesep.join(messages)
+            try:
+                if isinstance(ex, ConnectionTimeoutError):
+                    exec_statement = "raise ConnectionTimeoutError(messages) from ex" # noqa
+                else:
+                    exec_statement = "raise Exception(messages) from ex"
+                exec(exec_statement, globals(), locals())
+            except SyntaxError:
+                # This happens when using py27.
+                message = messages + os.linesep + formatted_ex
+                if isinstance(ex, ConnectionTimeoutError):
+                    exec_statement = "raise ConnectionTimeoutError(message)" # noqa
+                else:
+                    exec_statement = "raise Exception(message)" # noqa
+                exec(exec_statement, globals(), locals())
+
+        def _handle_exception(ex, adapter, session, editor):
             try:
                 messages = [str(msg) for msg in
                             _strip_newline_output_events(session.received)]
             except Exception:
-                pass
+                messages = ''
 
-            messages = os.linesep.join(messages)
-            try:
-                raise Exception(messages) from ex
-            except Exception:
-                print(messages)
-                raise ex
+            _close_resources(adapter, session, editor)
+            _wrap_and_reraise(ex, messages)
 
-        def _handle_exception(ex, adapter, session):
-            _kill_proc(adapter.pid)
-            _wrap_and_reraise(ex, session)
+        adapter = None
+        editor = None
+        session = None
 
         if debug_info.attachtype == 'import' and \
             debug_info.modulename is not None:
@@ -261,12 +299,12 @@ class LifecycleTestsBase(TestsBase, unittest.TestCase):
                     cwd=cwd) as adapter:
                 with DebugClient() as editor:
                     time.sleep(DELAY_WAITING_FOR_SOCKETS)
-                    session = editor.attach_socket(addr, adapter)
                     try:
+                        session = editor.attach_socket(addr, adapter)
                         yield Debugger(session=session, adapter=adapter)
                         adapter.wait()
                     except Exception as ex:
-                        _handle_exception(ex, adapter, session)
+                        _handle_exception(ex, adapter, session, editor)
         elif debug_info.attachtype == 'import' and \
             debug_info.starttype == 'attach' and \
             debug_info.filename is not None:
@@ -279,12 +317,12 @@ class LifecycleTestsBase(TestsBase, unittest.TestCase):
                     cwd=cwd) as adapter:
                 with DebugClient() as editor:
                     time.sleep(DELAY_WAITING_FOR_SOCKETS)
-                    session = editor.attach_socket(addr, adapter)
                     try:
+                        session = editor.attach_socket(addr, adapter)
                         yield Debugger(session=session, adapter=adapter)
                         adapter.wait()
                     except Exception as ex:
-                        _handle_exception(ex, adapter, session)
+                        _handle_exception(ex, adapter, session, editor)
         elif debug_info.starttype == 'attach':
             if debug_info.modulename is None:
                 name = debug_info.filename
@@ -302,12 +340,12 @@ class LifecycleTestsBase(TestsBase, unittest.TestCase):
                     cwd=cwd) as adapter:
                 with DebugClient() as editor:
                     time.sleep(DELAY_WAITING_FOR_SOCKETS)
-                    session = editor.attach_socket(addr, adapter)
                     try:
+                        session = editor.attach_socket(addr, adapter)
                         yield Debugger(session=session, adapter=adapter)
                         adapter.wait()
                     except Exception as ex:
-                        _handle_exception(ex, adapter, session)
+                        _handle_exception(ex, adapter, session, editor)
         else:
             if debug_info.filename is None:
                 argv = ["-m", debug_info.modulename] + debug_info.argv
@@ -317,13 +355,26 @@ class LifecycleTestsBase(TestsBase, unittest.TestCase):
                     port=debug_info.port,
                     connecttimeout=CONNECT_TIMEOUT) as editor:
                 time.sleep(DELAY_WAITING_FOR_SOCKETS)
-                adapter, session = editor.host_local_debugger(
-                    argv, cwd=cwd, env=env)
                 try:
+                    adapter, session = editor.host_local_debugger(
+                        argv, cwd=cwd, env=env)
                     yield Debugger(session=session, adapter=adapter)
                     adapter.wait()
                 except Exception as ex:
-                    _handle_exception(ex, adapter, session)
+                    _handle_exception(ex, adapter, session, editor)
+
+    @contextlib.contextmanager
+    def start_debugging(self, debug_info, connection_retry_count=2):
+        """Wrapper around start_debugging, to allow retryies if we have
+        a ConnectionTimeoutError (happens rarely when running tests)."""
+        for i in range(connection_retry_count + 1):
+            try:
+                with self._start_debugging(debug_info) as x:
+                    yield x
+                return
+            except ConnectionTimeoutError:
+                if i == connection_retry_count:
+                    raise
 
     @property
     def messages(self):
