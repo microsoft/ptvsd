@@ -26,7 +26,7 @@ class BreakpointTests(LifecycleTestsBase):
         with self.start_debugging(debug_info) as dbg:
             session = dbg.session
             with session.wait_for_event('stopped') as result:
-                (_, req_launch_attach, _, reqs_bps, _, _,
+                (_, req_launch_attach, _, _, _, _,
                  ) = lifecycle_handshake(session, debug_info.starttype,
                                          options=options,
                                          breakpoints=breakpoints)
@@ -34,7 +34,6 @@ class BreakpointTests(LifecycleTestsBase):
             event = result['msg']
             tid = event.body['threadId']
 
-            req_bps, = reqs_bps  # There should only be one.
             stacktrace = session.send_request('stackTrace', threadId=tid)
             stacktrace.wait()
             session.send_request('continue', threadId=tid)
