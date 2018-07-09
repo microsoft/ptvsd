@@ -140,10 +140,10 @@ class VariableTests(LifecycleTestsBase):
             'value': 'None',
             'evaluateName': '__spec__'
         }])
-        var_a_evaluate == {
+        self.assertEqual(var_a_evaluate, {
             'type': 'int',
             'result': '1',
-        }
+        })
 
         assert var_b_variables is not None
         self.assert_is_subset(var_b_variables, [{
@@ -161,10 +161,10 @@ class VariableTests(LifecycleTestsBase):
             'evaluateName': 'b.__len__'
         }])
 
-        var_b_one_evaluate == {
+        self.assertEqual(var_b_one_evaluate, {
             'type': 'int',
             'result': '1',
-        }
+        })
 
     def test_variable_sorting(self):
         filename = TEST_FILES.resolve('for_sorting.py')
