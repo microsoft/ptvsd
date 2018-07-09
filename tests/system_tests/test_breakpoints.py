@@ -49,39 +49,34 @@ class BreakpointTests(LifecycleTestsBase):
         received = list(_strip_newline_output_events(session.received))
 
         self.assertGreaterEqual(stacktrace['totalFrames'], 1)
-        self.assert_is_subset(
-            stacktrace,
-            {
-                # We get Python and PTVSD frames as well.
-                # 'totalFrames': 2,
-                'stackFrames': [{
-                    'id': 1,
-                    'name': '<module>',
-                    'source': {
-                        'sourceReference': 0
-                    },
-                    'line': bp_line,
-                    'column': 1,
-                }],
-            })
+        self.assert_is_subset(stacktrace, {
+            # We get Python and PTVSD frames as well.
+            # 'totalFrames': 2,
+            'stackFrames': [{
+                'id': 1,
+                'name': '<module>',
+                'source': {
+                    'sourceReference': 0
+                },
+                'line': bp_line,
+                'column': 1,
+            }],
+        })
 
-        self.assert_contains(
-            received,
-            [
-                self.new_event(
-                    'stopped',
-                    reason='breakpoint',
-                    threadId=tid,
-                    text=None,
-                    description=None,
-                ),
-                self.new_event('continued', threadId=tid),
-                self.new_event('output', category='stdout', output='yes'),
-                self.new_event('output', category='stderr', output='no'),
-                self.new_event('exited', exitCode=0),
-                self.new_event('terminated'),
-            ],
-        )
+        self.assert_contains(received, [
+            self.new_event(
+                'stopped',
+                reason='breakpoint',
+                threadId=tid,
+                text=None,
+                description=None,
+            ),
+            self.new_event('continued', threadId=tid),
+            self.new_event('output', category='stdout', output='yes'),
+            self.new_event('output', category='stderr', output='no'),
+            self.new_event('exited', exitCode=0),
+            self.new_event('terminated'),
+        ])
 
     def run_test_with_break_points_across_files(
             self, debug_info, first_file, second_file, second_file_line,
@@ -118,8 +113,9 @@ class BreakpointTests(LifecycleTestsBase):
 
         for mod in expected_modules:
             found_mod = self.find_events(received, 'module', mod)
-            self.assertEqual(
-                len(found_mod), 1, 'Modul not found {}'.format(mod))
+            self.assertEqual(len(found_mod),
+                             1,
+                             'Modul not found {}'.format(mod))
 
         self.assert_is_subset(stacktrace, expected_stacktrace)
 
@@ -166,28 +162,27 @@ class BreakpointTests(LifecycleTestsBase):
 
             session.send_request('continue', threadId=tid)
 
-        self.assert_is_subset(variables,
-                              [{
-                                  'name': 'a',
-                                  'type': 'int',
-                                  'value': '1',
-                                  'evaluateName': 'a'
-                              }, {
-                                  'name': 'b',
-                                  'type': 'int',
-                                  'value': '2',
-                                  'evaluateName': 'b'
-                              }, {
-                                  'name': 'c',
-                                  'type': 'int',
-                                  'value': '1',
-                                  'evaluateName': 'c'
-                              }, {
-                                  'name': 'i',
-                                  'type': 'int',
-                                  'value': '2',
-                                  'evaluateName': 'i'
-                              }])
+        self.assert_is_subset(variables, [{
+            'name': 'a',
+            'type': 'int',
+            'value': '1',
+            'evaluateName': 'a'
+        }, {
+            'name': 'b',
+            'type': 'int',
+            'value': '2',
+            'evaluateName': 'b'
+        }, {
+            'name': 'c',
+            'type': 'int',
+            'value': '1',
+            'evaluateName': 'c'
+        }, {
+            'name': 'i',
+            'type': 'int',
+            'value': '2',
+            'evaluateName': 'i'
+        }])
 
     def run_test_hit_conditional_break_points(self, debug_info, **kwargs):
         breakpoints = [{
@@ -283,7 +278,10 @@ class LaunchFileTests(BreakpointTests):
         filename = os.path.join(TEST_FILES_DIR, 'output.py')
         cwd = os.path.dirname(filename)
         self.run_test_with_break_points(
-            DebugInfo(filename=filename, cwd=cwd), filename, bp_line=3)
+            DebugInfo(filename=filename, cwd=cwd),
+            filename,
+            bp_line=3,
+        )
 
     def test_with_break_points_across_files(self):
         first_file = os.path.join(TEST_FILES_DIR, 'foo.py')
@@ -331,8 +329,13 @@ class LaunchFileTests(BreakpointTests):
             }],
         }
         self.run_test_with_break_points_across_files(
-            DebugInfo(filename=first_file, cwd=cwd), first_file, second_file,
-            2, expected_modules, expected_stacktrace)
+            DebugInfo(filename=first_file, cwd=cwd),
+            first_file,
+            second_file,
+            2,
+            expected_modules,
+            expected_stacktrace,
+        )
 
     def test_conditional_break_points(self):
         filename = os.path.join(TEST_FILES_DIR, 'loopy.py')
@@ -343,7 +346,8 @@ class LaunchFileTests(BreakpointTests):
     def test_logpoints(self):
         filename = os.path.join(TEST_FILES_DIR, 'loopy.py')
         cwd = os.path.dirname(filename)
-        self.run_test_logpoints(DebugInfo(filename=filename, cwd=cwd))
+        self.run_test_logpoints(
+            DebugInfo(filename=filename, cwd=cwd))
 
     def test_hit_conditional_break_points_equal(self):
         filename = os.path.join(TEST_FILES_DIR, 'loopy.py')
@@ -352,7 +356,8 @@ class LaunchFileTests(BreakpointTests):
             DebugInfo(filename=filename, cwd=cwd),
             hit_condition='== 5',
             hits=1,
-            expected=[4])
+            expected=[4],
+        )
 
     def test_hit_conditional_break_points_equal2(self):
         filename = os.path.join(TEST_FILES_DIR, 'loopy.py')
@@ -361,7 +366,8 @@ class LaunchFileTests(BreakpointTests):
             DebugInfo(filename=filename, cwd=cwd),
             hit_condition='5',
             hits=1,
-            expected=[4])
+            expected=[4],
+        )
 
     def test_hit_conditional_break_points_greater(self):
         filename = os.path.join(TEST_FILES_DIR, 'loopy.py')
@@ -370,7 +376,8 @@ class LaunchFileTests(BreakpointTests):
             DebugInfo(filename=filename, cwd=cwd),
             hit_condition='> 5',
             hits=5,
-            expected=[5, 6, 7, 8, 9])
+            expected=[5, 6, 7, 8, 9],
+        )
 
     def test_hit_conditional_break_points_greater_or_equal(self):
         filename = os.path.join(TEST_FILES_DIR, 'loopy.py')
@@ -379,7 +386,8 @@ class LaunchFileTests(BreakpointTests):
             DebugInfo(filename=filename, cwd=cwd),
             hit_condition='>= 5',
             hits=6,
-            expected=[4, 5, 6, 7, 8, 9])
+            expected=[4, 5, 6, 7, 8, 9],
+        )
 
     def test_hit_conditional_break_points_lesser(self):
         filename = os.path.join(TEST_FILES_DIR, 'loopy.py')
@@ -388,7 +396,8 @@ class LaunchFileTests(BreakpointTests):
             DebugInfo(filename=filename, cwd=cwd),
             hit_condition='< 5',
             hits=4,
-            expected=[0, 1, 2, 3])
+            expected=[0, 1, 2, 3],
+        )
 
     def test_hit_conditional_break_points_lesser_or_equal(self):
         filename = os.path.join(TEST_FILES_DIR, 'loopy.py')
@@ -397,7 +406,8 @@ class LaunchFileTests(BreakpointTests):
             DebugInfo(filename=filename, cwd=cwd),
             hit_condition='<= 5',
             hits=5,
-            expected=[0, 1, 2, 3, 4])
+            expected=[0, 1, 2, 3, 4],
+        )
 
     def test_hit_conditional_break_points_mod(self):
         filename = os.path.join(TEST_FILES_DIR, 'loopy.py')
@@ -406,7 +416,8 @@ class LaunchFileTests(BreakpointTests):
             DebugInfo(filename=filename, cwd=cwd),
             hit_condition='% 4',
             hits=2,
-            expected=[3, 7])
+            expected=[3, 7],
+        )
 
 
 class LaunchModuleTests(BreakpointTests):
@@ -419,7 +430,8 @@ class LaunchModuleTests(BreakpointTests):
         self.run_test_with_break_points(
             DebugInfo(modulename=module_name, env=env, cwd=cwd),
             bp_filename,
-            bp_line=3)
+            bp_line=3,
+        )
 
     def test_with_break_points_across_files(self):
         module_name = 'mymod_foo'
@@ -470,8 +482,13 @@ class LaunchModuleTests(BreakpointTests):
             }],
         }
         self.run_test_with_break_points_across_files(
-            DebugInfo(modulename=module_name, cwd=cwd, env=env), first_file,
-            second_file, 2, expected_modules, expected_stacktrace)
+            DebugInfo(modulename=module_name, cwd=cwd, env=env),
+            first_file,
+            second_file,
+            2,
+            expected_modules,
+            expected_stacktrace,
+        )
 
 
 class ServerAttachTests(BreakpointTests):
@@ -482,9 +499,14 @@ class ServerAttachTests(BreakpointTests):
         argv = ['localhost', str(PORT)]
         self.run_test_with_break_points(
             DebugInfo(
-                filename=filename, cwd=cwd, starttype='attach', argv=argv),
+                filename=filename,
+                cwd=cwd,
+                starttype='attach',
+                argv=argv,
+            ),
             filename,
-            bp_line=3)
+            bp_line=3,
+        )
 
 
 class PTVSDAttachTests(BreakpointTests):
@@ -499,9 +521,11 @@ class PTVSDAttachTests(BreakpointTests):
                 attachtype='import',
                 cwd=cwd,
                 starttype='attach',
-                argv=argv),
+                argv=argv,
+            ),
             filename,
-            bp_line=6)
+            bp_line=6,
+        )
 
 
 class ServerAttachModuleTests(BreakpointTests):
@@ -518,9 +542,11 @@ class ServerAttachModuleTests(BreakpointTests):
                 env=env,
                 cwd=cwd,
                 argv=argv,
-                starttype='attach'),
+                starttype='attach',
+            ),
             bp_filename,
-            bp_line=3)
+            bp_line=3,
+        )
 
 
 @unittest.skip('Needs fixing')
@@ -539,6 +565,8 @@ class PTVSDAttachModuleTests(BreakpointTests):
                 cwd=cwd,
                 argv=argv,
                 attachtype='import',
-                starttype='attach'),
+                starttype='attach',
+            ),
             bp_filename,
-            bp_line=6)
+            bp_line=6,
+        )

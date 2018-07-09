@@ -70,7 +70,7 @@ class VariableTests(LifecycleTestsBase):
                     variablesReference=var_b_ref,
                 )
                 req_variables.wait()
-                var_b_variables = req_variables.resp.body
+                var_b_variables = req_variables.resp.body['variables']
 
             req_evaluate1 = session.send_request(
                 'evaluate',
@@ -90,7 +90,7 @@ class VariableTests(LifecycleTestsBase):
 
         # Variables for a, b, __file__, __main__
         self.assertGreaterEqual(len(variables.resp.body['variables']), 3)
-        expected_variables = [{
+        self.assert_is_subset(variables, [{
             'name': 'a',
             'type': 'int',
             'value': '1',
@@ -138,32 +138,32 @@ class VariableTests(LifecycleTestsBase):
             'type': 'NoneType',
             'value': 'None',
             'evaluateName': '__spec__'
-        }]
-        self.assert_is_subset(variables, expected_variables)
-        expected_var_a_eval = {'type': 'int', 'result': '1'}
-        var_a_evaluate == expected_var_a_eval
+        }])
+        var_a_evaluate == {
+            'type': 'int',
+            'result': '1',
+        }
 
         assert var_b_variables is not None
-        expected_var_b = {
-            'variables': [{
-                'type': 'int',
-                'value': '1',
-                'evaluateName': "b['one']"
-            }, {
-                'type': 'int',
-                'value': '2',
-                'evaluateName': "b['two']"
-            }, {
-                'name': '__len__',
-                'type': 'int',
-                'value': '2',
-                'evaluateName': 'b.__len__'
-            }]
-        }
-        self.assert_is_subset(var_b_variables, expected_var_b)
+        self.assert_is_subset(var_b_variables, [{
+            'type': 'int',
+            'value': '1',
+            'evaluateName': "b['one']"
+        }, {
+            'type': 'int',
+            'value': '2',
+            'evaluateName': "b['two']"
+        }, {
+            'name': '__len__',
+            'type': 'int',
+            'value': '2',
+            'evaluateName': 'b.__len__'
+        }])
 
-        expected_var_b_eval = {'type': ' int', 'result': '1'}
-        var_b_one_evaluate == expected_var_b_eval
+        var_b_one_evaluate == {
+            'type': ' int',
+            'result': '1',
+        }
 
     def test_variable_sorting(self):
         filename = os.path.join(TEST_FILES_DIR, 'for_sorting.py')

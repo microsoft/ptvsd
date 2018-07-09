@@ -24,13 +24,10 @@ class BasicTests(LifecycleTestsBase):
                                 options=options)
 
         received = list(_strip_newline_output_events(dbg.session.received))
-        self.assert_contains(
-            received,
-            [
-                self.new_event('output', category='stdout', output='yes'),
-                self.new_event('output', category='stderr', output='no'),
-            ],
-        )
+        self.assert_contains(received, [
+            self.new_event('output', category='stdout', output='yes'),
+            self.new_event('output', category='stderr', output='no'),
+        ])
 
     def run_test_arguments(self, debug_info, expected_args):
         options = {'debugOptions': ['RedirectOutput']}
@@ -41,13 +38,10 @@ class BasicTests(LifecycleTestsBase):
 
         received = list(_strip_newline_output_events(dbg.session.received))
         expected_output = '{}, {}'.format(len(expected_args), expected_args)
-        self.assert_contains(
-            received,
-            [
-                self.new_event(
-                    'output', category='stdout', output=expected_output)
-            ],
-        )
+        self.assert_contains(received, [
+            self.new_event(
+                'output', category='stdout', output=expected_output),
+        ])
 
     def run_test_termination(self, debug_info):
         with self.start_debugging(debug_info) as dbg:
@@ -95,19 +89,24 @@ class LaunchFileTests(BasicTests):
         argv = ['arg1', 'arg2']
         self.run_test_arguments(
             DebugInfo(filename=filename, cwd=cwd, argv=argv),
-            [filename] + argv)
+            [filename] + argv,
+        )
 
     @unittest.skip('Broken')
     def test_termination(self):
         filename = os.path.join(TEST_TERMINATION_FILES_DIR, 'simple.py')
         cwd = os.path.dirname(filename)
-        self.run_test_termination(DebugInfo(filename=filename, cwd=cwd))
+        self.run_test_termination(
+            DebugInfo(filename=filename, cwd=cwd),
+        )
 
     def test_without_output(self):
         filename = os.path.join(TEST_FILES_DIR, 'test_without_output',
                                 'output.py')
         cwd = os.path.dirname(filename)
-        self.run_test_without_output(DebugInfo(filename=filename, cwd=cwd))
+        self.run_test_without_output(
+            DebugInfo(filename=filename, cwd=cwd),
+        )
 
 
 class LaunchModuleTests(BasicTests):
@@ -117,14 +116,16 @@ class LaunchModuleTests(BasicTests):
         cwd = os.path.join(TEST_FILES_DIR, 'test_output')
         env = {'PYTHONPATH': cwd}
         self.run_test_output(
-            DebugInfo(modulename=module_name, env=env, cwd=cwd))
+            DebugInfo(modulename=module_name, env=env, cwd=cwd),
+        )
 
     def test_without_output(self):
         module_name = 'mymod_launch1'
         cwd = os.path.join(TEST_FILES_DIR, 'test_without_output')
         env = {'PYTHONPATH': cwd}
         self.run_test_without_output(
-            DebugInfo(modulename=module_name, env=env, cwd=cwd))
+            DebugInfo(modulename=module_name, env=env, cwd=cwd),
+        )
 
     @unittest.skip('Broken')
     def test_termination(self):
@@ -132,8 +133,11 @@ class LaunchModuleTests(BasicTests):
         cwd = TEST_TERMINATION_FILES_DIR
         env = {'PYTHONPATH': cwd}
         self.run_test_output(
-            DebugInfo(modulename=module_name, env=env, cwd=cwd))
-        self.run_test_termination(DebugInfo(modulename=module_name, cwd=cwd))
+            DebugInfo(modulename=module_name, env=env, cwd=cwd),
+        )
+        self.run_test_termination(
+            DebugInfo(modulename=module_name, cwd=cwd),
+        )
 
     @unittest.skip('Broken')
     def test_arguments(self):
@@ -143,7 +147,8 @@ class LaunchModuleTests(BasicTests):
         argv = ['arg1', 'arg2']
         self.run_test_arguments(
             DebugInfo(modulename=module_name, env=env, cwd=cwd, argv=argv),
-            ['-m'] + argv)
+            ['-m'] + argv,
+        )
 
 
 class ServerAttachTests(BasicTests):
@@ -154,7 +159,12 @@ class ServerAttachTests(BasicTests):
         argv = ['localhost', str(PORT)]
         self.run_test_output(
             DebugInfo(
-                filename=filename, cwd=cwd, starttype='attach', argv=argv))
+                filename=filename,
+                cwd=cwd,
+                starttype='attach',
+                argv=argv,
+            ),
+        )
 
     def test_without_output(self):
         filename = os.path.join(TEST_FILES_DIR, 'test_without_output',
@@ -163,7 +173,12 @@ class ServerAttachTests(BasicTests):
         argv = ['localhost', str(PORT)]
         self.run_test_without_output(
             DebugInfo(
-                filename=filename, cwd=cwd, starttype='attach', argv=argv))
+                filename=filename,
+                cwd=cwd,
+                starttype='attach',
+                argv=argv,
+            ),
+        )
 
 
 class PTVSDAttachTests(BasicTests):
@@ -179,7 +194,9 @@ class PTVSDAttachTests(BasicTests):
                 attachtype='import',
                 cwd=cwd,
                 starttype='attach',
-                argv=argv))
+                argv=argv,
+            ),
+        )
 
     def test_without_output(self):
         filename = os.path.join(TEST_FILES_DIR, 'test_without_output',
@@ -192,7 +209,9 @@ class PTVSDAttachTests(BasicTests):
                 attachtype='import',
                 cwd=cwd,
                 starttype='attach',
-                argv=argv))
+                argv=argv,
+            ),
+        )
 
 
 class ServerAttachModuleTests(BasicTests):
@@ -208,7 +227,9 @@ class ServerAttachModuleTests(BasicTests):
                 env=env,
                 cwd=cwd,
                 argv=argv,
-                starttype='attach'))
+                starttype='attach',
+            ),
+        )
 
     def test_without_output(self):
         module_name = 'mymod_launch1'
@@ -221,7 +242,9 @@ class ServerAttachModuleTests(BasicTests):
                 env=env,
                 cwd=cwd,
                 argv=argv,
-                starttype='attach'))
+                starttype='attach',
+            ),
+        )
 
 
 class PTVSDAttachModuleTests(BasicTests):
@@ -239,7 +262,9 @@ class PTVSDAttachModuleTests(BasicTests):
                 cwd=cwd,
                 argv=argv,
                 attachtype='import',
-                starttype='attach'))
+                starttype='attach',
+            ),
+        )
 
     def test_without_output(self):
         module_name = 'mymod_attach1'
@@ -253,4 +278,6 @@ class PTVSDAttachModuleTests(BasicTests):
                 cwd=cwd,
                 argv=argv,
                 attachtype='import',
-                starttype='attach'))
+                starttype='attach',
+            ),
+        )

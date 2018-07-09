@@ -20,13 +20,10 @@ class RemoteTests(LifecycleTestsBase):
                                 options=options)
 
         received = list(_strip_newline_output_events(dbg.session.received))
-        self.assert_contains(
-            received,
-            [
-                self.new_event('output', category='stdout', output='yes'),
-                self.new_event('output', category='stderr', output='no'),
-            ],
-        )
+        self.assert_contains(received, [
+            self.new_event('output', category='stdout', output='yes'),
+            self.new_event('output', category='stderr', output='no'),
+        ])
 
 
 class AttachFileTests(RemoteTests):
@@ -42,7 +39,9 @@ class AttachFileTests(RemoteTests):
                 attachtype='import',
                 cwd=cwd,
                 starttype='attach',
-                argv=argv))
+                argv=argv,
+            ),
+        )
 
     def test_attach_127001(self):
         filename = os.path.join(TEST_FILES_DIR, 'test_output',
@@ -55,7 +54,9 @@ class AttachFileTests(RemoteTests):
                 attachtype='import',
                 cwd=cwd,
                 starttype='attach',
-                argv=argv))
+                argv=argv,
+            ),
+        )
 
     def test_attach_0000(self):
         filename = os.path.join(TEST_FILES_DIR, 'test_output',
@@ -68,7 +69,9 @@ class AttachFileTests(RemoteTests):
                 attachtype='import',
                 cwd=cwd,
                 starttype='attach',
-                argv=argv))
+                argv=argv,
+            ),
+        )
 
     def test_attach_byip(self):
         filename = os.path.join(TEST_FILES_DIR, 'test_output',
@@ -84,4 +87,6 @@ class AttachFileTests(RemoteTests):
                 host=ip,
                 cwd=cwd,
                 starttype='attach',
-                argv=argv))
+                argv=argv,
+            ),
+        )

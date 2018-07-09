@@ -25,14 +25,11 @@ class ExceptionTests(LifecycleTestsBase):
                                      options=options)
 
         received = list(_strip_newline_output_events(dbg.session.received))
-        self.assert_contains(
-            received,
-            [
-                self.new_event('output', category='stdout', output='end'),
-                self.new_event('exited', exitCode=0),
-                self.new_event('terminated'),
-            ],
-        )
+        self.assert_contains(received, [
+            self.new_event('output', category='stdout', output='end'),
+            self.new_event('exited', exitCode=0),
+            self.new_event('terminated'),
+        ])
 
     def run_test_breaking_into_handled_exceptions(self, debug_info):
         excbreakpoints = [{'filters': ['raised', 'uncaught']}]
@@ -59,16 +56,14 @@ class ExceptionTests(LifecycleTestsBase):
             req_exc_info.wait()
             exc_info = req_exc_info.resp.body
 
-            self.assert_is_subset(
-                exc_info,
-                {
-                    'exceptionId': 'ArithmeticError',
-                    'breakMode': 'always',
-                    'details': {
-                        'typeName': 'ArithmeticError',
-                        # 'source': debug_info.filename
-                    }
-                })
+            self.assert_is_subset(exc_info, {
+                'exceptionId': 'ArithmeticError',
+                'breakMode': 'always',
+                'details': {
+                    'typeName': 'ArithmeticError',
+                    # 'source': debug_info.filename
+                }
+            })
 
             continued = dbg.session.get_awaiter_for_event('continued')
             dbg.session.send_request(
@@ -78,15 +73,12 @@ class ExceptionTests(LifecycleTestsBase):
             Awaitable.wait_all(continued)
 
         received = list(_strip_newline_output_events(dbg.session.received))
-        self.assert_contains(
-            received,
-            [
-                self.new_event('continued', threadId=thread_id),
-                self.new_event('output', category='stdout', output='end'),
-                self.new_event('exited', exitCode=0),
-                self.new_event('terminated'),
-            ],
-        )
+        self.assert_contains(received, [
+            self.new_event('continued', threadId=thread_id),
+            self.new_event('output', category='stdout', output='end'),
+            self.new_event('exited', exitCode=0),
+            self.new_event('terminated'),
+        ])
 
 
 class LaunchFileTests(ExceptionTests):
@@ -129,7 +121,11 @@ class ServerAttachExceptionLifecycleTests(ExceptionTests):
         argv = ['localhost', str(PORT)]
         self.run_test_breaking_into_handled_exceptions(
             DebugInfo(
-                filename=filename, cwd=cwd, starttype='attach', argv=argv))
+                filename=filename,
+                cwd=cwd,
+                starttype='attach',
+                argv=argv,
+            ))
 
     def test_not_breaking_into_handled_exceptions(self):
         filename = os.path.join(TEST_FILES_DIR, 'handled_exceptions_launch.py')
@@ -137,7 +133,11 @@ class ServerAttachExceptionLifecycleTests(ExceptionTests):
         argv = ['localhost', str(PORT)]
         self.run_test_not_breaking_into_handled_exceptions(
             DebugInfo(
-                filename=filename, cwd=cwd, starttype='attach', argv=argv))
+                filename=filename,
+                cwd=cwd,
+                starttype='attach',
+                argv=argv,
+            ))
 
 
 class PTVSDAttachExceptionLifecycleTests(ExceptionTests):
@@ -152,7 +152,8 @@ class PTVSDAttachExceptionLifecycleTests(ExceptionTests):
                 attachtype='import',
                 cwd=cwd,
                 starttype='attach',
-                argv=argv))
+                argv=argv,
+            ))
 
     @unittest.skip('Needs fixing in #609')
     def test_not_breaking_into_handled_exceptions(self):
@@ -165,7 +166,8 @@ class PTVSDAttachExceptionLifecycleTests(ExceptionTests):
                 attachtype='import',
                 cwd=cwd,
                 starttype='attach',
-                argv=argv))
+                argv=argv,
+            ))
 
 
 class ServerAttachModuleExceptionLifecycleTests(ExceptionTests):
@@ -181,7 +183,8 @@ class ServerAttachModuleExceptionLifecycleTests(ExceptionTests):
                 env=env,
                 cwd=cwd,
                 argv=argv,
-                starttype='attach'))
+                starttype='attach',
+            ))
 
     def test_not_breaking_into_handled_exceptions(self):
         module_name = 'mymod_launch1'
@@ -194,7 +197,8 @@ class ServerAttachModuleExceptionLifecycleTests(ExceptionTests):
                 env=env,
                 cwd=cwd,
                 argv=argv,
-                starttype='attach'))
+                starttype='attach',
+            ))
 
 
 @unittest.skip('Needs fixing')
@@ -212,7 +216,8 @@ class PTVSDAttachModuleExceptionLifecycleTests(ExceptionTests):
                 cwd=cwd,
                 argv=argv,
                 attachtype='import',
-                starttype='attach'))
+                starttype='attach',
+            ))
 
     def test_not_breaking_into_handled_exceptions(self):
         module_name = 'mymod_attach1'
@@ -226,4 +231,5 @@ class PTVSDAttachModuleExceptionLifecycleTests(ExceptionTests):
                 cwd=cwd,
                 argv=argv,
                 attachtype='import',
-                starttype='attach'))
+                starttype='attach',
+            ))

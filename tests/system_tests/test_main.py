@@ -387,7 +387,7 @@ class LifecycleTests(LifecycleTestsBase):
                         {'line': bp1},
                         {'line': bp2},
                     ],
-                })
+                )
                 req_bps.wait()
 
                 done1()
