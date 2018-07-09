@@ -222,6 +222,7 @@ class ServerAttachModuleTests(BasicTests):  # noqa
 class PTVSDAttachModuleTests(BasicTests):
 
     def test_with_output(self):
+        #self.enable_verbose()
         module_name = 'mymod_attach1'
         cwd = os.path.join(TEST_FILES_DIR, 'test_output')
         env = {"PYTHONPATH": cwd}
