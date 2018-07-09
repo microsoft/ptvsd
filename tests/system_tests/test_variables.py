@@ -162,7 +162,7 @@ class VariableTests(LifecycleTestsBase):
         }])
 
         var_b_one_evaluate == {
-            'type': ' int',
+            'type': 'int',
             'result': '1',
         }
 
