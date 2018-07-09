@@ -21,7 +21,6 @@ class RestartVSCTests(LifecycleTestsBase):
         with self.start_debugging(debug_info) as dbg:
             (_, req_launch, _, _, _, _
              ) = lifecycle_handshake(dbg.session, debug_info.starttype)
-
             req_launch.wait()
 
             dbg.session.send_request('disconnect', restart=False)
@@ -38,7 +37,6 @@ class RestartVSCTests(LifecycleTestsBase):
         with self.start_debugging(debug_info) as dbg:
             (_, req_launch, _, _, _, _
              ) = lifecycle_handshake(dbg.session, debug_info.starttype)
-
             req_launch.wait()
 
             dbg.session.send_request('disconnect', restart=True)

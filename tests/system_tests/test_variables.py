@@ -34,7 +34,6 @@ class VariableTests(LifecycleTestsBase):
                 (_, req_launch_attach, _, reqs_bps, _, _,
                  ) = lifecycle_handshake(session, debug_info.starttype,
                                          breakpoints=breakpoints)
-
                 req_launch_attach.wait()
             event = result['msg']
             tid = event.body['threadId']
@@ -173,7 +172,6 @@ class VariableTests(LifecycleTestsBase):
                 (_, req_launch_attach, _, reqs_bps, _, _,
                  ) = lifecycle_handshake(session, debug_info.starttype,
                                          breakpoints=breakpoints)
-
                 req_launch_attach.wait()
 
             event = result['msg']
