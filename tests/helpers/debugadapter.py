@@ -86,7 +86,7 @@ def wait_for_socket_server(addr, timeout=3.0, **kwargs):
             pass
         time.sleep(0.1)
         if time.time() - start_time > timeout:
-            return
+            raise ConnectionRefusedError('Timeout waiting for connection')
 
 
 def wait_for_port_to_free(port, timeout=3.0):
@@ -99,7 +99,7 @@ def wait_for_port_to_free(port, timeout=3.0):
             return
         time.sleep(0.1)
         if time.time() - start_time > timeout:
-            return
+            raise ConnectionRefusedError('Timeout waiting for port to be free')
 
 
 class DebugAdapter(Closeable):
