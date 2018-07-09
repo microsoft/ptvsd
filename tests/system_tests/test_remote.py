@@ -9,7 +9,7 @@ from . import (
 )
 
 
-TEST_FILES = TestResources.from_module(__name__)
+TEST_FILES = TestResources.from_module('tests.system_tests.test_basic')
 WITH_OUTPUT = TEST_FILES.sub('test_output')
 
 
