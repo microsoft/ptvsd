@@ -36,8 +36,8 @@ class VariableTests(LifecycleTestsBase):
                                          breakpoints=breakpoints)
 
                 req_launch_attach.wait()
-
-            tid = result['msg'].body['threadId']
+            event = result['msg']
+            tid = event.body['threadId']
 
             stacktrace = session.send_request('stackTrace', threadId=tid)
             stacktrace.wait()
@@ -176,7 +176,8 @@ class VariableTests(LifecycleTestsBase):
 
                 req_launch_attach.wait()
 
-            tid = result['msg'].body['threadId']
+            event = result['msg']
+            tid = event.body['threadId']
 
             stacktrace = session.send_request('stackTrace', threadId=tid)
             stacktrace.wait()

@@ -30,11 +30,11 @@ class BreakpointTests(LifecycleTestsBase):
                  ) = lifecycle_handshake(session, debug_info.starttype,
                                          options=options,
                                          breakpoints=breakpoints)
-
                 req_launch_attach.wait()
+            event = result['msg']
+            tid = event.body['threadId']
 
             req_bps, = reqs_bps  # There should only be one.
-            tid = result['msg'].body['threadId']
             stacktrace = session.send_request('stackTrace', threadId=tid)
             stacktrace.wait()
             session.send_request('continue', threadId=tid)
@@ -94,10 +94,10 @@ class BreakpointTests(LifecycleTestsBase):
                 (_, req_launch_attach, _, _, _, _,
                  ) = lifecycle_handshake(session, debug_info.starttype,
                                          breakpoints=breakpoints)
-
                 req_launch_attach.wait()
+            event = result['msg']
+            tid = event.body['threadId']
 
-            tid = result['msg'].body['threadId']
             stacktrace = session.send_request('stackTrace', threadId=tid)
             stacktrace.wait()
             session.send_request('continue', threadId=tid)
@@ -128,8 +128,9 @@ class BreakpointTests(LifecycleTestsBase):
             with session.wait_for_event('stopped') as result:
                 lifecycle_handshake(session, debug_info.starttype,
                                     breakpoints=breakpoints)
+            event = result['msg']
+            tid = event.body['threadId']
 
-            tid = result['msg'].body['threadId']
             stacktrace = session.send_request('stackTrace', threadId=tid)
             stacktrace.wait()
 
@@ -188,8 +189,9 @@ class BreakpointTests(LifecycleTestsBase):
                     with session.wait_for_event('stopped') as result:
                         lifecycle_handshake(session, debug_info.starttype,
                                             breakpoints=breakpoints)
+                event = result['msg']
+                tid = event.body['threadId']
 
-                tid = result['msg'].body['threadId']
                 stacktrace = session.send_request('stackTrace', threadId=tid)
                 stacktrace.wait()
 
