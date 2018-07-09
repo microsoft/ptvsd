@@ -19,7 +19,7 @@ from tests.helpers.vsc import parse_message, VSCMessages, Response, Event  # noq
 
 
 ROOT = os.path.dirname(os.path.dirname(ptvsd.__file__))
-PORT = 9876
+PORT = 9877
 CONNECT_TIMEOUT = 3.0
 DELAY_WAITING_FOR_SOCKETS = 1.0
 
@@ -369,12 +369,15 @@ class LifecycleTestsBase(TestsBase, unittest.TestCase):
         a ConnectionTimeoutError (happens rarely when running tests)."""
         for i in range(connection_retry_count + 1):
             try:
-                with self._start_debugging(debug_info) as x:
-                    yield x
+                with self._start_debugging(debug_info) as result:
+                    yield result
                 return
             except ConnectionTimeoutError:
                 if i == connection_retry_count:
                     raise
+                else:
+                    # Wait for any pending connections to close.
+                    time.sleep(1)
 
     @property
     def messages(self):
