@@ -2,7 +2,6 @@ import os
 import os.path
 import unittest
 
-from ptvsd.wrapper import INITIALIZE_RESPONSE  # noqa
 from tests.helpers.debugsession import Awaitable
 
 from . import (_strip_newline_output_events, lifecycle_handshake,
@@ -61,7 +60,7 @@ class BasicTests(LifecycleTestsBase):
                 dbg.session, debug_info.starttype, threads=True)
 
             Awaitable.wait_all(req_launch,
-                               session.get_awaiter_for_event('thread'))  # noqa
+                               session.get_awaiter_for_event('thread'))
             disconnect = session.send_request('disconnect')
 
             Awaitable.wait_all(exited, terminated, disconnect)
@@ -197,7 +196,7 @@ class PTVSDAttachTests(BasicTests):
                 argv=argv))
 
 
-class ServerAttachModuleTests(BasicTests):  # noqa
+class ServerAttachModuleTests(BasicTests):
 
     def test_with_output(self):
         module_name = 'mymod_launch1'

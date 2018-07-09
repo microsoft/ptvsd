@@ -2,8 +2,6 @@ import os
 import os.path
 import unittest
 
-from ptvsd.wrapper import INITIALIZE_RESPONSE  # noqa
-
 from . import (_strip_newline_output_events, lifecycle_handshake,
                LifecycleTestsBase, DebugInfo, ROOT)
 

@@ -1,7 +1,6 @@
 import os
 import os.path
 
-from ptvsd.wrapper import INITIALIZE_RESPONSE  # noqa
 from tests.helpers.debugsession import Awaitable
 
 from . import (lifecycle_handshake, LifecycleTestsBase, DebugInfo, ROOT)

@@ -5,7 +5,7 @@ import unittest
 
 import ptvsd
 from ptvsd.socket import Address
-from ptvsd.wrapper import INITIALIZE_RESPONSE  # noqa
+from ptvsd.wrapper import INITIALIZE_RESPONSE
 from tests.helpers.debugadapter import DebugAdapter
 from tests.helpers.debugclient import EasyDebugClient as DebugClient
 from tests.helpers.lock import LockTimeoutError

@@ -2,8 +2,6 @@ import os
 import os.path
 import unittest
 
-from ptvsd.wrapper import INITIALIZE_RESPONSE  # noqa
-
 from . import (_strip_newline_output_events, lifecycle_handshake,
                LifecycleTestsBase, DebugInfo, ROOT, PORT)
 
@@ -511,7 +509,7 @@ class PTVSDAttachTests(BreakpointTests):
             bp_line=6)
 
 
-class ServerAttachModuleTests(BreakpointTests):  # noqa
+class ServerAttachModuleTests(BreakpointTests):
 
     def test_with_break_points(self):
         module_name = 'mymod_launch1'
@@ -531,7 +529,7 @@ class ServerAttachModuleTests(BreakpointTests):  # noqa
 
 
 @unittest.skip('Needs fixing')
-class PTVSDAttachModuleTests(BreakpointTests):  # noqa
+class PTVSDAttachModuleTests(BreakpointTests):
 
     def test_with_break_points(self):
         module_name = 'mymod_attach1'

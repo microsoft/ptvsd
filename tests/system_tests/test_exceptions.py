@@ -2,7 +2,6 @@ import os
 import os.path
 import unittest
 
-from ptvsd.wrapper import INITIALIZE_RESPONSE  # noqa
 from tests.helpers.debugsession import Awaitable
 
 from . import (_strip_newline_output_events, lifecycle_handshake,
@@ -166,7 +165,7 @@ class PTVSDAttachExceptionLifecycleTests(ExceptionTests):
                 argv=argv))
 
 
-class ServerAttachModuleExceptionLifecycleTests(ExceptionTests):  # noqa
+class ServerAttachModuleExceptionLifecycleTests(ExceptionTests):
 
     def test_breaking_into_handled_exceptions(self):
         module_name = 'mymod_launch1'
@@ -196,7 +195,7 @@ class ServerAttachModuleExceptionLifecycleTests(ExceptionTests):  # noqa
 
 
 @unittest.skip('Needs fixing')
-class PTVSDAttachModuleExceptionLifecycleTests(ExceptionTests):  # noqa
+class PTVSDAttachModuleExceptionLifecycleTests(ExceptionTests):
 
     def test_breaking_into_handled_exceptions(self):
         module_name = 'mymod_attach1'
