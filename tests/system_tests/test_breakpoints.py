@@ -7,11 +7,13 @@ from ptvsd.wrapper import INITIALIZE_RESPONSE  # noqa
 from . import (_strip_newline_output_events, lifecycle_handshake,
                LifecycleTestsBase, DebugInfo, ROOT, PORT)
 
+
 TEST_FILES_DIR = os.path.join(ROOT, 'tests', 'resources', 'system_tests',
                               'test_breakpoints')
 
 
 class BreakpointTests(LifecycleTestsBase):
+
     def run_test_with_break_points(self, debug_info, bp_filename, bp_line):
         options = {'debugOptions': ['RedirectOutput']}
         breakpoints = [{
@@ -283,6 +285,7 @@ class BreakpointTests(LifecycleTestsBase):
 
 
 class LaunchFileTests(BreakpointTests):
+
     def test_with_break_points(self):
         filename = os.path.join(TEST_FILES_DIR, 'output.py')
         cwd = os.path.dirname(filename)
@@ -414,6 +417,7 @@ class LaunchFileTests(BreakpointTests):
 
 
 class LaunchModuleTests(BreakpointTests):
+
     def test_with_break_points(self):
         module_name = 'mymod_launch1'
         cwd = os.path.join(TEST_FILES_DIR)
@@ -478,6 +482,7 @@ class LaunchModuleTests(BreakpointTests):
 
 
 class ServerAttachTests(BreakpointTests):
+
     def test_with_break_points(self):
         filename = os.path.join(TEST_FILES_DIR, 'output.py')
         cwd = os.path.dirname(filename)
@@ -490,6 +495,7 @@ class ServerAttachTests(BreakpointTests):
 
 
 class PTVSDAttachTests(BreakpointTests):
+
     def test_with_break_points(self):
         filename = os.path.join(TEST_FILES_DIR, 'attach_output.py')
         cwd = os.path.dirname(filename)
@@ -506,6 +512,7 @@ class PTVSDAttachTests(BreakpointTests):
 
 
 class ServerAttachModuleTests(BreakpointTests):  # noqa
+
     def test_with_break_points(self):
         module_name = 'mymod_launch1'
         cwd = os.path.join(TEST_FILES_DIR)
@@ -525,6 +532,7 @@ class ServerAttachModuleTests(BreakpointTests):  # noqa
 
 @unittest.skip('Needs fixing')
 class PTVSDAttachModuleTests(BreakpointTests):  # noqa
+
     def test_with_break_points(self):
         module_name = 'mymod_attach1'
         cwd = os.path.join(TEST_FILES_DIR)

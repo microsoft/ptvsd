@@ -7,12 +7,14 @@ from ptvsd.wrapper import INITIALIZE_RESPONSE  # noqa
 from . import (_strip_newline_output_events, lifecycle_handshake,
                LifecycleTestsBase, DebugInfo, ROOT)
 
+
 TEST_FILES_DIR = os.path.join(ROOT, 'tests', 'resources', 'system_tests',
                               'test_forever')
 
 
 @unittest.skip('Needs fixing in #530')
 class RestartVSCTests(LifecycleTestsBase):
+
     def test_disconnect_without_restart(self):
         filename = os.path.join(TEST_FILES_DIR, 'launch_forever.py')
         cwd = os.path.dirname(filename)

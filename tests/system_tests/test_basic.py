@@ -8,6 +8,7 @@ from tests.helpers.debugsession import Awaitable
 from . import (_strip_newline_output_events, lifecycle_handshake,
                LifecycleTestsBase, DebugInfo, ROOT, PORT)
 
+
 TEST_FILES_DIR = os.path.join(ROOT, 'tests', 'resources', 'system_tests',
                               'test_basic')
 TEST_TERMINATION_FILES_DIR = os.path.join(ROOT, 'tests', 'resources',
@@ -15,6 +16,7 @@ TEST_TERMINATION_FILES_DIR = os.path.join(ROOT, 'tests', 'resources',
 
 
 class BasicTests(LifecycleTestsBase):
+
     def run_test_output(self, debug_info):
         options = {'debugOptions': ['RedirectOutput']}
 
@@ -82,6 +84,7 @@ class BasicTests(LifecycleTestsBase):
 
 
 class LaunchFileTests(BasicTests):
+
     def test_with_output(self):
         filename = os.path.join(TEST_FILES_DIR, 'test_output', 'output.py')
         cwd = os.path.dirname(filename)
@@ -110,6 +113,7 @@ class LaunchFileTests(BasicTests):
 
 
 class LaunchModuleTests(BasicTests):
+
     def test_with_output(self):
         module_name = 'mymod_launch1'
         cwd = os.path.join(TEST_FILES_DIR, 'test_output')
@@ -145,6 +149,7 @@ class LaunchModuleTests(BasicTests):
 
 
 class ServerAttachTests(BasicTests):
+
     def test_with_output(self):
         filename = os.path.join(TEST_FILES_DIR, 'test_output', 'output.py')
         cwd = os.path.dirname(filename)
@@ -164,6 +169,7 @@ class ServerAttachTests(BasicTests):
 
 
 class PTVSDAttachTests(BasicTests):
+
     def test_with_output(self):
         filename = os.path.join(TEST_FILES_DIR, 'test_output',
                                 'attach_output.py')
@@ -192,6 +198,7 @@ class PTVSDAttachTests(BasicTests):
 
 
 class ServerAttachModuleTests(BasicTests):  # noqa
+
     def test_with_output(self):
         module_name = 'mymod_launch1'
         cwd = os.path.join(TEST_FILES_DIR, 'test_output')

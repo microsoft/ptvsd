@@ -5,11 +5,13 @@ from tests.helpers.socket import resolve_hostname
 from . import (_strip_newline_output_events, lifecycle_handshake,
                LifecycleTestsBase, DebugInfo, ROOT, PORT)
 
+
 TEST_FILES_DIR = os.path.join(ROOT, 'tests', 'resources', 'system_tests',
                               'test_basic')
 
 
 class RemoteTests(LifecycleTestsBase):
+
     def run_test_attach(self, debug_info):
         options = {'debugOptions': ['RedirectOutput']}
 
@@ -28,6 +30,7 @@ class RemoteTests(LifecycleTestsBase):
 
 
 class AttachFileTests(RemoteTests):
+
     def test_attach_localhost(self):
         filename = os.path.join(TEST_FILES_DIR, 'test_output',
                                 'attach_output.py')

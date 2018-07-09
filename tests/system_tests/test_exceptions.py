@@ -8,11 +8,13 @@ from tests.helpers.debugsession import Awaitable
 from . import (_strip_newline_output_events, lifecycle_handshake,
                LifecycleTestsBase, DebugInfo, ROOT, PORT)
 
+
 TEST_FILES_DIR = os.path.join(ROOT, 'tests', 'resources', 'system_tests',
                               'test_exceptions')
 
 
 class ExceptionTests(LifecycleTestsBase):
+
     def run_test_not_breaking_into_handled_exceptions(self, debug_info):
         excbreakpoints = [{'filters': ['uncaught']}]
         options = {'debugOptions': ['RedirectOutput']}
@@ -86,6 +88,7 @@ class ExceptionTests(LifecycleTestsBase):
 
 
 class LaunchFileTests(ExceptionTests):
+
     def test_not_breaking_into_handled_exceptions(self):
         filename = os.path.join(TEST_FILES_DIR, 'handled_exceptions_launch.py')
         cwd = os.path.dirname(filename)
@@ -100,6 +103,7 @@ class LaunchFileTests(ExceptionTests):
 
 
 class LaunchModuleExceptionLifecycleTests(ExceptionTests):
+
     def test_breaking_into_handled_exceptions(self):
         module_name = 'mymod_launch1'
         env = {'PYTHONPATH': TEST_FILES_DIR}
@@ -116,6 +120,7 @@ class LaunchModuleExceptionLifecycleTests(ExceptionTests):
 
 
 class ServerAttachExceptionLifecycleTests(ExceptionTests):
+
     def test_breaking_into_handled_exceptions(self):
         filename = os.path.join(TEST_FILES_DIR, 'handled_exceptions_launch.py')
         cwd = os.path.dirname(filename)
@@ -134,6 +139,7 @@ class ServerAttachExceptionLifecycleTests(ExceptionTests):
 
 
 class PTVSDAttachExceptionLifecycleTests(ExceptionTests):
+
     def test_breaking_into_handled_exceptions(self):
         filename = os.path.join(TEST_FILES_DIR, 'handled_exceptions_attach.py')
         cwd = os.path.dirname(filename)
@@ -161,6 +167,7 @@ class PTVSDAttachExceptionLifecycleTests(ExceptionTests):
 
 
 class ServerAttachModuleExceptionLifecycleTests(ExceptionTests):  # noqa
+
     def test_breaking_into_handled_exceptions(self):
         module_name = 'mymod_launch1'
         env = {'PYTHONPATH': TEST_FILES_DIR}
@@ -190,6 +197,7 @@ class ServerAttachModuleExceptionLifecycleTests(ExceptionTests):  # noqa
 
 @unittest.skip('Needs fixing')
 class PTVSDAttachModuleExceptionLifecycleTests(ExceptionTests):  # noqa
+
     def test_breaking_into_handled_exceptions(self):
         module_name = 'mymod_attach1'
         env = {'PYTHONPATH': TEST_FILES_DIR}
