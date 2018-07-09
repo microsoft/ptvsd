@@ -38,16 +38,24 @@ class VariableTests(LifecycleTestsBase):
             event = result['msg']
             tid = event.body['threadId']
 
-            req_stacktrace = session.send_request('stackTrace', threadId=tid)
+            req_stacktrace = session.send_request(
+                'stackTrace',
+                threadId=tid,
+            )
             req_stacktrace.wait()
             frames = req_stacktrace.resp.body['stackFrames']
             frame_id = frames[0]['id']
-            req_scopes = session.send_request('scopes', frameId=frame_id)
+            req_scopes = session.send_request(
+                'scopes',
+                frameId=frame_id,
+            )
             req_scopes.wait()
             scopes = req_scopes.resp.body['scopes']
             variables_reference = scopes[0]['variablesReference']
             req_variables = session.send_request(
-                'variables', variablesReference=variables_reference)  # noqa
+                'variables',
+                variablesReference=variables_reference,
+            )
             req_variables.wait()
             variables = req_variables.resp.body['variables']
 
@@ -58,16 +66,22 @@ class VariableTests(LifecycleTestsBase):
             else:
                 var_b_ref = var_b['variablesReference']
                 req_variables = session.send_request(
-                    'variables', variablesReference=var_b_ref)  # noqa
+                    'variables',
+                    variablesReference=var_b_ref,
+                )
                 req_variables.wait()
                 var_b_variables = req_variables.resp.body
 
             req_evaluate1 = session.send_request(
-                'evaluate', expression='a', frameId=frame_id)
+                'evaluate',
+                expression='a',
+                frameId=frame_id,
+            )
             req_evaluate2 = session.send_request(
                 'evaluate',
-                expression="b['one']",  # noqa
-                frameId=frame_id)
+                expression="b['one']",
+                frameId=frame_id,
+            )
             Awaitable.wait_all(req_evaluate1, req_evaluate2)
             var_a_evaluate = req_evaluate1.resp.body
             var_b_one_evaluate = req_evaluate2.resp.body
@@ -178,16 +192,24 @@ class VariableTests(LifecycleTestsBase):
             event = result['msg']
             tid = event.body['threadId']
 
-            req_stacktrace = session.send_request('stackTrace', threadId=tid)
+            req_stacktrace = session.send_request(
+                'stackTrace',
+                threadId=tid,
+            )
             req_stacktrace.wait()
             frames = req_stacktrace.resp.body['stackFrames']
             frame_id = frames[0]['id']
-            req_scopes = session.send_request('scopes', frameId=frame_id)
+            req_scopes = session.send_request(
+                'scopes',
+                frameId=frame_id,
+            )
             req_scopes.wait()
             scopes = req_scopes.resp.body['scopes']
             variables_reference = scopes['variablesReference']
             req_variables = session.send_request(
-                'variables', variablesReference=variables_reference)  # noqa
+                'variables',
+                variablesReference=variables_reference,
+            )
             req_variables.wait()
             variables = req_variables.resp.body['variables']
 
@@ -198,7 +220,9 @@ class VariableTests(LifecycleTestsBase):
                 b_dict_var, = b_dict_vars
                 b_dict_var_ref = b_dict_var['variablesReference']
                 req_variables = session.send_request(
-                    'variables', variablesReference=b_dict_var_ref)  # noqa
+                    'variables',
+                    variablesReference=b_dict_var_ref,
+                )
                 req_variables.wait()
                 b_dict_var_items = req_variables.resp.body['variables']
 

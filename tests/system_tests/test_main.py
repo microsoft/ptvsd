@@ -380,9 +380,10 @@ class LifecycleTests(LifecycleTestsBase):
                 tid1 = event.body['threadId']
 
                 stopped_event = session1.get_awaiter_for_event('stopped')
-                req_bps = session1.send_request('setBreakpoints', **{
-                    'source': {'path': filename},
-                    'breakpoints': [
+                req_bps = session1.send_request(
+                    'setBreakpoints',
+                    source={'path': filename},
+                    breakpoints=[
                         {'line': bp1},
                         {'line': bp2},
                     ],
