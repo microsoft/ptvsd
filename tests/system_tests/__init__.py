@@ -313,7 +313,7 @@ class LifecycleTestsBase(TestsBase, unittest.TestCase):
                         _handle_exception(ex, adapter, session)
         else:
             if debug_info.filename is None:
-                argv = ["-m", debug_info.modulename] + debug_info.argv
+                argv = ['-m', debug_info.modulename] + debug_info.argv
             else:
                 argv = [debug_info.filename] + debug_info.argv
             with DebugClient(

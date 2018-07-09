@@ -123,7 +123,7 @@ class LifecycleTests(LifecycleTestsBase):
                 done()
                 adapter.wait()
 
-        # Skipping the 'thread exited' and 'terminated' messages which
+        # Skipping the "thread exited" and "terminated" messages which
         # may appear randomly in the received list.
         received = list(_strip_newline_output_events(session.received))
         self.assert_received(received[:7], [
@@ -542,7 +542,7 @@ class LifecycleTests(LifecycleTestsBase):
 
     @unittest.skip('not implemented')
     def test_attach_exit_during_session(self):
-        # TODO: Ensure we see the "terminated" and "exited" events.
+        # TODO: Ensure we see the 'terminated' and 'exited' events.
         raise NotImplementedError
 
     @unittest.skip('re-attach needs fixing')
@@ -616,17 +616,17 @@ class LifecycleTests(LifecycleTestsBase):
         }]
 
         options = {
-            "pathMappings": [
+            'pathMappings': [
                 {
-                    "localRoot": os.path.dirname(filename),
-                    "remoteRoot": os.path.dirname(filename)
+                    'localRoot': os.path.dirname(filename),
+                    'remoteRoot': os.path.dirname(filename)
                 },
                 # This specific mapping is for Mac.
                 # For some reason temp paths on Mac get prefixed with
                 # `private` when returned from ptvsd.
                 {
-                    "localRoot": os.path.dirname(filename),
-                    "remoteRoot": '/private' + os.path.dirname(filename)
+                    'localRoot': os.path.dirname(filename),
+                    'remoteRoot': '/private' + os.path.dirname(filename)
                 }
             ]
         }
@@ -650,7 +650,7 @@ class LifecycleTests(LifecycleTestsBase):
                                                      threads=True)
 
                             # Grab the initial output.
-                            out1 = next(adapter.output)  # "waiting for attach"
+                            out1 = next(adapter.output)  # 'waiting for attach'
                             line = adapter.output.readline()
                             while line:
                                 out1 += line

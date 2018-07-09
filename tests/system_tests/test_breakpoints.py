@@ -13,19 +13,19 @@ TEST_FILES_DIR = os.path.join(ROOT, 'tests', 'resources', 'system_tests',
 
 class BreakpointTests(LifecycleTestsBase):
     def run_test_with_break_points(self, debug_info, bp_filename, bp_line):
-        options = {"debugOptions": ["RedirectOutput"]}
+        options = {'debugOptions': ['RedirectOutput']}
         breakpoints = [{
-            "source": {
-                "path": bp_filename
+            'source': {
+                'path': bp_filename
             },
-            "breakpoints": [{
-                "line": bp_line
+            'breakpoints': [{
+                'line': bp_line
             }]
         }]
 
         with self.start_debugging(debug_info) as dbg:
             session = dbg.session
-            with session.wait_for_event("stopped") as result:
+            with session.wait_for_event('stopped') as result:
                 (
                     _,
                     req_launch_attach,
@@ -42,27 +42,27 @@ class BreakpointTests(LifecycleTestsBase):
                 req_launch_attach.wait()
 
             req_bps, = reqs_bps  # There should only be one.
-            tid = result["msg"].body["threadId"]
-            stacktrace = session.send_request("stackTrace", threadId=tid)
+            tid = result['msg'].body['threadId']
+            stacktrace = session.send_request('stackTrace', threadId=tid)
             stacktrace.wait()
-            session.send_request("continue", threadId=tid)
+            session.send_request('continue', threadId=tid)
 
         received = list(_strip_newline_output_events(session.received))
 
-        self.assertGreaterEqual(stacktrace.resp.body["totalFrames"], 1)
+        self.assertGreaterEqual(stacktrace.resp.body['totalFrames'], 1)
         self.assert_is_subset(
             stacktrace.resp.body,
             {
                 # We get Python and PTVSD frames as well.
-                # "totalFrames": 2,
-                "stackFrames": [{
-                    "id": 1,
-                    "name": "<module>",
-                    "source": {
-                        "sourceReference": 0
+                # 'totalFrames': 2,
+                'stackFrames': [{
+                    'id': 1,
+                    'name': '<module>',
+                    'source': {
+                        'sourceReference': 0
                     },
-                    "line": bp_line,
-                    "column": 1,
+                    'line': bp_line,
+                    'column': 1,
                 }],
             })
 
@@ -70,17 +70,17 @@ class BreakpointTests(LifecycleTestsBase):
             received,
             [
                 self.new_event(
-                    "stopped",
-                    reason="breakpoint",
+                    'stopped',
+                    reason='breakpoint',
                     threadId=tid,
                     text=None,
                     description=None,
                 ),
-                self.new_event("continued", threadId=tid),
-                self.new_event("output", category="stdout", output="yes"),
-                self.new_event("output", category="stderr", output="no"),
-                self.new_event("exited", exitCode=0),
-                self.new_event("terminated"),
+                self.new_event('continued', threadId=tid),
+                self.new_event('output', category='stdout', output='yes'),
+                self.new_event('output', category='stderr', output='no'),
+                self.new_event('exited', exitCode=0),
+                self.new_event('terminated'),
             ],
         )
 
@@ -88,17 +88,17 @@ class BreakpointTests(LifecycleTestsBase):
             self, debug_info, first_file, second_file, second_file_line,
             expected_modules, expected_stacktrace):
         breakpoints = [{
-            "source": {
-                "path": second_file
+            'source': {
+                'path': second_file
             },
-            "breakpoints": [{
-                "line": second_file_line
+            'breakpoints': [{
+                'line': second_file_line
             }]
         }]
 
         with self.start_debugging(debug_info) as dbg:
             session = dbg.session
-            with session.wait_for_event("stopped") as result:
+            with session.wait_for_event('stopped') as result:
                 (
                     _,
                     req_launch_attach,
@@ -111,10 +111,10 @@ class BreakpointTests(LifecycleTestsBase):
 
                 req_launch_attach.wait()
 
-            tid = result["msg"].body["threadId"]
-            stacktrace = session.send_request("stackTrace", threadId=tid)
+            tid = result['msg'].body['threadId']
+            stacktrace = session.send_request('stackTrace', threadId=tid)
             stacktrace.wait()
-            session.send_request("continue", threadId=tid)
+            session.send_request('continue', threadId=tid)
 
         received = list(_strip_newline_output_events(session.received))
 
@@ -127,19 +127,19 @@ class BreakpointTests(LifecycleTestsBase):
 
     def run_test_conditional_break_points(self, debug_info):
         breakpoints = [{
-            "source": {
-                "path": debug_info.filename
+            'source': {
+                'path': debug_info.filename
             },
-            "breakpoints": [{
-                "line": 4,
-                "condition": "i == 2"
+            'breakpoints': [{
+                'line': 4,
+                'condition': 'i == 2'
             }],
-            "lines": [4]
+            'lines': [4]
         }]
 
         with self.start_debugging(debug_info) as dbg:
             session = dbg.session
-            with session.wait_for_event("stopped") as result:
+            with session.wait_for_event('stopped') as result:
                 (
                     _,
                     _,
@@ -150,53 +150,53 @@ class BreakpointTests(LifecycleTestsBase):
                 ) = lifecycle_handshake(
                     session, debug_info.starttype, breakpoints=breakpoints)
 
-            tid = result["msg"].body["threadId"]
-            stacktrace = session.send_request("stackTrace", threadId=tid)
+            tid = result['msg'].body['threadId']
+            stacktrace = session.send_request('stackTrace', threadId=tid)
             stacktrace.wait()
 
-            frame_id = stacktrace.resp.body["stackFrames"][0]["id"]
+            frame_id = stacktrace.resp.body['stackFrames'][0]['id']
             scopes = session.send_request('scopes', frameId=frame_id)
             scopes.wait()
-            variables_reference = scopes.resp.body["scopes"][0][
-                "variablesReference"]
+            variables_reference = scopes.resp.body['scopes'][0][
+                'variablesReference']
             variables = session.send_request(
                 'variables', variablesReference=variables_reference)
             variables.wait()
-            session.send_request("continue", threadId=tid)
+            session.send_request('continue', threadId=tid)
 
-        self.assert_is_subset(variables.resp.body["variables"],
+        self.assert_is_subset(variables.resp.body['variables'],
                               [{
-                                  "name": "a",
-                                  "type": "int",
-                                  "value": "1",
-                                  "evaluateName": "a"
+                                  'name': 'a',
+                                  'type': 'int',
+                                  'value': '1',
+                                  'evaluateName': 'a'
                               }, {
-                                  "name": "b",
-                                  "type": "int",
-                                  "value": "2",
-                                  "evaluateName": "b"
+                                  'name': 'b',
+                                  'type': 'int',
+                                  'value': '2',
+                                  'evaluateName': 'b'
                               }, {
-                                  "name": "c",
-                                  "type": "int",
-                                  "value": "1",
-                                  "evaluateName": "c"
+                                  'name': 'c',
+                                  'type': 'int',
+                                  'value': '1',
+                                  'evaluateName': 'c'
                               }, {
-                                  "name": "i",
-                                  "type": "int",
-                                  "value": "2",
-                                  "evaluateName": "i"
+                                  'name': 'i',
+                                  'type': 'int',
+                                  'value': '2',
+                                  'evaluateName': 'i'
                               }])
 
     def run_test_hit_conditional_break_points(self, debug_info, **kwargs):
         breakpoints = [{
-            "source": {
-                "path": debug_info.filename
+            'source': {
+                'path': debug_info.filename
             },
-            "breakpoints": [{
-                "line": 4,
-                "hitCondition": kwargs['hit_condition']
+            'breakpoints': [{
+                'line': 4,
+                'hitCondition': kwargs['hit_condition']
             }],
-            "lines": [4]
+            'lines': [4]
         }]
 
         i_values = []
@@ -206,7 +206,7 @@ class BreakpointTests(LifecycleTestsBase):
             count = 0
             while count < hits:
                 if count == 0:
-                    with session.wait_for_event("stopped") as result:
+                    with session.wait_for_event('stopped') as result:
                         (
                             _,
                             _,
@@ -218,41 +218,41 @@ class BreakpointTests(LifecycleTestsBase):
                             session, debug_info.starttype,
                             breakpoints=breakpoints)
 
-                tid = result["msg"].body["threadId"]
-                stacktrace = session.send_request("stackTrace", threadId=tid)
+                tid = result['msg'].body['threadId']
+                stacktrace = session.send_request('stackTrace', threadId=tid)
                 stacktrace.wait()
 
-                frame_id = stacktrace.resp.body["stackFrames"][0]["id"]
+                frame_id = stacktrace.resp.body['stackFrames'][0]['id']
                 scopes = session.send_request('scopes', frameId=frame_id)
                 scopes.wait()
-                variables_reference = scopes.resp.body["scopes"][0][
-                    "variablesReference"]
+                variables_reference = scopes.resp.body['scopes'][0][
+                    'variablesReference']
                 variables = session.send_request(
                     'variables', variablesReference=variables_reference)
                 variables.wait()
                 i_value = list(int(v['value'])
-                               for v in variables.resp.body["variables"]
+                               for v in variables.resp.body['variables']
                                if v['name'] == 'i')
                 i_values.append(i_value[0] if len(i_value) > 0 else None)
                 count = count + 1
                 if count < hits:
-                    with session.wait_for_event("stopped") as result:
-                        session.send_request("continue", threadId=tid)
+                    with session.wait_for_event('stopped') as result:
+                        session.send_request('continue', threadId=tid)
                 else:
-                    session.send_request("continue", threadId=tid)
+                    session.send_request('continue', threadId=tid)
         self.assertEqual(i_values, kwargs['expected'])
 
     def run_test_logpoints(self, debug_info):
-        options = {"debugOptions": ["RedirectOutput"]}
+        options = {'debugOptions': ['RedirectOutput']}
         breakpoints = [{
-            "source": {
-                "path": debug_info.filename
+            'source': {
+                'path': debug_info.filename
             },
-            "breakpoints": [{
-                "line": 4,
-                "logMessage": "Sum of a + i = {a + i}"
+            'breakpoints': [{
+                'line': 4,
+                'logMessage': 'Sum of a + i = {a + i}'
             }],
-            "lines": [4]
+            'lines': [4]
         }]
 
         with self.start_debugging(debug_info) as dbg:
@@ -273,9 +273,9 @@ class BreakpointTests(LifecycleTestsBase):
         received = list(_strip_newline_output_events(session.received))
         expected_events = [
             self.new_event(
-                "output",
-                category="stdout",
-                output="Sum of a + i = {}{}".format(i + 1, os.linesep))
+                'output',
+                category='stdout',
+                output='Sum of a + i = {}{}'.format(i + 1, os.linesep))
             for i in range(5)
         ]
 
@@ -294,44 +294,44 @@ class LaunchFileTests(BreakpointTests):
         second_file = os.path.join(TEST_FILES_DIR, 'bar.py')
         cwd = os.path.dirname(first_file)
         expected_modules = [{
-            "reason": "new",
-            "module": {
-                "path": second_file,
-                "name": "bar"
+            'reason': 'new',
+            'module': {
+                'path': second_file,
+                'name': 'bar'
             }
         }, {
-            "reason": "new",
-            "module": {
-                "path": first_file,
-                "name": "__main__"
+            'reason': 'new',
+            'module': {
+                'path': first_file,
+                'name': '__main__'
             }
         }]
         expected_stacktrace = {
-            "stackFrames": [{
-                "name": "do_bar",
-                "source": {
-                    "path": second_file,
-                    "sourceReference": 0
+            'stackFrames': [{
+                'name': 'do_bar',
+                'source': {
+                    'path': second_file,
+                    'sourceReference': 0
                 },
-                "line": 2,
-                "column": 1
+                'line': 2,
+                'column': 1
             }, {
-                "name": "do_foo",
-                "source": {
-                    "path": first_file,
-                    "sourceReference": 0
+                'name': 'do_foo',
+                'source': {
+                    'path': first_file,
+                    'sourceReference': 0
                 },
-                "line": 5,
-                "column": 1
+                'line': 5,
+                'column': 1
             }, {
-                "id": 3,
-                "name": "<module>",
-                "source": {
-                    "path": first_file,
-                    "sourceReference": 0
+                'id': 3,
+                'name': '<module>',
+                'source': {
+                    'path': first_file,
+                    'sourceReference': 0
                 },
-                "line": 8,
-                "column": 1
+                'line': 8,
+                'column': 1
             }],
         }
         self.run_test_with_break_points_across_files(
@@ -417,7 +417,7 @@ class LaunchModuleTests(BreakpointTests):
     def test_with_break_points(self):
         module_name = 'mymod_launch1'
         cwd = os.path.join(TEST_FILES_DIR)
-        env = {"PYTHONPATH": cwd}
+        env = {'PYTHONPATH': cwd}
         bp_filename = os.path.join(cwd, module_name, '__init__.py')
         self.run_test_with_break_points(
             DebugInfo(modulename=module_name, env=env, cwd=cwd),
@@ -429,47 +429,47 @@ class LaunchModuleTests(BreakpointTests):
         first_file = os.path.join(TEST_FILES_DIR, module_name, '__init__.py')
         second_file = os.path.join(TEST_FILES_DIR, 'mymod_bar', 'bar.py')
         cwd = os.path.join(TEST_FILES_DIR)
-        env = {"PYTHONPATH": cwd}
+        env = {'PYTHONPATH': cwd}
         expected_modules = [{
-            "reason": "new",
-            "module": {
-                "package": "mymod_bar",
-                "path": second_file,
-                "name": "mymod_bar.bar"
+            'reason': 'new',
+            'module': {
+                'package': 'mymod_bar',
+                'path': second_file,
+                'name': 'mymod_bar.bar'
             }
         }, {
-            "reason": "new",
-            "module": {
-                "path": first_file,
-                "name": "__main__"
+            'reason': 'new',
+            'module': {
+                'path': first_file,
+                'name': '__main__'
             }
         }]
         expected_stacktrace = {
-            "stackFrames": [{
-                "name": "do_bar",
-                "source": {
-                    "path": second_file,
-                    "sourceReference": 0
+            'stackFrames': [{
+                'name': 'do_bar',
+                'source': {
+                    'path': second_file,
+                    'sourceReference': 0
                 },
-                "line": 2,
-                "column": 1
+                'line': 2,
+                'column': 1
             }, {
-                "name": "do_foo",
-                "source": {
-                    "path": first_file,
-                    "sourceReference": 0
+                'name': 'do_foo',
+                'source': {
+                    'path': first_file,
+                    'sourceReference': 0
                 },
-                "line": 5,
-                "column": 1
+                'line': 5,
+                'column': 1
             }, {
-                "id": 3,
-                "name": "<module>",
-                "source": {
-                    "path": first_file,
-                    "sourceReference": 0
+                'id': 3,
+                'name': '<module>',
+                'source': {
+                    'path': first_file,
+                    'sourceReference': 0
                 },
-                "line": 8,
-                "column": 1
+                'line': 8,
+                'column': 1
             }],
         }
         self.run_test_with_break_points_across_files(
@@ -509,7 +509,7 @@ class ServerAttachModuleTests(BreakpointTests):  # noqa
     def test_with_break_points(self):
         module_name = 'mymod_launch1'
         cwd = os.path.join(TEST_FILES_DIR)
-        env = {"PYTHONPATH": cwd}
+        env = {'PYTHONPATH': cwd}
         argv = ['localhost', str(PORT)]
         bp_filename = os.path.join(cwd, module_name, '__init__.py')
         self.run_test_with_break_points(
@@ -528,7 +528,7 @@ class PTVSDAttachModuleTests(BreakpointTests):  # noqa
     def test_with_break_points(self):
         module_name = 'mymod_attach1'
         cwd = os.path.join(TEST_FILES_DIR)
-        env = {"PYTHONPATH": cwd}
+        env = {'PYTHONPATH': cwd}
         argv = ['localhost', str(PORT)]
         bp_filename = os.path.join(cwd, module_name, '__init__.py')
         self.run_test_with_break_points(

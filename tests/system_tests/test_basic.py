@@ -16,7 +16,7 @@ TEST_TERMINATION_FILES_DIR = os.path.join(ROOT, 'tests', 'resources',
 
 class BasicTests(LifecycleTestsBase):
     def run_test_output(self, debug_info):
-        options = {"debugOptions": ["RedirectOutput"]}
+        options = {'debugOptions': ['RedirectOutput']}
 
         with self.start_debugging(debug_info) as dbg:
             (_, _, _, _, _, _) = lifecycle_handshake(
@@ -26,25 +26,25 @@ class BasicTests(LifecycleTestsBase):
         self.assert_contains(
             received,
             [
-                self.new_event("output", category="stdout", output="yes"),
-                self.new_event("output", category="stderr", output="no"),
+                self.new_event('output', category='stdout', output='yes'),
+                self.new_event('output', category='stderr', output='no'),
             ],
         )
 
     def run_test_arguments(self, debug_info, expected_args):
-        options = {"debugOptions": ["RedirectOutput"]}
+        options = {'debugOptions': ['RedirectOutput']}
 
         with self.start_debugging(debug_info) as dbg:
             (_, _, _, _, _, _) = lifecycle_handshake(
                 dbg.session, debug_info.starttype, options=options)
 
         received = list(_strip_newline_output_events(dbg.session.received))
-        expected_output = "{}, {}".format(len(expected_args), expected_args)
+        expected_output = '{}, {}'.format(len(expected_args), expected_args)
         self.assert_contains(
             received,
             [
                 self.new_event(
-                    "output", category="stdout", output=expected_output)
+                    'output', category='stdout', output=expected_output)
             ],
         )
 
@@ -60,12 +60,12 @@ class BasicTests(LifecycleTestsBase):
 
             Awaitable.wait_all(req_launch,
                                session.get_awaiter_for_event('thread'))  # noqa
-            disconnect = session.send_request("disconnect")
+            disconnect = session.send_request('disconnect')
 
             Awaitable.wait_all(exited, terminated, disconnect)
 
     def run_test_without_output(self, debug_info):
-        options = {"debugOptions": ["RedirectOutput"]}
+        options = {'debugOptions': ['RedirectOutput']}
 
         with self.start_debugging(debug_info) as dbg:
             (_, _, _, _, _, _) = lifecycle_handshake(
@@ -113,14 +113,14 @@ class LaunchModuleTests(BasicTests):
     def test_with_output(self):
         module_name = 'mymod_launch1'
         cwd = os.path.join(TEST_FILES_DIR, 'test_output')
-        env = {"PYTHONPATH": cwd}
+        env = {'PYTHONPATH': cwd}
         self.run_test_output(
             DebugInfo(modulename=module_name, env=env, cwd=cwd))
 
     def test_without_output(self):
         module_name = 'mymod_launch1'
         cwd = os.path.join(TEST_FILES_DIR, 'test_without_output')
-        env = {"PYTHONPATH": cwd}
+        env = {'PYTHONPATH': cwd}
         self.run_test_without_output(
             DebugInfo(modulename=module_name, env=env, cwd=cwd))
 
@@ -128,7 +128,7 @@ class LaunchModuleTests(BasicTests):
     def test_termination(self):
         module_name = 'mymod_launch1'
         cwd = TEST_TERMINATION_FILES_DIR
-        env = {"PYTHONPATH": cwd}
+        env = {'PYTHONPATH': cwd}
         self.run_test_output(
             DebugInfo(modulename=module_name, env=env, cwd=cwd))
         self.run_test_termination(DebugInfo(modulename=module_name, cwd=cwd))
@@ -137,7 +137,7 @@ class LaunchModuleTests(BasicTests):
     def test_arguments(self):
         module_name = 'mymod_launch1'
         cwd = os.path.join(TEST_FILES_DIR, 'test_args')
-        env = {"PYTHONPATH": cwd}
+        env = {'PYTHONPATH': cwd}
         argv = ['arg1', 'arg2']
         self.run_test_arguments(
             DebugInfo(modulename=module_name, env=env, cwd=cwd, argv=argv),
@@ -195,7 +195,7 @@ class ServerAttachModuleTests(BasicTests):  # noqa
     def test_with_output(self):
         module_name = 'mymod_launch1'
         cwd = os.path.join(TEST_FILES_DIR, 'test_output')
-        env = {"PYTHONPATH": cwd}
+        env = {'PYTHONPATH': cwd}
         argv = ['localhost', str(PORT)]
         self.run_test_output(
             DebugInfo(
@@ -208,7 +208,7 @@ class ServerAttachModuleTests(BasicTests):  # noqa
     def test_without_output(self):
         module_name = 'mymod_launch1'
         cwd = os.path.join(TEST_FILES_DIR, 'test_without_output')
-        env = {"PYTHONPATH": cwd}
+        env = {'PYTHONPATH': cwd}
         argv = ['localhost', str(PORT)]
         self.run_test_without_output(
             DebugInfo(
@@ -225,7 +225,7 @@ class PTVSDAttachModuleTests(BasicTests):
         #self.enable_verbose()
         module_name = 'mymod_attach1'
         cwd = os.path.join(TEST_FILES_DIR, 'test_output')
-        env = {"PYTHONPATH": cwd}
+        env = {'PYTHONPATH': cwd}
         argv = ['localhost', str(PORT)]
         self.run_test_output(
             DebugInfo(
@@ -239,7 +239,7 @@ class PTVSDAttachModuleTests(BasicTests):
     def test_without_output(self):
         module_name = 'mymod_attach1'
         cwd = os.path.join(TEST_FILES_DIR, 'test_without_output')
-        env = {"PYTHONPATH": cwd}
+        env = {'PYTHONPATH': cwd}
         argv = ['localhost', str(PORT)]
         self.run_test_without_output(
             DebugInfo(

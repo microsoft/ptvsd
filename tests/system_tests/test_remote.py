@@ -11,7 +11,7 @@ TEST_FILES_DIR = os.path.join(ROOT, 'tests', 'resources', 'system_tests',
 
 class RemoteTests(LifecycleTestsBase):
     def run_test_attach(self, debug_info):
-        options = {"debugOptions": ["RedirectOutput"]}
+        options = {'debugOptions': ['RedirectOutput']}
 
         with self.start_debugging(debug_info) as dbg:
             (_, _, _, _, _, _) = lifecycle_handshake(
@@ -21,8 +21,8 @@ class RemoteTests(LifecycleTestsBase):
         self.assert_contains(
             received,
             [
-                self.new_event("output", category="stdout", output="yes"),
-                self.new_event("output", category="stderr", output="no"),
+                self.new_event('output', category='stdout', output='yes'),
+                self.new_event('output', category='stderr', output='no'),
             ],
         )
 

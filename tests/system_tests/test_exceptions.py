@@ -14,8 +14,8 @@ TEST_FILES_DIR = os.path.join(ROOT, 'tests', 'resources', 'system_tests',
 
 class ExceptionTests(LifecycleTestsBase):
     def run_test_not_breaking_into_handled_exceptions(self, debug_info):
-        excbreakpoints = [{"filters": ["uncaught"]}]
-        options = {"debugOptions": ["RedirectOutput"]}
+        excbreakpoints = [{'filters': ['uncaught']}]
+        options = {'debugOptions': ['RedirectOutput']}
 
         with self.start_debugging(debug_info) as dbg:
             (_, req_attach, _, _, _, _) = lifecycle_handshake(
@@ -28,15 +28,15 @@ class ExceptionTests(LifecycleTestsBase):
         self.assert_contains(
             received,
             [
-                self.new_event("output", category="stdout", output="end"),
-                self.new_event("exited", exitCode=0),
-                self.new_event("terminated"),
+                self.new_event('output', category='stdout', output='end'),
+                self.new_event('exited', exitCode=0),
+                self.new_event('terminated'),
             ],
         )
 
     def run_test_breaking_into_handled_exceptions(self, debug_info):
-        excbreakpoints = [{"filters": ["raised", "uncaught"]}]
-        options = {"debugOptions": ["RedirectOutput"]}
+        excbreakpoints = [{'filters': ['raised', 'uncaught']}]
+        options = {'debugOptions': ['RedirectOutput']}
 
         with self.start_debugging(debug_info) as dbg:
             stopped = dbg.session.get_awaiter_for_event('stopped')
@@ -48,11 +48,11 @@ class ExceptionTests(LifecycleTestsBase):
                 threads=True)
 
             Awaitable.wait_all(req_launch_attach, stopped)
-            self.assertEqual(stopped.event.body["text"], "ArithmeticError")
+            self.assertEqual(stopped.event.body['text'], 'ArithmeticError')
             self.assertIn("ArithmeticError('Hello'",
-                          stopped.event.body["description"])
+                          stopped.event.body['description'])
 
-            thread_id = stopped.event.body["threadId"]
+            thread_id = stopped.event.body['threadId']
             ex_info = dbg.session.send_request(
                 'exceptionInfo', threadId=thread_id)
             ex_info.wait()
@@ -60,16 +60,16 @@ class ExceptionTests(LifecycleTestsBase):
             self.assert_is_subset(
                 ex_info.resp.body,
                 {
-                    "exceptionId": "ArithmeticError",
-                    "breakMode": "always",
-                    "details": {
-                        "typeName": "ArithmeticError",
-                        # "source": debug_info.filename
+                    'exceptionId': 'ArithmeticError',
+                    'breakMode': 'always',
+                    'details': {
+                        'typeName': 'ArithmeticError',
+                        # 'source': debug_info.filename
                     }
                 })
 
             continued = dbg.session.get_awaiter_for_event('continued')
-            dbg.session.send_request("continue", threadId=thread_id).wait()
+            dbg.session.send_request('continue', threadId=thread_id).wait()
 
             Awaitable.wait_all(continued)
 
@@ -77,10 +77,10 @@ class ExceptionTests(LifecycleTestsBase):
         self.assert_contains(
             received,
             [
-                self.new_event("continued", threadId=thread_id),
-                self.new_event("output", category="stdout", output="end"),
-                self.new_event("exited", exitCode=0),
-                self.new_event("terminated"),
+                self.new_event('continued', threadId=thread_id),
+                self.new_event('output', category='stdout', output='end'),
+                self.new_event('exited', exitCode=0),
+                self.new_event('terminated'),
             ],
         )
 
@@ -102,14 +102,14 @@ class LaunchFileTests(ExceptionTests):
 class LaunchModuleExceptionLifecycleTests(ExceptionTests):
     def test_breaking_into_handled_exceptions(self):
         module_name = 'mymod_launch1'
-        env = {"PYTHONPATH": TEST_FILES_DIR}
+        env = {'PYTHONPATH': TEST_FILES_DIR}
         cwd = os.path.dirname(TEST_FILES_DIR)
         self.run_test_breaking_into_handled_exceptions(
             DebugInfo(modulename=module_name, env=env, cwd=cwd))
 
     def test_not_breaking_into_handled_exceptions(self):
         module_name = 'mymod_launch1'
-        env = {"PYTHONPATH": TEST_FILES_DIR}
+        env = {'PYTHONPATH': TEST_FILES_DIR}
         cwd = os.path.dirname(TEST_FILES_DIR)
         self.run_test_not_breaking_into_handled_exceptions(
             DebugInfo(modulename=module_name, env=env, cwd=cwd))
@@ -163,7 +163,7 @@ class PTVSDAttachExceptionLifecycleTests(ExceptionTests):
 class ServerAttachModuleExceptionLifecycleTests(ExceptionTests):  # noqa
     def test_breaking_into_handled_exceptions(self):
         module_name = 'mymod_launch1'
-        env = {"PYTHONPATH": TEST_FILES_DIR}
+        env = {'PYTHONPATH': TEST_FILES_DIR}
         cwd = TEST_FILES_DIR
         argv = ['localhost', str(PORT)]
         self.run_test_breaking_into_handled_exceptions(
@@ -176,7 +176,7 @@ class ServerAttachModuleExceptionLifecycleTests(ExceptionTests):  # noqa
 
     def test_not_breaking_into_handled_exceptions(self):
         module_name = 'mymod_launch1'
-        env = {"PYTHONPATH": TEST_FILES_DIR}
+        env = {'PYTHONPATH': TEST_FILES_DIR}
         cwd = TEST_FILES_DIR
         argv = ['localhost', str(PORT)]
         self.run_test_not_breaking_into_handled_exceptions(
@@ -192,7 +192,7 @@ class ServerAttachModuleExceptionLifecycleTests(ExceptionTests):  # noqa
 class PTVSDAttachModuleExceptionLifecycleTests(ExceptionTests):  # noqa
     def test_breaking_into_handled_exceptions(self):
         module_name = 'mymod_attach1'
-        env = {"PYTHONPATH": TEST_FILES_DIR}
+        env = {'PYTHONPATH': TEST_FILES_DIR}
         cwd = TEST_FILES_DIR
         argv = ['localhost', str(PORT)]
         self.run_test_breaking_into_handled_exceptions(
@@ -206,7 +206,7 @@ class PTVSDAttachModuleExceptionLifecycleTests(ExceptionTests):  # noqa
 
     def test_not_breaking_into_handled_exceptions(self):
         module_name = 'mymod_attach1'
-        env = {"PYTHONPATH": TEST_FILES_DIR}
+        env = {'PYTHONPATH': TEST_FILES_DIR}
         cwd = TEST_FILES_DIR
         argv = ['localhost', str(PORT)]
         self.run_test_not_breaking_into_handled_exceptions(
