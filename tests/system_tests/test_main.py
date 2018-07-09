@@ -370,13 +370,12 @@ class LifecycleTests(LifecycleTestsBase):
             with DebugClient() as editor:
                 session1 = editor.attach_socket(addr, adapter, timeout=1)
                 #session1.VERBOSE = True
-                with session1.wait_for_event('thread') as result:
+                with session1.wait_for_event('thread') as event:
                     with session1.wait_for_event('process'):
                         (req_init1, req_attach1, req_config1,
                          _, _, req_threads1,
                          ) = lifecycle_handshake(session1, 'attach',
                                                  threads=True)
-                event = result['msg']
                 tid1 = event.body['threadId']
 
                 stopped_event = session1.get_awaiter_for_event('stopped')
@@ -413,13 +412,12 @@ class LifecycleTests(LifecycleTestsBase):
 
                 session2 = editor.attach_socket(addr, adapter, timeout=1)
                 #session2.VERBOSE = True
-                with session2.wait_for_event('thread') as result:
+                with session2.wait_for_event('thread') as event:
                     with session2.wait_for_event('process'):
                         (req_init2, req_attach2, req_config2,
                          _, _, req_threads3,
                          ) = lifecycle_handshake(session2, 'attach',
                                                  threads=True)
-                event = result['msg']
                 tid2 = event.body['threadId']
 
                 done2()
@@ -643,7 +641,7 @@ class LifecycleTests(LifecycleTestsBase):
                 # TODO: There appears to be a small race that may
                 # cause the test to fail here.
                 with session.wait_for_event('stopped'):
-                    with session.wait_for_event('thread') as result:
+                    with session.wait_for_event('thread') as event:
                         with session.wait_for_event('process'):
                             (req_init, req_attach, req_config,
                              reqs_bps, _, req_threads1,
@@ -660,7 +658,6 @@ class LifecycleTests(LifecycleTestsBase):
                                 line = adapter.output.readline()
                             done1()
                         req_bps, = reqs_bps  # There should only be one.
-                    event = result['msg']
                     tid = event.body['threadId']
                 req_threads2 = session.send_request('threads')
                 req_stacktrace1 = session.send_request(
