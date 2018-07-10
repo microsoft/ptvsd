@@ -1,5 +1,6 @@
 import os
 import os.path
+import time
 
 from tests.helpers.resource import TestResources
 from tests.helpers.socket import resolve_hostname
@@ -27,6 +28,39 @@ class RemoteTests(LifecycleTestsBase):
             self.new_event('output', category='stdout', output='yes'),
             self.new_event('output', category='stderr', output='no'),
         ])
+
+    def run_test_source_references(self,
+                                   debug_info,
+                                   expected_stacktrace,
+                                   path_mappings=[],
+                                   debug_options=[]):
+        options = {
+            "debugOptions": ["RedirectOutput"] + debug_options,
+            "pathMappings": path_mappings
+        }
+
+        with self.start_debugging(debug_info) as dbg:
+            (_, req_attach, _, _, _, req_threads) = lifecycle_handshake(
+                dbg.session,
+                debug_info.starttype,
+                options=options,
+                threads=True)
+
+            # wait till we enter the for loop.
+            time.sleep(1)
+            Awaitable.wait_all(req_attach, req_threads)
+            with dbg.session.wait_for_event("stopped") as result:
+                dbg.session.send_request('pause')
+            sdf
+            tid = result["msg"].body["threadId"]
+            stacktrace = dbg.session.send_request("stackTrace", threadId=tid)
+            stacktrace.wait()
+            dbg.session.send_request("continue", threadId=tid).wait()
+
+            # Kill remove program.
+            os.kill(dbg.adapter.pid, signal.SIGKILL)
+
+        self.assert_is_subset(stacktrace.resp, expected_stacktrace)
 
 
 class AttachFileTests(RemoteTests):
@@ -86,6 +120,129 @@ class AttachFileTests(RemoteTests):
                 host=ip,
                 cwd=cwd,
                 starttype='attach',
-                argv=argv,
-            ),
-        )
+                argv=argv))
+
+    def test_source_references_should_be_returned_without_path_mappings(self):
+        filename = os.path.join(TEST_FORVER_FILES_DIR, 'attach_forever.py')
+        cwd = os.path.dirname(filename)
+        argv = ['localhost', str(PORT)]
+        expected_stacktrace = {
+            "stackFrames": [{
+                "source": {
+                    "path": filename,
+                    "sourceReference": 1
+                }
+            }],
+        }
+        self.run_test_source_references(
+            DebugInfo(
+                filename=filename,
+                attachtype='import',
+                cwd=cwd,
+                starttype='attach',
+                argv=argv), expected_stacktrace)
+
+    def test_source_references_should_not_be_returned_with_path_mappings(self):
+        filename = os.path.join(TEST_FORVER_FILES_DIR, 'attach_forever.py')
+        cwd = os.path.dirname(filename)
+        argv = ['localhost', str(PORT)]
+        path_mappings = [{
+            "localRoot": os.path.dirname(filename),
+            "remoteRoot": os.path.dirname(filename)
+        }]
+        expected_stacktrace = {
+            "stackFrames": [{
+                "source": {
+                    "path": filename,
+                    "sourceReference": 0
+                }
+            }],
+        }
+        self.run_test_source_references(
+            DebugInfo(
+                filename=filename,
+                attachtype='import',
+                cwd=cwd,
+                starttype='attach',
+                argv=argv), expected_stacktrace, path_mappings)
+
+    def test_source_references_should_be_returned_with_invalid_path_mappings(
+            self):
+        filename = os.path.join(TEST_FORVER_FILES_DIR, 'attach_forever.py')
+        cwd = os.path.dirname(filename)
+        argv = ['localhost', str(PORT)]
+        path_mappings = [{
+            "localRoot": TEST_FILES_DIR,
+            "remoteRoot": TEST_FILES_DIR
+        }]
+        expected_stacktrace = {
+            "stackFrames": [{
+                "source": {
+                    "path": filename,
+                    "sourceReference": 1
+                }
+            }],
+        }
+        self.run_test_source_references(
+            DebugInfo(
+                filename=filename,
+                attachtype='import',
+                cwd=cwd,
+                starttype='attach',
+                argv=argv), expected_stacktrace, path_mappings)
+
+    def test_source_references_should_be_returned_with_win_client(self):
+        filename = os.path.join(TEST_FORVER_FILES_DIR, 'attach_forever.py')
+        cwd = os.path.dirname(filename)
+        argv = ['localhost', str(PORT)]
+        client_dir = 'C:\\Development\\Projects\\src\\sub dir'
+        path_mappings = [{
+            "localRoot": client_dir,
+            "remoteRoot": os.path.dirname(filename)
+        }]
+        expected_stacktrace = {
+            "stackFrames": [{
+                "source": {
+                    "path": client_dir + '\\' + os.path.basename(filename),
+                    "sourceReference": 0
+                }
+            }],
+        }
+        self.run_test_source_references(
+            DebugInfo(
+                filename=filename,
+                attachtype='import',
+                cwd=cwd,
+                starttype='attach',
+                argv=argv),
+            expected_stacktrace,
+            path_mappings=path_mappings,
+            debug_options=['WindowsClient'])
+
+    @unittest.skipIf(sys.platform == 'win32', 'Run only on Unix clients')
+    def test_source_references_should_be_returned_with_unix_client(self):
+        filename = os.path.join(TEST_FORVER_FILES_DIR, 'attach_forever.py')
+        cwd = os.path.dirname(filename)
+        argv = ['localhost', str(PORT)]
+        client_dir = '/Users/PeterSmith/projects/src/sub dir'
+        path_mappings = [{
+            "localRoot": client_dir,
+            "remoteRoot": os.path.dirname(filename)
+        }]
+        expected_stacktrace = {
+            "stackFrames": [{
+                "source": {
+                    "path": client_dir + '/' + os.path.basename(filename),
+                    "sourceReference": 0
+                }
+            }],
+        }
+        self.run_test_source_references(
+            DebugInfo(
+                filename=filename,
+                attachtype='import',
+                cwd=cwd,
+                starttype='attach',
+                argv=argv),
+            expected_stacktrace,
+            path_mappings=path_mappings)
