@@ -41,8 +41,8 @@ class RemoteTests(LifecycleTestsBase):
                                    path_mappings=[],
                                    debug_options=[]):
         options = {
-            "debugOptions": ["RedirectOutput"] + debug_options,
-            "pathMappings": path_mappings
+            'debugOptions': debug_options,
+            'pathMappings': path_mappings
         }
 
         with self.start_debugging(debug_info) as dbg:
@@ -55,13 +55,21 @@ class RemoteTests(LifecycleTestsBase):
             # wait till we enter the for loop.
             time.sleep(1)
             Awaitable.wait_all(req_attach, req_threads)
-            with dbg.session.wait_for_event("stopped") as result:
-                dbg.session.send_request('pause')
+            with dbg.session.wait_for_event('stopped') as result:
+                arguments = {
+                    'source': {
+                        'name': os.path.basename(debug_info.filename),
+                        'path': debug_info.filename
+                    },
+                    'lines': [9],
+                    'breakpoints': [{'line': 9}]
+                }
+                dbg.session.send_request('setBreakpoints', **arguments)
 
-            tid = result["msg"].body["threadId"]
-            stacktrace = dbg.session.send_request("stackTrace", threadId=tid)
+            tid = result['msg'].body['threadId']
+            stacktrace = dbg.session.send_request('stackTrace', threadId=tid)
             stacktrace.wait()
-            dbg.session.send_request("continue", threadId=tid).wait()
+            dbg.session.send_request('continue', threadId=tid).wait()
 
             # Kill remove program.
             os.kill(dbg.adapter.pid, signal.SIGKILL)
@@ -133,10 +141,10 @@ class AttachFileTests(RemoteTests):
         cwd = os.path.dirname(filename)
         argv = ['localhost', str(PORT)]
         expected_stacktrace = {
-            "stackFrames": [{
-                "source": {
-                    "path": filename,
-                    "sourceReference": 1
+            'stackFrames': [{
+                'source': {
+                    'path': filename,
+                    'sourceReference': 1
                 }
             }],
         }
@@ -153,14 +161,14 @@ class AttachFileTests(RemoteTests):
         cwd = os.path.dirname(filename)
         argv = ['localhost', str(PORT)]
         path_mappings = [{
-            "localRoot": os.path.dirname(filename),
-            "remoteRoot": os.path.dirname(filename)
+            'localRoot': os.path.dirname(filename),
+            'remoteRoot': os.path.dirname(filename)
         }]
         expected_stacktrace = {
-            "stackFrames": [{
-                "source": {
-                    "path": filename,
-                    "sourceReference": 0
+            'stackFrames': [{
+                'source': {
+                    'path': filename,
+                    'sourceReference': 0
                 }
             }],
         }
@@ -178,14 +186,14 @@ class AttachFileTests(RemoteTests):
         cwd = os.path.dirname(filename)
         argv = ['localhost', str(PORT)]
         path_mappings = [{
-            "localRoot": os.path.dirname(__file__),
-            "remoteRoot": os.path.dirname(__file__)
+            'localRoot': os.path.dirname(__file__),
+            'remoteRoot': os.path.dirname(__file__)
         }]
         expected_stacktrace = {
-            "stackFrames": [{
-                "source": {
-                    "path": filename,
-                    "sourceReference": 1
+            'stackFrames': [{
+                'source': {
+                    'path': filename,
+                    'sourceReference': 1
                 }
             }],
         }
@@ -203,14 +211,14 @@ class AttachFileTests(RemoteTests):
         argv = ['localhost', str(PORT)]
         client_dir = 'C:\\Development\\Projects\\src\\sub dir'
         path_mappings = [{
-            "localRoot": client_dir,
-            "remoteRoot": os.path.dirname(filename)
+            'localRoot': client_dir,
+            'remoteRoot': os.path.dirname(filename)
         }]
         expected_stacktrace = {
-            "stackFrames": [{
-                "source": {
-                    "path": client_dir + '\\' + os.path.basename(filename),
-                    "sourceReference": 0
+            'stackFrames': [{
+                'source': {
+                    'path': client_dir + '\\' + os.path.basename(filename),
+                    'sourceReference': 0
                 }
             }],
         }
@@ -232,14 +240,14 @@ class AttachFileTests(RemoteTests):
         argv = ['localhost', str(PORT)]
         client_dir = '/Users/PeterSmith/projects/src/sub dir'
         path_mappings = [{
-            "localRoot": client_dir,
-            "remoteRoot": os.path.dirname(filename)
+            'localRoot': client_dir,
+            'remoteRoot': os.path.dirname(filename)
         }]
         expected_stacktrace = {
-            "stackFrames": [{
-                "source": {
-                    "path": client_dir + '/' + os.path.basename(filename),
-                    "sourceReference": 0
+            'stackFrames': [{
+                'source': {
+                    'path': client_dir + '/' + os.path.basename(filename),
+                    'sourceReference': 0
                 }
             }],
         }
