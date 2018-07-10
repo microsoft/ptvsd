@@ -631,6 +631,7 @@ class LifecycleTests(LifecycleTestsBase):
                                                      breakpoints=breakpoints,
                                                      options=options,
                                                      threads=True)
+                            req_bps, = reqs_bps  # There should only be one.
 
                             # Grab the initial output.
                             out1 = next(adapter.output)  # 'waiting for attach'
@@ -638,8 +639,10 @@ class LifecycleTests(LifecycleTestsBase):
                             while line:
                                 out1 += line
                                 line = adapter.output.readline()
+
+                            # Tell the script to proceed (at "# <waiting>").
+                            # This leads to the first breakpoint.
                             done1()
-                        req_bps, = reqs_bps  # There should only be one.
                     event = result['msg']
                     tid = event.body['threadId']
                 req_threads2 = session.send_request('threads')
@@ -649,6 +652,9 @@ class LifecycleTests(LifecycleTestsBase):
                 )
                 out2 = str(adapter.output)
 
+                # Tell the script to proceed (at "# <bp 2>").  This
+                # leads to the second breakpoint.  At this point
+                # execution is still stopped at the first breakpoint.
                 done2()
                 with session.wait_for_event('stopped'):
                     with session.wait_for_event('continued'):
