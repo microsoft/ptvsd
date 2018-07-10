@@ -27,7 +27,7 @@ class EnableAttachTests(LifecycleTestsBase, unittest.TestCase):
         #DebugAdapter.VERBOSE = True
         adapter = DebugAdapter.start_embedded(addr, filename)
         with adapter:
-            wait(timeout=1)
+            wait(timeout=3)
             adapter.wait()
 
     def test_wait_for_attach(self):

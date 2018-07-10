@@ -63,6 +63,10 @@ def enable_attach(address,
     t = new_hidden_thread('start-pydevd', start_pydevd)
     t.start()
 
+    def wait(timeout=None):
+        t.join(timeout)
+        return not t.is_alive()
+
     def debug_current_thread(suspend=False, **kwargs):
         # Make sure that pydevd has finished starting before enabling
         # in the current thread.
@@ -81,4 +85,4 @@ def enable_attach(address,
             **kwargs
         )
         debug('pydevd enabled (current thread)')
-    return daemon, t.join, debug_current_thread
+    return daemon, wait, debug_current_thread

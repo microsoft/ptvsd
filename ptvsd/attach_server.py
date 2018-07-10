@@ -11,6 +11,8 @@ from ptvsd._remote import (
 )
 
 
+WAIT_TIMEOUT = 1.0  # TODO: Use a smaller value during tests?
+
 DEFAULT_HOST = '0.0.0.0'
 DEFAULT_PORT = 5678
 
@@ -78,13 +80,18 @@ def enable_attach(address=(DEFAULT_HOST, DEFAULT_PORT), redirect_output=True):
     # wait_for_attach() is never called.  It also assumes that
     # wait_for_attach() called only once and only in the same thread
     # where enable_attach was called.
-    _, _, debug_current_thread = ptvsd_enable_attach(
+    _, wait, debug_current_thread = ptvsd_enable_attach(
         address,
         on_attach=_attached.set,
         redirect_output=redirect_output,
     )
     global _debug_current_thread
     _debug_current_thread = debug_current_thread
+
+    # Give it a chance to finish starting.  This helps reduce possible
+    # issues due to relying on wait_for_attach().
+    if wait(WAIT_TIMEOUT):
+        debug_current_thread()
 
 
 # TODO: Add disable_attach()?
