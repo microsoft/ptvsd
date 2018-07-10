@@ -15,7 +15,9 @@ from tests.helpers.debugsession import Awaitable
 from . import (
     _strip_newline_output_events, lifecycle_handshake, TestsBase,
     LifecycleTestsBase, _strip_output_event, _strip_exit, _find_events,
-    PORT)
+    PORT,
+)
+
 
 ROOT = os.path.dirname(os.path.dirname(ptvsd.__file__))
 

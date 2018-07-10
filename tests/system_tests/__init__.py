@@ -285,12 +285,15 @@ Original Error:
             debug_info.starttype == 'attach' and \
             debug_info.filename is not None:
             argv = debug_info.argv
-            with DebugAdapter.start_embedded(
-                    addr,
-                    debug_info.filename,
-                    argv=argv,
-                    env=env,
-                    cwd=cwd) as adapter:
+            adapter = DebugAdapter.start_embedded(
+                addr,
+                debug_info.filename,
+                argv=argv,
+                env=env,
+                cwd=cwd,
+                waitforserver=True,
+            )
+            with adapter:
                 with DebugClient() as editor:
                     time.sleep(DELAY_WAITING_FOR_SOCKETS)
                     session = editor.attach_socket(addr, adapter)
@@ -307,13 +310,16 @@ Original Error:
                 name = debug_info.modulename
                 kind = 'module'
             argv = debug_info.argv
-            with DebugAdapter.start_for_attach(
-                    addr,
-                    name=name,
-                    extra=argv,
-                    kind=kind,
-                    env=env,
-                    cwd=cwd) as adapter:
+            adapter = DebugAdapter.start_for_attach(
+                addr,
+                name=name,
+                extra=argv,
+                kind=kind,
+                env=env,
+                cwd=cwd,
+                waitforserver=True,
+            )
+            with adapter:
                 with DebugClient() as editor:
                     time.sleep(DELAY_WAITING_FOR_SOCKETS)
                     session = editor.attach_socket(addr, adapter)
