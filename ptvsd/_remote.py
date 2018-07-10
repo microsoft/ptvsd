@@ -5,6 +5,22 @@ from ptvsd.pydevd_hooks import install, start_server
 from ptvsd.socket import Address
 
 
+def _pydevd_settrace(redirect_output=None, _pydevd=pydevd, **kwargs):
+    if redirect_output is not None:
+        kwargs.setdefault('stdoutToServer', redirect_output)
+        kwargs.setdefault('stderrToServer', redirect_output)
+    # pydevd.settrace() only enables debugging of the current
+    # thread and all future threads.  PyDevd is not enabled for
+    # existing threads (other than the current one).  Consequently,
+    # pydevd.settrace() must be called ASAP in the current thread.
+    #
+    # This is tricky, however, because settrace() will block until
+    # it receives a CMD_RUN message.  You can't just call it in a
+    # thread to avoid blocking; doing so would prevent the current
+    # thread from being debugged.
+    _pydevd.settrace(**kwargs)
+
+
 # TODO: Split up enable_attach() to align with module organization.
 # This should including making better use of Daemon (e,g, the
 # start_server() method).
@@ -14,7 +30,9 @@ from ptvsd.socket import Address
 def enable_attach(address,
                   on_attach=(lambda: None),
                   redirect_output=True,
-                  _pydevd=pydevd, _install=install,
+                  _pydevd=pydevd,
+                  _install=install,
+                  _settrace=_pydevd_settrace,
                   **kwargs):
     addr = Address.as_server(*address)
     debug('installing ptvsd as server')
@@ -32,11 +50,12 @@ def enable_attach(address,
     # Only pass the port so start_server() gets triggered.
     # As noted above, we also have to trick settrace() because it
     # *always* forces a client connection.
-    _pydevd.settrace(
+    _settrace(
         stdoutToServer=redirect_output,
         stderrToServer=redirect_output,
         port=addr.port,
         suspend=False,
+        _pydevd=_pydevd,
     )
     debug('pydevd enabled')
     return daemon

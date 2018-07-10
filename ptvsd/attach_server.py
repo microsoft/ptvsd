@@ -4,11 +4,11 @@
 
 import threading
 
-import pydevd
-
 # TODO: Why import run_module & run_file?
 from ptvsd._local import run_module, run_file  # noqa
-from ptvsd._remote import enable_attach as ptvsd_enable_attach
+from ptvsd._remote import (
+    enable_attach as ptvsd_enable_attach, _pydevd_settrace,
+)
 
 
 DEFAULT_HOST = '0.0.0.0'
@@ -71,6 +71,7 @@ def enable_attach(address=(DEFAULT_HOST, DEFAULT_PORT), redirect_output=True):
         redirect_output=redirect_output,
     )
 
+
 # TODO: Add disable_attach()?
 
 
@@ -87,7 +88,7 @@ def break_into_debugger():
         return
 
     import sys
-    pydevd.settrace(
+    _pydevd_settrace(
         suspend=True,
         trace_only_current_thread=True,
         patch_multiprocessing=False,
