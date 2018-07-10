@@ -5,7 +5,7 @@ from tests import PROJECT_ROOT
 from tests.helpers.debugadapter import DebugAdapter
 from tests.helpers.debugclient import EasyDebugClient as DebugClient
 from tests.helpers.lock import LockTimeoutError
-from tests.helpers.script import set_lock, set_release
+from tests.helpers.script import set_lock, set_release, find_line
 from . import LifecycleTestsBase, PORT, lifecycle_handshake
 
 
@@ -29,6 +29,49 @@ class EnableAttachTests(LifecycleTestsBase, unittest.TestCase):
         with adapter:
             wait(timeout=3)
             adapter.wait()
+
+    def test_never_call_wait_for_attach(self):
+        addr = Address('localhost', PORT)
+        filename = self.write_script('spam.py', """
+            import sys
+            sys.path.insert(0, {!r})
+            import ptvsd
+            ptvsd.enable_attach({}, redirect_output=False)
+            # <ready>
+            # <wait>
+            # <bp>
+            """.format(PROJECT_ROOT, tuple(addr)),
+        )
+        lockfile1 = self.workspace.lockfile()
+        _, wait = set_release(filename, lockfile1, 'ready')
+        lockfile2 = self.workspace.lockfile()
+        done, script = set_lock(filename, lockfile2, 'wait')
+
+        bp = find_line(script, 'bp')
+        breakpoints = [{
+            'source': {'path': filename},
+            'breakpoints': [
+                {'line': bp},
+            ],
+        }]
+
+        #DebugAdapter.VERBOSE = True
+        adapter = DebugAdapter.start_embedded(addr, filename)
+        with adapter:
+            wait(timeout=3)
+            with DebugClient() as editor:
+                session = editor.attach_socket(addr, adapter, timeout=1)
+                with session.wait_for_event('thread') as result:
+                    lifecycle_handshake(session, 'attach',
+                                        breakpoints=breakpoints)
+                event = result['msg']
+                tid = event.body['threadId']
+                wait(timeout=1)
+                with session.wait_for_event('stopped'):
+                    done()
+                session.send_request('continue', threadId=tid)
+
+                adapter.wait()
 
     def test_wait_for_attach(self):
         addr = Address('localhost', PORT)
