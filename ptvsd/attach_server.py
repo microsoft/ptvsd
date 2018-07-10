@@ -19,6 +19,7 @@ DEFAULT_PORT = 5678
 _enabled = False
 _attached = threading.Event()
 _debug_current_thread = None
+_pending_threads = set()
 
 
 def wait_for_attach(timeout=None):
@@ -33,10 +34,13 @@ def wait_for_attach(timeout=None):
     """
     _attached.wait(timeout)
 
-    # Enable pydevd in the current thread.  This is necessary because
-    # we started pydevd in a new thread.  We must do it here because
-    # that previous invocation must have finished already.
-    _debug_current_thread()
+    tid = threading.current_thread().ident
+    if tid in _pending_threads:
+        _pending_threads.remove(tid)
+        # Enable pydevd in the current thread.  This is necessary because
+        # we started pydevd in a new thread.  We must do it here because
+        # that previous invocation must have finished already.
+        _debug_current_thread()
 
 
 def enable_attach(address=(DEFAULT_HOST, DEFAULT_PORT), redirect_output=True):
@@ -77,9 +81,7 @@ def enable_attach(address=(DEFAULT_HOST, DEFAULT_PORT), redirect_output=True):
     # debugging for *future* threads.  It does not actually enable
     # debugging in the *current* thread.  That is done in
     # wait_for_attach().  Thus this approach is problematic if
-    # wait_for_attach() is never called.  It also assumes that
-    # wait_for_attach() called only once and only in the same thread
-    # where enable_attach was called.
+    # wait_for_attach() is never called.
     _, wait, debug_current_thread = ptvsd_enable_attach(
         address,
         on_attach=_attached.set,
@@ -92,6 +94,8 @@ def enable_attach(address=(DEFAULT_HOST, DEFAULT_PORT), redirect_output=True):
     # issues due to relying on wait_for_attach().
     if wait(WAIT_TIMEOUT):
         debug_current_thread()
+    else:
+        _pending_threads.add(threading.current_thread().ident)
 
 
 # TODO: Add disable_attach()?
