@@ -658,6 +658,7 @@ class LifecycleTests(LifecycleTestsBase):
                             'continue',
                             threadId=tid,
                         )
+                        req_continue1.wait()
                 req_threads3, req_stacktrace2 = react_to_stopped(session, tid)
                 out3 = str(adapter.output)  # "attached!"
 
@@ -666,6 +667,7 @@ class LifecycleTests(LifecycleTestsBase):
                         'continue',
                         threadId=tid,
                     )
+                    req_continue2.wait()
 
                 adapter.wait()
             out4 = str(adapter.output)  # "done waiting"
