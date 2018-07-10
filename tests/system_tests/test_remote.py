@@ -28,7 +28,7 @@ class RemoteTests(LifecycleTestsBase):
             for frame in expected_stacktrace.get('stackFrames'):
                 frame['source']['path'] = frame['source'].get('path', '').upper() # noqa
 
-        self.assert_is_subset(stacktrace.resp, expected_stacktrace)
+        self.assert_is_subset(stacktrace, expected_stacktrace)
 
     def run_test_attach(self, debug_info):
         options = {'debugOptions': ['RedirectOutput']}
@@ -82,7 +82,8 @@ class RemoteTests(LifecycleTestsBase):
             # Kill remove program.
             os.kill(dbg.adapter.pid, signal.SIGTERM)
 
-        self._assert_stacktrace_is_subset(stacktrace.resp, expected_stacktrace)
+        self._assert_stacktrace_is_subset(stacktrace.resp.body,
+                                          expected_stacktrace)
 
 
 class AttachFileTests(RemoteTests):
