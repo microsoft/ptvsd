@@ -15,7 +15,7 @@ from tests.helpers.debugsession import Awaitable
 from . import (
     _strip_newline_output_events, lifecycle_handshake, TestsBase,
     LifecycleTestsBase, _strip_output_event, _strip_exit, _find_events,
-    PORT,
+    PORT, react_to_stopped,
 )
 
 
@@ -645,11 +645,7 @@ class LifecycleTests(LifecycleTestsBase):
                             done1()
                     event = result['msg']
                     tid = event.body['threadId']
-                req_threads2 = session.send_request('threads')
-                req_stacktrace1 = session.send_request(
-                    'stackTrace',
-                    threadId=tid,
-                )
+                req_threads2, req_stacktrace1 = react_to_stopped(session, tid)
                 out2 = str(adapter.output)
 
                 # Tell the script to proceed (at "# <bp 2>").  This
@@ -662,11 +658,7 @@ class LifecycleTests(LifecycleTestsBase):
                             'continue',
                             threadId=tid,
                         )
-                req_threads3 = session.send_request('threads')
-                req_stacktrace2 = session.send_request(
-                    'stackTrace',
-                    threadId=tid,
-                )
+                req_threads3, req_stacktrace2 = react_to_stopped(session, tid)
                 out3 = str(adapter.output)
 
                 with session.wait_for_event('continued'):

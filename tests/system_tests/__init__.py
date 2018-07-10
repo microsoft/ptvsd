@@ -184,6 +184,19 @@ def _configure(session, breakpoints, excbreakpoints):
     return reqs_bps, reqs_exc, req_done
 
 
+def react_to_stopped(session, tid):
+    req_threads = session.send_request('threads')
+    req_threads.wait()
+
+    req_stacktrace = session.send_request(
+        'stackTrace',
+        threadId=tid,
+    )
+    req_stacktrace.wait()
+
+    return req_threads, req_stacktrace
+
+
 class TestsBase(object):
 
     @property
