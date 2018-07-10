@@ -47,7 +47,7 @@ def enable_attach(address,
         **kwargs
     )
 
-    def enable_pydevd():
+    def start_pydevd():
         debug('enabling pydevd')
         # Only pass the port so start_server() gets triggered.
         # As noted above, we also have to trick settrace() because it
@@ -60,6 +60,25 @@ def enable_attach(address,
             _pydevd=_pydevd,
         )
         debug('pydevd enabled')
-    t = new_hidden_thread('enable-pydevd', enable_pydevd)
+    t = new_hidden_thread('start-pydevd', start_pydevd)
     t.start()
-    return daemon, t.join
+
+    def debug_current_thread(suspend=False, **kwargs):
+        # Make sure that pydevd has finished starting before enabling
+        # in the current thread.
+        t.join()
+        debug('enabling pydevd (current thread)')
+        _settrace(
+            host=None,  # ignored
+            stdoutToServer=False,  # ignored
+            stderrToServer=False,  # ignored
+            port=None,  # ignored
+            suspend=suspend,
+            trace_only_current_thread=True,
+            overwrite_prev_trace=True,
+            patch_multiprocessing=False,
+            _pydevd=_pydevd,
+            **kwargs
+        )
+        debug('pydevd enabled (current thread)')
+    return daemon, t.join, debug_current_thread
