@@ -146,23 +146,23 @@ def lifecycle_handshake(session, command='launch', options=None,
                         breakpoints=None, excbreakpoints=None,
                         threads=False):
     with session.wait_for_event('initialized'):
-        req_initialize = session.send_request(
+        req_initialize = session.send_request_and_wait(
             'initialize',
             adapterID='spam',
         )
-    req_command = session.send_request(command, **options or {})
-    req_threads = session.send_request('threads') if threads else None
+    req_command = session.send_request_and_wait(command, **options or {})
+    req_threads = session.send_request_and_wait('threads') if threads else None
 
     reqs_bps = []
     reqs_exc = []
     for req in breakpoints or ():
         reqs_bps.append(
-            session.send_request('setBreakpoints', **req))
+            session.send_request_and_wait('setBreakpoints', **req))
     for req in excbreakpoints or ():
         reqs_bps.append(
-            session.send_request('setExceptionBreakpoints', **req))
+            session.send_request_and_wait('setExceptionBreakpoints', **req))
 
-    req_done = session.send_request('configurationDone')
+    req_done = session.send_request_and_wait('configurationDone')
     return (req_initialize, req_command, req_done,
             reqs_bps, reqs_exc, req_threads)
 
@@ -375,6 +375,15 @@ class LifecycleTestsBase(TestsBase, unittest.TestCase):
 
     def new_event(self, *args, **kwargs):
         return self.messages.new_event(*args, **kwargs)
+
+    @contextlib.contextmanager
+    def wait_for_exit(self, session):
+        def match_body(body):
+            return body.get('reason', '') == 'exited'
+        with session.wait_for_event('exited'):
+            with session.wait_for_event('terminated'):
+                with session.wait_for_event('thread', match_body):
+                    yield
 
     def _wait_for_started(self):
         lock, wait = get_locked_and_waiter()

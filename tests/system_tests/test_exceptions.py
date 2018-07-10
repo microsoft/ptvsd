@@ -2,7 +2,6 @@ import os
 import os.path
 import unittest
 
-from tests.helpers.debugsession import Awaitable
 from tests.helpers.resource import TestResources
 from . import (
     _strip_newline_output_events, lifecycle_handshake,
@@ -37,24 +36,17 @@ class ExceptionTests(LifecycleTestsBase):
         options = {'debugOptions': ['RedirectOutput']}
 
         with self.start_debugging(debug_info) as dbg:
-            stopped = dbg.session.get_awaiter_for_event('stopped')
-            (_, req_launch_attach, _, _, _, _
-             ) = lifecycle_handshake(dbg.session, debug_info.starttype,
-                                     excbreakpoints=excbreakpoints,
-                                     options=options,
-                                     threads=True)
+            with dbg.session.wait_for_event('stopped') as event:
+                lifecycle_handshake(dbg.session, debug_info.starttype,
+                                    excbreakpoints=excbreakpoints,
+                                    options=options,
+                                    threads=True)
+            thread_id = event.body["threadId"]
 
-            Awaitable.wait_all(req_launch_attach, stopped)
-            self.assertEqual(stopped.event.body['text'], 'ArithmeticError')
-            self.assertIn("ArithmeticError('Hello'",
-                          stopped.event.body['description'])
-
-            thread_id = stopped.event.body['threadId']
-            req_exc_info = dbg.session.send_request(
+            req_exc_info = dbg.session.send_request_and_wait(
                 'exceptionInfo',
                 threadId=thread_id,
             )
-            req_exc_info.wait()
             exc_info = req_exc_info.resp.body
 
             self.assert_is_subset(exc_info, {
@@ -66,14 +58,27 @@ class ExceptionTests(LifecycleTestsBase):
                 }
             })
 
-            continued = dbg.session.get_awaiter_for_event('continued')
-            dbg.session.send_request(
-                'continue',
-                threadId=thread_id,
-            ).wait()
-            Awaitable.wait_all(continued)
+            with dbg.session.wait_for_event('continued'):
+                dbg.session.send_request_and_wait(
+                    'continue',
+                    threadId=thread_id,
+                )
 
         received = list(_strip_newline_output_events(dbg.session.received))
+
+        self.assertEqual(event.body["text"], "ArithmeticError")
+        self.assertIn("ArithmeticError('Hello'",
+                      event.body["description"])
+
+        self.assert_is_subset(exc_info, {
+            "exceptionId": "ArithmeticError",
+            "breakMode": "always",
+            "details": {
+                "typeName": "ArithmeticError",
+                # "source": debug_info.filename
+            }
+        })
+
         self.assert_contains(received, [
             self.new_event('continued', threadId=thread_id),
             self.new_event('output', category='stdout', output='end'),
