@@ -1,6 +1,5 @@
 import os
 import os.path
-import signal
 import time
 
 from tests.helpers.debugsession import Awaitable
@@ -70,7 +69,7 @@ class RemoteTests(LifecycleTestsBase):
             dbg.session.send_request('continue', threadId=tid).wait()
 
             # Kill remove program.
-            os.kill(dbg.adapter.pid, signal.SIGKILL)
+            os.kill(dbg.adapter.pid)
 
         self.assert_is_subset(stacktrace.resp, expected_stacktrace)
 
