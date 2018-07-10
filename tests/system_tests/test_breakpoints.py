@@ -422,7 +422,7 @@ class LaunchFileTests(BreakpointTests):
         )
 
 
-class LaunchModuleTests(BreakpointTests):
+class LaunchPackageTests(BreakpointTests):
 
     def test_with_break_points(self):
         module_name = 'mypkg_launch1'
@@ -530,7 +530,7 @@ class PTVSDAttachTests(BreakpointTests):
         )
 
 
-class ServerAttachModuleTests(BreakpointTests):
+class ServerAttachPackageTests(BreakpointTests):
 
     def test_with_break_points(self):
         module_name = 'mypkg_launch1'
@@ -552,7 +552,7 @@ class ServerAttachModuleTests(BreakpointTests):
 
 
 @unittest.skip('Needs fixing')
-class PTVSDAttachModuleTests(BreakpointTests):
+class PTVSDAttachPackageTests(BreakpointTests):
 
     def test_with_break_points(self):
         module_name = 'mypkg_attach1'

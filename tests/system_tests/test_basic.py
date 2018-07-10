@@ -111,7 +111,7 @@ class LaunchFileTests(BasicTests):
         )
 
 
-class LaunchModuleTests(BasicTests):
+class LaunchPackageTests(BasicTests):
 
     def test_with_output(self):
         module_name = 'mypkg_launch1'
@@ -213,7 +213,7 @@ class PTVSDAttachTests(BasicTests):
         )
 
 
-class ServerAttachModuleTests(BasicTests):
+class ServerAttachPackageTests(BasicTests):
 
     def test_with_output(self):
         module_name = 'mypkg_launch1'
@@ -246,7 +246,7 @@ class ServerAttachModuleTests(BasicTests):
         )
 
 
-class PTVSDAttachModuleTests(BasicTests):
+class PTVSDAttachPackageTests(BasicTests):
 
     def test_with_output(self):
         #self.enable_verbose()
