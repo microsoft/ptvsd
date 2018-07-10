@@ -1,9 +1,7 @@
 import os
 import os.path
 import signal
-import sys
 import time
-import unittest
 
 from tests.helpers.debugsession import Awaitable
 from tests.helpers.resource import TestResources
