@@ -474,16 +474,6 @@ class LifecycleTests(LifecycleTestsBase):
                     'name': 'MainThread',
                 }],
             }),
-            self.new_event(
-                'module',
-                module={
-                    'id': 1,
-                    'name': '__main__',
-                    'path': filename,
-                    'package': None,
-                },
-                reason='new',
-            ),
             self.new_response(req_disconnect.req),
         ])
         self.messages.reset_all()
