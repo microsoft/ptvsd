@@ -425,7 +425,7 @@ class LaunchFileTests(BreakpointTests):
 class LaunchModuleTests(BreakpointTests):
 
     def test_with_break_points(self):
-        module_name = 'mymod_launch1'
+        module_name = 'mypkg_launch1'
         env = TEST_FILES.env_with_py_path()
         cwd = TEST_FILES.root
         bp_filename = os.path.join(cwd, module_name, '__init__.py')
@@ -436,17 +436,17 @@ class LaunchModuleTests(BreakpointTests):
         )
 
     def test_with_break_points_across_files(self):
-        module_name = 'mymod_foo'
+        module_name = 'mypkg_foo'
         first_file = TEST_FILES.resolve(module_name, '__init__.py')
-        second_file = TEST_FILES.resolve('mymod_bar', 'bar.py')
+        second_file = TEST_FILES.resolve('mypkg_bar', 'bar.py')
         env = TEST_FILES.env_with_py_path()
         cwd = TEST_FILES.root
         expected_modules = [{
             'reason': 'new',
             'module': {
-                'package': 'mymod_bar',
+                'package': 'mypkg_bar',
                 'path': second_file,
-                'name': 'mymod_bar.bar'
+                'name': 'mypkg_bar.bar'
             }
         }, {
             'reason': 'new',
@@ -533,7 +533,7 @@ class PTVSDAttachTests(BreakpointTests):
 class ServerAttachModuleTests(BreakpointTests):
 
     def test_with_break_points(self):
-        module_name = 'mymod_launch1'
+        module_name = 'mypkg_launch1'
         env = TEST_FILES.env_with_py_path()
         cwd = TEST_FILES.root
         argv = ['localhost', str(PORT)]
@@ -555,7 +555,7 @@ class ServerAttachModuleTests(BreakpointTests):
 class PTVSDAttachModuleTests(BreakpointTests):
 
     def test_with_break_points(self):
-        module_name = 'mymod_attach1'
+        module_name = 'mypkg_attach1'
         env = TEST_FILES.env_with_py_path()
         cwd = TEST_FILES.root
         argv = ['localhost', str(PORT)]

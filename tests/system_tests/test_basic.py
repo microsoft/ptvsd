@@ -114,7 +114,7 @@ class LaunchFileTests(BasicTests):
 class LaunchModuleTests(BasicTests):
 
     def test_with_output(self):
-        module_name = 'mymod_launch1'
+        module_name = 'mypkg_launch1'
         cwd = WITH_OUTPUT.root
         env = WITH_OUTPUT.env_with_py_path()
         self.run_test_output(
@@ -122,7 +122,7 @@ class LaunchModuleTests(BasicTests):
         )
 
     def test_without_output(self):
-        module_name = 'mymod_launch1'
+        module_name = 'mypkg_launch1'
         cwd = WITHOUT_OUTPUT.root
         env = WITHOUT_OUTPUT.env_with_py_path()
         self.run_test_without_output(
@@ -131,7 +131,7 @@ class LaunchModuleTests(BasicTests):
 
     @unittest.skip('Broken')
     def test_termination(self):
-        module_name = 'mymod_launch1'
+        module_name = 'mypkg_launch1'
         cwd = TEST_TERMINATION_FILES.root
         env = TEST_TERMINATION_FILES.env_with_py_path()
         self.run_test_output(
@@ -143,7 +143,7 @@ class LaunchModuleTests(BasicTests):
 
     @unittest.skip('Broken')
     def test_arguments(self):
-        module_name = 'mymod_launch1'
+        module_name = 'mypkg_launch1'
         cwd = WITH_ARGS.root
         env = WITH_ARGS.env_with_py_path()
         argv = ['arg1', 'arg2']
@@ -216,7 +216,7 @@ class PTVSDAttachTests(BasicTests):
 class ServerAttachModuleTests(BasicTests):
 
     def test_with_output(self):
-        module_name = 'mymod_launch1'
+        module_name = 'mypkg_launch1'
         cwd = WITH_OUTPUT.root
         env = WITH_OUTPUT.env_with_py_path()
         argv = ['localhost', str(PORT)]
@@ -231,7 +231,7 @@ class ServerAttachModuleTests(BasicTests):
         )
 
     def test_without_output(self):
-        module_name = 'mymod_launch1'
+        module_name = 'mypkg_launch1'
         cwd = WITHOUT_OUTPUT.root
         env = WITHOUT_OUTPUT.env_with_py_path()
         argv = ['localhost', str(PORT)]
@@ -250,7 +250,7 @@ class PTVSDAttachModuleTests(BasicTests):
 
     def test_with_output(self):
         #self.enable_verbose()
-        module_name = 'mymod_attach1'
+        module_name = 'mypkg_attach1'
         cwd = WITH_OUTPUT.root
         env = WITH_OUTPUT.env_with_py_path()
         argv = ['localhost', str(PORT)]
@@ -266,7 +266,7 @@ class PTVSDAttachModuleTests(BasicTests):
         )
 
     def test_without_output(self):
-        module_name = 'mymod_attach1'
+        module_name = 'mypkg_attach1'
         cwd = WITHOUT_OUTPUT.root
         env = WITHOUT_OUTPUT.env_with_py_path()
         argv = ['localhost', str(PORT)]
