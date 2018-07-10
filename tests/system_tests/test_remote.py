@@ -22,7 +22,7 @@ WITH_TEST_FORVER = SYSTEM_TEST_FILES.sub('test_forever')
 class RemoteTests(LifecycleTestsBase):
     def _assert_stacktrace_is_subset(self, stacktrace, expected_stacktrace):
         # Ignore path case on Windows.
-        if sys.platform != 'win32':
+        if sys.platform == 'win32':
             for frame in stacktrace.get('stackFrames'):
                 frame['source']['path'] = frame['source'].get('path', '').upper() # noqa
             for frame in expected_stacktrace.get('stackFrames'):
