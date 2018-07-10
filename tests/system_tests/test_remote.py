@@ -1,6 +1,7 @@
 import os
 import os.path
 import signal
+import sys
 import time
 
 from tests.helpers.debugsession import Awaitable
@@ -19,6 +20,15 @@ WITH_TEST_FORVER = SYSTEM_TEST_FILES.sub('test_forever')
 
 
 class RemoteTests(LifecycleTestsBase):
+    def _assert_stacktrace_is_subset(self, stacktrace, expected_stacktrace):
+        # Ignore path case on Windows.
+        if sys.platform != 'win32':
+            for frame in stacktrace.get('stackFrames'):
+                frame['source']['path'] = frame['source'].get('path', '').upper() # noqa
+            for frame in expected_stacktrace.get('stackFrames'):
+                frame['source']['path'] = frame['source'].get('path', '').upper() # noqa
+
+        self.assert_is_subset(stacktrace.resp, expected_stacktrace)
 
     def run_test_attach(self, debug_info):
         options = {'debugOptions': ['RedirectOutput']}
@@ -72,7 +82,7 @@ class RemoteTests(LifecycleTestsBase):
             # Kill remove program.
             os.kill(dbg.adapter.pid, signal.SIGTERM)
 
-        self.assert_is_subset(stacktrace.resp, expected_stacktrace)
+        self._assert_stacktrace_is_subset(stacktrace.resp, expected_stacktrace)
 
 
 class AttachFileTests(RemoteTests):
