@@ -1,7 +1,11 @@
 import os
 import os.path
+import signal
+import sys
 import time
+import unittest
 
+from tests.helpers.debugsession import Awaitable
 from tests.helpers.resource import TestResources
 from tests.helpers.socket import resolve_hostname
 from . import (
@@ -12,6 +16,8 @@ from . import (
 
 TEST_FILES = TestResources.from_module('tests.system_tests.test_basic')
 WITH_OUTPUT = TEST_FILES.sub('test_output')
+SYSTEM_TEST_FILES = TestResources.from_module('tests.system_tests')
+WITH_TEST_FORVER = SYSTEM_TEST_FILES.sub('test_forever')
 
 
 class RemoteTests(LifecycleTestsBase):
@@ -51,7 +57,7 @@ class RemoteTests(LifecycleTestsBase):
             Awaitable.wait_all(req_attach, req_threads)
             with dbg.session.wait_for_event("stopped") as result:
                 dbg.session.send_request('pause')
-            sdf
+
             tid = result["msg"].body["threadId"]
             stacktrace = dbg.session.send_request("stackTrace", threadId=tid)
             stacktrace.wait()
@@ -123,7 +129,7 @@ class AttachFileTests(RemoteTests):
                 argv=argv))
 
     def test_source_references_should_be_returned_without_path_mappings(self):
-        filename = os.path.join(TEST_FORVER_FILES_DIR, 'attach_forever.py')
+        filename = WITH_TEST_FORVER.resolve('attach_forever.py')
         cwd = os.path.dirname(filename)
         argv = ['localhost', str(PORT)]
         expected_stacktrace = {
@@ -143,7 +149,7 @@ class AttachFileTests(RemoteTests):
                 argv=argv), expected_stacktrace)
 
     def test_source_references_should_not_be_returned_with_path_mappings(self):
-        filename = os.path.join(TEST_FORVER_FILES_DIR, 'attach_forever.py')
+        filename = WITH_TEST_FORVER.resolve('attach_forever.py')
         cwd = os.path.dirname(filename)
         argv = ['localhost', str(PORT)]
         path_mappings = [{
@@ -168,12 +174,12 @@ class AttachFileTests(RemoteTests):
 
     def test_source_references_should_be_returned_with_invalid_path_mappings(
             self):
-        filename = os.path.join(TEST_FORVER_FILES_DIR, 'attach_forever.py')
+        filename = WITH_TEST_FORVER.resolve('attach_forever.py')
         cwd = os.path.dirname(filename)
         argv = ['localhost', str(PORT)]
         path_mappings = [{
-            "localRoot": TEST_FILES_DIR,
-            "remoteRoot": TEST_FILES_DIR
+            "localRoot": os.path.dirname(__file__),
+            "remoteRoot": os.path.dirname(__file__)
         }]
         expected_stacktrace = {
             "stackFrames": [{
@@ -192,7 +198,7 @@ class AttachFileTests(RemoteTests):
                 argv=argv), expected_stacktrace, path_mappings)
 
     def test_source_references_should_be_returned_with_win_client(self):
-        filename = os.path.join(TEST_FORVER_FILES_DIR, 'attach_forever.py')
+        filename = WITH_TEST_FORVER.resolve('attach_forever.py')
         cwd = os.path.dirname(filename)
         argv = ['localhost', str(PORT)]
         client_dir = 'C:\\Development\\Projects\\src\\sub dir'
@@ -221,7 +227,7 @@ class AttachFileTests(RemoteTests):
 
     @unittest.skipIf(sys.platform == 'win32', 'Run only on Unix clients')
     def test_source_references_should_be_returned_with_unix_client(self):
-        filename = os.path.join(TEST_FORVER_FILES_DIR, 'attach_forever.py')
+        filename = WITH_TEST_FORVER.resolve('attach_forever.py')
         cwd = os.path.dirname(filename)
         argv = ['localhost', str(PORT)]
         client_dir = '/Users/PeterSmith/projects/src/sub dir'
