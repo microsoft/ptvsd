@@ -577,13 +577,13 @@ class LifecycleTests(LifecycleTestsBase):
 
             addr = {}
             ptvsd.enable_attach(addr)
-            print('waiting for attach')
+            print('== waiting for attach ==')
             # <waiting>
             ptvsd.wait_for_attach()
             # <attached>
-            print('attached!')
+            print('== attached! ==')
             # <bp 2>
-            print('done waiting')
+            print('== done waiting ==')
             """.format(ROOT, tuple(addr)))
         lockfile1 = self.workspace.lockfile()
         done1, _ = set_lock(filename, lockfile1, 'waiting')
@@ -635,7 +635,7 @@ class LifecycleTests(LifecycleTestsBase):
                 tid = event.body['threadId']
 
                 # Grab the initial output.
-                out1 = next(adapter.output)  # 'waiting for attach'
+                out1 = next(adapter.output)  # "waiting for attach"
                 line = adapter.output.readline()
                 while line:
                     out1 += line
@@ -646,7 +646,7 @@ class LifecycleTests(LifecycleTestsBase):
                     # This leads to the first breakpoint.
                     done1()
                 req_threads2, req_stacktrace1 = react_to_stopped(session, tid)
-                out2 = str(adapter.output)
+                out2 = str(adapter.output)  # ""
 
                 # Tell the script to proceed (at "# <bp 2>").  This
                 # leads to the second breakpoint.  At this point
@@ -659,7 +659,7 @@ class LifecycleTests(LifecycleTestsBase):
                             threadId=tid,
                         )
                 req_threads3, req_stacktrace2 = react_to_stopped(session, tid)
-                out3 = str(adapter.output)
+                out3 = str(adapter.output)  # "attached!"
 
                 with session.wait_for_event('continued'):
                     req_continue2 = session.send_request(
@@ -668,13 +668,13 @@ class LifecycleTests(LifecycleTestsBase):
                     )
 
                 adapter.wait()
-            out4 = str(adapter.output)
+            out4 = str(adapter.output)  # "done waiting"
 
         # Output between enable_attach() and wait_for_attach() may
         # be sent at a relatively arbitrary time (or not at all).
         # So we ignore it by removing it from the message list.
         received = list(_strip_output_event(session.received,
-                                            u'waiting for attach'))
+                                            u'== waiting for attach =='))
         received = list(_strip_newline_output_events(received))
         # There's an ordering race with continue/continued that pops
         # up occasionally.  We work around that by manually fixing the
@@ -762,7 +762,7 @@ class LifecycleTests(LifecycleTestsBase):
             self.new_event(
                 'output',
                 category='stdout',
-                output='attached!',
+                output='== attached! ==',
             ),
             self.new_event(
                 'stopped',
@@ -795,7 +795,7 @@ class LifecycleTests(LifecycleTestsBase):
             self.new_event(
                 'output',
                 category='stdout',
-                output='done waiting',
+                output='== done waiting ==',
             ),
             #self.new_event(
             #    'thread',
