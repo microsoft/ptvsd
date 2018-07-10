@@ -15,7 +15,17 @@ TEST_FILES = TestResources.from_module(__name__)
 class BreakpointTests(LifecycleTestsBase):
 
     def run_test_with_break_points(self, debug_info, bp_filename, bp_line):
-        options = {'debugOptions': ['RedirectOutput']}
+        pathMappings = []
+        # Required to ensure sourceReference = 0
+        if (debug_info.starttype == 'attach'):
+            pathMappings.append({
+                'localRoot': debug_info.cwd,
+                'remoteRoot': debug_info.cwd
+            })
+        options = {
+            'debugOptions': ['RedirectOutput'],
+            'pathMappings': pathMappings
+        }
         breakpoints = [{
             'source': {
                 'path': bp_filename
