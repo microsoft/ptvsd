@@ -713,7 +713,7 @@ DEBUG_OPTIONS_PARSER = {
     'DJANGO_DEBUG': bool_parser,
     'FLASK_DEBUG': bool_parser,
     'FIX_FILE_PATH_CASE': bool_parser,
-    'WINDOWS_CLIENT': bool_parser,
+    'CLIENT_OS_TYPE': unquote,
     'DEBUG_STDLIB': bool_parser,
 }
 
@@ -727,7 +727,8 @@ DEBUG_OPTIONS_BY_FLAG = {
     'Jinja': 'FLASK_DEBUG=True',
     'FixFilePathCase': 'FIX_FILE_PATH_CASE=True',
     'DebugStdLib': 'DEBUG_STDLIB=True',
-    'WindowsClient': 'WINDOWS_CLIENT=True',
+    'WindowsClient': 'CLIENT_OS_TYPE=WINDOWS',
+    'UnixClient': 'CLIENT_OS_TYPE=UNIX',
 }
 
 
@@ -776,7 +777,7 @@ def _parse_debug_options(opts):
         INTERPRETER_OPTIONS=string
         WEB_BROWSER_URL=string url
         DJANGO_DEBUG=True|False
-        WINDOWS_CLIENT=True|False
+        CLIENT_OS_TYPE=WINDOWS|UNIX
         DEBUG_STDLIB=True|False
     """
     options = {}
@@ -793,8 +794,8 @@ def _parse_debug_options(opts):
         except KeyError:
             continue
 
-    if 'WINDOWS_CLIENT' not in options:
-        options['WINDOWS_CLIENT'] = False
+    if 'CLIENT_OS_TYPE' not in options:
+        options['CLIENT_OS_TYPE'] = 'WINDOWS' if sys.platform == 'win32' else 'UNIX' # noqa
 
     return options
 
@@ -1432,9 +1433,10 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
 
     def _send_cmd_version_command(self):
         cmd = pydevd_comm.CMD_VERSION
-        windows_client = self.debug_options.get(
-            'WINDOWS_CLIENT', False)
-        os_id = 'WINDOWS' if windows_client else 'UNIX'
+        default_os_type = 'WINDOWS' if sys.platform == 'win32' else 'UNIX'
+        client_os_type = self.debug_options.get(
+            'CLIENT_OS_TYPE', default_os_type)
+        os_id = client_os_type
         msg = '1.1\t{}\tID'.format(os_id)
         return self.pydevd_request(cmd, msg)
 

@@ -92,7 +92,7 @@ class BreakpointTests(LifecycleTestsBase):
 
     def run_test_with_break_points_across_files(
             self, debug_info, first_file, second_file, second_file_line,
-            expected_modules, expected_stacktrace):
+            expected_stacktrace):
         breakpoints = [{
             'source': {
                 'path': second_file
@@ -120,14 +120,6 @@ class BreakpointTests(LifecycleTestsBase):
             stacktrace = req_stacktrace.resp.body
 
             session.send_request('continue', threadId=tid)
-
-        received = list(_strip_newline_output_events(session.received))
-
-        for mod in expected_modules:
-            found_mod = self.find_events(received, 'module', mod)
-            self.assertEqual(len(found_mod),
-                             1,
-                             'Module not found {}'.format(mod))
 
         self.assert_is_subset(stacktrace, expected_stacktrace)
 
@@ -299,19 +291,6 @@ class LaunchFileTests(BreakpointTests):
         first_file = TEST_FILES.resolve('foo.py')
         second_file = TEST_FILES.resolve('bar.py')
         cwd = os.path.dirname(first_file)
-        expected_modules = [{
-            'reason': 'new',
-            'module': {
-                'path': second_file,
-                'name': 'bar'
-            }
-        }, {
-            'reason': 'new',
-            'module': {
-                'path': first_file,
-                'name': '__main__'
-            }
-        }]
         expected_stacktrace = {
             'stackFrames': [{
                 'name': 'do_bar',
@@ -345,7 +324,6 @@ class LaunchFileTests(BreakpointTests):
             first_file,
             second_file,
             2,
-            expected_modules,
             expected_stacktrace,
         )
 
@@ -451,20 +429,6 @@ class LaunchPackageTests(BreakpointTests):
         second_file = TEST_FILES.resolve('mypkg_bar', 'bar.py')
         env = TEST_FILES.env_with_py_path()
         cwd = TEST_FILES.root
-        expected_modules = [{
-            'reason': 'new',
-            'module': {
-                'package': 'mypkg_bar',
-                'path': second_file,
-                'name': 'mypkg_bar.bar'
-            }
-        }, {
-            'reason': 'new',
-            'module': {
-                'path': first_file,
-                'name': '__main__'
-            }
-        }]
         expected_stacktrace = {
             'stackFrames': [{
                 'name': 'do_bar',
@@ -498,7 +462,6 @@ class LaunchPackageTests(BreakpointTests):
             first_file,
             second_file,
             2,
-            expected_modules,
             expected_stacktrace,
         )
 

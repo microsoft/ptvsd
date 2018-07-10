@@ -233,7 +233,6 @@ class AttachFileTests(RemoteTests):
             path_mappings=path_mappings,
             debug_options=['WindowsClient'])
 
-    @unittest.skipIf(sys.platform == 'win32', 'Run only on Unix clients')
     def test_source_references_should_be_returned_with_unix_client(self):
         filename = WITH_TEST_FORVER.resolve('attach_forever.py')
         cwd = os.path.dirname(filename)
@@ -259,4 +258,5 @@ class AttachFileTests(RemoteTests):
                 starttype='attach',
                 argv=argv),
             expected_stacktrace,
-            path_mappings=path_mappings)
+            path_mappings=path_mappings,
+            debug_options=['UnixClient'])
