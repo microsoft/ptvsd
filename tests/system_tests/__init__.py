@@ -153,20 +153,35 @@ def lifecycle_handshake(session, command='launch', options=None,
             adapterID='spam',
         )
     req_command = session.send_request(command, **options or {})
+    req_command.wait()
     req_threads = session.send_request('threads') if threads else None
 
+    reqs_bps, reqs_exc, req_done = _configure(
+        session,
+        breakpoints,
+        excbreakpoints,
+    )
+
+    return (req_initialize, req_command, req_done,
+            reqs_bps, reqs_exc, req_threads)
+
+
+def _configure(session, breakpoints, excbreakpoints):
     reqs_bps = []
-    reqs_exc = []
     for req in breakpoints or ():
         reqs_bps.append(
             session.send_request('setBreakpoints', **req))
+
+    reqs_exc = []
     for req in excbreakpoints or ():
-        reqs_bps.append(
+        reqs_exc.append(
             session.send_request('setExceptionBreakpoints', **req))
 
+    # All config requests must be done before sending "configurationDone".
+    for req in reqs_bps + reqs_exc:
+        req.wait()
     req_done = session.send_request('configurationDone')
-    return (req_initialize, req_command, req_done,
-            reqs_bps, reqs_exc, req_threads)
+    return reqs_bps, reqs_exc, req_done
 
 
 class TestsBase(object):
