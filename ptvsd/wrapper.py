@@ -728,7 +728,6 @@ DEBUG_OPTIONS_BY_FLAG = {
     'FixFilePathCase': 'FIX_FILE_PATH_CASE=True',
     'DebugStdLib': 'DEBUG_STDLIB=True',
     'WindowsClient': 'WINDOWS_CLIENT=True',
-    'NonWindowsClient': 'WINDOWS_CLIENT=False',
 }
 
 
@@ -795,7 +794,7 @@ def _parse_debug_options(opts):
             continue
 
     if 'WINDOWS_CLIENT' not in options:
-        options['WINDOWS_CLIENT'] = platform.system() == 'Windows' # noqa
+        options['WINDOWS_CLIENT'] = False
 
     return options
 
@@ -1225,6 +1224,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         self.source_map = IDMap()
         self.enable_source_references = False
         self.next_var_ref = 0
+        self._path_mappings = []
         self.exceptions_mgr = ExceptionsManager(self)
         self.modules_mgr = ModulesManager(self)
         self.internals_filter = InternalsFilter()
@@ -1420,21 +1420,20 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         return True
 
     def _initialize_path_maps(self, args):
-        pathMaps = []
+        self._path_mappings = []
         for pathMapping in args.get('pathMappings', []):
             localRoot = pathMapping.get('localRoot', '')
             remoteRoot = pathMapping.get('remoteRoot', '')
             if (len(localRoot) > 0 and len(remoteRoot) > 0):
-                pathMaps.append((localRoot, remoteRoot))
+                self._path_mappings.append((localRoot, remoteRoot))
 
-        if len(pathMaps) > 0:
-            pydevd_file_utils.setup_client_server_paths(pathMaps)
+        if len(self._path_mappings) > 0:
+            pydevd_file_utils.setup_client_server_paths(self._path_mappings)
 
     def _send_cmd_version_command(self):
         cmd = pydevd_comm.CMD_VERSION
         windows_client = self.debug_options.get(
-            'WINDOWS_CLIENT',
-            platform.system() == 'Windows')
+            'WINDOWS_CLIENT', False)
         os_id = 'WINDOWS' if windows_client else 'UNIX'
         msg = '1.1\t{}\tID'.format(os_id)
         return self.pydevd_request(cmd, msg)
@@ -1558,24 +1557,20 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         if self.start_reason == 'launch':
             return 0
 
+        # If we have no path mappings, then always enable source references.
+        autogen = len(self._path_mappings) == 0
+
         try:
-            return self.source_map.to_vscode(filename, autogen=False)
+            return self.source_map.to_vscode(filename, autogen=autogen)
         except KeyError:
             pass
 
-        client_filename = pydevd_file_utils.norm_file_to_client(filename)
-        print('filename = ' + filename)
-        print('client_filename = ' + client_filename)
+        # If file has been mapped, then source is available on client.
+        for local_prefix, remote_prefix in self._path_mappings:
+            if filename.startswith(local_prefix):
+                return 0
 
-        # If the mapped file is the same as the file we provided,
-        # this means path mappings were not provided or didn't find one.
-        if client_filename == filename:
-            return self.source_map.to_vscode(filename, autogen=True)
-        elif platform.system() == 'Windows' and \
-            client_filename.upper() == filename.upper():
-            return self.source_map.to_vscode(filename, autogen=True)
-        else:
-            return 0
+        return self.source_map.to_vscode(filename, autogen=True)
 
     @async_handler
     def on_stackTrace(self, request, args):
