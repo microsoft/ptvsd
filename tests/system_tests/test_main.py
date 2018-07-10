@@ -620,31 +620,29 @@ class LifecycleTests(LifecycleTestsBase):
             with DebugClient() as editor:
                 session = editor.attach_socket(addr, adapter, timeout=1)
 
-                # TODO: There appears to be a small race that may
-                # cause the test to fail here.
+                with session.wait_for_event('thread') as result:
+                    with session.wait_for_event('process'):
+                        (req_init, req_attach, req_config,
+                         reqs_bps, _, req_threads1,
+                         ) = lifecycle_handshake(session, 'attach',
+                                                 breakpoints=breakpoints,
+                                                 options=options,
+                                                 threads=True)
+                        req_bps, = reqs_bps  # There should only be one.
+                event = result['msg']
+                tid = event.body['threadId']
+
+                # Grab the initial output.
+                out1 = next(adapter.output)  # 'waiting for attach'
+                line = adapter.output.readline()
+                while line:
+                    out1 += line
+                    line = adapter.output.readline()
+
                 with session.wait_for_event('stopped'):
-                    with session.wait_for_event('thread') as result:
-                        with session.wait_for_event('process'):
-                            (req_init, req_attach, req_config,
-                             reqs_bps, _, req_threads1,
-                             ) = lifecycle_handshake(session, 'attach',
-                                                     breakpoints=breakpoints,
-                                                     options=options,
-                                                     threads=True)
-                            req_bps, = reqs_bps  # There should only be one.
-
-                            # Grab the initial output.
-                            out1 = next(adapter.output)  # 'waiting for attach'
-                            line = adapter.output.readline()
-                            while line:
-                                out1 += line
-                                line = adapter.output.readline()
-
-                            # Tell the script to proceed (at "# <waiting>").
-                            # This leads to the first breakpoint.
-                            done1()
-                    event = result['msg']
-                    tid = event.body['threadId']
+                    # Tell the script to proceed (at "# <waiting>").
+                    # This leads to the first breakpoint.
+                    done1()
                 req_threads2, req_stacktrace1 = react_to_stopped(session, tid)
                 out2 = str(adapter.output)
 
