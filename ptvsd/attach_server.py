@@ -16,6 +16,7 @@ DEFAULT_PORT = 5678
 
 _enabled = False
 _attached = threading.Event()
+_pydevd_wait = None
 
 
 def wait_for_attach(timeout=None):
@@ -29,6 +30,7 @@ def wait_for_attach(timeout=None):
         The timeout for the operation in seconds (or fractions thereof).
     """
     _attached.wait(timeout)
+    _pydevd_wait()
 
 
 def enable_attach(address=(DEFAULT_HOST, DEFAULT_PORT), redirect_output=True):
@@ -65,11 +67,13 @@ def enable_attach(address=(DEFAULT_HOST, DEFAULT_PORT), redirect_output=True):
     _enabled = True
     _attached.clear()
 
-    ptvsd_enable_attach(
+    _, wait = ptvsd_enable_attach(
         address,
         on_attach=_attached.set,
         redirect_output=redirect_output,
     )
+    global _pydevd_wait
+    _pydevd_wait = wait
 
 # TODO: Add disable_attach()?
 

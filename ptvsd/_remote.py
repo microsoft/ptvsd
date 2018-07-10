@@ -1,5 +1,6 @@
 import pydevd
 
+from ptvsd._util import new_hidden_thread
 from ptvsd.pydevd_hooks import install, start_server
 from ptvsd.socket import Address
 
@@ -26,12 +27,17 @@ def enable_attach(address,
         singlesession=False,
         **kwargs
     )
-    # Only pass the port so start_server() gets triggered.
-    _pydevd.settrace(
-        host=addr.host,
-        stdoutToServer=redirect_output,
-        stderrToServer=redirect_output,
-        port=addr.port,
-        suspend=False,
-    )
-    return daemon
+
+    def enable_pydevd():
+        # Only pass the port so start_server() gets triggered.
+        # As noted above, we also have to trick settrace() because it
+        # *always* forces a client connection.
+        _pydevd.settrace(
+            stdoutToServer=redirect_output,
+            stderrToServer=redirect_output,
+            port=addr.port,
+            suspend=False,
+        )
+    t = new_hidden_thread('enable-pydevd', enable_pydevd)
+    t.start()
+    return daemon, t.join
