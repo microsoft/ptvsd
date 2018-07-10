@@ -225,6 +225,7 @@ class LifecycleTests(LifecycleTestsBase):
             sys.path.insert(0, {!r})
             import ptvsd
             ptvsd.enable_attach({}, redirect_output={})
+            ptvsd.wait_for_attach()
 
             print('success!', end='')
 
@@ -345,6 +346,7 @@ class LifecycleTests(LifecycleTestsBase):
 
             addr = {}
             ptvsd.enable_attach(addr)
+            ptvsd.wait_for_attach()
 
             # <before>
             print('==before==')
