@@ -125,9 +125,6 @@ class BreakpointTests(LifecycleTestsBase):
 
         for mod in expected_modules:
             found_mod = self.find_events(received, 'module', mod)
-            if len(found_mod) == 0:
-                for i, line in enumerate(received):
-                    print(i, line)
             self.assertEqual(len(found_mod),
                              1,
                              'Module not found {}'.format(mod))
