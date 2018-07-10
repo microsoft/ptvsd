@@ -82,6 +82,9 @@ def enable_attach(address=(DEFAULT_HOST, DEFAULT_PORT), redirect_output=True):
     # debugging in the *current* thread.  That is done in
     # wait_for_attach().  Thus this approach is problematic if
     # wait_for_attach() is never called.
+    # TODO: Is there any way to ensure that debug_current_thread()
+    # gets called in the current thread, regardless of if
+    # wait_for_attach() gets called?
     _, wait, debug_current_thread = ptvsd_enable_attach(
         address,
         on_attach=_attached.set,

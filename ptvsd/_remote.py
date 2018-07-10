@@ -13,6 +13,7 @@ def _pydevd_settrace(redirect_output=None, _pydevd=pydevd, **kwargs):
     # thread and all future threads.  PyDevd is not enabled for
     # existing threads (other than the current one).  Consequently,
     # pydevd.settrace() must be called ASAP in the current thread.
+    # See issue #509.
     #
     # This is tricky, however, because settrace() will block until
     # it receives a CMD_RUN message.  You can't just call it in a
