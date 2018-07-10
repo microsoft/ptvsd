@@ -795,7 +795,7 @@ def _parse_debug_options(opts):
             continue
 
     if 'CLIENT_OS_TYPE' not in options:
-        options['CLIENT_OS_TYPE'] = 'WINDOWS' if sys.platform == 'win32' else 'UNIX' # noqa
+        options['CLIENT_OS_TYPE'] = 'WINDOWS' if platform.system() == 'Windows' else 'UNIX' # noqa
 
     return options
 
@@ -1433,7 +1433,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
 
     def _send_cmd_version_command(self):
         cmd = pydevd_comm.CMD_VERSION
-        default_os_type = 'WINDOWS' if sys.platform == 'win32' else 'UNIX'
+        default_os_type = 'WINDOWS' if platform.system() == 'Windows' else 'UNIX' # noqa
         client_os_type = self.debug_options.get(
             'CLIENT_OS_TYPE', default_os_type)
         os_id = client_os_type
