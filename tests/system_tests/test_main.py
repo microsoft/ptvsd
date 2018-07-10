@@ -484,19 +484,6 @@ class LifecycleTests(LifecycleTestsBase):
                 },
                 reason='new',
             ),
-            self.new_response(req_stacktrace1.req, **{
-                'totalFrames': 1,
-                'stackFrames': [{
-                    'id': 1,
-                    'name': '<module>',
-                    'source': {
-                        'path': filename,
-                        'sourceReference': 1,
-                    },
-                    'line': bp1,
-                    'column': 1,
-                }],
-            }),
             self.new_response(req_disconnect.req),
         ])
         self.messages.reset_all()
