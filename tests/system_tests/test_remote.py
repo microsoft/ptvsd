@@ -54,11 +54,10 @@ class RemoteTests(LifecycleTestsBase):
         }
 
         with self.start_debugging(debug_info) as dbg:
-            (_, req_attach, _, _, _, req_threads) = lifecycle_handshake(
-                dbg.session,
-                debug_info.starttype,
-                options=options,
-                threads=True)
+            (_, req_attach, _, _, _, req_threads,
+             ) = lifecycle_handshake(dbg.session, debug_info.starttype,
+                                     options=options,
+                                     threads=True)
 
             # wait till we enter the for loop.
             time.sleep(1)
@@ -143,7 +142,9 @@ class AttachFileTests(RemoteTests):
                 host=ip,
                 cwd=cwd,
                 starttype='attach',
-                argv=argv))
+                argv=argv,
+            ),
+        )
 
     def test_source_references_should_be_returned_without_path_mappings(self):
         filename = WITH_TEST_FORVER.resolve('attach_forever.py')
@@ -153,7 +154,7 @@ class AttachFileTests(RemoteTests):
             'stackFrames': [{
                 'source': {
                     'path': filename,
-                    'sourceReference': 1
+                    'sourceReference': 1,
                 }
             }],
         }
@@ -163,7 +164,10 @@ class AttachFileTests(RemoteTests):
                 attachtype='import',
                 cwd=cwd,
                 starttype='attach',
-                argv=argv), expected_stacktrace)
+                argv=argv,
+            ),
+            expected_stacktrace,
+        )
 
     def test_source_references_should_not_be_returned_with_path_mappings(self):
         filename = WITH_TEST_FORVER.resolve('attach_forever.py')
@@ -177,7 +181,7 @@ class AttachFileTests(RemoteTests):
             'stackFrames': [{
                 'source': {
                     'path': filename,
-                    'sourceReference': 0
+                    'sourceReference': 0,
                 }
             }],
         }
@@ -187,7 +191,11 @@ class AttachFileTests(RemoteTests):
                 attachtype='import',
                 cwd=cwd,
                 starttype='attach',
-                argv=argv), expected_stacktrace, path_mappings)
+                argv=argv,
+            ),
+            expected_stacktrace,
+            path_mappings,
+        )
 
     def test_source_references_should_be_returned_with_invalid_path_mappings(
             self):
@@ -202,7 +210,7 @@ class AttachFileTests(RemoteTests):
             'stackFrames': [{
                 'source': {
                     'path': filename,
-                    'sourceReference': 1
+                    'sourceReference': 1,
                 }
             }],
         }
@@ -212,7 +220,11 @@ class AttachFileTests(RemoteTests):
                 attachtype='import',
                 cwd=cwd,
                 starttype='attach',
-                argv=argv), expected_stacktrace, path_mappings)
+                argv=argv,
+            ),
+            expected_stacktrace,
+            path_mappings,
+        )
 
     def test_source_references_should_be_returned_with_win_client(self):
         filename = WITH_TEST_FORVER.resolve('attach_forever.py')
@@ -227,7 +239,7 @@ class AttachFileTests(RemoteTests):
             'stackFrames': [{
                 'source': {
                     'path': client_dir + '\\' + os.path.basename(filename),
-                    'sourceReference': 0
+                    'sourceReference': 0,
                 }
             }],
         }
@@ -237,10 +249,12 @@ class AttachFileTests(RemoteTests):
                 attachtype='import',
                 cwd=cwd,
                 starttype='attach',
-                argv=argv),
+                argv=argv,
+            ),
             expected_stacktrace,
             path_mappings=path_mappings,
-            debug_options=['WindowsClient'])
+            debug_options=['WindowsClient'],
+        )
 
     def test_source_references_should_be_returned_with_unix_client(self):
         filename = WITH_TEST_FORVER.resolve('attach_forever.py')
@@ -255,7 +269,7 @@ class AttachFileTests(RemoteTests):
             'stackFrames': [{
                 'source': {
                     'path': client_dir + '/' + os.path.basename(filename),
-                    'sourceReference': 0
+                    'sourceReference': 0,
                 }
             }],
         }
@@ -265,7 +279,9 @@ class AttachFileTests(RemoteTests):
                 attachtype='import',
                 cwd=cwd,
                 starttype='attach',
-                argv=argv),
+                argv=argv,
+            ),
             expected_stacktrace,
             path_mappings=path_mappings,
-            debug_options=['UnixClient'])
+            debug_options=['UnixClient'],
+        )
