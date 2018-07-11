@@ -64,8 +64,7 @@ class LifecycleTests(HighlevelTest, unittest.TestCase):
                 req_attach = self.send_request('attach', attach_args)
 
             # configuration
-            with self._fix.wait_for_events(['process']):
-                req_config = self.send_request('configurationDone')
+            req_config = self.send_request('configurationDone')
 
             # Normal ops would go here.
 
