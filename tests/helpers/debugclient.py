@@ -1,5 +1,7 @@
 from __future__ import absolute_import
 
+import os
+import traceback
 import warnings
 
 from ptvsd.socket import Address
@@ -9,6 +11,10 @@ from .debugsession import DebugSession
 
 # TODO: Add a helper function to start a remote debugger for testing
 # remote debugging?
+
+
+class ConnectionTimeoutError(Exception):
+    pass
 
 
 class _LifecycleClient(Closeable):
@@ -191,8 +197,17 @@ class EasyDebugClient(DebugClient):
         assert self._session is None
         addr = ('localhost', self._addr.port)
 
+        self._caught_ex = None
+        self._tb_ex = None
+
         def run():
-            self._session = self.SESSION.create_server(addr, **kwargs)
+            try:
+                self._session = self.SESSION.create_server(addr, **kwargs)
+            except Exception as ex:
+                # Capture ex so notify reason to calling code.
+                self._tb_ex = traceback.format_exc()
+                self._caught_ex = ex
+
         t = new_hidden_thread(
             target=run,
             name='test.client',
@@ -204,8 +219,19 @@ class EasyDebugClient(DebugClient):
             if t.is_alive():
                 warnings.warn('timed out waiting for connection')
             if self._session is None:
-                raise RuntimeError('unable to connect after {} secs'.format(
-                    self._connecttimeout))
+                message = 'unable to connect after {} secs'.format(
+                    self._connecttimeout)
+                try:
+                    # Chain the original exception for py3.
+                    exec(
+                        'raise ConnectionTimeoutError(message) from self._caught_ex',  # noqa
+                        globals(),
+                        locals())
+                except SyntaxError:
+                    # In case of Py27
+                    message = self._tb_ex + os.linesep + \
+                                'ConnectionTimeoutError: ' + message
+                    raise ConnectionTimeoutError(message)
             # The adapter will close when the connection does.
 
         self._launch(

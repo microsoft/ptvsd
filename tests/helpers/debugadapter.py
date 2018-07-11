@@ -8,7 +8,6 @@ from ptvsd._util import Closeable, ClosedError
 from .proc import Proc
 from .. import PROJECT_ROOT
 
-
 COPIED_ENV = [
     'PYTHONHASHSEED',
 
@@ -93,7 +92,9 @@ def wait_for_socket_server(addr, timeout=3.0, **kwargs):
             pass
         time.sleep(0.1)
         if time.time() - start_time > timeout:
-            raise ConnectionRefusedError('Timeout waiting for connection')
+            raise ConnectionRefusedError(
+                'Timeout waiting for connection ({}, {})'.format(
+                    addr.host, addr.port))
 
 
 def wait_for_port_to_free(port, timeout=3.0):
@@ -106,7 +107,8 @@ def wait_for_port_to_free(port, timeout=3.0):
             return
         time.sleep(0.1)
         if time.time() - start_time > timeout:
-            raise ConnectionRefusedError('Timeout waiting for port to be free')
+            raise ConnectionRefusedError(
+                'Timeout waiting for port {} to be free'.format(port))
 
 
 class DebugAdapter(Closeable):
