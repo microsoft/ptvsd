@@ -378,49 +378,49 @@ class BreakpointTests(VSCFlowTest, unittest.TestCase):
         self.assertIn('2 4 4', out)
         self.assertIn('ka-boom', err)
 
-    # @unittest.skip('not working right #614')
-    # def test_exception_breakpoints(self):
-    #     self.vsc.PRINT_RECEIVED_MESSAGES = True
-    #     done, script = self._set_lock('h')
-    #     self.lifecycle.requests = []  # Trigger capture.
-    #     config = {
-    #         'breakpoints': [],
-    #         'excbreakpoints': [
-    #             {'filters': ['raised']},
-    #         ],
-    #     }
-    #     with captured_stdio() as (stdout, _):
-    #         with self.launched(config=config):
-    #             with self.fix.hidden():
-    #                 _, tid = self.get_threads(self.thread.name)
-    #             with self.wait_for_event('stopped'):
-    #                 done()
+    @unittest.skip('not working right #614')
+    def test_exception_breakpoints(self):
+        self.vsc.PRINT_RECEIVED_MESSAGES = True
+        done, script = self._set_lock('h')
+        self.lifecycle.requests = []  # Trigger capture.
+        config = {
+            'breakpoints': [],
+            'excbreakpoints': [
+                {'filters': ['raised']},
+            ],
+        }
+        with captured_stdio() as (stdout, _):
+            with self.launched(config=config):
+                with self.fix.hidden():
+                    _, tid = self.get_threads(self.thread.name)
+                with self.wait_for_event('stopped'):
+                    done()
 
-    #             # Allow the script to run to completion.
-    #             received = self.vsc.received
-    #     out = stdout.getvalue()
-    #     #print(' + ' + '\n + '.join(out.splitlines()))
+                # Allow the script to run to completion.
+                received = self.vsc.received
+        out = stdout.getvalue()
+        #print(' + ' + '\n + '.join(out.splitlines()))
 
-    #     got = []
-    #     for req, resp in self.lifecycle.requests:
-    #         if req['command'] == 'setExceptionBreakpoints':
-    #             got.append(req['arguments'])
-    #         self.assertNotEqual(req['command'], 'setBreakpoints')
-    #     self.assertEqual(got, config['excbreakpoints'])
-    #     if sys.version_info >= (3, 7):
-    #         description = "MyError('ka-boom')"
-    #     else:
-    #         description = "MyError('ka-boom',)"
-    #     self.assert_vsc_received_fixing_events(received, [
-    #         ('stopped', dict(
-    #             reason='exception',
-    #             threadId=tid,
-    #             text='MyError',
-    #             description=description
-    #         )),
-    #     ])
-    #     self.assertIn('2 4 4', out)
-    #     self.assertIn('ka-boom', out)
+        got = []
+        for req, resp in self.lifecycle.requests:
+            if req['command'] == 'setExceptionBreakpoints':
+                got.append(req['arguments'])
+            self.assertNotEqual(req['command'], 'setBreakpoints')
+        self.assertEqual(got, config['excbreakpoints'])
+        if sys.version_info >= (3, 7):
+            description = "MyError('ka-boom')"
+        else:
+            description = "MyError('ka-boom',)"
+        self.assert_vsc_received_fixing_events(received, [
+            ('stopped', dict(
+                reason='exception',
+                threadId=tid,
+                text='MyError',
+                description=description
+            )),
+        ])
+        self.assertIn('2 4 4', out)
+        self.assertIn('ka-boom', out)
 
 
 @unittest.skip('Needs fixing when running with code coverage')
