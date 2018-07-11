@@ -23,8 +23,8 @@ PORT = 9879
 CONNECT_TIMEOUT = 5.0
 DELAY_WAITING_FOR_SOCKETS = 1.0
 
-DebugInfo = namedtuple('DebugInfo', 'host port starttype argv filename modulename env cwd attachtype')  # noqa
-DebugInfo.__new__.__defaults__ = ('localhost', PORT, 'launch', []) + ((None, ) * (len(DebugInfo._fields) - 4))  # noqa
+DebugInfo = namedtuple('DebugInfo', 'host port starttype argv filename modulename env cwd attachtype verbose')  # noqa
+DebugInfo.__new__.__defaults__ = ('localhost', PORT, 'launch', [], None, None, None, None, None, False)  # noqa
 
 
 Debugger = namedtuple('Debugger', 'session adapter')
@@ -293,6 +293,8 @@ Original Error:
             _kill_proc(adapter.pid)
             _wrap_and_reraise(session, ex, exc_type, exc_value, exc_traceback)
 
+        if debug_info.verbose:
+            DebugAdapter.VERBOSE = True
         if debug_info.attachtype == 'import' and \
             debug_info.modulename is not None:
             argv = debug_info.argv

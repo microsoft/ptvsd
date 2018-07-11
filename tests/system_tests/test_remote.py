@@ -192,6 +192,7 @@ class AttachFileTests(RemoteTests):
                 cwd=cwd,
                 starttype='attach',
                 argv=argv,
+                #verbose=True,
             ),
             expected_stacktrace,
             path_mappings,
