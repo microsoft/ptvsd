@@ -45,8 +45,7 @@ contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additio
             "Jinja",                // Enables Jinja (Flask) Template debugging
             "FixFilePathCase",      // See FIX_FILE_PATH_CASE in wrapper.py
             "DebugStdLib"           // Whether to enable debugging of standard library functions
-            "WindowsClient"         // Whether client OS is Windows
-            "UnixClient"            // Whether client OS is Unix
+            "WindowsClient"         // Whether client OS is Windows or not
     ],
     "pathMappings": [
         {

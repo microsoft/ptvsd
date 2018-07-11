@@ -2,9 +2,7 @@ import contextlib
 import os
 import ptvsd
 import signal
-import sys
 import time
-import traceback
 import unittest
 
 from collections import namedtuple
@@ -236,46 +234,24 @@ class LifecycleTestsBase(TestsBase, unittest.TestCase):
                 pass
             time.sleep(1)  # wait for socket connections to die out.
 
-        def _wrap_and_reraise(session, ex, exc_type, exc_value, exc_traceback):
-            """If we have connetion errors, then re-raised wrapped in
-            ConnectionTimeoutError. If using py3, then chain exceptions so
-            we do not loose the original exception, else try hack approach
-            for py27."""
+        def _wrap_and_reraise(ex, session):
             messages = []
-            formatted_ex = ''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)) # noqa
             try:
                 messages = [str(msg) for msg in
                             _strip_newline_output_events(session.received)]
             except Exception:
                 pass
 
-            fmt = {
-                "sep": os.linesep,
-                "messages": os.linesep.join(messages),
-                "error": ''.join(traceback.format_exception_only(exc_type, exc_value)) # noqa
-            }
-            message = """
-
-Session Messages:
------------------
-%(messages)s
-
-Original Error:
----------------
-%(error)s""" % fmt
-
+            messages = os.linesep.join(messages)
             try:
-                # Chain the original exception for py3.
-                exec('raise Exception(message) from ex', globals(), locals())
-            except SyntaxError:
-                # This happens when using py27.
-                message = message + os.linesep + formatted_ex
-                exec("raise Exception(message)", globals(), locals())
+                raise Exception(messages) from ex
+            except Exception:
+                print(messages)
+                raise ex
 
         def _handle_exception(ex, adapter, session):
-            exc_type, exc_value, exc_traceback = sys.exc_info()
             _kill_proc(adapter.pid)
-            _wrap_and_reraise(session, ex, exc_type, exc_value, exc_traceback)
+            _wrap_and_reraise(ex, session)
 
         if debug_info.attachtype == 'import' and \
             debug_info.modulename is not None:

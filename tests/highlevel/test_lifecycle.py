@@ -125,20 +125,12 @@ class LifecycleTests(HighlevelTest, unittest.TestCase):
         # TODO: Ensure we see the "terminated" and "exited" events.
         raise NotImplementedError
 
-    def test_attach_from_unix_os_vsc(self):
-        attach_args = {'debugOptions': ['UnixClient']}
-        self.attach(expected_os_id='UNIX', attach_args=attach_args)
-
     def test_attach_from_unix_os(self):
-        attach_args = {'options': 'CLIENT_OS_TYPE=UNIX'}
+        attach_args = {'options': 'WINDOWS_CLIENT=False'}
         self.attach(expected_os_id='UNIX', attach_args=attach_args)
-
-    def test_attach_from_win_os_vsc(self):
-        attach_args = {'debugOptions': ['WindowsClient']}
-        self.attach(expected_os_id='WINDOWS', attach_args=attach_args)
 
     def test_attach_from_windows_os(self):
-        attach_args = {'options': 'CLIENT_OS_TYPE=WINDOWS'}
+        attach_args = {'options': 'WINDOWS_CLIENT=True'}
         self.attach(expected_os_id='WINDOWS', attach_args=attach_args)
 
     def test_launch(self):
