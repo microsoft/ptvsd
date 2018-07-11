@@ -11,7 +11,6 @@ from tests_python import debugger_unittest
 IS_CPYTHON = platform.python_implementation() == 'CPython'
 IS_PY36 = sys.version_info[0] == 3 and sys.version_info[1] == 6
 TEST_CYTHON = os.getenv('PYDEVD_USE_CYTHON', None) == 'YES'
-IS_APPVEYOR = os.environ.get('APPVEYOR', '') in ('True', 'true', '1')
 
 
 class WriterThreadStepAndResume(debugger_unittest.AbstractWriterThread):
@@ -196,10 +195,8 @@ class WriterThreadAddTerminationExceptionBreak(debugger_unittest.AbstractWriterT
         self.finished_ok = True
 
 
-@pytest.mark.skipif(
-    not IS_PY36 or not IS_CPYTHON or not TEST_CYTHON or IS_APPVEYOR, reason='Test requires Python 3.6 / flaky on appveyor')
+@pytest.mark.skipif(not IS_PY36 or not IS_CPYTHON or not TEST_CYTHON, reason='Test requires Python 3.6')
 class TestFrameEval(unittest.TestCase, debugger_unittest.DebuggerRunner):
-    
     def get_command_line(self):
         return [sys.executable, '-u']
 
