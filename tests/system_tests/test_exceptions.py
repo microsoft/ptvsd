@@ -12,7 +12,7 @@ TEST_FILES_DIR = os.path.join(ROOT, 'tests', 'resources', 'system_tests',
                               'test_exceptions')
 
 
-class ExceptionTests(LifecycleTestsBase):
+class LaunchExceptionLifecycleTests(LifecycleTestsBase):
     def run_test_not_breaking_into_handled_exceptions(self, debug_info):
         excbreakpoints = [{"filters": ["uncaught"]}]
         options = {"debugOptions": ["RedirectOutput"]}
@@ -33,6 +33,12 @@ class ExceptionTests(LifecycleTestsBase):
                 self.new_event("terminated"),
             ],
         )
+
+    def test_not_breaking_into_handled_exceptions(self):
+        filename = os.path.join(TEST_FILES_DIR, 'handled_exceptions_launch.py')
+        cwd = os.path.dirname(filename)
+        self.run_test_not_breaking_into_handled_exceptions(
+            DebugInfo(filename=filename, cwd=cwd))
 
     def run_test_breaking_into_handled_exceptions(self, debug_info):
         excbreakpoints = [{"filters": ["raised", "uncaught"]}]
@@ -84,14 +90,6 @@ class ExceptionTests(LifecycleTestsBase):
             ],
         )
 
-
-class LaunchFileTests(ExceptionTests):
-    def test_not_breaking_into_handled_exceptions(self):
-        filename = os.path.join(TEST_FILES_DIR, 'handled_exceptions_launch.py')
-        cwd = os.path.dirname(filename)
-        self.run_test_not_breaking_into_handled_exceptions(
-            DebugInfo(filename=filename, cwd=cwd))
-
     def test_breaking_into_handled_exceptions(self):
         filename = os.path.join(TEST_FILES_DIR, 'handled_exceptions_launch.py')
         cwd = os.path.dirname(filename)
@@ -99,7 +97,7 @@ class LaunchFileTests(ExceptionTests):
             DebugInfo(filename=filename, cwd=cwd))
 
 
-class LaunchModuleExceptionLifecycleTests(ExceptionTests):
+class LaunchModuleExceptionLifecycleTests(LaunchExceptionLifecycleTests):
     def test_breaking_into_handled_exceptions(self):
         module_name = 'mymod_launch1'
         env = {"PYTHONPATH": TEST_FILES_DIR}
@@ -115,7 +113,7 @@ class LaunchModuleExceptionLifecycleTests(ExceptionTests):
             DebugInfo(modulename=module_name, env=env, cwd=cwd))
 
 
-class ServerAttachExceptionLifecycleTests(ExceptionTests):
+class ServerAttachExceptionLifecycleTests(LaunchExceptionLifecycleTests):
     def test_breaking_into_handled_exceptions(self):
         filename = os.path.join(TEST_FILES_DIR, 'handled_exceptions_launch.py')
         cwd = os.path.dirname(filename)
@@ -133,7 +131,7 @@ class ServerAttachExceptionLifecycleTests(ExceptionTests):
                 filename=filename, cwd=cwd, starttype='attach', argv=argv))
 
 
-class PTVSDAttachExceptionLifecycleTests(ExceptionTests):
+class PTVSDAttachExceptionLifecycleTests(LaunchExceptionLifecycleTests):
     def test_breaking_into_handled_exceptions(self):
         filename = os.path.join(TEST_FILES_DIR, 'handled_exceptions_attach.py')
         cwd = os.path.dirname(filename)
@@ -146,7 +144,7 @@ class PTVSDAttachExceptionLifecycleTests(ExceptionTests):
                 starttype='attach',
                 argv=argv))
 
-    @unittest.skip('Needs fixing in #609')
+    @unittest.skip('broken')
     def test_not_breaking_into_handled_exceptions(self):
         filename = os.path.join(TEST_FILES_DIR, 'handled_exceptions_attach.py')
         cwd = os.path.dirname(filename)
@@ -160,7 +158,8 @@ class PTVSDAttachExceptionLifecycleTests(ExceptionTests):
                 argv=argv))
 
 
-class ServerAttachModuleExceptionLifecycleTests(ExceptionTests):  # noqa
+class ServerAttachModuleExceptionLifecycleTests(
+        LaunchExceptionLifecycleTests):  # noqa
     def test_breaking_into_handled_exceptions(self):
         module_name = 'mymod_launch1'
         env = {"PYTHONPATH": TEST_FILES_DIR}
@@ -189,7 +188,8 @@ class ServerAttachModuleExceptionLifecycleTests(ExceptionTests):  # noqa
 
 
 @unittest.skip('Needs fixing')
-class PTVSDAttachModuleExceptionLifecycleTests(ExceptionTests):  # noqa
+class PTVSDAttachModuleExceptionLifecycleTests(
+        LaunchExceptionLifecycleTests):  # noqa
     def test_breaking_into_handled_exceptions(self):
         module_name = 'mymod_attach1'
         env = {"PYTHONPATH": TEST_FILES_DIR}
