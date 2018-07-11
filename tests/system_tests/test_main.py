@@ -488,7 +488,7 @@ class LifecycleTests(LifecycleTestsBase):
                     'name': '<module>',
                     'source': {
                         'path': filename,
-                        'sourceReference': 0,
+                        'sourceReference': 1,
                     },
                     'line': bp1,
                     'column': 1,
@@ -615,22 +615,6 @@ class LifecycleTests(LifecycleTestsBase):
             ],
         }]
 
-        options = {
-            "pathMappings": [
-                {
-                    "localRoot": os.path.dirname(filename),
-                    "remoteRoot": os.path.dirname(filename)
-                },
-                # This specific mapping is for Mac.
-                # For some reason temp paths on Mac get prefixed with
-                # `private` when returned from ptvsd.
-                {
-                    "localRoot": os.path.dirname(filename),
-                    "remoteRoot": '/private' + os.path.dirname(filename)
-                }
-            ]
-        }
-
         #DebugAdapter.VERBOSE = True
         adapter = DebugAdapter.start_embedded(addr, filename)
         with adapter:
@@ -646,7 +630,6 @@ class LifecycleTests(LifecycleTestsBase):
                              reqs_bps, _, req_threads1,
                              ) = lifecycle_handshake(session, 'attach',
                                                      breakpoints=breakpoints,
-                                                     options=options,
                                                      threads=True)
 
                             # Grab the initial output.
@@ -769,7 +752,7 @@ class LifecycleTests(LifecycleTestsBase):
                     'name': '<module>',
                     'source': {
                         'path': filename,
-                        'sourceReference': 0,
+                        'sourceReference': 1,
                     },
                     'line': bp1,
                     'column': 1,
@@ -802,7 +785,7 @@ class LifecycleTests(LifecycleTestsBase):
                     'name': '<module>',
                     'source': {
                         'path': filename,
-                        'sourceReference': 0,
+                        'sourceReference': 1,
                     },
                     'line': bp2,
                     'column': 1,
