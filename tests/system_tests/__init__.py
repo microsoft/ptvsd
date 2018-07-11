@@ -15,7 +15,7 @@ from tests.helpers.message import assert_is_subset
 from tests.helpers.script import find_line
 from tests.helpers.threading import get_locked_and_waiter
 from tests.helpers.workspace import Workspace, PathEntry
-from tests.helpers.vsc import parse_message, VSCMessages, Response, Event  # noqa
+from tests.helpers.vsc import parse_message, VSCMessages, Response, Event
 
 
 ROOT = os.path.dirname(os.path.dirname(ptvsd.__file__))
@@ -190,6 +190,9 @@ class TestsBase(object):
             self._pathentry.install()
             return self._pathentry
 
+    def enable_verbose(self):
+        DebugAdapter.VERBOSE = True
+
     def write_script(self, name, content):
         return self.workspace.write_python_script(name, content=content)
 
@@ -238,9 +241,15 @@ class LifecycleTestsBase(TestsBase, unittest.TestCase):
                 os.kill(pid, signal.SIGKILL)
             except Exception:
                 pass
-            time.sleep(1) # wait for socket connections to die out. # noqa
+            time.sleep(1)  # wait for socket connections to die out.
 
-        def _close_resources(adapter, session, editor):
+        def _wrap_and_reraise(session, ex, exc_type, exc_value, exc_traceback):
+            """If we have connetion errors, then re-raised wrapped in
+            ConnectionTimeoutError. If using py3, then chain exceptions so
+            we do not loose the original exception, else try hack approach
+            for py27."""
+            messages = []
+            formatted_ex = ''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)) # noqa
             try:
                 adapter = editor._adapter if adapter is None else adapter
                 _kill_proc(adapter.pid)
@@ -251,43 +260,33 @@ class LifecycleTestsBase(TestsBase, unittest.TestCase):
             except Exception:
                 pass
 
-        def _wrap_and_reraise(ex, messages):
-            """If we have connetion errors, then re-raised wrapped in
-            ConnectionTimeoutError. If using py3, then chain exceptions so
-            we do not loose the original exception, else try hack approach
-            for py27."""
-            messages = []
-            exc_type, exc_value, exc_traceback = sys.exc_info()
-            formatted_ex = ''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)) # noqa
-            messages = os.linesep.join(messages)
+            fmt = {
+                "sep": os.linesep,
+                "messages": os.linesep.join(messages),
+                "error": ''.join(traceback.format_exception_only(exc_type, exc_value)) # noqa
+            }
+            message = """
+
+Session Messages:
+-----------------
+%(messages)s
+
+Original Error:
+---------------
+%(error)s""" % fmt
+
             try:
-                if isinstance(ex, ConnectionTimeoutError):
-                    exec_statement = "raise ConnectionTimeoutError(messages) from ex" # noqa
-                else:
-                    exec_statement = "raise Exception(messages) from ex"
-                exec(exec_statement, globals(), locals())
+                # Chain the original exception for py3.
+                exec('raise Exception(message) from ex', globals(), locals())
             except SyntaxError:
                 # This happens when using py27.
-                message = messages + os.linesep + formatted_ex
-                if isinstance(ex, ConnectionTimeoutError):
-                    exec_statement = "raise ConnectionTimeoutError(message)" # noqa
-                else:
-                    exec_statement = "raise Exception(message)" # noqa
-                exec(exec_statement, globals(), locals())
+                message = message + os.linesep + formatted_ex
+                exec("raise Exception(message)", globals(), locals())
 
-        def _handle_exception(ex, adapter, session, editor):
-            try:
-                messages = [str(msg) for msg in
-                            _strip_newline_output_events(session.received)]
-            except Exception:
-                messages = ''
-
-            _close_resources(adapter, session, editor)
-            _wrap_and_reraise(ex, messages)
-
-        adapter = None
-        editor = None
-        session = None
+        def _handle_exception(ex, adapter, session):
+            exc_type, exc_value, exc_traceback = sys.exc_info()
+            _kill_proc(adapter.pid)
+            _wrap_and_reraise(session, ex, exc_type, exc_value, exc_traceback)
 
         if debug_info.attachtype == 'import' and \
             debug_info.modulename is not None:
@@ -348,7 +347,7 @@ class LifecycleTestsBase(TestsBase, unittest.TestCase):
                         _handle_exception(ex, adapter, session, editor)
         else:
             if debug_info.filename is None:
-                argv = ["-m", debug_info.modulename] + debug_info.argv
+                argv = ['-m', debug_info.modulename] + debug_info.argv
             else:
                 argv = [debug_info.filename] + debug_info.argv
             with DebugClient(
@@ -406,9 +405,10 @@ class LifecycleTestsBase(TestsBase, unittest.TestCase):
                 return True
             except Exception:
                 return False
-        return list(
-            response for response in responses if isinstance(response, Event)
-            and response.event == event and is_subset(response.body))  # noqa
+        return list(resp
+                    for resp in responses
+                    if (isinstance(resp, Event) and resp.event == event and
+                        is_subset(resp.body)))
 
     def find_responses(self, responses, command, condition=lambda x: True):
         return list(

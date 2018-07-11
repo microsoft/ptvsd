@@ -5,7 +5,7 @@ import unittest
 
 import ptvsd
 from ptvsd.socket import Address
-from ptvsd.wrapper import INITIALIZE_RESPONSE  # noqa
+from ptvsd.wrapper import INITIALIZE_RESPONSE
 from tests.helpers.debugadapter import DebugAdapter
 from tests.helpers.debugclient import EasyDebugClient as DebugClient
 from tests.helpers.lock import LockTimeoutError
@@ -14,7 +14,8 @@ from tests.helpers.debugsession import Awaitable
 
 from . import (
     _strip_newline_output_events, lifecycle_handshake, TestsBase,
-    LifecycleTestsBase, _strip_output_event, _strip_exit, _find_events)
+    LifecycleTestsBase, _strip_output_event, _strip_exit, _find_events,
+    PORT)
 
 ROOT = os.path.dirname(os.path.dirname(ptvsd.__file__))
 
@@ -88,8 +89,8 @@ class DebugTests(TestsBase, unittest.TestCase):
             print('done')
             sys.stdout.flush()
             """)
-        script = self.write_debugger_script(filename, 9876, run_as='script')
-        with DebugClient(port=9876) as editor:
+        script = self.write_debugger_script(filename, PORT, run_as='script')
+        with DebugClient(port=PORT) as editor:
             adapter, session = editor.host_local_debugger(argv, script)
             lifecycle_handshake(session, 'launch')
             adapter.wait()
@@ -109,8 +110,8 @@ class LifecycleTests(LifecycleTestsBase):
         lockfile = self.workspace.lockfile()
         done, waitscript = lockfile.wait_in_script()
         filename = self.write_script('spam.py', waitscript)
-        script = self.write_debugger_script(filename, 9876, run_as='script')
-        with DebugClient(port=9876) as editor:
+        script = self.write_debugger_script(filename, PORT, run_as='script')
+        with DebugClient(port=PORT) as editor:
             adapter, session = editor.host_local_debugger(
                 argv,
                 script,
@@ -123,7 +124,7 @@ class LifecycleTests(LifecycleTestsBase):
                 done()
                 adapter.wait()
 
-        # Skipping the 'thread exited' and 'terminated' messages which
+        # Skipping the "thread exited" and "terminated" messages which
         # may appear randomly in the received list.
         received = list(_strip_newline_output_events(session.received))
         self.assert_received(received[:7], [
@@ -376,16 +377,18 @@ class LifecycleTests(LifecycleTestsBase):
                          _, _, req_threads1,
                          ) = lifecycle_handshake(session1, 'attach',
                                                  threads=True)
-                tid1 = result['msg'].body['threadId']
+                event = result['msg']
+                tid1 = event.body['threadId']
 
                 stopped_event = session1.get_awaiter_for_event('stopped')
-                req_bps = session1.send_request('setBreakpoints', **{
-                    'source': {'path': filename},
-                    'breakpoints': [
+                req_bps = session1.send_request(
+                    'setBreakpoints',
+                    source={'path': filename},
+                    breakpoints=[
                         {'line': bp1},
                         {'line': bp2},
                     ],
-                })
+                )
                 req_bps.wait()
 
                 done1()
@@ -417,7 +420,8 @@ class LifecycleTests(LifecycleTestsBase):
                          _, _, req_threads3,
                          ) = lifecycle_handshake(session2, 'attach',
                                                  threads=True)
-                tid2 = result['msg'].body['threadId']
+                event = result['msg']
+                tid2 = event.body['threadId']
 
                 done2()
                 adapter.wait()
@@ -471,29 +475,6 @@ class LifecycleTests(LifecycleTestsBase):
                     'name': 'MainThread',
                 }],
             }),
-            self.new_event(
-                'module',
-                module={
-                    'id': 1,
-                    'name': '__main__',
-                    'path': filename,
-                    'package': None,
-                },
-                reason='new',
-            ),
-            self.new_response(req_stacktrace1.req, **{
-                'totalFrames': 1,
-                'stackFrames': [{
-                    'id': 1,
-                    'name': '<module>',
-                    'source': {
-                        'path': filename,
-                        'sourceReference': 0,
-                    },
-                    'line': bp1,
-                    'column': 1,
-                }],
-            }),
             self.new_response(req_disconnect.req),
         ])
         self.messages.reset_all()
@@ -542,7 +523,7 @@ class LifecycleTests(LifecycleTestsBase):
 
     @unittest.skip('not implemented')
     def test_attach_exit_during_session(self):
-        # TODO: Ensure we see the "terminated" and "exited" events.
+        # TODO: Ensure we see the 'terminated' and 'exited' events.
         raise NotImplementedError
 
     @unittest.skip('re-attach needs fixing')
@@ -616,17 +597,17 @@ class LifecycleTests(LifecycleTestsBase):
         }]
 
         options = {
-            "pathMappings": [
+            'pathMappings': [
                 {
-                    "localRoot": os.path.dirname(filename),
-                    "remoteRoot": os.path.dirname(filename)
+                    'localRoot': os.path.dirname(filename),
+                    'remoteRoot': os.path.dirname(filename)
                 },
                 # This specific mapping is for Mac.
                 # For some reason temp paths on Mac get prefixed with
                 # `private` when returned from ptvsd.
                 {
-                    "localRoot": os.path.dirname(filename),
-                    "remoteRoot": '/private' + os.path.dirname(filename)
+                    'localRoot': os.path.dirname(filename),
+                    'remoteRoot': '/private' + os.path.dirname(filename)
                 }
             ]
         }
@@ -650,14 +631,15 @@ class LifecycleTests(LifecycleTestsBase):
                                                      threads=True)
 
                             # Grab the initial output.
-                            out1 = next(adapter.output)  # "waiting for attach"
+                            out1 = next(adapter.output)  # 'waiting for attach'
                             line = adapter.output.readline()
                             while line:
                                 out1 += line
                                 line = adapter.output.readline()
                             done1()
                         req_bps, = reqs_bps  # There should only be one.
-                    tid = result['msg'].body['threadId']
+                    event = result['msg']
+                    tid = event.body['threadId']
                 req_threads2 = session.send_request('threads')
                 req_stacktrace1 = session.send_request(
                     'stackTrace',
@@ -844,7 +826,7 @@ class LifecycleTests(LifecycleTestsBase):
 
             print('+ after')
             """).format(waitscript))
-        with DebugClient(port=9876) as editor:
+        with DebugClient(port=PORT) as editor:
             adapter, session = editor.host_local_debugger(
                 argv=[
                     '--nodebug',
