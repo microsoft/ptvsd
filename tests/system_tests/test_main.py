@@ -688,6 +688,11 @@ class LifecycleTests(TestsBase, unittest.TestCase):
                 }],
             }),
             self.new_event(
+                'thread',
+                threadId=tid1,
+                reason='started',
+            ),
+            self.new_event(
                 'stopped',
                 threadId=tid1,
                 reason='breakpoint',
@@ -951,6 +956,11 @@ class LifecycleTests(TestsBase, unittest.TestCase):
                 'startMethod': 'attach',
                 'name': filename,
             }),
+            self.new_event(
+                'thread',
+                threadId=tid,
+                reason='started',
+            ),
             self.new_event(
                 'stopped',
                 threadId=tid,
