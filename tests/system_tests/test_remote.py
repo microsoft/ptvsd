@@ -2,10 +2,9 @@ import os
 import os.path
 import signal
 import sys
-import time
 
-from tests.helpers.debugsession import Awaitable
 from tests.helpers.resource import TestResources
+from tests.helpers.script import find_line
 from tests.helpers.socket import resolve_hostname
 from . import (
     _strip_newline_output_events, lifecycle_handshake,
@@ -53,36 +52,41 @@ class RemoteTests(LifecycleTestsBase):
             'pathMappings': path_mappings
         }
 
+        with open(debug_info.filename) as scriptfile:
+            script = scriptfile.read()
+        bp = find_line(script, 'bp')
+
         with self.start_debugging(debug_info) as dbg:
-            (_, req_attach, _, _, _, req_threads,
-             ) = lifecycle_handshake(dbg.session, debug_info.starttype,
-                                     options=options,
-                                     threads=True)
+            lifecycle_handshake(dbg.session, debug_info.starttype,
+                                options=options,
+                                threads=True)
 
             # wait till we enter the for loop.
-            time.sleep(1)
-            Awaitable.wait_all(req_attach, req_threads)
             with dbg.session.wait_for_event('stopped') as result:
                 arguments = {
                     'source': {
                         'name': os.path.basename(debug_info.filename),
                         'path': debug_info.filename
                     },
-                    'lines': [9],
-                    'breakpoints': [{'line': 9}]
+                    'lines': [bp],
+                    'breakpoints': [{'line': bp}]
                 }
                 dbg.session.send_request('setBreakpoints', **arguments)
-
-            tid = result['msg'].body['threadId']
-            stacktrace = dbg.session.send_request('stackTrace', threadId=tid)
-            stacktrace.wait()
-            dbg.session.send_request('continue', threadId=tid).wait()
+            event = result['msg']
+            tid = event.body['threadId']
+            req_stacktrace = dbg.session.send_request(
+                'stackTrace',
+                threadId=tid,
+            )
+            req_stacktrace.wait()
+            stacktrace = req_stacktrace.resp.body
+            req_continue = dbg.session.send_request('continue', threadId=tid)
+            req_continue.wait()
 
             # Kill remove program.
             os.kill(dbg.adapter.pid, signal.SIGTERM)
 
-        self._assert_stacktrace_is_subset(stacktrace.resp.body,
-                                          expected_stacktrace)
+        self._assert_stacktrace_is_subset(stacktrace, expected_stacktrace)
 
 
 class AttachFileTests(RemoteTests):
