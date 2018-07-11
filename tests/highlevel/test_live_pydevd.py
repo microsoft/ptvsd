@@ -177,7 +177,13 @@ class VSCFlowTest(TestBase):
         with self.lifecycle.launched(port=port, hide=True, **kwargs):
             yield
             self.fix.binder.done(close=False)
-        self.fix.binder.wait_until_done()
+        
+        try:
+            self.fix.binder.wait_until_done()
+        except Exception:
+            if hasattr(self, 'vsc') and hasattr(self.vsc, 'received'):
+                print(self.vsc.received)
+            raise
 
 
 class BreakpointTests(VSCFlowTest, unittest.TestCase):
