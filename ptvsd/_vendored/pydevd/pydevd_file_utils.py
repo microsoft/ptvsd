@@ -83,6 +83,7 @@ else:
 #   r'd:\temp\temp_workspace_2\test_python\src\hhh\xxx')
 # ]
 
+
 convert_to_long_pathname = lambda filename:filename
 convert_to_short_pathname = lambda filename:filename
 get_path_with_real_case = lambda filename:filename
@@ -103,27 +104,21 @@ if sys.platform == 'win32':
         def _convert_to_long_pathname(filename):
             buf = ctypes.create_unicode_buffer(MAX_PATH)
 
-            if IS_PY2 and isinstance(filename, str):
+            if IS_PY2:
                 filename = filename.decode(getfilesystemencoding())
             rv = GetLongPathName(filename, buf, MAX_PATH)
             if rv != 0 and rv <= MAX_PATH:
-                filename = buf.value
-            
-            if IS_PY2:
-                filename = filename.encode(getfilesystemencoding())
+                return buf.value
             return filename
         
         def _convert_to_short_pathname(filename):
             buf = ctypes.create_unicode_buffer(MAX_PATH)
 
-            if IS_PY2 and isinstance(filename, str):
+            if IS_PY2:
                 filename = filename.decode(getfilesystemencoding())
             rv = GetShortPathName(filename, buf, MAX_PATH)
             if rv != 0 and rv <= MAX_PATH:
-                filename = buf.value
-                
-            if IS_PY2:
-                filename = filename.encode(getfilesystemencoding())
+                return buf.value
             return filename
         
         def _get_path_with_real_case(filename):
@@ -157,9 +152,9 @@ if sys.platform == 'win32':
         return filename.lower()
     
 else:
-
     def normcase(filename):
-        return filename  # no-op
+        return filename # no-op
+
 
 _ide_os = 'WINDOWS' if sys.platform == 'win32' else 'UNIX'
 
@@ -317,14 +312,12 @@ except:
 #
 # instead of importing any of those names to a given scope. 
 
-
 def _original_file_to_client(filename, cache={}):
     try:
         return cache[filename]
     except KeyError:
         cache[filename] = get_path_with_real_case(_AbsFile(filename))
     return cache[filename]
-
     
 _original_file_to_server = _NormFile
 
