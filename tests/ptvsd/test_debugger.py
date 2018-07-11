@@ -3,7 +3,6 @@ import unittest
 
 from ptvsd.debugger import debug, LOCALHOST
 from ptvsd.socket import Address
-from tests.helpers.argshelper import _get_args
 
 
 class DebugTests(unittest.TestCase):
@@ -125,10 +124,13 @@ class IntegrationTests(unittest.TestCase):
         debug(filename, port, debug_id, debug_options, 'module',
               _run=self._run, _prog='eggs')
 
-        self.assertEqual(self.argv,
-                         _get_args('--module', '--file', 'spam:',
-                                   ptvsd_extras=['--client', LOCALHOST]))
-
+        self.assertEqual(self.argv, [
+            'eggs',
+            '--port', '8888',
+            '--client', LOCALHOST,
+            '--module',
+            '--file', 'spam:',
+        ])
         self.assertEqual(self.addr, Address.as_client(None, port))
         self.assertEqual(self.kwargs, {
             'singlesession': True,
@@ -143,9 +145,12 @@ class IntegrationTests(unittest.TestCase):
         debug(filename, port, debug_id, debug_options, 'script',
               _run=self._run, _prog='eggs')
 
-        self.assertEqual(self.argv,
-                         _get_args('--file', 'spam.py',
-                                   ptvsd_extras=['--client', LOCALHOST]))
+        self.assertEqual(self.argv, [
+            'eggs',
+            '--port', '8888',
+            '--client', LOCALHOST,
+            '--file', 'spam.py',
+        ])
         self.assertEqual(self.addr, Address.as_client(None, port))
         self.assertEqual(self.kwargs, {
             'singlesession': True,
@@ -160,9 +165,12 @@ class IntegrationTests(unittest.TestCase):
         debug(filename, port, debug_id, debug_options, 'code',
               _run=self._run, _prog='eggs')
 
-        self.assertEqual(self.argv,
-                         _get_args('--file', filename,
-                                   ptvsd_extras=['--client', LOCALHOST]))
+        self.assertEqual(self.argv, [
+            'eggs',
+            '--port', '8888',
+            '--client', LOCALHOST,
+            '--file', filename,
+        ])
         self.assertEqual(self.addr, Address.as_client(None, port))
         self.assertEqual(self.kwargs, {
             'singlesession': True,
@@ -177,9 +185,12 @@ class IntegrationTests(unittest.TestCase):
         debug(filename, port, debug_id, debug_options, '???',
               _run=self._run, _prog='eggs')
 
-        self.assertEqual(self.argv,
-                         _get_args('--file', 'spam',
-                                   ptvsd_extras=['--client', LOCALHOST]))
+        self.assertEqual(self.argv, [
+            'eggs',
+            '--port', '8888',
+            '--client', LOCALHOST,
+            '--file', 'spam',
+        ])
         self.assertEqual(self.addr, Address.as_client(None, port))
         self.assertEqual(self.kwargs, {
             'singlesession': True,
@@ -194,9 +205,14 @@ class IntegrationTests(unittest.TestCase):
         debug(filename, port, debug_id, debug_options, 'script',
               _run=self._run, _prog='eggs')
 
-        self.assertEqual(self.argv,
-                         _get_args('--file', 'spam.py', '--abc', 'xyz', '42',
-                                   ptvsd_extras=['--client', LOCALHOST]))
+        self.assertEqual(self.argv, [
+            'eggs',
+            '--port', '8888',
+            '--client', LOCALHOST,
+            '--file', 'spam.py',
+            '--abc', 'xyz',
+            '42',
+        ])
         self.assertEqual(self.addr, Address.as_client(None, port))
         self.assertEqual(self.kwargs, {
             'singlesession': True,

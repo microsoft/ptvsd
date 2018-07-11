@@ -49,6 +49,19 @@ USAGE = """
 """  # noqa
 
 
+PYDEVD_DEFAULTS = {
+    '--qt-support=auto',
+}
+
+
+def _set_pydevd_defaults(pydevd_args):
+    args_to_append = []
+    for arg in PYDEVD_DEFAULTS:
+        if arg not in pydevd_args:
+            args_to_append.append(arg)
+    return pydevd_args + args_to_append
+
+
 def parse_args(argv=None):
     """Return the parsed args to use in main()."""
     if argv is None:
@@ -62,7 +75,7 @@ def parse_args(argv=None):
 
     supported, pydevd, script = _group_args(argv)
     args = _parse_args(prog, supported)
-    # '--' is used in _run_args to extract pydevd specific args
+    pydevd = _set_pydevd_defaults(pydevd)
     extra = pydevd + ['--']
     if script:
         extra += script
