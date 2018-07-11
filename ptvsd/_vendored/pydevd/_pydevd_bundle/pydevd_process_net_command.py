@@ -635,12 +635,11 @@ def process_net_command(py_db, cmd_id, seq, text):
             elif cmd_id == CMD_LOAD_SOURCE:
                 path = text
                 try:
-                    path = pydevd_file_utils.norm_file_to_server(path)
                     f = open(path, 'r')
                     source = f.read()
-                    cmd = py_db.cmd_factory.make_load_source_message(seq, source)
+                    py_db.cmd_factory.make_load_source_message(seq, source, py_db)
                 except:
-                    cmd = py_db.cmd_factory.make_error_message(seq, pydevd_tracing.get_exception_traceback_str())
+                    return py_db.cmd_factory.make_error_message(seq, pydevd_tracing.get_exception_traceback_str())
 
             elif cmd_id == CMD_ADD_DJANGO_EXCEPTION_BREAK:
                 exception = text
