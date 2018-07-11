@@ -10,7 +10,6 @@ from tests.helpers.debugadapter import DebugAdapter
 from tests.helpers.debugclient import EasyDebugClient as DebugClient
 from tests.helpers.lock import LockTimeoutError
 from tests.helpers.script import find_line, set_lock, set_release
-from tests.helpers.debugsession import Awaitable
 
 from . import (
     _strip_pydevd_output,
@@ -148,10 +147,10 @@ class LifecycleTests(LifecycleTestsBase):
         received = list(_strip_newline_output_events(session.received))
         self.assert_received(received[:7], [
             self.new_version_event(session.received),
-            self.new_response(req_initialize.req, **INITIALIZE_RESPONSE),
+            self.new_response(req_initialize, **INITIALIZE_RESPONSE),
             self.new_event('initialized'),
-            self.new_response(req_launch.req),
-            self.new_response(req_config.req),
+            self.new_response(req_launch),
+            self.new_response(req_config),
             self.new_event('process', **{
                 'isLocalProcess': True,
                 'systemProcessId': adapter.pid,
@@ -181,10 +180,10 @@ class LifecycleTests(LifecycleTestsBase):
         received = list(_strip_newline_output_events(session.received))
         self.assert_received(received[:7], [
             self.new_version_event(session.received),
-            self.new_response(req_initialize.req, **INITIALIZE_RESPONSE),
+            self.new_response(req_initialize, **INITIALIZE_RESPONSE),
             self.new_event('initialized'),
-            self.new_response(req_launch.req),
-            self.new_response(req_config.req),
+            self.new_response(req_launch),
+            self.new_response(req_config),
             self.new_event('process', **{
                 'isLocalProcess': True,
                 'systemProcessId': adapter.pid,
@@ -216,10 +215,10 @@ class LifecycleTests(LifecycleTestsBase):
         received = list(_strip_newline_output_events(session.received))
         self.assert_received(received[:7], [
             self.new_version_event(session.received),
-            self.new_response(req_initialize.req, **INITIALIZE_RESPONSE),
+            self.new_response(req_initialize, **INITIALIZE_RESPONSE),
             self.new_event('initialized'),
-            self.new_response(req_launch.req),
-            self.new_response(req_config.req),
+            self.new_response(req_launch),
+            self.new_response(req_config),
             self.new_event('process', **{
                 'isLocalProcess': True,
                 'systemProcessId': adapter.pid,
@@ -270,10 +269,10 @@ class LifecycleTests(LifecycleTestsBase):
         received = list(_strip_newline_output_events(session.received))
         self.assert_received(received, [
             self.new_version_event(session.received),
-            self.new_response(req_initialize.req, **INITIALIZE_RESPONSE),
+            self.new_response(req_initialize, **INITIALIZE_RESPONSE),
             self.new_event('initialized'),
-            self.new_response(req_launch.req),
-            self.new_response(req_config.req),
+            self.new_response(req_launch),
+            self.new_response(req_config),
             self.new_event('process', **{
                 'isLocalProcess': True,
                 'systemProcessId': adapter.pid,
@@ -302,26 +301,23 @@ class LifecycleTests(LifecycleTestsBase):
                     reqs = lifecycle_handshake(session1, 'attach')
                     done1()
                 req_disconnect = session1.send_request('disconnect')
-                req_disconnect.wait()
                 editor.detach(adapter)
 
                 # Re-attach
                 session2 = editor.attach_socket(addr, adapter)
                 (req_initialize, req_launch, req_config, _, _, _
                  ) = lifecycle_handshake(session2, 'attach')
-                req_launch.wait()
                 done2()
 
                 adapter.wait()
 
         received = list(_strip_newline_output_events(session1.received))
-
-        self.assert_contains(received, [
+        self.assert_received(received, [
             self.new_version_event(session1.received),
-            self.new_response(reqs[0].req, **INITIALIZE_RESPONSE),
+            self.new_response(reqs[0], **INITIALIZE_RESPONSE),
             self.new_event('initialized'),
-            self.new_response(reqs[1].req),
-            self.new_response(reqs[2].req),
+            self.new_response(reqs[1]),
+            self.new_response(reqs[2]),
             self.new_event('process', **{
                 'isLocalProcess': True,
                 'systemProcessId': adapter.pid,
@@ -329,17 +325,16 @@ class LifecycleTests(LifecycleTestsBase):
                 'name': filename,
             }),
             self.new_event('thread', reason='started', threadId=1),
-            self.new_response(req_disconnect.req),
+            self.new_response(req_disconnect),
         ])
         self.messages.reset_all()
         received = list(_strip_newline_output_events(session2.received))
-
-        self.assert_contains(received, [
+        self.assert_received(received, [
             self.new_version_event(session2.received),
-            self.new_response(req_initialize.req, **INITIALIZE_RESPONSE),
+            self.new_response(req_initialize, **INITIALIZE_RESPONSE),
             self.new_event('initialized'),
-            self.new_response(req_launch.req),
-            self.new_response(req_config.req),
+            self.new_response(req_launch),
+            self.new_response(req_config),
             self.new_event('process', **{
                 'isLocalProcess': True,
                 'systemProcessId': adapter.pid,
@@ -397,7 +392,6 @@ class LifecycleTests(LifecycleTestsBase):
                                                  threads=True)
                 tid1 = result['msg'].body['threadId']
 
-                stopped_event = session1.get_awaiter_for_event('stopped')
                 req_bps = session1.send_request('setBreakpoints', **{
                     'source': {'path': filename},
                     'breakpoints': [
@@ -405,11 +399,8 @@ class LifecycleTests(LifecycleTestsBase):
                         {'line': bp2},
                     ],
                 })
-                req_bps.wait()
-
-                done1()
-                stopped_event.wait()
-
+                with session1.wait_for_event('stopped'):
+                    done1()
                 req_threads2 = session1.send_request('threads')
                 req_stacktrace1 = session1.send_request(
                     'stackTrace',
@@ -419,7 +410,6 @@ class LifecycleTests(LifecycleTestsBase):
 
                 # Detach with execution stopped and 1 breakpoint left.
                 req_disconnect = session1.send_request('disconnect')
-                Awaitable.wait_all(req_threads2, req_stacktrace1, req_disconnect) # noqa
                 editor.detach(adapter)
                 try:
                     wait2()
@@ -443,30 +433,30 @@ class LifecycleTests(LifecycleTestsBase):
             out3 = str(adapter.output)
 
         received = list(_strip_newline_output_events(session1.received))
-        self.assert_contains(received, [
+        self.assert_received(received, [
             self.new_version_event(session1.received),
-            self.new_response(req_init1.req, **INITIALIZE_RESPONSE),
+            self.new_response(req_init1, **INITIALIZE_RESPONSE),
             self.new_event('initialized'),
-            self.new_response(req_attach1.req),
+            self.new_response(req_attach1),
             self.new_event(
                 'thread',
                 threadId=tid1,
                 reason='started',
             ),
-            self.new_response(req_threads1.req, **{
+            self.new_response(req_threads1, **{
                 'threads': [{
                     'id': 1,
                     'name': 'MainThread',
                 }],
             }),
-            self.new_response(req_config1.req),
+            self.new_response(req_config1),
             self.new_event('process', **{
                 'isLocalProcess': True,
                 'systemProcessId': adapter.pid,
                 'startMethod': 'attach',
                 'name': filename,
             }),
-            self.new_response(req_bps.req, **{
+            self.new_response(req_bps, **{
                 'breakpoints': [{
                     'id': 1,
                     'line': bp1,
@@ -484,7 +474,7 @@ class LifecycleTests(LifecycleTestsBase):
                 description=None,
                 text=None,
             ),
-            self.new_response(req_threads2.req, **{
+            self.new_response(req_threads2, **{
                 'threads': [{
                     'id': 1,
                     'name': 'MainThread',
@@ -500,7 +490,7 @@ class LifecycleTests(LifecycleTestsBase):
                 },
                 reason='new',
             ),
-            self.new_response(req_stacktrace1.req, **{
+            self.new_response(req_stacktrace1, **{
                 'totalFrames': 1,
                 'stackFrames': [{
                     'id': 1,
@@ -513,30 +503,30 @@ class LifecycleTests(LifecycleTestsBase):
                     'column': 1,
                 }],
             }),
-            self.new_response(req_disconnect.req),
+            self.new_response(req_disconnect),
         ])
         self.messages.reset_all()
         received = list(_strip_newline_output_events(session2.received))
         # Sometimes the proc ends before the exited and terminated
         # events are received.
         received = list(_strip_exit(received))
-        self.assert_contains(received, [
+        self.assert_received(received, [
             self.new_version_event(session2.received),
-            self.new_response(req_init2.req, **INITIALIZE_RESPONSE),
+            self.new_response(req_init2, **INITIALIZE_RESPONSE),
             self.new_event('initialized'),
-            self.new_response(req_attach2.req),
+            self.new_response(req_attach2),
             self.new_event(
                 'thread',
                 threadId=tid2,
                 reason='started',
             ),
-            self.new_response(req_threads3.req, **{
+            self.new_response(req_threads3, **{
                 'threads': [{
                     'id': 1,
                     'name': 'MainThread',
                 }],
             }),
-            self.new_response(req_config2.req),
+            self.new_response(req_config2),
             self.new_event('process', **{
                 'isLocalProcess': True,
                 'systemProcessId': adapter.pid,
@@ -593,10 +583,10 @@ class LifecycleTests(LifecycleTestsBase):
         received = list(_strip_newline_output_events(session.received))
         self.assert_received(received, [
             self.new_version_event(session.received),
-            self.new_response(req_initialize.req, **INITIALIZE_RESPONSE),
+            self.new_response(req_initialize, **INITIALIZE_RESPONSE),
             self.new_event('initialized'),
-            self.new_response(req_launch.req),
-            self.new_response(req_config.req),
+            self.new_response(req_launch),
+            self.new_response(req_config),
             self.new_event('exited', exitCode=0),
             self.new_event('terminated'),
         ])
@@ -707,23 +697,23 @@ class LifecycleTests(LifecycleTestsBase):
         # Sometimes the proc ends before the exited and terminated
         # events are received.
         received = list(_strip_exit(received))
-        self.assert_contains(received, [
+        self.assert_received(received, [
             self.new_version_event(session.received),
-            self.new_response(req_init.req, **INITIALIZE_RESPONSE),
+            self.new_response(req_init, **INITIALIZE_RESPONSE),
             self.new_event('initialized'),
-            self.new_response(req_attach.req),
+            self.new_response(req_attach),
             self.new_event(
                 'thread',
                 threadId=tid,
                 reason='started',
             ),
-            self.new_response(req_threads1.req, **{
+            self.new_response(req_threads1, **{
                 'threads': [{
                     'id': 1,
                     'name': 'MainThread',
                 }],
             }),
-            self.new_response(req_bps.req, **{
+            self.new_response(req_bps, **{
                 'breakpoints': [{
                     'id': 1,
                     'line': bp1,
@@ -734,7 +724,7 @@ class LifecycleTests(LifecycleTestsBase):
                     'verified': True,
                 }],
             }),
-            self.new_response(req_config.req),
+            self.new_response(req_config),
             self.new_event('process', **{
                 'isLocalProcess': True,
                 'systemProcessId': adapter.pid,
@@ -748,7 +738,7 @@ class LifecycleTests(LifecycleTestsBase):
                 description=None,
                 text=None,
             ),
-            self.new_response(req_threads2.req, **{
+            self.new_response(req_threads2, **{
                 'threads': [{
                     'id': 1,
                     'name': 'MainThread',
@@ -764,7 +754,7 @@ class LifecycleTests(LifecycleTestsBase):
                 },
                 reason='new',
             ),
-            self.new_response(req_stacktrace1.req, **{
+            self.new_response(req_stacktrace1, **{
                 'totalFrames': 1,
                 'stackFrames': [{
                     'id': 1,
@@ -777,7 +767,7 @@ class LifecycleTests(LifecycleTestsBase):
                     'column': 1,
                 }],
             }),
-            self.new_response(req_continue1.req),
+            self.new_response(req_continue1),
             self.new_event('continued', threadId=tid),
             self.new_event(
                 'output',
@@ -791,13 +781,13 @@ class LifecycleTests(LifecycleTestsBase):
                 description=None,
                 text=None,
             ),
-            self.new_response(req_threads3.req, **{
+            self.new_response(req_threads3, **{
                 'threads': [{
                     'id': 1,
                     'name': 'MainThread',
                 }],
             }),
-            self.new_response(req_stacktrace2.req, **{
+            self.new_response(req_stacktrace2, **{
                 'totalFrames': 1,
                 'stackFrames': [{
                     'id': 2,  # TODO: Isn't this the same frame as before?
@@ -810,7 +800,7 @@ class LifecycleTests(LifecycleTestsBase):
                     'column': 1,
                 }],
             }),
-            self.new_response(req_continue2.req),
+            self.new_response(req_continue2),
             self.new_event('continued', threadId=tid),
             self.new_event(
                 'output',
@@ -861,15 +851,15 @@ class LifecycleTests(LifecycleTestsBase):
             adapter.wait()
 
         received = list(_strip_newline_output_events(session.received))
-        self.assert_contains(received[:9], [
+        self.assert_received(received[:9], [
             self.new_version_event(session.received),
-            self.new_response(req_initialize.req, **INITIALIZE_RESPONSE),
+            self.new_response(req_initialize, **INITIALIZE_RESPONSE),
             self.new_event('initialized'),
-            self.new_response(req_launch.req),
-            self.new_response(req_config.req),
+            self.new_response(req_launch),
             self.new_event('output',
                            output='+ before',
                            category='stdout'),
+            self.new_response(req_config),
             self.new_event('output',
                            output='+ after',
                            category='stdout'),
