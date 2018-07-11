@@ -24,14 +24,16 @@ def _touch(filename):
         pass
 
 
-class FSTreeBase(object):
-    """File operations relative to some root directory."""
+class Workspace(object):
+    """File operations relative to some root directory ("workspace")."""
+
+    PREFIX = 'workspace-'
 
     @classmethod
     def _new_root(cls):
-        raise NotImplementedError
+        return tempfile.mkdtemp(prefix=cls.PREFIX)
 
-    def __init__(self, root):
+    def __init__(self, root=None):
         if root is not None:
             self._root = root
         self._owned = False
@@ -45,50 +47,16 @@ class FSTreeBase(object):
             self._owned = True
             return self._root
 
-    @property
-    def parent(self):
-        parent = os.path.dirname(self.root)
-        return FSTreeBase(parent)
-
-    def resolve(self, *path):
-        """Return the absolute path (relative to the workspace)."""
-        return os.path.join(self.root, *path)
-
-    def sub(self, *path):
-        cls = type(self)
-        root = self.resolve(*path)
-        return cls(root)
-
-    def env_with_py_path(self, *path):
-        return {'PYTHONPATH': self.root}
-
-
-class ReadonlyFSTree(FSTreeBase):
-    """File operations relative to some root directory."""
-
-    def __init__(self, root):
-        assert root
-        super(ReadonlyFSTree, self).__init__(root)
-
-
-class Workspace(FSTreeBase):
-    """File operations relative to some root directory ("workspace")."""
-
-    PREFIX = 'workspace-'
-
-    @classmethod
-    def _new_root(cls):
-        return tempfile.mkdtemp(prefix=cls.PREFIX)
-
-    def __init__(self, root=None):
-        super(Workspace, self).__init__(root)
-
     def cleanup(self):
         """Release and destroy the workspace."""
         if self._owned:
             shutil.rmtree(self._root)
             self._owned = False
             self._root = None
+
+    def resolve(self, *path):
+        """Return the absolute path (relative to the workspace)."""
+        return os.path.join(self.root, *path)
 
     def random(self, *dirpath, **kwargs):
         """Return a random filename resolved to the given directory."""

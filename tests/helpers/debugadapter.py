@@ -4,7 +4,7 @@ import socket
 import time
 
 from ptvsd.socket import Address
-from ptvsd._util import Closeable, ClosedError
+from . import Closeable
 from .proc import Proc
 from .. import PROJECT_ROOT
 
@@ -263,10 +263,7 @@ class DebugAdapter(Closeable):
 
     def _close(self):
         if self._proc is not None:
-            try:
-                self._proc.close()
-            except ClosedError:
-                pass
+            self._proc.close()
         if self.VERBOSE:
             lines = self.output.decode('utf-8').splitlines()
             print(' + ' + '\n + '.join(lines))

@@ -3,7 +3,8 @@ from __future__ import absolute_import
 import warnings
 
 from ptvsd.socket import Address
-from ptvsd._util import new_hidden_thread, Closeable, ClosedError
+from ptvsd._util import new_hidden_thread
+from . import Closeable
 from .debugadapter import DebugAdapter, wait_for_socket_server
 from .debugsession import DebugSession
 
@@ -12,15 +13,11 @@ from .debugsession import DebugSession
 
 
 class _LifecycleClient(Closeable):
-
-    SESSION = DebugSession
-
     def __init__(self,
                  addr=None,
                  port=8888,
                  breakpoints=None,
-                 connecttimeout=1.0,
-                 ):
+                 connecttimeout=1.0):
         super(_LifecycleClient, self).__init__()
         self._addr = Address.from_raw(addr, defaultport=port)
         self._connecttimeout = connecttimeout
@@ -54,11 +51,7 @@ class _LifecycleClient(Closeable):
 
         if self._session is not None:
             self._detach()
-
-        try:
-            self._adapter.close()
-        except ClosedError:
-            pass
+        self._adapter.close()
         self._adapter = None
 
     def attach_pid(self, pid, **kwargs):
@@ -105,15 +98,9 @@ class _LifecycleClient(Closeable):
 
     def _close(self):
         if self._session is not None:
-            try:
-                self._session.close()
-            except ClosedError:
-                pass
+            self._session.close()
         if self._adapter is not None:
-            try:
-                self._adapter.close()
-            except ClosedError:
-                pass
+            self._adapter.close()
 
     def _launch(self,
                 argv,
@@ -144,17 +131,11 @@ class _LifecycleClient(Closeable):
         if addr is None:
             addr = self._addr
         assert addr.host == 'localhost'
-        self._session = self.SESSION.create_client(addr, **kwargs)
+        self._session = DebugSession.create_client(addr, **kwargs)
 
     def _detach(self):
-        session = self._session
-        if session is None:
-            return
+        self._session.close()
         self._session = None
-        try:
-            session.close()
-        except ClosedError:
-            pass
 
 
 class DebugClient(_LifecycleClient):
@@ -165,7 +146,6 @@ class DebugClient(_LifecycleClient):
 
 
 class EasyDebugClient(DebugClient):
-
     def start_detached(self, argv):
         """Start an adapter in a background process."""
         if self.closed:
@@ -192,7 +172,8 @@ class EasyDebugClient(DebugClient):
         addr = ('localhost', self._addr.port)
 
         def run():
-            self._session = self.SESSION.create_server(addr, **kwargs)
+            self._session = DebugSession.create_server(addr, **kwargs)
+
         t = new_hidden_thread(
             target=run,
             name='test.client',
