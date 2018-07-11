@@ -6,7 +6,6 @@ except ImportError:
     import Queue as queue  # Python 2.7
 import subprocess
 import sys
-import time
 
 from ptvsd._util import new_hidden_thread
 from . import Closeable
@@ -55,11 +54,6 @@ def collect_lines(stream, buf=None, notify_received=None, **kwargs):
     t.start()
 
     return buf, t
-
-
-class TimeoutException(Exception):
-    def __init__(self, *args, **kwargs):
-        Exception.__init__(self, *args, **kwargs)
 
 
 class ProcOutput(object):
@@ -208,12 +202,9 @@ class Proc(Closeable):
         # TODO: Use proc.poll()?
         return self._proc.returncode
 
-    def wait(self, timeout=5.0):
-        start_time = time.time()
-        while self._proc.poll() is None:
-            time.sleep(0.1)
-            if time.time() - start_time > timeout:
-                raise TimeoutException('Timeout waiting for process to die')
+    def wait(self):
+        # TODO: Use proc.communicate()?
+        self._proc.wait()
 
     # internal methods
 
