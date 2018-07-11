@@ -21,7 +21,7 @@ PTVSD_ROOT = os.path.dirname(os.path.abspath(ptvsd.__file__))
 
 
 def cython_build():
-    print('Compiling extension modules (set SKIP_CYTHON_BUILD=1 to omit)')
+    print('Compiling extension modules (set SKIP_CYTHON_BUILD=1 to omit.)')
     subprocess.call([
         sys.executable,
         os.path.join(PYDEVD_ROOT, 'setup_cython.py'),
