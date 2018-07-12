@@ -83,20 +83,19 @@ def _copy_env(verbose=False, env=None):
 
 
 def wait_for_socket_server(addr, timeout=3.0, **kwargs):
-    pass
-    # start_time = time.time()
-    # while True:
-    #     try:
-    #         print('test for connection')
-    #         sock = socket.create_connection((addr.host, addr.port))
-    #         print('test for connection successfull')
-    #         sock.close()
-    #         return
-    #     except Exception:
-    #         pass
-    #     time.sleep(0.1)
-    #     if time.time() - start_time > timeout:
-    #         raise ConnectionRefusedError('Timeout waiting for connection')
+    start_time = time.time()
+    while True:
+        try:
+            print('test for connection')
+            sock = socket.create_connection((addr.host, addr.port))
+            print('test for connection successfull')
+            sock.close()
+            return
+        except Exception:
+            pass
+        time.sleep(0.1)
+        if time.time() - start_time > timeout:
+            raise ConnectionRefusedError('Timeout waiting for connection')
 
 
 def wait_for_port_to_free(port, timeout=3.0):
