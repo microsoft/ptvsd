@@ -193,14 +193,12 @@ class EasyDebugClient(DebugClient):
         assert self._session is None
         addr = ('localhost', self._addr.port)
 
-        self._run_server_ex = None
         self._run_server_formatted_ex = None
 
         def run():
             try:
                 self._session = self.SESSION.create_server(addr, **kwargs)
             except Exception as ex:
-                self._run_server_ex = ex
                 self._run_server_formatted_ex = traceback.format_exc()
 
         t = new_hidden_thread(
@@ -221,15 +219,9 @@ class EasyDebugClient(DebugClient):
                         'unable to connect after {} secs'.format(
                             self._connecttimeout))
                 else:
-                    try:
-                        # Chain the original exception for py3.
-                        exec(
-                            'raise Exception(message) from self._run_server_formatted_ex', # noqa
-                            globals(), locals())
-                    except SyntaxError:
-                        # This happens when using py27.
-                        message = message + os.linesep + self._run_server_formatted_ex # noqa
-                        exec("raise Exception(message)", globals(), locals())
+                    # This happens when using py27.
+                    message = message + os.linesep + self._run_server_formatted_ex # noqa
+                    exec("raise Exception(message)", globals(), locals())
 
             # The adapter will close when the connection does.
 

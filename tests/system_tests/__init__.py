@@ -251,7 +251,7 @@ class LifecycleTestsBase(TestsBase, unittest.TestCase):
 
             fmt = {
                 "messages": os.linesep.join(messages),
-                "error": ''.join(traceback.format_exception_only(exc_type, exc_value)) # noqa
+                "error": formatted_ex
             }
             message = """
 
@@ -263,13 +263,7 @@ Original Error:
 ---------------
 %(error)s""" % fmt
 
-            try:
-                # Chain the original exception for py3.
-                exec('raise Exception(message) from ex', globals(), locals())
-            except SyntaxError:
-                # This happens when using py27.
-                message = message + os.linesep + formatted_ex
-                exec("raise Exception(message)", globals(), locals())
+            exec("raise Exception(message)", globals(), locals())
 
         def _handle_exception(ex, adapter, session):
             exc_type, exc_value, exc_traceback = sys.exc_info()
