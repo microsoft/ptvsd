@@ -4,6 +4,7 @@ import contextlib
 import os
 import sys
 from textwrap import dedent
+import time
 import traceback
 import unittest
 
@@ -304,14 +305,12 @@ class BreakpointTests(VSCFlowTest, unittest.TestCase):
         with captured_stdio() as (stdout, _):
             with self.launched(config=config):
                 # Allow the script to run to completion.
-                received = self.vsc.received
+                time.sleep(1.)
         out = stdout.getvalue()
 
         for req, _ in self.lifecycle.requests:
             self.assertNotEqual(req['command'], 'setBreakpoints')
             self.assertNotEqual(req['command'], 'setExceptionBreakpoints')
-        self.assert_received(self.vsc, [])
-        self.assert_vsc_received(received, [])
         self.assertIn('2 4 4', out)
         self.assertIn('ka-boom', out)
 
@@ -403,7 +402,6 @@ class BreakpointTests(VSCFlowTest, unittest.TestCase):
         self.assertIn('2 4 4', out)
         self.assertIn('ka-boom', err)
 
-    @unittest.skip('not working right #614')
     def test_exception_breakpoints(self):
         self.vsc.PRINT_RECEIVED_MESSAGES = True
         done, script = self._set_lock('h')
@@ -422,7 +420,9 @@ class BreakpointTests(VSCFlowTest, unittest.TestCase):
                     _, tid = self.get_threads(self.thread.name)
                 with self.wait_for_event('stopped'):
                     done()
-
+                req_continue_last = self.send_request('continue', {
+                    'threadId': tid,
+                })
                 # Allow the script to run to completion.
                 received = self.vsc.received
         out = stdout.getvalue()
@@ -445,6 +445,8 @@ class BreakpointTests(VSCFlowTest, unittest.TestCase):
                  threadId=tid,
                  text='MyError',
                  description=description)),
+            req_continue_last,
+            ('continued', dict(threadId=tid, )),
         ])
         self.assertIn('2 4 4', out)
         self.assertIn('ka-boom', out)
