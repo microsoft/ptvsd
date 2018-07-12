@@ -139,9 +139,12 @@ class _LifecycleClient(Closeable):
         if wait_for_connect:
             wait_for_connect()
         else:
-            print('wait_for_socket_server')
-            # wait_for_socket_server(addr)
+            print('before wait_for_socket_server')
+            wait_for_socket_server(addr)
+            print('after wait_for_socket_server')
+            print('before after wait_for_socket_server _attach')
             self._attach(addr, **kwargs)
+            print('after after wait_for_socket_server _attach')
 
     def _attach(self, addr, **kwargs):
         if addr is None:
