@@ -253,7 +253,7 @@ class VSCLifecycle(object):
             self.disconnect()
         t.join(timeout)
         if t.isAlive():
-            raise RuntimeError(
+            raise Exception(
                 '_stop_daemon timed out after {} secs'.format(timeout))
         daemon.close()
 

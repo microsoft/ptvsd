@@ -141,7 +141,7 @@ class BinderBase(object):
             return
         self._thread.join(timeout)
         if self._thread.isAlive():
-            raise RuntimeError(
+            raise Exception(
                 'wait_until_done timed out after {} secs'.format(timeout))
 
     ####################
