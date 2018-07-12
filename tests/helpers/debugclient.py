@@ -219,9 +219,8 @@ class EasyDebugClient(DebugClient):
                         'unable to connect after {} secs'.format(
                             self._connecttimeout))
                 else:
-                    # This happens when using py27.
                     message = message + os.linesep + self._run_server_formatted_ex # noqa
-                    exec("raise Exception(message)", globals(), locals())
+                    raise Exception(message)
 
             # The adapter will close when the connection does.
 

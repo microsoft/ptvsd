@@ -201,7 +201,7 @@ class VSCFlowTest(TestBase):
     Original Error:
     ---------------
     %(error)s""" % fmt
-                exec("raise Exception(message)", globals(), locals())
+                raise Exception(message)
             else:
                 raise
 

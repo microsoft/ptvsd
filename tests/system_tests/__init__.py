@@ -263,7 +263,7 @@ Original Error:
 ---------------
 %(error)s""" % fmt
 
-            exec("raise Exception(message)", globals(), locals())
+            raise Exception(message)
 
         def _handle_exception(ex, adapter, session):
             exc_type, exc_value, exc_traceback = sys.exc_info()
