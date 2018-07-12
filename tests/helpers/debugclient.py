@@ -127,7 +127,6 @@ class _LifecycleClient(Closeable):
                 cwd=None,
                 **kwargs):
         if script is not None:
-
             def start(*args, **kwargs):
                 return DebugAdapter.start_wrapper_script(
                     script, *args, **kwargs)
@@ -140,7 +139,8 @@ class _LifecycleClient(Closeable):
         if wait_for_connect:
             wait_for_connect()
         else:
-            wait_for_socket_server(addr)
+            print('wait_for_socket_server')
+            # wait_for_socket_server(addr)
             self._attach(addr, **kwargs)
 
     def _attach(self, addr, **kwargs):
