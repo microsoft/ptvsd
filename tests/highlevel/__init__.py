@@ -254,7 +254,7 @@ class VSCLifecycle(object):
         t.join(timeout)
         if t.isAlive():
             raise RuntimeError(
-                '_stop_daemon timed out after {} s'.format(timeout))
+                '_stop_daemon timed out after {} secs'.format(timeout))
         daemon.close()
 
     def _handshake(self, command, threadnames=None, config=None, requests=None,

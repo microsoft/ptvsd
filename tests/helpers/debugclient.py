@@ -193,13 +193,13 @@ class EasyDebugClient(DebugClient):
         assert self._session is None
         addr = ('localhost', self._addr.port)
 
-        self._run_server_formatted_ex = None
+        self._run_server_ex = None
 
         def run():
             try:
                 self._session = self.SESSION.create_server(addr, **kwargs)
             except Exception as ex:
-                self._run_server_formatted_ex = traceback.format_exc()
+                self._run_server_ex = traceback.format_exc()
 
         t = new_hidden_thread(
             target=run,
@@ -214,10 +214,10 @@ class EasyDebugClient(DebugClient):
             if self._session is None:
                 message = 'unable to connect after {} secs'.format(  # noqa
                     self._connecttimeout)
-                if self._run_server_formatted_ex is None:
+                if self._run_server_ex is None:
                     raise RuntimeError(message)
                 else:
-                    message = message + os.linesep + self._run_server_formatted_ex # noqa
+                    message = message + os.linesep + self._run_server_ex # noqa
                     raise Exception(message)
 
             # The adapter will close when the connection does.

@@ -188,19 +188,14 @@ class VSCFlowTest(TestBase):
         except Exception as ex:
             formatted_ex = traceback.format_exc()
             if hasattr(self, 'vsc') and hasattr(self.vsc, 'received'):
-                fmt = {
-                    "messages": os.linesep.join(self.vsc.received),
-                    "error": formatted_ex
-                }
                 message = """
-
     Session Messages:
     -----------------
-    %(messages)s
+    {}
 
     Original Error:
     ---------------
-    %(error)s""" % fmt
+    {}""".format(os.linesep.join(self.vsc.received), formatted_ex)
                 raise Exception(message)
             else:
                 raise
@@ -306,19 +301,19 @@ class BreakpointTests(VSCFlowTest, unittest.TestCase):
             'breakpoints': [],
             'excbreakpoints': [],
         }
-        # with captured_stdio() as (stdout, _):
-        with self.launched(config=config):
-            # Allow the script to run to completion.
-            received = self.vsc.received
-        # out = stdout.getvalue()
+        with captured_stdio() as (stdout, _):
+            with self.launched(config=config):
+                # Allow the script to run to completion.
+                received = self.vsc.received
+        out = stdout.getvalue()
 
         for req, _ in self.lifecycle.requests:
             self.assertNotEqual(req['command'], 'setBreakpoints')
             self.assertNotEqual(req['command'], 'setExceptionBreakpoints')
         self.assert_received(self.vsc, [])
         self.assert_vsc_received(received, [])
-        # self.assertIn('2 4 4', out)
-        # self.assertIn('ka-boom', out)
+        self.assertIn('2 4 4', out)
+        self.assertIn('ka-boom', out)
 
     def test_breakpoints_single_file(self):
         done1, _ = self._set_lock('d')

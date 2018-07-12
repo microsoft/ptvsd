@@ -249,19 +249,14 @@ class LifecycleTestsBase(TestsBase, unittest.TestCase):
             except Exception:
                 pass
 
-            fmt = {
-                "messages": os.linesep.join(messages),
-                "error": formatted_ex
-            }
             message = """
-
 Session Messages:
 -----------------
-%(messages)s
+{}
 
 Original Error:
 ---------------
-%(error)s""" % fmt
+{}""".format(os.linesep.join(messages), formatted_ex)
 
             raise Exception(message)
 
