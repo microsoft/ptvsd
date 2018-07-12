@@ -250,7 +250,6 @@ class LifecycleTestsBase(TestsBase, unittest.TestCase):
                 pass
 
             fmt = {
-                "sep": os.linesep,
                 "messages": os.linesep.join(messages),
                 "error": ''.join(traceback.format_exception_only(exc_type, exc_value)) # noqa
             }

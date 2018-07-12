@@ -189,7 +189,6 @@ class VSCFlowTest(TestBase):
             formatted_ex = traceback.format_exc()
             if hasattr(self, 'vsc') and hasattr(self.vsc, 'received'):
                 fmt = {
-                    "sep": os.linesep,
                     "messages": os.linesep.join(self.vsc.received),
                     "error": formatted_ex
                 }
