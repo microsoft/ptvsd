@@ -216,7 +216,7 @@ class EasyDebugClient(DebugClient):
             if self._session is None:
                 message = 'unable to connect after {} secs'.format(  # noqa
                     self._connecttimeout)
-                if self._run_server_formatted_ex is not None:
+                if self._run_server_formatted_ex is None:
                     raise RuntimeError(
                         'unable to connect after {} secs'.format(
                             self._connecttimeout))
