@@ -168,7 +168,6 @@ class Proc(Closeable):
             stdout = subprocess.PIPE
         if stderr is _NOT_SET:
             stderr = subprocess.STDOUT
-        print('here')
         proc = subprocess.Popen(
             argv,
             stdout=stdout,

@@ -170,7 +170,6 @@ class VSCLifecycle(object):
         with self._fix.hidden() if hide else noop_cm():
             daemon = self._start_daemon(port)
         try:
-            print('daemon is running')
             yield
         finally:
             with self._fix.hidden() if hide else noop_cm():
@@ -190,12 +189,8 @@ class VSCLifecycle(object):
 
     def launch(self, **kwargs):
         """Initialize the debugger protocol and then launch."""
-        print('before hidden')
         with self._hidden():
-            print('inside hidden')
             self._handshake('launch', **kwargs)
-            print('after handshake in hidden')
-        print('after hidden')
 
     def attach(self, **kwargs):
         """Initialize the debugger protocol and then attach."""
@@ -235,11 +230,8 @@ class VSCLifecycle(object):
             # must be waited for here.
             # TODO: Is this necessary any more since we added the "readylock"?
             with self._fix.wait_for_event('output'):
-                print('start')
                 daemon = self._fix.fake.start(addr)
-                print('start2')
                 daemon.wait_until_connected()
-                print('start3')
         return daemon
 
     def _stop_daemon(self, daemon, disconnect=True, timeout=10.0):
@@ -552,7 +544,6 @@ class VSCFixture(FixtureBase):
 
     @property
     def lifecycle(self):
-        print('tw')
         try:
             return self._lifecycle
         except AttributeError:
@@ -698,7 +689,6 @@ class HighlevelFixture(object):
 
     @property
     def lifecycle(self):
-        print('one')
         return self._vsc.lifecycle
 
     @property
