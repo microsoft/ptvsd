@@ -86,9 +86,7 @@ def wait_for_socket_server(addr, timeout=3.0, **kwargs):
     start_time = time.time()
     while True:
         try:
-            print('test for connection')
             sock = socket.create_connection((addr.host, addr.port))
-            print('test for connection successfull')
             sock.close()
             return
         except Exception:
@@ -180,12 +178,8 @@ class DebugAdapter(Closeable):
     @classmethod
     def start_for_attach(cls, addr, *args, **kwargs):
         addr = Address.as_server(*addr)
-        print('start start_for_attach')
         adapter = cls._start_as(addr, *args, server=True, **kwargs)
-        print('end start_for_attach')
-        print('start wait_for_socket_server')
         wait_for_socket_server(addr)
-        print('end wait_for_socket_server')
         return adapter
 
     @classmethod

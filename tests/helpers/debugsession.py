@@ -51,11 +51,8 @@ class DebugSessionConnection(Closeable):
     def create_server(cls, addr, **kwargs):
         def connect(addr, timeout):
             server = create_server(addr)
-            print('1.client, _ = server.accept()')
             with socket_timeout(server, timeout):
-                print('2.client, _ = server.accept()')
                 client, _ = server.accept()
-                print('3.client, _ = server.accept()')
             return Connection(client, server)
         return cls._create(connect, addr, **kwargs)
 
@@ -63,9 +60,7 @@ class DebugSessionConnection(Closeable):
     def _create(cls, connect, addr, timeout=None):
         if timeout is None:
             timeout = cls.TIMEOUT
-        print('wait for connection')
         sock = connect(addr, timeout)
-        print('after wait for connection')
         if cls.VERBOSE:
             print('connected')
         self = cls(sock, ownsock=True)
