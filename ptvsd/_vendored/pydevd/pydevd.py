@@ -43,7 +43,7 @@ from _pydevd_frame_eval.pydevd_frame_eval_main import frame_eval_func, stop_fram
 from _pydevd_bundle.pydevd_utils import save_main_module
 from pydevd_concurrency_analyser.pydevd_concurrency_logger import ThreadingLogger, AsyncioLogger, send_message, cur_time
 from pydevd_concurrency_analyser.pydevd_thread_wrappers import wrap_threads
-from pydevd_file_utils import get_fullname, rPath
+from pydevd_file_utils import get_fullname, rPath, get_package_dir
 import pydev_ipython  # @UnusedImport
 
 __version_info__ = (1, 2, 0)
@@ -956,11 +956,22 @@ class PyDB:
             module_name = file
             filename = get_fullname(file)
             if filename is None:
-                sys.stderr.write("No module named %s\n" % file)
-                return
+                mod_dir = get_package_dir(module_name)
+                if mod_dir is None:
+                    sys.stderr.write("No module named %s\n" % file)
+                    return
+                else:
+                    filename = get_fullname("%s.__main__" % module_name)
+                    if filename is None:
+                        sys.stderr.write("No module named %s\n" % file)
+                        return
+                    else:
+                        file = filename
             else:
                 file = filename
-            sys.argv[0] = file
+                if filename.endswith('__init__.pyc') or filename.endswith('__init__.py'):
+                    filename = filename.replace('__init__.py', '__main__.py')
+            sys.argv[0] = filename
 
         if os.path.isdir(file):
             new_target = os.path.join(file, '__main__.py')
