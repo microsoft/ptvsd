@@ -960,6 +960,7 @@ class PyDB:
                 return
             else:
                 file = filename
+            sys.argv[0] = file
 
         if os.path.isdir(file):
             new_target = os.path.join(file, '__main__.py')
