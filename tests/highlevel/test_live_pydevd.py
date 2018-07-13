@@ -427,7 +427,6 @@ class BreakpointTests(VSCFlowTest, unittest.TestCase):
                 # Allow the script to run to completion.
                 received = self.vsc.received
         out = stdout.getvalue()
-        #print(' + ' + '\n + '.join(out.splitlines()))
 
         got = []
         for req, resp in self.lifecycle.requests:
@@ -439,15 +438,14 @@ class BreakpointTests(VSCFlowTest, unittest.TestCase):
             description = "MyError('ka-boom')"
         else:
             description = "MyError('ka-boom',)"
-        self.assert_vsc_received_fixing_events(received, [
-            ('stopped',
-             dict(
+        self.assert_contains(received, [
+            self.new_event('stopped', **dict(
                  reason='exception',
                  threadId=tid,
                  text='MyError',
                  description=description)),
-            req_continue_last,
-            ('continued', dict(threadId=tid, )),
+            self.new_response(req_continue_last),
+            self.new_event('continued', **dict(threadId=tid, )),
         ])
         self.assertIn('2 4 4', out)
         self.assertIn('ka-boom', out)
