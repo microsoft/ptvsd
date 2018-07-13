@@ -420,9 +420,10 @@ class BreakpointTests(VSCFlowTest, unittest.TestCase):
                     _, tid = self.get_threads(self.thread.name)
                 with self.wait_for_event('stopped'):
                     done()
-                req_continue_last = self.send_request('continue', {
-                    'threadId': tid,
-                })
+                with self.wait_for_event('continued'):
+                    req_continue_last = self.send_request('continue', {
+                        'threadId': tid,
+                    })
                 # Allow the script to run to completion.
                 received = self.vsc.received
         out = stdout.getvalue()
