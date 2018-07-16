@@ -2,6 +2,7 @@
 # Licensed under the MIT License. See LICENSE in the project root
 # for license information.
 
+import os
 import threading
 
 # TODO: Why import run_module & run_file?
@@ -11,7 +12,7 @@ from ptvsd._remote import (
 )
 
 
-WAIT_TIMEOUT = 10.0  # TODO: Use a smaller value during tests?
+WAIT_TIMEOUT = os.getenv('PTVSD_TEST_WAIT_TIMEOUT', 1.0)  # TODO: Use a smaller value during tests?
 
 DEFAULT_HOST = '0.0.0.0'
 DEFAULT_PORT = 5678
