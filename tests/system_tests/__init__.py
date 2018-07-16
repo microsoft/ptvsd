@@ -256,6 +256,8 @@ class LifecycleTestsBase(TestsBase, unittest.TestCase):
         wait_for_port_to_free(debug_info.port)
 
         # Ensure we have a large timeout for attach_server.py.
+        if env is None:
+            env = {}
         env['PTVSD_TEST_WAIT_TIMEOUT'] = 5
 
         def _kill_proc(pid):
