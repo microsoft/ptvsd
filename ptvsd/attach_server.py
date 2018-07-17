@@ -12,7 +12,7 @@ from ptvsd._remote import (
 )
 
 
-WAIT_TIMEOUT = os.getenv('PTVSD_TEST_WAIT_TIMEOUT', 1.0)  # TODO: Use a smaller value during tests? # noqa
+WAIT_TIMEOUT = float(os.getenv('PTVSD_TEST_WAIT_TIMEOUT', '1.0'))  # TODO: Use a smaller value during tests? # noqa
 
 DEFAULT_HOST = '0.0.0.0'
 DEFAULT_PORT = 5678
