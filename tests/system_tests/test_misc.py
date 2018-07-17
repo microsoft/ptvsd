@@ -1,6 +1,6 @@
 import os
 import os.path
-
+import time
 from tests.helpers.resource import TestResources
 from . import (lifecycle_handshake, LifecycleTestsBase, DebugInfo)
 
@@ -41,6 +41,8 @@ class ThreadCountTests(LifecycleTestsBase):
                                     session, debug_info.starttype,
                                     breakpoints=breakpoints,
                                     threads=True)
+            # Give extra time for thread state to be captured
+            time.sleep(1)
             event = result['msg']
             tid = event.body['threadId']
             req_threads = session.send_request('threads')
