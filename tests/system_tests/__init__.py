@@ -321,7 +321,6 @@ Original Error:
                 argv=argv,
                 env=env,
                 cwd=cwd,
-                waitforserver=True,
             )
             with adapter:
                 with DebugClient() as editor:
@@ -347,7 +346,6 @@ Original Error:
                 kind=kind,
                 env=env,
                 cwd=cwd,
-                waitforserver=True,
             )
             with adapter:
                 with DebugClient() as editor:

@@ -11,7 +11,7 @@ from ptvsd._remote import (
 )
 
 
-WAIT_TIMEOUT = 1.0  # TODO: Use a smaller value during tests?
+WAIT_TIMEOUT = 1.0
 
 DEFAULT_HOST = '0.0.0.0'
 DEFAULT_PORT = 5678

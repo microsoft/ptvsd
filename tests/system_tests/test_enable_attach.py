@@ -87,7 +87,11 @@ class EnableAttachTests(LifecycleTestsBase, unittest.TestCase):
 
         #DebugAdapter.VERBOSE = True
         #DebugClient.SESSION.VERBOSE = True
-        adapter = DebugAdapter.start_embedded(addr, filename)
+        adapter = DebugAdapter.start_embedded(
+            addr,
+            filename,
+            srvtimeout=None,
+        )
         with adapter:
             # Wait longer that WAIT_TIMEOUT, so that debugging isn't
             # immediately enabled in the script's thread.
