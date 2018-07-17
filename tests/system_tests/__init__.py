@@ -255,6 +255,11 @@ class LifecycleTestsBase(TestsBase, unittest.TestCase):
         env = debug_info.env
         wait_for_port_to_free(debug_info.port)
 
+        # Ensure we have a large timeout for attach_server.py.
+        if env is None:
+            env = {}
+        env['PTVSD_TEST_WAIT_TIMEOUT'] = str(CONNECT_TIMEOUT)
+
         def _kill_proc(pid):
             """If debugger does not end gracefully, then kill proc and
             wait for socket connections to die out. """
