@@ -63,4 +63,4 @@ class ThreadCountTests(LifecycleTestsBase):
         cwd = os.path.dirname(filename)
         self.run_test_threads(
             DebugInfo(filename=filename, cwd=cwd),
-            bp_filename=filename, bp_line=19, count=3)
+            bp_filename=filename, bp_line=22, count=3)
