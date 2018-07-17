@@ -1,5 +1,6 @@
 import unittest
 
+from ptvsd import attach_server
 from ptvsd.socket import Address
 from tests import PROJECT_ROOT
 from tests.helpers.debugadapter import DebugAdapter
@@ -10,6 +11,15 @@ from . import LifecycleTestsBase, PORT, lifecycle_handshake
 
 
 class EnableAttachTests(LifecycleTestsBase, unittest.TestCase):
+
+    def setUp(self):
+        super(EnableAttachTests, self).setUp()
+        self._orig_wait_timeout = attach_server.WAIT_TIMEOUT
+        attach_server.WAIT_TIMEOUT = 1.0
+
+    def tearDown(self):
+        super(EnableAttachTests, self).tearDown()
+        attach_server.WAIT_TIMEOUT = self._orig_wait_timeout
 
     def test_does_not_block(self):
         addr = Address('localhost', PORT)

@@ -7,7 +7,8 @@ import unittest
 
 # Importing "ptvsd" here triggers the vendoring code before any vendored
 # code ever gets imported.
-import ptvsd  # noqa
+import ptvsd
+import ptvsd.attach_server
 from ptvsd._vendored import list_all as vendored
 
 
@@ -15,6 +16,15 @@ TEST_ROOT = os.path.abspath(os.path.dirname(__file__))  # noqa
 RESOURCES_ROOT = os.path.join(TEST_ROOT, 'resources')  # noqa
 PROJECT_ROOT = os.path.dirname(TEST_ROOT)  # noqa
 VENDORED_ROOTS = vendored(resolve=True)  # noqa
+
+# The default timeout is 1.0, which causes intermittent connection
+# timeouts in tests.  So we use a much smaller timeout for the test
+# suite.  In the few cases where we want a longer timeout during
+# enable_attach(), individual tests can temporarily use a higher
+# value.  They may also need to pass "wait=False" to the appropriate
+# DebugAdapter factory methods (or pass "wait_for_connect" to
+# DebugClient._launch()).
+ptvsd.attach_server.WAIT_TIMEOUT = 0.1
 
 
 def skip_py2(decorated=None):
