@@ -502,16 +502,25 @@ class AbstractWriterThread(threading.Thread):
 
     def wait_for_breakpoint_hit_with_suspend_type(self, reason=REASON_STOP_ON_BREAKPOINT, get_line=False, get_name=False):
         '''
-            108 is over
-            109 is return
-            111 is breakpoint
+        108 is over
+        109 is return
+        111 is breakpoint
+        
+        :param reason: may be the actual reason (int or string) or a list of reasons.
         '''
         self.log.append('Start: wait_for_breakpoint_hit')
         # wait for hit breakpoint
-        last = self.reader_thread.get_next_message('wait_for_breakpoint_hit. reason=%s' % (reason,))
-        while not ('stop_reason="%s"' % reason) in last:
+        if not isinstance(reason, (list, tuple)):
+            reason = (reason,)
+        while True:
             last = self.reader_thread.get_next_message('wait_for_breakpoint_hit. reason=%s' % (reason,))
-            
+            found = False
+            for r in reason:
+                if ('stop_reason="%s"' % (r,)) in last:
+                    found = True
+                    break
+            if found:
+                break
 
         # we have something like <xml><thread id="12152656" stop_reason="111"><frame id="12453120" name="encode" ...
         splitted = last.split('"')
@@ -620,14 +629,21 @@ class AbstractWriterThread(threading.Thread):
     def get_main_filename(self):
         return self.TEST_FILE
 
-    def write_add_breakpoint(self, line, func, filename=None):
+    def write_add_breakpoint(self, line, func, filename=None, hit_condition=None, is_logpoint=False, suspend_policy=None):
         '''
             @param line: starts at 1
         '''
         if filename is None:
             filename = self.get_main_filename()
         breakpoint_id = self.next_breakpoint_id()
-        self.write("111\t%s\t%s\t%s\t%s\t%s\t%s\tNone\tNone" % (self.next_seq(), breakpoint_id, 'python-line', filename, line, func))
+        if hit_condition is None and not is_logpoint and suspend_policy is None:
+            # Format kept for backward compatibility tests
+            self.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\tNone\tNone" % (
+                CMD_SET_BREAK, self.next_seq(), breakpoint_id, 'python-line', filename, line, func))
+        else:
+            # Format: breakpoint_id, type, file, line, func_name, condition, expression, hit_condition, is_logpoint, suspend_policy
+            self.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\tNone\tNone\t%s\t%s\t%s" % (
+                CMD_SET_BREAK, self.next_seq(), breakpoint_id, 'python-line', filename, line, func, hit_condition, is_logpoint, suspend_policy))
         self.log.append('write_add_breakpoint: %s line: %s func: %s' % (breakpoint_id, line, func))
         return breakpoint_id
 
