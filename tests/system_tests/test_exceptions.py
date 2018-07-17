@@ -21,7 +21,7 @@ class ExceptionTests(LifecycleTestsBase):
         options = {'debugOptions': ['RedirectOutput']}
 
         with self.start_debugging(debug_info) as dbg:
-            (_, req_attach, _, _, _, _) = lifecycle_handshake(
+            lifecycle_handshake(
                 dbg.session,
                 debug_info.starttype,
                 excbreakpoints=excbreakpoints,
@@ -39,7 +39,7 @@ class ExceptionTests(LifecycleTestsBase):
         options = {'debugOptions': ['RedirectOutput']}
 
         with self.start_debugging(debug_info) as dbg:
-            (_, req_attach, _, _, _, _) = lifecycle_handshake(
+            lifecycle_handshake(
                 dbg.session,
                 debug_info.starttype,
                 excbreakpoints=excbreakpoints,
@@ -48,7 +48,7 @@ class ExceptionTests(LifecycleTestsBase):
         received = list(_strip_newline_output_events(dbg.session.received))
         self.assertEqual(
             len(self.find_events(received, 'output', {'category': 'stdout'})),
-            1)  # noqa
+            1)
         std_errs = self.find_events(received, 'output', {'category': 'stderr'})
         self.assertGreaterEqual(len(std_errs), 1)
         std_err_msg = ''.join([msg.body['output'] for msg in std_errs])
@@ -111,7 +111,8 @@ class ExceptionTests(LifecycleTestsBase):
             self.new_event('terminated'),
         ])
 
-    def run_test_breaking_into_unhandled_exceptions(self, debug_info):
+    def run_test_breaking_into_unhandled_exceptions(self, debug_info,
+                                                    expected_source_name):
         excbreakpoints = [{'filters': ['uncaught']}]
         options = {'debugOptions': ['RedirectOutput']}
 
@@ -138,13 +139,12 @@ class ExceptionTests(LifecycleTestsBase):
             exc_info = req_exc_info.resp.body
 
             self.assert_is_subset(
-                exc_info,
-                {
+                exc_info, {
                     'exceptionId': 'ArithmeticError',
                     'breakMode': 'unhandled',
                     'details': {
                         'typeName': 'ArithmeticError',
-                        # 'source': debug_info.filename
+                        'source': expected_source_name
                     }
                 })
 
@@ -156,9 +156,16 @@ class ExceptionTests(LifecycleTestsBase):
             Awaitable.wait_all(continued)
 
         received = list(_strip_newline_output_events(dbg.session.received))
+        self.assertEqual(
+            len(self.find_events(received, 'output', {'category': 'stdout'})),
+            1)
+        std_errs = self.find_events(received, 'output', {'category': 'stderr'})
+        self.assertGreaterEqual(len(std_errs), 1)
+        std_err_msg = ''.join([msg.body['output'] for msg in std_errs])
+        self.assertIn('ArithmeticError: Hello', std_err_msg)
         self.assert_contains(received, [
             self.new_event('continued', threadId=thread_id),
-            self.new_event('output', category='stdout', output='end'),
+            self.new_event('output', category='stdout', output='one'),
             self.new_event('exited', exitCode=0),
             self.new_event('terminated'),
         ])
@@ -188,7 +195,7 @@ class LaunchFileTests(ExceptionTests):
         filename = TEST_FILES.resolve('unhandled_exceptions_launch.py')
         cwd = os.path.dirname(filename)
         self.run_test_breaking_into_unhandled_exceptions(
-            DebugInfo(filename=filename, cwd=cwd))
+            DebugInfo(filename=filename, cwd=cwd), filename)
 
 
 class LaunchModuleExceptionLifecycleTests(ExceptionTests):
@@ -219,8 +226,19 @@ class ServerAttachExceptionLifecycleTests(ExceptionTests):
                 cwd=cwd,
                 starttype='attach',
                 argv=argv,
-            ),
-            filename)
+            ), filename)
+
+    def test_not_breaking_into_unhandled_exceptions(self):
+        filename = TEST_FILES.resolve('unhandled_exceptions_launch.py')
+        cwd = os.path.dirname(filename)
+        argv = ['localhost', str(PORT)]
+        self.run_test_not_breaking_into_unhandled_exceptions(
+            DebugInfo(
+                filename=filename,
+                cwd=cwd,
+                starttype='attach',
+                argv=argv,
+            ))
 
     def test_not_breaking_into_handled_exceptions(self):
         filename = TEST_FILES.resolve('handled_exceptions_launch.py')
@@ -233,6 +251,18 @@ class ServerAttachExceptionLifecycleTests(ExceptionTests):
                 starttype='attach',
                 argv=argv,
             ))
+
+    def test_breaking_into_unhandled_exceptions(self):
+        filename = TEST_FILES.resolve('unhandled_exceptions_launch.py')
+        cwd = os.path.dirname(filename)
+        argv = ['localhost', str(PORT)]
+        self.run_test_breaking_into_unhandled_exceptions(
+            DebugInfo(
+                filename=filename,
+                cwd=cwd,
+                starttype='attach',
+                argv=argv,
+            ), filename)
 
 
 class PTVSDAttachExceptionLifecycleTests(ExceptionTests):
@@ -294,7 +324,6 @@ class ServerAttachModuleExceptionLifecycleTests(ExceptionTests):
             ))
 
 
-# @unittest.skip('Needs fixing')
 class PTVSDAttachModuleExceptionLifecycleTests(ExceptionTests):
     def test_breaking_into_handled_exceptions(self):
         module_name = 'mypkg_attach1'
