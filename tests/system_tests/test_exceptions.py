@@ -41,8 +41,7 @@ class ExceptionTests(LifecycleTestsBase):
             (_, req_launch_attach, _, _, _, _
              ) = lifecycle_handshake(dbg.session, debug_info.starttype,
                                      excbreakpoints=excbreakpoints,
-                                     options=options,
-                                     threads=True)
+                                     options=options)
 
             Awaitable.wait_all(req_launch_attach, stopped)
             self.assertEqual(stopped.event.body['text'], 'ArithmeticError')
@@ -81,6 +80,168 @@ class ExceptionTests(LifecycleTestsBase):
             self.new_event('terminated'),
         ])
 
+    def run_test_breaking_into_uncaught_exceptions(self, debug_info):
+        excbreakpoints = [{'filters': ['uncaught']}]
+        options = {'debugOptions': ['RedirectOutput']}
+
+        with self.start_debugging(debug_info) as dbg:
+            stopped = dbg.session.get_awaiter_for_event('stopped')
+            (_, req_launch_attach, _, _, _, _
+             ) = lifecycle_handshake(dbg.session, debug_info.starttype,
+                                     excbreakpoints=excbreakpoints,
+                                     options=options)
+
+            Awaitable.wait_all(req_launch_attach, stopped)
+            self.assertEqual(stopped.event.body['text'], 'ValueError')
+            self.assertIn("ValueError('bad'",
+                          stopped.event.body['description'])
+
+            thread_id = stopped.event.body['threadId']
+            req_exc_info = dbg.session.send_request(
+                'exceptionInfo',
+                threadId=thread_id)
+            req_exc_info.wait()
+            exc_info = req_exc_info.resp.body
+
+            self.assert_is_subset(exc_info, {
+                'exceptionId': 'ValueError',
+                'breakMode': 'unhandled',
+                'details': {
+                    'typeName': 'ValueError',
+                    # 'source': debug_info.filename
+                }
+            })
+
+            continued = dbg.session.get_awaiter_for_event('continued')
+            dbg.session.send_request(
+                'continue',
+                threadId=thread_id,
+            ).wait()
+            Awaitable.wait_all(continued)
+
+        received = list(_strip_newline_output_events(dbg.session.received))
+        self.assert_contains(received, [
+            self.new_event('continued', threadId=thread_id),
+            self.new_event('exited', exitCode=0),
+            self.new_event('terminated'),
+        ])
+
+    def run_test_breaking_into_raised_exceptions_only(self, debug_info):
+        # NOTE: for this case we will be using a unhandled exception. The
+        # behavior expected here is that it breaks once when the exception
+        # was raised but not during postmortem
+        excbreakpoints = [{'filters': ['raised']}]
+        options = {'debugOptions': ['RedirectOutput']}
+
+        with self.start_debugging(debug_info) as dbg:
+            stopped = dbg.session.get_awaiter_for_event('stopped')
+            (_, req_launch_attach, _, _, _, _
+             ) = lifecycle_handshake(dbg.session, debug_info.starttype,
+                                     excbreakpoints=excbreakpoints,
+                                     options=options)
+
+            Awaitable.wait_all(req_launch_attach, stopped)
+            self.assertEqual(stopped.event.body['text'], 'ValueError')
+            self.assertIn("ValueError('bad'",
+                          stopped.event.body['description'])
+
+            thread_id = stopped.event.body['threadId']
+            req_exc_info = dbg.session.send_request(
+                'exceptionInfo',
+                threadId=thread_id)
+            req_exc_info.wait()
+            exc_info = req_exc_info.resp.body
+
+            self.assert_is_subset(exc_info, {
+                'exceptionId': 'ValueError',
+                'breakMode': 'always',
+                'details': {
+                    'typeName': 'ValueError',
+                    # 'source': debug_info.filename
+                }
+            })
+
+            continued = dbg.session.get_awaiter_for_event('continued')
+            dbg.session.send_request(
+                'continue',
+                threadId=thread_id,
+            ).wait()
+            Awaitable.wait_all(continued)
+
+        received = list(_strip_newline_output_events(dbg.session.received))
+        self.assert_contains(received, [
+            self.new_event('continued', threadId=thread_id),
+            self.new_event('exited', exitCode=0),
+            self.new_event('terminated'),
+        ])
+
+    def run_test_breaking_into_raised_and_uncaught_exceptions(
+        self, debug_info):
+        excbreakpoints = [{'filters': ['raised', 'uncaught']}]
+        options = {'debugOptions': ['RedirectOutput']}
+
+        expected = {
+            'exceptionId': 'ValueError',
+            'breakMode': 'always',
+            'details': {
+                'typeName': 'ValueError',
+                # 'source': debug_info.filename
+            }
+        }
+
+        with self.start_debugging(debug_info) as dbg:
+            stopped = dbg.session.get_awaiter_for_event('stopped')
+            (_, req_launch_attach, _, _, _, _
+             ) = lifecycle_handshake(dbg.session, debug_info.starttype,
+                                     excbreakpoints=excbreakpoints,
+                                     options=options)
+
+            Awaitable.wait_all(req_launch_attach, stopped)
+            self.assertEqual(stopped.event.body['text'], 'ValueError')
+            self.assertIn("ValueError('bad'",
+                          stopped.event.body['description'])
+
+            thread_id = stopped.event.body['threadId']
+            req_exc_info = dbg.session.send_request(
+                'exceptionInfo',
+                threadId=thread_id)
+            req_exc_info.wait()
+            self.assert_is_subset(req_exc_info.resp.body, expected)
+
+            stopped2 = dbg.session.get_awaiter_for_event('stopped')
+            continued = dbg.session.get_awaiter_for_event('continued')
+            dbg.session.send_request(
+                'continue',
+                threadId=thread_id,
+            ).wait()
+            Awaitable.wait_all(stopped2, continued)
+
+            # Second hit on uncaught exception
+            self.assertEqual(stopped2.event.body['text'], 'ValueError')
+            self.assertIn("ValueError('bad'",
+                          stopped2.event.body['description'])
+            req_exc_info2 = dbg.session.send_request(
+                'exceptionInfo',
+                threadId=thread_id,
+            )
+            req_exc_info2.wait()
+            self.assert_is_subset(req_exc_info2.resp.body, expected)
+
+            continued2 = dbg.session.get_awaiter_for_event('continued')
+            dbg.session.send_request(
+                'continue',
+                threadId=thread_id,
+            ).wait()
+            Awaitable.wait_all(continued2)
+
+        received = list(_strip_newline_output_events(dbg.session.received))
+        self.assert_contains(received, [
+            self.new_event('continued', threadId=thread_id),
+            self.new_event('continued', threadId=thread_id),  # expect 2 events
+            self.new_event('exited', exitCode=0),
+            self.new_event('terminated'),
+        ])
+
 
 class LaunchFileTests(ExceptionTests):
 
@@ -94,6 +255,24 @@ class LaunchFileTests(ExceptionTests):
         filename = TEST_FILES.resolve('handled_exceptions_launch.py')
         cwd = os.path.dirname(filename)
         self.run_test_breaking_into_handled_exceptions(
+            DebugInfo(filename=filename, cwd=cwd))
+
+    def test_breaking_into_uncaught_exceptions(self):
+        filename = TEST_FILES.resolve('unhandled_exceptions_launch.py')
+        cwd = os.path.dirname(filename)
+        self.run_test_breaking_into_uncaught_exceptions(
+            DebugInfo(filename=filename, cwd=cwd))
+
+    def test_breaking_into_raised_exceptions_only(self):
+        filename = TEST_FILES.resolve('unhandled_exceptions_launch.py')
+        cwd = os.path.dirname(filename)
+        self.run_test_breaking_into_raised_exceptions_only(
+            DebugInfo(filename=filename, cwd=cwd))
+
+    def test_breaking_into_raised_and_uncaught_exceptions(self):
+        filename = TEST_FILES.resolve('unhandled_exceptions_launch.py')
+        cwd = os.path.dirname(filename)
+        self.run_test_breaking_into_raised_and_uncaught_exceptions(
             DebugInfo(filename=filename, cwd=cwd))
 
 
@@ -111,6 +290,27 @@ class LaunchModuleExceptionLifecycleTests(ExceptionTests):
         env = TEST_FILES.env_with_py_path()
         cwd = TEST_FILES.parent.root
         self.run_test_not_breaking_into_handled_exceptions(
+            DebugInfo(modulename=module_name, env=env, cwd=cwd))
+
+    def test_breaking_into_uncaught_exceptions(self):
+        module_name = 'mypkg_launch_unhandled'
+        env = TEST_FILES.env_with_py_path()
+        cwd = TEST_FILES.parent.root
+        self.run_test_breaking_into_uncaught_exceptions(
+            DebugInfo(modulename=module_name, env=env, cwd=cwd))
+
+    def test_breaking_into_raised_exceptions_only(self):
+        module_name = 'mypkg_launch_unhandled'
+        env = TEST_FILES.env_with_py_path()
+        cwd = TEST_FILES.parent.root
+        self.run_test_breaking_into_raised_exceptions_only(
+            DebugInfo(modulename=module_name, env=env, cwd=cwd))
+
+    def test_breaking_into_raised_and_uncaught_exceptions(self):
+        module_name = 'mypkg_launch_unhandled'
+        env = TEST_FILES.env_with_py_path()
+        cwd = TEST_FILES.parent.root
+        self.run_test_breaking_into_raised_and_uncaught_exceptions(
             DebugInfo(modulename=module_name, env=env, cwd=cwd))
 
 
@@ -140,6 +340,42 @@ class ServerAttachExceptionLifecycleTests(ExceptionTests):
                 argv=argv,
             ))
 
+    def test_breaking_into_uncaught_exceptions(self):
+        filename = TEST_FILES.resolve('unhandled_exceptions_launch.py')
+        cwd = os.path.dirname(filename)
+        argv = ['localhost', str(PORT)]
+        self.run_test_breaking_into_uncaught_exceptions(
+            DebugInfo(
+                filename=filename,
+                cwd=cwd,
+                starttype='attach',
+                argv=argv,
+            ))
+
+    def test_breaking_into_raised_exceptions_only(self):
+        filename = TEST_FILES.resolve('unhandled_exceptions_launch.py')
+        cwd = os.path.dirname(filename)
+        argv = ['localhost', str(PORT)]
+        self.run_test_breaking_into_raised_exceptions_only(
+            DebugInfo(
+                filename=filename,
+                cwd=cwd,
+                starttype='attach',
+                argv=argv,
+            ))
+
+    def test_breaking_into_raised_and_uncaught_exceptions(self):
+        filename = TEST_FILES.resolve('unhandled_exceptions_launch.py')
+        cwd = os.path.dirname(filename)
+        argv = ['localhost', str(PORT)]
+        self.run_test_breaking_into_raised_and_uncaught_exceptions(
+            DebugInfo(
+                filename=filename,
+                cwd=cwd,
+                starttype='attach',
+                argv=argv,
+            ))
+
 
 class PTVSDAttachExceptionLifecycleTests(ExceptionTests):
 
@@ -162,6 +398,47 @@ class PTVSDAttachExceptionLifecycleTests(ExceptionTests):
         cwd = os.path.dirname(filename)
         argv = ['localhost', str(PORT)]
         self.run_test_not_breaking_into_handled_exceptions(
+            DebugInfo(
+                filename=filename,
+                attachtype='import',
+                cwd=cwd,
+                starttype='attach',
+                argv=argv,
+            ))
+
+    def test_breaking_into_uncaught_exceptions(self):
+        filename = TEST_FILES.resolve('unhandled_exceptions_attach.py')
+        cwd = os.path.dirname(filename)
+        argv = ['localhost', str(PORT)]
+        self.run_test_breaking_into_uncaught_exceptions(
+            DebugInfo(
+                filename=filename,
+                attachtype='import',
+                cwd=cwd,
+                starttype='attach',
+                argv=argv,
+            ))
+
+    @unittest.skip('Needs fixing in #609')
+    def test_breaking_into_raised_exceptions_only(self):
+        filename = TEST_FILES.resolve('unhandled_exceptions_attach.py')
+        cwd = os.path.dirname(filename)
+        argv = ['localhost', str(PORT)]
+        self.run_test_breaking_into_raised_exceptions_only(
+            DebugInfo(
+                filename=filename,
+                attachtype='import',
+                cwd=cwd,
+                starttype='attach',
+                argv=argv,
+            ))
+
+    @unittest.skip('Needs fixing in #609')
+    def test_breaking_into_raised_and_uncaught_exceptions(self):
+        filename = TEST_FILES.resolve('unhandled_exceptions_attach.py')
+        cwd = os.path.dirname(filename)
+        argv = ['localhost', str(PORT)]
+        self.run_test_breaking_into_raised_and_uncaught_exceptions(
             DebugInfo(
                 filename=filename,
                 attachtype='import',
@@ -201,8 +478,49 @@ class ServerAttachModuleExceptionLifecycleTests(ExceptionTests):
                 starttype='attach',
             ))
 
+    def test_breaking_into_uncaught_exceptions(self):
+        module_name = 'mypkg_launch_unhandled'
+        env = TEST_FILES.env_with_py_path()
+        cwd = TEST_FILES.root
+        argv = ['localhost', str(PORT)]
+        self.run_test_breaking_into_uncaught_exceptions(
+            DebugInfo(
+                modulename=module_name,
+                env=env,
+                cwd=cwd,
+                argv=argv,
+                starttype='attach',
+            ))
 
-@unittest.skip('Needs fixing')
+    def test_breaking_into_raised_exceptions_only(self):
+        module_name = 'mypkg_launch_unhandled'
+        env = TEST_FILES.env_with_py_path()
+        cwd = TEST_FILES.root
+        argv = ['localhost', str(PORT)]
+        self.run_test_breaking_into_raised_exceptions_only(
+            DebugInfo(
+                modulename=module_name,
+                env=env,
+                cwd=cwd,
+                argv=argv,
+                starttype='attach',
+            ))
+
+    def test_breaking_into_raised_and_uncaught_exceptions(self):
+        module_name = 'mypkg_launch_unhandled'
+        env = TEST_FILES.env_with_py_path()
+        cwd = TEST_FILES.root
+        argv = ['localhost', str(PORT)]
+        self.run_test_breaking_into_raised_and_uncaught_exceptions(
+            DebugInfo(
+                modulename=module_name,
+                env=env,
+                cwd=cwd,
+                argv=argv,
+                starttype='attach',
+            ))
+
+
 class PTVSDAttachModuleExceptionLifecycleTests(ExceptionTests):
 
     def test_breaking_into_handled_exceptions(self):
@@ -226,6 +544,51 @@ class PTVSDAttachModuleExceptionLifecycleTests(ExceptionTests):
         cwd = TEST_FILES.root
         argv = ['localhost', str(PORT)]
         self.run_test_not_breaking_into_handled_exceptions(
+            DebugInfo(
+                modulename=module_name,
+                env=env,
+                cwd=cwd,
+                argv=argv,
+                attachtype='import',
+                starttype='attach',
+            ))
+
+    def test_breaking_into_uncaught_exceptions(self):
+        module_name = 'mypkg_attach_unhandled'
+        env = TEST_FILES.env_with_py_path()
+        cwd = TEST_FILES.root
+        argv = ['localhost', str(PORT)]
+        self.run_test_breaking_into_uncaught_exceptions(
+            DebugInfo(
+                modulename=module_name,
+                env=env,
+                cwd=cwd,
+                argv=argv,
+                attachtype='import',
+                starttype='attach',
+            ))
+
+    def test_breaking_into_raised_exceptions_only(self):
+        module_name = 'mypkg_attach_unhandled'
+        env = TEST_FILES.env_with_py_path()
+        cwd = TEST_FILES.root
+        argv = ['localhost', str(PORT)]
+        self.run_test_breaking_into_raised_exceptions_only(
+            DebugInfo(
+                modulename=module_name,
+                env=env,
+                cwd=cwd,
+                argv=argv,
+                attachtype='import',
+                starttype='attach',
+            ))
+
+    def test_breaking_into_raised_and_uncaught_exceptions(self):
+        module_name = 'mypkg_attach_unhandled'
+        env = TEST_FILES.env_with_py_path()
+        cwd = TEST_FILES.root
+        argv = ['localhost', str(PORT)]
+        self.run_test_breaking_into_raised_and_uncaught_exceptions(
             DebugInfo(
                 modulename=module_name,
                 env=env,
