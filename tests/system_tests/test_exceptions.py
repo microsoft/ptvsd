@@ -2,7 +2,7 @@ import os
 import os.path
 import unittest
 
-from tests.helpers.debugsession import Awaitable, DebugSessionConnection
+from tests.helpers.debugsession import Awaitable
 from tests.helpers.resource import TestResources
 from . import (
     _strip_newline_output_events,
@@ -314,20 +314,16 @@ class LaunchFileTests(ExceptionTests):
 
 
     def test_breaking_into_raised_exceptions_only(self):
-        DebugSessionConnection.VERBOSE = True
         filename = TEST_FILES.resolve('unhandled_exceptions_launch.py')
         cwd = os.path.dirname(filename)
         self.run_test_breaking_into_raised_exceptions_only(
             DebugInfo(filename=filename, cwd=cwd))
-        DebugSessionConnection.VERBOSE = False
 
     def test_breaking_into_raised_and_uncaught_exceptions(self):
-        DebugSessionConnection.VERBOSE = True
         filename = TEST_FILES.resolve('unhandled_exceptions_launch.py')
         cwd = os.path.dirname(filename)
         self.run_test_breaking_into_raised_and_uncaught_exceptions(
             DebugInfo(filename=filename, cwd=cwd))
-        DebugSessionConnection.VERBOSE = False
 
 
 class LaunchModuleExceptionLifecycleTests(ExceptionTests):
@@ -347,31 +343,25 @@ class LaunchModuleExceptionLifecycleTests(ExceptionTests):
             DebugInfo(modulename=module_name, env=env, cwd=cwd))
 
     def test_breaking_into_uncaught_exceptions(self):
-        DebugSessionConnection.VERBOSE = True
         module_name = 'mypkg_launch_unhandled'
         env = TEST_FILES.env_with_py_path()
         cwd = TEST_FILES.parent.root
         self.run_test_breaking_into_uncaught_exceptions(
             DebugInfo(modulename=module_name, env=env, cwd=cwd))
-        DebugSessionConnection.VERBOSE = False
 
     def test_breaking_into_raised_exceptions_only(self):
-        DebugSessionConnection.VERBOSE = True
         module_name = 'mypkg_launch_unhandled'
         env = TEST_FILES.env_with_py_path()
         cwd = TEST_FILES.parent.root
         self.run_test_breaking_into_raised_exceptions_only(
             DebugInfo(modulename=module_name, env=env, cwd=cwd))
-        DebugSessionConnection.VERBOSE = False
 
     def test_breaking_into_raised_and_uncaught_exceptions(self):
-        DebugSessionConnection.VERBOSE = True
         module_name = 'mypkg_launch_unhandled'
         env = TEST_FILES.env_with_py_path()
         cwd = TEST_FILES.parent.root
         self.run_test_breaking_into_raised_and_uncaught_exceptions(
             DebugInfo(modulename=module_name, env=env, cwd=cwd))
-        DebugSessionConnection.VERBOSE = False
 
 
 class ServerAttachExceptionLifecycleTests(ExceptionTests):
