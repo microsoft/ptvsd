@@ -78,8 +78,8 @@ def recv_as_read(sock, verbose=False):
     def read(numbytes, _recv=sock.recv):
         with convert_eof():
             data = _recv(numbytes)
-            if verbose:
-                print(b'DATA : ' + data)
+            #if verbose:
+            #    print(b'DATA : ' + data)
             return data
     return read
 
