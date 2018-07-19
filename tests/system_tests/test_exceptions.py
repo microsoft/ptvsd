@@ -167,12 +167,12 @@ class ExceptionTests(LifecycleTestsBase):
             self.new_event('exited', exitCode=0),
             self.new_event('terminated'),
         ])
-        DebugSessionConnection.VERBOSE = False
+        # DebugSessionConnection.VERBOSE = False
 
 
 
     def run_test_breaking_into_raised_exceptions_only(self, debug_info):
-        DebugSessionConnection.VERBOSE = True
+        # DebugSessionConnection.VERBOSE = True
         # NOTE: for this case we will be using a unhandled exception. The
         # behavior expected here is that it breaks once when the exception
         # was raised but not during postmortem
@@ -226,11 +226,11 @@ class ExceptionTests(LifecycleTestsBase):
             self.new_event('exited', exitCode=0),
             self.new_event('terminated'),
         ])
-        DebugSessionConnection.VERBOSE = False
+        # DebugSessionConnection.VERBOSE = False
 
     def run_test_breaking_into_raised_and_uncaught_exceptions(
         self, debug_info):
-        DebugSessionConnection.VERBOSE = True
+        # DebugSessionConnection.VERBOSE = True
         excbreakpoints = [{'filters': ['raised', 'uncaught']}]
         options = {'debugOptions': ['RedirectOutput']}
 
@@ -301,7 +301,7 @@ class ExceptionTests(LifecycleTestsBase):
             self.new_event('exited', exitCode=0),
             self.new_event('terminated'),
         ])
-        DebugSessionConnection.VERBOSE = False
+        # DebugSessionConnection.VERBOSE = False
 
 
 class LaunchFileTests(ExceptionTests):
