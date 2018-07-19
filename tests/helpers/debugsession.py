@@ -86,9 +86,9 @@ class DebugSessionConnection(Closeable):
         def stop():
             return self.closed
         read = recv_as_read(self._sock)
-        for msg, _, _ in read_messages(read, stop=stop):
+        for msg, h, r in read_messages(read, stop=stop):
             if self.VERBOSE:
-                print(repr(msg))
+                print(repr((msg, h, r)))
             yield parse_message(msg)
 
     def send(self, req):

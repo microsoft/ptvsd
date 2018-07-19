@@ -31,9 +31,9 @@ from xml.sax import SAXParseException
 import _pydevd_bundle.pydevd_comm as pydevd_comm  # noqa
 import _pydevd_bundle.pydevd_extension_api as pydevd_extapi  # noqa
 import _pydevd_bundle.pydevd_extension_utils as pydevd_extutil  # noqa
-import _pydevd_bundle.pydevd_frame as pydevd_frame # noqa
+import _pydevd_bundle.pydevd_frame as pydevd_frame  # noqa
 #from _pydevd_bundle.pydevd_comm import pydevd_log
-from _pydevd_bundle.pydevd_additional_thread_info import PyDBAdditionalThreadInfo # noqa
+from _pydevd_bundle.pydevd_additional_thread_info import PyDBAdditionalThreadInfo  # noqa
 
 from ptvsd import _util
 import ptvsd.ipcjson as ipcjson  # noqa
@@ -653,6 +653,7 @@ class InternalsFilter(object):
     """Identifies debugger internal artifacts.
     """
     # TODO: Move the internal thread identifier here
+
     def __init__(self):
         if platform.system() == 'Windows':
             self._init_windows()
@@ -798,7 +799,7 @@ def _parse_debug_options(opts):
             continue
 
     if 'CLIENT_OS_TYPE' not in options:
-        options['CLIENT_OS_TYPE'] = 'WINDOWS' if platform.system() == 'Windows' else 'UNIX' # noqa
+        options['CLIENT_OS_TYPE'] = 'WINDOWS' if platform.system() == 'Windows' else 'UNIX'  # noqa
 
     return options
 
@@ -1384,7 +1385,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
 
     def _apply_code_stepping_settings(self):
         self.send_event('output', category='stdout',
-            output='STEPPING: %s' % self.debug_options)
+                        output='STEPPING: %s' % self.debug_options)
         if self._is_just_my_code_stepping_enabled():
             vendored_pydevd = os.path.sep + \
                               os.path.join('ptvsd', '_vendored', 'pydevd')
@@ -1406,9 +1407,10 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
                 if not is_stdlib and len(path) > 0:
                     project_dirs.append(path)
             self.send_event('output', category='stdout',
-                output='STDLIB : ' + '\t'.join(STDLIB_PATH_PREFIXES))
+                            output='STDLIB : ' +
+                            '\t'.join(STDLIB_PATH_PREFIXES))
             self.send_event('output', category='stdout',
-                output='PR ROOT: ' + '\t'.join(project_dirs))
+                            output='PR ROOT: ' + '\t'.join(project_dirs))
             self.pydevd_request(pydevd_comm.CMD_SET_PROJECT_ROOTS,
                                 '\t'.join(project_dirs))
 
@@ -1437,7 +1439,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
 
     def _send_cmd_version_command(self):
         cmd = pydevd_comm.CMD_VERSION
-        default_os_type = 'WINDOWS' if platform.system() == 'Windows' else 'UNIX' # noqa
+        default_os_type = 'WINDOWS' if platform.system() == 'Windows' else 'UNIX'  # noqa
         client_os_type = self.debug_options.get(
             'CLIENT_OS_TYPE', default_os_type)
         os_id = client_os_type
@@ -2096,12 +2098,12 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
                 condition = None
                 expressions = re.findall('\{.*?\}', logMessage)
                 if len(expressions) == 0:
-                    expression = '{}'.format(repr(logMessage)) # noqa
+                    expression = '{}'.format(repr(logMessage))  # noqa
                 else:
-                    raw_text = reduce(lambda a, b: a.replace(b, '{}'), expressions, logMessage) # noqa
+                    raw_text = reduce(lambda a, b: a.replace(b, '{}'), expressions, logMessage)  # noqa
                     raw_text = raw_text.replace('"', '\\"')
-                    expression_list = ', '.join([s.strip('{').strip('}').strip() for s in expressions]) # noqa
-                    expression = '"{}".format({})'.format(raw_text, expression_list) # noqa
+                    expression_list = ', '.join([s.strip('{').strip('}').strip() for s in expressions])  # noqa
+                    expression = '"{}".format({})'.format(raw_text, expression_list)  # noqa
 
             msg = msgfmt.format(vsc_bpid, bp_type, path, line, condition,
                                 expression, hit_condition, is_logpoint)
@@ -2361,7 +2363,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
                     source = None
             except Exception:
                 self.send_event('output', category='stdout',
-                    output='BAD FILE: %s' % unquote(f['file']))
+                                output='BAD FILE: %s' % unquote(f['file']))
                 text = 'BaseException'
                 description = 'exception: no description'
                 stack = None
