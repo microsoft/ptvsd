@@ -21,7 +21,11 @@ class UnsupportedMessageTypeError(ProtocolMessageError): pass  # noqa
 def parse_message(msg):
     """Return a message object for the given "msg" data."""
     if type(msg) is str or type(msg) is unicode:
-        data = json.loads(msg)
+        try:
+            data = json.loads(msg)
+        except Exception:
+            print('BAD JSON: %s' % msg)
+            raise
     elif isinstance(msg, bytes):
         data = json.loads(msg.decode('utf-8'))
     elif type(msg) is RawMessage:
