@@ -2,7 +2,7 @@ import os
 import os.path
 import unittest
 
-from tests.helpers.debugsession import Awaitable, DebugSessionConnection
+from tests.helpers.debugsession import Awaitable
 from tests.helpers.resource import TestResources
 from . import (
     _strip_newline_output_events,
@@ -167,12 +167,10 @@ class ExceptionTests(LifecycleTestsBase):
             self.new_event('exited', exitCode=0),
             self.new_event('terminated'),
         ])
-        # DebugSessionConnection.VERBOSE = False
 
 
 
     def run_test_breaking_into_raised_exceptions_only(self, debug_info):
-        # DebugSessionConnection.VERBOSE = True
         # NOTE: for this case we will be using a unhandled exception. The
         # behavior expected here is that it breaks once when the exception
         # was raised but not during postmortem
@@ -215,22 +213,14 @@ class ExceptionTests(LifecycleTestsBase):
             Awaitable.wait_all(continued)
 
         received = list(_strip_newline_output_events(dbg.session.received))
-        op = list(s for s in received
-                  if hasattr(s, 'event') and s.event == 'output' and
-                  s.body['category'] == 'stdout')
-        print('')
-        for r in op:
-            print(r.body['output'])
         self.assert_contains(received, [
             self.new_event('continued', threadId=thread_id),
             self.new_event('exited', exitCode=0),
             self.new_event('terminated'),
         ])
-        # DebugSessionConnection.VERBOSE = False
 
     def run_test_breaking_into_raised_and_uncaught_exceptions(
         self, debug_info):
-        # DebugSessionConnection.VERBOSE = True
         excbreakpoints = [{'filters': ['raised', 'uncaught']}]
         options = {'debugOptions': ['RedirectOutput']}
 
@@ -289,19 +279,12 @@ class ExceptionTests(LifecycleTestsBase):
             Awaitable.wait_all(continued2)
 
         received = list(_strip_newline_output_events(dbg.session.received))
-        op = list(s for s in received
-                  if hasattr(s, 'event') and s.event == 'output' and
-                  s.body['category'] == 'stdout')
-        print('')
-        for r in op:
-            print(r.body['output'])
         self.assert_contains(received, [
             self.new_event('continued', threadId=thread_id),
             self.new_event('continued', threadId=thread_id),  # expect 2 events
             self.new_event('exited', exitCode=0),
             self.new_event('terminated'),
         ])
-        # DebugSessionConnection.VERBOSE = False
 
 
 class LaunchFileTests(ExceptionTests):
