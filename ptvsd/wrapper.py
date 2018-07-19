@@ -1383,6 +1383,8 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         return not dbg_stdlib
 
     def _apply_code_stepping_settings(self):
+        self.send_event('output', category='stdout',
+            output='STEPPING: %s' % self.debug_options)
         if self._is_just_my_code_stepping_enabled():
             vendored_pydevd = os.path.sep + \
                               os.path.join('ptvsd', '_vendored', 'pydevd')
@@ -1403,6 +1405,10 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
 
                 if not is_stdlib and len(path) > 0:
                     project_dirs.append(path)
+            self.send_event('output', category='stdout',
+                output='STDLIB : ' + '\t'.join(STDLIB_PATH_PREFIXES))
+            self.send_event('output', category='stdout',
+                output='PR ROOT: ' + '\t'.join(project_dirs))
             self.pydevd_request(pydevd_comm.CMD_SET_PROJECT_ROOTS,
                                 '\t'.join(project_dirs))
 
@@ -2354,6 +2360,8 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
                 if self.internals_filter.is_internal_path(source):
                     source = None
             except Exception:
+                self.send_event('output', category='stdout',
+                    output='BAD FILE: %s' % unquote(f['file']))
                 text = 'BaseException'
                 description = 'exception: no description'
                 stack = None

@@ -213,6 +213,11 @@ class ExceptionTests(LifecycleTestsBase):
             Awaitable.wait_all(continued)
 
         received = list(_strip_newline_output_events(dbg.session.received))
+        op = list(s for s in received 
+            if hasattr(s, 'event') and s.event == 'output' and s.body['category'] == 'stdout')
+        print('')
+        for r in op:
+            print(r.body['output'])
         self.assert_contains(received, [
             self.new_event('continued', threadId=thread_id),
             self.new_event('exited', exitCode=0),
@@ -279,6 +284,11 @@ class ExceptionTests(LifecycleTestsBase):
             Awaitable.wait_all(continued2)
 
         received = list(_strip_newline_output_events(dbg.session.received))
+        op = list(s for s in received 
+            if hasattr(s, 'event') and s.event == 'output' and s.body['category'] == 'stdout')
+        print('')
+        for r in op:
+            print(r.body['output'])
         self.assert_contains(received, [
             self.new_event('continued', threadId=thread_id),
             self.new_event('continued', threadId=thread_id),  # expect 2 events
