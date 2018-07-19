@@ -11,6 +11,7 @@ import subprocess
 import sys
 import threading
 import time
+import traceback
 
 from _pydev_bundle import pydev_localhost
 
@@ -68,6 +69,9 @@ CMD_SHOW_CONSOLE = 142
 CMD_GET_ARRAY = 143
 CMD_STEP_INTO_MY_CODE = 144
 CMD_GET_CONCURRENCY_EVENT = 145
+
+CMD_GET_THREAD_STACK = 152
+CMD_THREAD_DUMP_TO_STDERR = 153  # This is mostly for unit-tests to diagnose errors on ci.
 
 CMD_REDIRECT_OUTPUT = 200
 CMD_GET_NEXT_STATEMENT_TARGETS = 201
@@ -140,11 +144,11 @@ class ReaderThread(threading.Thread):
     def set_timeout(self, timeout):
         self.TIMEOUT = timeout
 
-    def get_next_message(self, context_messag):
+    def get_next_message(self, context_message):
         try:
             msg = self._queue.get(block=True, timeout=self.TIMEOUT)
         except:
-            raise AssertionError('No message was written in %s seconds. Error message:\n%s' % (self.TIMEOUT, context_messag,))
+            raise AssertionError('No message was written in %s seconds. Error message:\n%s' % (self.TIMEOUT, context_message,))
         else:
             frame = sys._getframe().f_back
             frame_info = ''
@@ -156,7 +160,7 @@ class ReaderThread(threading.Thread):
                 frame_info += stack_msg
                 frame = frame.f_back
             frame = None
-            sys.stdout.write('Message returned in get_next_message(): %s --  ctx: %s, asked at:\n%s\n' % (unquote_plus(unquote_plus(msg)), context_messag, frame_info))
+            sys.stdout.write('Message returned in get_next_message(): %s --  ctx: %s, asked at:\n%s\n' % (unquote_plus(unquote_plus(msg)), context_message, frame_info))
         return msg
 
     def run(self):
@@ -289,6 +293,7 @@ class DebuggerRunner(object):
             # finish successfully).
             initial_time = time.time()
             shown_intermediate = False
+            dumped_threads = False
             while True:
                 if process.poll() is not None:
                     break
@@ -302,6 +307,17 @@ class DebuggerRunner(object):
                             if not shown_intermediate and (time.time() - initial_time > 10):
                                 print('Warning: writer thread exited and process still did not (%.2fs seconds elapsed).' % (time.time() - initial_time,))
                                 shown_intermediate = True
+                                
+                            if time.time() - initial_time > 15:
+                                if not dumped_threads:
+                                    dumped_threads = True
+                                    # 15 seconds elapsed and it still didn't finish. Ask for a thread dump
+                                    # (we'll be able to see it later on the test output stderr).
+                                    try:
+                                        writer_thread.write_dump_threads()
+                                    except:
+                                        traceback.print_exc()
+
                                 
                             if time.time() - initial_time > 20:
                                 process.kill()
@@ -647,6 +663,9 @@ class AbstractWriterThread(threading.Thread):
         self.log.append('write_add_breakpoint: %s line: %s func: %s' % (breakpoint_id, line, func))
         return breakpoint_id
 
+    def write_dump_threads(self):
+        self.write("%s\t%s\t" % (CMD_THREAD_DUMP_TO_STDERR, self.next_seq()))
+        
     def write_add_exception_breakpoint(self, exception):
         self.write("%s\t%s\t%s" % (CMD_ADD_EXCEPTION_BREAK, self.next_seq(), exception))
         self.log.append('write_add_exception_breakpoint: %s' % (exception,))
@@ -714,6 +733,10 @@ class AbstractWriterThread(threading.Thread):
         self.log.append('write_run_thread')
         self.write("%s\t%s\t%s" % (CMD_THREAD_RUN, self.next_seq(), thread_id,))
         
+    def write_get_thread_stack(self, thread_id):
+        self.log.append('write_get_thread_stack')
+        self.write("%s\t%s\t%s" % (CMD_GET_THREAD_STACK, self.next_seq(), thread_id,))
+        
     def write_load_source(self, filename):
         self.log.append('write_load_source')
         self.write("%s\t%s\t%s" % (CMD_LOAD_SOURCE, self.next_seq(), filename,))
@@ -751,12 +774,8 @@ class AbstractWriterThread(threading.Thread):
         return seq
         
     def wait_for_list_threads(self, seq):
-        while True: 
-            # Note: get_next_message would timeout if there's no message.
-            last = self.reader_thread.get_next_message('wait_list_threads')
-            if last.startswith('502\t%s' % (seq,)):
-                return re.findall(r'\bid=\"(\w+)\"', last)
-                
+        return self.wait_for_message(lambda msg:msg.startswith('502\t%s' % (seq,)))
+
     def wait_for_message(self, accept_message, unquote_msg=True, expect_xml=True):
         import untangle
         from io import StringIO
@@ -774,7 +793,7 @@ class AbstractWriterThread(threading.Thread):
                             xml = xml.decode('utf-8')
                         xml = untangle.parse(StringIO(xml))
                     except:
-                        import traceback;traceback.print_exc()
+                        traceback.print_exc()
                         raise AssertionError('Unable to parse:\n%s\nxml:\n%s' % (last, xml))
                     return xml.xml
                 else:
