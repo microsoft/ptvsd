@@ -73,11 +73,14 @@ def bind(address):
     return connect, remote
 
 
-def recv_as_read(sock):
+def recv_as_read(sock, verbose=False):
     """Return a wrapper ardoung sock.read that arises EOFError when closed."""
     def read(numbytes, _recv=sock.recv):
         with convert_eof():
-            return _recv(numbytes)
+            data = _recv(numbytes)
+            if verbose:
+                print(b'DATA : ' + data)
+            return data
     return read
 
 
