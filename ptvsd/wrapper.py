@@ -1409,12 +1409,6 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
 
     def _is_stdlib(self, filepath):
         filepath = os.path.normcase(os.path.normpath(filepath))
-        content = 'should debug: %s ' % filepath
-        self.send_event('output', category='stdout', output=content)
-        self.send_event('output', category='stdout',
-                        output=str(STDLIB_PATH_PREFIXES))
-        self.send_event('output', category='stdout',
-                        output=str(NORM_PTVSD_DIR_PATH))
         for prefix in STDLIB_PATH_PREFIXES:
             if prefix != '' and filepath.startswith(prefix):
                 return True
