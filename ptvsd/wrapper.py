@@ -1408,6 +1408,10 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
                                 '\t'.join(project_dirs))
 
     def _is_stdlib(self, filepath):
+        self.send_event('output', category='stdout',
+                        output=str(STDLIB_PATH_PREFIXES))
+        self.send_event('output', category='stdout',
+                        output=str(NORM_PTVSD_DIR_PATH))
         for prefix in STDLIB_PATH_PREFIXES:
             if prefix != '' and filepath.startswith(prefix):
                 return True
@@ -2294,6 +2298,8 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         xframe = xframes[0]
         filepath = unquote(xframe['file'])
         if reason in STEP_REASONS or reason in EXCEPTION_REASONS:
+            content = 'should debug: %s ' % filepath
+            self.send_event('output', category='stdout', output=content)
             if not self._should_debug(filepath):
                 self.pydevd_notify(pydevd_comm.CMD_THREAD_RUN, pyd_tid)
                 return
