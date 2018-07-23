@@ -1,4 +1,4 @@
 import sys
 
-raise ValueError('bad')
+raise ArithmeticError('Hello')
 sys.stdout.write('end')
