@@ -81,17 +81,6 @@ class FlaskBreakpointTests(LifecycleTestsBase):
             )
 
             # wait for flask rendering thread to exit
-            count = 0
-            while count < 3:
-                count += 1
-                thread_event = session.get_awaiter_for_event('thread')
-                Awaitable.wait_all(thread_event)
-                events = self.find_events(
-                        session.received, 'thread', {
-                            'reason': 'exited',
-                            'threadId': tid})
-                if len(events) > 0:
-                    break
             web_client_thread.join(timeout=0.1)
 
             # shutdown to web server
