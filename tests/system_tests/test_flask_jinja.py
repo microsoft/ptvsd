@@ -132,7 +132,7 @@ class LaunchFileTests(FlaskBreakpointTests):
         self.run_test_with_break_points(
             DebugInfo(
                 modulename='flask',
-                argv=['run', '--no-debugger', '--no-reload'],
+                argv=['run', '--no-debugger', '--no-reload', '--with-threads'],
                 env={
                     'FLASK_APP': 'app.py'
                 },
@@ -147,7 +147,7 @@ class LaunchFileTests(FlaskBreakpointTests):
         self.run_test_with_break_points(
             DebugInfo(
                 modulename='flask',
-                argv=['run', '--no-debugger', '--no-reload'],
+                argv=['run', '--no-debugger', '--no-reload', '--with-threads'],
                 env={
                     'FLASK_APP': 'app.py'
                 },
