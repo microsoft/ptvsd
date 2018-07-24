@@ -279,7 +279,7 @@ class BreakpointTests(LifecycleTestsBase):
 class LaunchFileTests(BreakpointTests):
 
     def test_with_break_points(self):
-        filename = TEST_FILES.resolve('app.py')
+        filename = TEST_FILES.resolve('output.py')
         cwd = os.path.dirname(filename)
         self.run_test_with_break_points(
             DebugInfo(filename=filename, cwd=cwd),
