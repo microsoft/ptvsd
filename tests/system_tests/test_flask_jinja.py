@@ -135,7 +135,9 @@ class LaunchFileTests(FlaskBreakpointTests):
                 argv=['run', '--no-debugger', '--no-reload', '--with-threads'],
                 env={
                     'FLASK_APP': 'app.py',
-                    'FLASK_ENV': 'production'
+                    'FLASK_ENV': 'production',
+                    'LC_ALL': 'C.UTF-8',
+                    'LANG': 'C.UTF-8'
                 },
                 cwd=cwd),
             filename, bp_line=10, bp_module='home'
@@ -151,7 +153,9 @@ class LaunchFileTests(FlaskBreakpointTests):
                 argv=['run', '--no-debugger', '--no-reload', '--with-threads'],
                 env={
                     'FLASK_APP': 'app.py',
-                    'FLASK_ENV': 'production'
+                    'FLASK_ENV': 'production',
+                    'LC_ALL': 'C.UTF-8',
+                    'LANG': 'C.UTF-8'
                 },
                 cwd=cwd),
             template, bp_line=8, bp_module='template'
