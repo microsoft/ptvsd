@@ -12,3 +12,13 @@ def home():
         title='Hello',
         content='Flask-Jinja-Test'
     )
+
+
+@app.route("/exit")
+def exitapp():
+    from flask import request
+    func = request.environ.get('werkzeug.server.shutdown')
+    if func is None:
+        raise RuntimeError('No shutdown')
+    func()
+    return 'Done'

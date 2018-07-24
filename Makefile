@@ -12,6 +12,7 @@ depends:
 	$(PYTHON) -m pip install flake8_formatter_junit_xml
 	$(PYTHON) -m pip install unittest-xml-reporting
 	$(PYTHON) -m pip install coverage
+	$(PYTHON) -m pip install flask
 
 .PHONY: lint
 lint:  ## Lint the Python source code.
