@@ -12,3 +12,10 @@ def get_web_string(path, obj):
     if obj is not None:
         obj['content'] = data
     return data
+
+
+def get_web_string_no_error(path, obj):
+    try:
+        return get_web_string(path, obj)
+    except Exception:
+        pass
