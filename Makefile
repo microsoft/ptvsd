@@ -14,6 +14,7 @@ depends:
 	$(PYTHON) -m pip install coverage
 	$(PYTHON) -m pip install requests
 	$(PYTHON) -m pip install flask
+	$(PYTHON) -m pip install django
 
 .PHONY: lint
 lint:  ## Lint the Python source code.
