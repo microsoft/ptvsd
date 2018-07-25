@@ -78,7 +78,7 @@ def bad_route_unhandled(request):
 
 
 def exit_app(request):
-    os.kill(os.getpid(), signal.SIGINT)
+    os.kill(os.getpid(), signal.SIGTERM)
     return HttpResponse('Done')
 
 
