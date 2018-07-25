@@ -17,10 +17,13 @@ TEST_FILES = TestResources.from_module(__name__)
 re_link = r"(http(s|)\:\/\/[\w\.]*\:[0-9]{4,6}(\/|))"
 
 
-class FlaskBreakpointTests(LifecycleTestsBase):
-    def run_test_with_break_points(self, debug_info,
-                                   bp_filename, bp_line,
-                                   bp_name, bp_var_value):
+class WebFrameworkTests(LifecycleTestsBase):
+    def run_test_with_break_points(self, debug_info, **kwargs):
+        bp_filename = kwargs.pop('bp_filename')
+        bp_line = kwargs.pop('bp_line')
+        bp_name = kwargs.pop('bp_name')
+        bp_var_value = kwargs.pop('bp_var_value')
+        framework = kwargs.pop('framework', 'Django')
         if (debug_info.starttype == 'attach'):
             pathMappings = []
             pathMappings.append({
@@ -28,11 +31,11 @@ class FlaskBreakpointTests(LifecycleTestsBase):
                 'remoteRoot': debug_info.cwd
             })
             options = {
-                'debugOptions': ['RedirectOutput', 'Jinja'],
+                'debugOptions': ['RedirectOutput', framework],
                 'pathMappings': pathMappings
                 }
         else:
-            options = {'debugOptions': ['RedirectOutput', 'Jinja']}
+            options = {'debugOptions': ['RedirectOutput', framework]}
 
         breakpoints = [{
             'source': {
@@ -59,7 +62,7 @@ class FlaskBreakpointTests(LifecycleTestsBase):
                     outevent = session.get_awaiter_for_event('output')
                     Awaitable.wait_all(outevent)
                     events = self.find_events(
-                        session.received, 'output', {'category': 'stderr'})
+                        session.received, 'output')
                     count += 1
                     for e in events:
                         matches = re.findall(re_link, e.body['output'])
@@ -156,11 +159,16 @@ class FlaskBreakpointTests(LifecycleTestsBase):
                 description=None,
             ),
             self.new_event('continued', threadId=tid),
-            self.new_event('exited', exitCode=0),
-            self.new_event('terminated'),
         ])
 
-    def run_test_with_handled_exception(self, debug_info,
+        if framework != 'Django':
+            # TODO: Figure out better way to shutdown Django
+            self.assert_contains(received, [
+                self.new_event('exited', exitCode=0),
+                self.new_event('terminated'),
+            ])
+
+    def run_test_with_handled_exception(self, debug_info, framework,
                                         expected_source_name):
         if (debug_info.starttype == 'attach'):
             pathMappings = []
@@ -169,11 +177,11 @@ class FlaskBreakpointTests(LifecycleTestsBase):
                 'remoteRoot': debug_info.cwd
             })
             options = {
-                'debugOptions': ['RedirectOutput', 'Jinja'],
+                'debugOptions': ['RedirectOutput', framework],
                 'pathMappings': pathMappings
                 }
         else:
-            options = {'debugOptions': ['RedirectOutput', 'Jinja']}
+            options = {'debugOptions': ['RedirectOutput', framework]}
 
         excbreakpoints = [{'filters': ['raised', 'uncaught']}]
         with self.start_debugging(debug_info) as dbg:
@@ -192,7 +200,7 @@ class FlaskBreakpointTests(LifecycleTestsBase):
                     outevent = session.get_awaiter_for_event('output')
                     Awaitable.wait_all(outevent)
                     events = self.find_events(
-                        session.received, 'output', {'category': 'stderr'})
+                        session.received, 'output')
                     count += 1
                     for e in events:
                         matches = re.findall(re_link, e.body['output'])
@@ -251,12 +259,14 @@ class FlaskBreakpointTests(LifecycleTestsBase):
             web_client_thread.join(timeout=1)
 
         received = list(_strip_newline_output_events(dbg.session.received))
-        self.assert_contains(received, [
-            self.new_event('exited', exitCode=0),
-            self.new_event('terminated'),
-        ])
+        if framework != 'Django':
+            # TODO: Figure out better way to shutdown Django
+            self.assert_contains(received, [
+                self.new_event('exited', exitCode=0),
+                self.new_event('terminated'),
+            ])
 
-    def run_test_with_unhandled_exception(self, debug_info,
+    def run_test_with_unhandled_exception(self, debug_info, framework,
                                           expected_source_name):
         if (debug_info.starttype == 'attach'):
             pathMappings = []
@@ -265,11 +275,11 @@ class FlaskBreakpointTests(LifecycleTestsBase):
                 'remoteRoot': debug_info.cwd
             })
             options = {
-                'debugOptions': ['RedirectOutput', 'Jinja'],
+                'debugOptions': ['RedirectOutput', framework],
                 'pathMappings': pathMappings
                 }
         else:
-            options = {'debugOptions': ['RedirectOutput', 'Jinja']}
+            options = {'debugOptions': ['RedirectOutput', framework]}
 
         excbreakpoints = [{'filters': ['raised', 'uncaught']}]
         with self.start_debugging(debug_info) as dbg:
@@ -288,7 +298,7 @@ class FlaskBreakpointTests(LifecycleTestsBase):
                     outevent = session.get_awaiter_for_event('output')
                     Awaitable.wait_all(outevent)
                     events = self.find_events(
-                        session.received, 'output', {'category': 'stderr'})
+                        session.received, 'output')
                     count += 1
                     for e in events:
                         matches = re.findall(re_link, e.body['output'])
@@ -347,13 +357,15 @@ class FlaskBreakpointTests(LifecycleTestsBase):
             web_client_thread.join(timeout=1)
 
         received = list(_strip_newline_output_events(dbg.session.received))
-        self.assert_contains(received, [
-            self.new_event('exited', exitCode=0),
-            self.new_event('terminated'),
-        ])
+        if framework != 'Django':
+            # TODO: Figure out better way to shutdown Django
+            self.assert_contains(received, [
+                self.new_event('exited', exitCode=0),
+                self.new_event('terminated'),
+            ])
 
 
-class LaunchFileTests(FlaskBreakpointTests):
+class FlaskLaunchFileTests(WebFrameworkTests):
     def test_with_route_break_points(self):
         filename = TEST_FILES.resolve('flask', 'launch', 'app.py')
         cwd = os.path.dirname(filename)
@@ -369,7 +381,8 @@ class LaunchFileTests(FlaskBreakpointTests):
                     'LANG': 'C.UTF-8'
                 },
                 cwd=cwd),
-            filename, bp_line=11, bp_name='home',
+            framework='Jinja',
+            bp_filename=filename, bp_line=11, bp_name='home',
             bp_var_value='Flask-Jinja-Test')
 
     def test_with_template_break_points(self):
@@ -389,7 +402,8 @@ class LaunchFileTests(FlaskBreakpointTests):
                     'LANG': 'C.UTF-8'
                 },
                 cwd=cwd),
-            template, bp_line=8, bp_name='template',
+            framework='Jinja',
+            bp_filename=template, bp_line=8, bp_name='template',
             bp_var_value='Flask-Jinja-Test')
 
     def test_with_handled_exceptions(self):
@@ -406,8 +420,7 @@ class LaunchFileTests(FlaskBreakpointTests):
                     'LC_ALL': 'C.UTF-8',
                     'LANG': 'C.UTF-8'
                 },
-                cwd=cwd),
-            filename)
+                cwd=cwd), 'Jinja', filename)
 
     def test_with_unhandled_exceptions(self):
         filename = TEST_FILES.resolve('flask', 'launch', 'app.py')
@@ -423,11 +436,10 @@ class LaunchFileTests(FlaskBreakpointTests):
                     'LC_ALL': 'C.UTF-8',
                     'LANG': 'C.UTF-8'
                 },
-                cwd=cwd),
-            filename)
+                cwd=cwd), 'Jinja', filename)
 
 
-class AttachFileTests(FlaskBreakpointTests):
+class FlaskAttachFileTests(WebFrameworkTests):
     @unittest.skip('Needs fixing')
     def test_with_route_break_points(self):
         filename = TEST_FILES.resolve('flask', 'attach', 'app.py')
@@ -445,7 +457,8 @@ class AttachFileTests(FlaskBreakpointTests):
                     'LANG': 'C.UTF-8'
                 },
                 cwd=cwd),
-            filename, bp_line=13, bp_name='home',
+            framework='Jinja',
+            bp_filename=filename, bp_line=13, bp_name='home',
             bp_var_value='Flask-Jinja-Test')
 
     @unittest.skip('Needs fixing')
@@ -466,7 +479,8 @@ class AttachFileTests(FlaskBreakpointTests):
                     'LANG': 'C.UTF-8'
                 },
                 cwd=cwd),
-            template, bp_line=8, bp_name='template',
+            framework='Jinja',
+            bp_filename=template, bp_line=8, bp_name='template',
             bp_var_value='Flask-Jinja-Test')
 
     @unittest.skip('Needs fixing')
@@ -484,8 +498,7 @@ class AttachFileTests(FlaskBreakpointTests):
                     'LC_ALL': 'C.UTF-8',
                     'LANG': 'C.UTF-8'
                 },
-                cwd=cwd),
-            filename)
+                cwd=cwd), 'Jinja', filename)
 
     @unittest.skip('Needs fixing')
     def test_with_unhandled_exceptions(self):
@@ -502,5 +515,100 @@ class AttachFileTests(FlaskBreakpointTests):
                     'LC_ALL': 'C.UTF-8',
                     'LANG': 'C.UTF-8'
                 },
+                cwd=cwd), 'Jinja', filename)
+
+
+class DjangoLaunchFileTests(WebFrameworkTests):
+    def test_with_route_break_points(self):
+        filename = TEST_FILES.resolve('django', 'launch', 'app.py')
+        cwd = os.path.dirname(filename)
+        self.run_test_with_break_points(
+            DebugInfo(
+                filename=filename,
+                argv=['runserver', '--noreload', '--nothreading'],
                 cwd=cwd),
-            filename)
+            framework='Django',
+            bp_filename=filename, bp_line=40, bp_name='home',
+            bp_var_value='Django-Django-Test')
+
+    def test_with_template_break_points(self):
+        filename = TEST_FILES.resolve('django', 'launch', 'app.py')
+        template = TEST_FILES.resolve(
+            'django', 'launch', 'templates', 'hello.html')
+        cwd = os.path.dirname(filename)
+        self.run_test_with_break_points(
+            DebugInfo(
+                filename=filename,
+                argv=['runserver', '--noreload', '--nothreading'],
+                cwd=cwd),
+            framework='Django',
+            bp_filename=template, bp_line=8, bp_name='Django Template',
+            bp_var_value='Django-Django-Test')
+
+    def test_with_handled_exceptions(self):
+        filename = TEST_FILES.resolve('django', 'launch', 'app.py')
+        cwd = os.path.dirname(filename)
+        self.run_test_with_handled_exception(
+            DebugInfo(
+                filename=filename,
+                argv=['runserver', '--noreload', '--nothreading'],
+                cwd=cwd), 'Django', filename)
+
+    def test_with_unhandled_exceptions(self):
+        filename = TEST_FILES.resolve('django', 'launch', 'app.py')
+        cwd = os.path.dirname(filename)
+        self.run_test_with_unhandled_exception(
+            DebugInfo(
+                filename=filename,
+                argv=['runserver', '--noreload', '--nothreading'],
+                cwd=cwd), 'Django', filename)
+
+
+class DjangoAttachFileTests(WebFrameworkTests):
+    @unittest.skip('Needs fixing')
+    def test_with_route_break_points(self):
+        filename = TEST_FILES.resolve('django', 'attach', 'app.py')
+        cwd = os.path.dirname(filename)
+        self.run_test_with_break_points(
+            DebugInfo(
+                filename=filename,
+                argv=['runserver', '--noreload', '--nothreading'],
+                cwd=cwd),
+            framework='Django',
+            bp_filename=filename, bp_line=45, bp_name='home',
+            bp_var_value='Django-Django-Test')
+
+    @unittest.skip('Needs fixing')
+    def test_with_template_break_points(self):
+        filename = TEST_FILES.resolve('django', 'attach', 'app.py')
+        template = TEST_FILES.resolve(
+            'django', 'launch', 'templates', 'hello.html')
+        cwd = os.path.dirname(filename)
+        self.run_test_with_break_points(
+            DebugInfo(
+                filename=filename,
+                argv=['runserver', '--noreload', '--nothreading'],
+                cwd=cwd),
+            framework='Django',
+            bp_filename=template, bp_line=8, bp_name='Django Template',
+            bp_var_value='Django-Django-Test')
+
+    @unittest.skip('Needs fixing')
+    def test_with_handled_exceptions(self):
+        filename = TEST_FILES.resolve('django', 'attach', 'app.py')
+        cwd = os.path.dirname(filename)
+        self.run_test_with_handled_exception(
+            DebugInfo(
+                filename=filename,
+                argv=['runserver', '--noreload', '--nothreading'],
+                cwd=cwd), 'Django', filename)
+
+    @unittest.skip('Needs fixing')
+    def test_with_unhandled_exceptions(self):
+        filename = TEST_FILES.resolve('django', 'attach', 'app.py')
+        cwd = os.path.dirname(filename)
+        self.run_test_with_unhandled_exception(
+            DebugInfo(
+                filename=filename,
+                argv=['runserver', '--noreload', '--nothreading'],
+                cwd=cwd), 'Django', filename)
