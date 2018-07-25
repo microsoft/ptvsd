@@ -20,7 +20,7 @@ re_link = r"(http(s|)\:\/\/[\w\.]*\:[0-9]{4,6}(\/|))"
 class FlaskBreakpointTests(LifecycleTestsBase):
     def run_test_with_break_points(self, debug_info,
                                    bp_filename, bp_line,
-                                   bp_name):
+                                   bp_name, bp_var_value):
         if (debug_info.starttype == 'attach'):
             pathMappings = []
             pathMappings.append({
@@ -88,6 +88,21 @@ class FlaskBreakpointTests(LifecycleTestsBase):
             req_stacktrace.wait()
             stacktrace = req_stacktrace.resp.body
 
+            frame_id = stacktrace['stackFrames'][0]['id']
+            req_scopes = session.send_request(
+                'scopes',
+                frameId=frame_id,
+            )
+            req_scopes.wait()
+            scopes = req_scopes.resp.body['scopes']
+            variables_reference = scopes[0]['variablesReference']
+            req_variables = session.send_request(
+                'variables',
+                variablesReference=variables_reference,
+            )
+            req_variables.wait()
+            variables = req_variables.resp.body['variables']
+
             session.send_request(
                 'continue',
                 threadId=tid,
@@ -123,7 +138,15 @@ class FlaskBreakpointTests(LifecycleTestsBase):
                 'column': 1,
             }],
         })
-        self.assertTrue(web_result['content'].find('Flask-Jinja-Test') != -1)
+        variables = list(v for v in variables if v['name'] == 'content')
+        self.assert_is_subset(variables, [{
+            'name': 'content',
+            'type': 'str',
+            'value': repr(bp_var_value),
+            'presentationHint': {'attributes': ['rawString']},
+            'evaluateName': 'content'
+        }])
+        self.assertTrue(web_result['content'].find(bp_var_value) != -1)
         self.assert_contains(received, [
             self.new_event(
                 'stopped',
@@ -332,7 +355,7 @@ class FlaskBreakpointTests(LifecycleTestsBase):
 
 class LaunchFileTests(FlaskBreakpointTests):
     def test_with_route_break_points(self):
-        filename = TEST_FILES.resolve('launch', 'app.py')
+        filename = TEST_FILES.resolve('flask', 'launch', 'app.py')
         cwd = os.path.dirname(filename)
         self.run_test_with_break_points(
             DebugInfo(
@@ -346,12 +369,13 @@ class LaunchFileTests(FlaskBreakpointTests):
                     'LANG': 'C.UTF-8'
                 },
                 cwd=cwd),
-            filename, bp_line=10, bp_name='home'
-        )
+            filename, bp_line=11, bp_name='home',
+            bp_var_value='Flask-Jinja-Test')
 
     def test_with_template_break_points(self):
-        filename = TEST_FILES.resolve('launch', 'app.py')
-        template = TEST_FILES.resolve('launch', 'templates', 'hello.html')
+        filename = TEST_FILES.resolve('flask', 'launch', 'app.py')
+        template = TEST_FILES.resolve(
+            'flask', 'launch', 'templates', 'hello.html')
         cwd = os.path.dirname(filename)
         self.run_test_with_break_points(
             DebugInfo(
@@ -365,11 +389,11 @@ class LaunchFileTests(FlaskBreakpointTests):
                     'LANG': 'C.UTF-8'
                 },
                 cwd=cwd),
-            template, bp_line=8, bp_name='template'
-        )
+            template, bp_line=8, bp_name='template',
+            bp_var_value='Flask-Jinja-Test')
 
     def test_with_handled_exceptions(self):
-        filename = TEST_FILES.resolve('launch', 'app.py')
+        filename = TEST_FILES.resolve('flask', 'launch', 'app.py')
         cwd = os.path.dirname(filename)
         self.run_test_with_handled_exception(
             DebugInfo(
@@ -386,7 +410,7 @@ class LaunchFileTests(FlaskBreakpointTests):
             filename)
 
     def test_with_unhandled_exceptions(self):
-        filename = TEST_FILES.resolve('launch', 'app.py')
+        filename = TEST_FILES.resolve('flask', 'launch', 'app.py')
         cwd = os.path.dirname(filename)
         self.run_test_with_unhandled_exception(
             DebugInfo(
@@ -406,7 +430,7 @@ class LaunchFileTests(FlaskBreakpointTests):
 class AttachFileTests(FlaskBreakpointTests):
     @unittest.skip('Needs fixing')
     def test_with_route_break_points(self):
-        filename = TEST_FILES.resolve('attach', 'app.py')
+        filename = TEST_FILES.resolve('flask', 'attach', 'app.py')
         cwd = os.path.dirname(filename)
         self.run_test_with_break_points(
             DebugInfo(
@@ -421,13 +445,14 @@ class AttachFileTests(FlaskBreakpointTests):
                     'LANG': 'C.UTF-8'
                 },
                 cwd=cwd),
-            filename, bp_line=10, bp_name='home'
-        )
+            filename, bp_line=10, bp_name='home',
+            bp_var_value='Flask-Jinja-Test')
 
     @unittest.skip('Needs fixing')
     def test_with_template_break_points(self):
-        filename = TEST_FILES.resolve('attach', 'app.py')
-        template = TEST_FILES.resolve('attach', 'templates', 'hello.html')
+        filename = TEST_FILES.resolve('flask', 'attach', 'app.py')
+        template = TEST_FILES.resolve(
+            'flask', 'attach', 'templates', 'hello.html')
         cwd = os.path.dirname(filename)
         self.run_test_with_break_points(
             DebugInfo(
@@ -441,12 +466,12 @@ class AttachFileTests(FlaskBreakpointTests):
                     'LANG': 'C.UTF-8'
                 },
                 cwd=cwd),
-            template, bp_line=8, bp_name='template'
-        )
+            template, bp_line=8, bp_name='template',
+            bp_var_value='Flask-Jinja-Test')
 
     @unittest.skip('Needs fixing')
     def test_with_handled_exceptions(self):
-        filename = TEST_FILES.resolve('attach', 'app.py')
+        filename = TEST_FILES.resolve('flask', 'attach', 'app.py')
         cwd = os.path.dirname(filename)
         self.run_test_with_handled_exception(
             DebugInfo(
@@ -464,7 +489,7 @@ class AttachFileTests(FlaskBreakpointTests):
 
     @unittest.skip('Needs fixing')
     def test_with_unhandled_exceptions(self):
-        filename = TEST_FILES.resolve('attach', 'app.py')
+        filename = TEST_FILES.resolve('flask', 'attach', 'app.py')
         cwd = os.path.dirname(filename)
         self.run_test_with_unhandled_exception(
             DebugInfo(

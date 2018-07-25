@@ -9,10 +9,11 @@ app = Flask(__name__)
 
 @app.route("/")
 def home():
+    content = 'Flask-Jinja-Test'
     return render_template(
         "hello.html",
         title='Hello',
-        content='Flask-Jinja-Test'
+        content=content
     )
 
 
