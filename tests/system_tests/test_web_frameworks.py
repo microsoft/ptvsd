@@ -445,7 +445,7 @@ class AttachFileTests(FlaskBreakpointTests):
                     'LANG': 'C.UTF-8'
                 },
                 cwd=cwd),
-            filename, bp_line=10, bp_name='home',
+            filename, bp_line=13, bp_name='home',
             bp_var_value='Flask-Jinja-Test')
 
     @unittest.skip('Needs fixing')
