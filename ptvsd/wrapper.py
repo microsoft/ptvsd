@@ -1995,9 +1995,10 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
     @async_handler
     def on_continue(self, request, args):
         # TODO: docstring
-        tid = self.thread_map.to_pydevd(int(args['threadId']))
-        self.pydevd_notify(pydevd_comm.CMD_THREAD_RUN, tid)
-        self.send_response(request)
+        # Always suspend all threads.
+        for pyd_tid in self.thread_map.pydevd_ids():
+            self.pydevd_notify(pydevd_comm.CMD_THREAD_RUN, pyd_tid)
+        self.send_response(request, allThreadsContinued=True)
 
     @async_handler
     def on_next(self, request, args):
