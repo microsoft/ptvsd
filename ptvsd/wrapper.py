@@ -2082,7 +2082,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
                 self.bp_map.remove(pyd_bpid, vsc_bpid)
 
         cmd = pydevd_comm.CMD_SET_BREAK
-        msgfmt = '{}\t{}\t{}\t{}\tNone\t{}\t{}\t{}\t{}'
+        msgfmt = '{}\t{}\t{}\t{}\tNone\t{}\t{}\t{}\t{}\tALL'
         if needs_unicode(path):
             msgfmt = unicode(msgfmt)   # noqa
         for src_bp in src_bps:
