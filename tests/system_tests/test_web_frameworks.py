@@ -9,7 +9,7 @@ from tests.helpers.resource import TestResources
 from tests.helpers.webhelper import get_web_string_no_error
 from . import (
     _strip_newline_output_events, lifecycle_handshake,
-    LifecycleTestsBase, DebugInfo,
+    LifecycleTestsBase, DebugInfo, PORT
 )
 
 
@@ -440,7 +440,7 @@ class FlaskLaunchFileTests(WebFrameworkTests):
 
 
 class FlaskAttachFileTests(WebFrameworkTests):
-    @unittest.skip('Needs fixing')
+    @unittest.skip('#545')
     def test_with_route_break_points(self):
         filename = TEST_FILES.resolve('flask', 'attach', 'app.py')
         cwd = os.path.dirname(filename)
@@ -454,14 +454,16 @@ class FlaskAttachFileTests(WebFrameworkTests):
                     'FLASK_ENV': 'development',
                     'FLASK_DEBUG': '0',
                     'LC_ALL': 'C.UTF-8',
-                    'LANG': 'C.UTF-8'
+                    'LANG': 'C.UTF-8',
+                    'PTVSD_HOST': 'localhost',
+                    'PTVSD_PORT': str(PORT),
                 },
                 cwd=cwd),
             framework='Jinja',
-            bp_filename=filename, bp_line=13, bp_name='home',
+            bp_filename=filename, bp_line=19, bp_name='home',
             bp_var_value='Flask-Jinja-Test')
 
-    @unittest.skip('Needs fixing')
+    @unittest.skip('#545')
     def test_with_template_break_points(self):
         filename = TEST_FILES.resolve('flask', 'attach', 'app.py')
         template = TEST_FILES.resolve(
@@ -476,14 +478,16 @@ class FlaskAttachFileTests(WebFrameworkTests):
                     'FLASK_APP': 'app.py',
                     'FLASK_ENV': 'production',
                     'LC_ALL': 'C.UTF-8',
-                    'LANG': 'C.UTF-8'
+                    'LANG': 'C.UTF-8',
+                    'PTVSD_HOST': 'localhost',
+                    'PTVSD_PORT': str(PORT),
                 },
                 cwd=cwd),
             framework='Jinja',
             bp_filename=template, bp_line=8, bp_name='template',
             bp_var_value='Flask-Jinja-Test')
 
-    @unittest.skip('Needs fixing')
+    @unittest.skip('#545')
     def test_with_handled_exceptions(self):
         filename = TEST_FILES.resolve('flask', 'attach', 'app.py')
         cwd = os.path.dirname(filename)
@@ -496,11 +500,13 @@ class FlaskAttachFileTests(WebFrameworkTests):
                     'FLASK_APP': 'app.py',
                     'FLASK_ENV': 'production',
                     'LC_ALL': 'C.UTF-8',
-                    'LANG': 'C.UTF-8'
+                    'LANG': 'C.UTF-8',
+                    'PTVSD_HOST': 'localhost',
+                    'PTVSD_PORT': str(PORT),
                 },
                 cwd=cwd), 'Jinja', filename)
 
-    @unittest.skip('Needs fixing')
+    @unittest.skip('#545')
     def test_with_unhandled_exceptions(self):
         filename = TEST_FILES.resolve('flask', 'attach', 'app.py')
         cwd = os.path.dirname(filename)
@@ -513,7 +519,9 @@ class FlaskAttachFileTests(WebFrameworkTests):
                     'FLASK_APP': 'app.py',
                     'FLASK_ENV': 'production',
                     'LC_ALL': 'C.UTF-8',
-                    'LANG': 'C.UTF-8'
+                    'LANG': 'C.UTF-8',
+                    'PTVSD_HOST': 'localhost',
+                    'PTVSD_PORT': str(PORT),
                 },
                 cwd=cwd), 'Jinja', filename)
 
@@ -565,7 +573,7 @@ class DjangoLaunchFileTests(WebFrameworkTests):
 
 
 class DjangoAttachFileTests(WebFrameworkTests):
-    @unittest.skip('Needs fixing')
+    @unittest.skip('#545')
     def test_with_route_break_points(self):
         filename = TEST_FILES.resolve('django', 'attach', 'app.py')
         cwd = os.path.dirname(filename)
@@ -573,12 +581,16 @@ class DjangoAttachFileTests(WebFrameworkTests):
             DebugInfo(
                 filename=filename,
                 argv=['runserver', '--noreload', '--nothreading'],
+                env={
+                    'PTVSD_HOST': 'localhost',
+                    'PTVSD_PORT': str(PORT),
+                },
                 cwd=cwd),
             framework='Django',
-            bp_filename=filename, bp_line=45, bp_name='home',
+            bp_filename=filename, bp_line=48, bp_name='home',
             bp_var_value='Django-Django-Test')
 
-    @unittest.skip('Needs fixing')
+    @unittest.skip('#545')
     def test_with_template_break_points(self):
         filename = TEST_FILES.resolve('django', 'attach', 'app.py')
         template = TEST_FILES.resolve(
@@ -588,12 +600,16 @@ class DjangoAttachFileTests(WebFrameworkTests):
             DebugInfo(
                 filename=filename,
                 argv=['runserver', '--noreload', '--nothreading'],
+                env={
+                    'PTVSD_HOST': 'localhost',
+                    'PTVSD_PORT': str(PORT),
+                },
                 cwd=cwd),
             framework='Django',
             bp_filename=template, bp_line=8, bp_name='Django Template',
             bp_var_value='Django-Django-Test')
 
-    @unittest.skip('Needs fixing')
+    @unittest.skip('#545')
     def test_with_handled_exceptions(self):
         filename = TEST_FILES.resolve('django', 'attach', 'app.py')
         cwd = os.path.dirname(filename)
@@ -601,9 +617,13 @@ class DjangoAttachFileTests(WebFrameworkTests):
             DebugInfo(
                 filename=filename,
                 argv=['runserver', '--noreload', '--nothreading'],
+                env={
+                    'PTVSD_HOST': 'localhost',
+                    'PTVSD_PORT': str(PORT),
+                },
                 cwd=cwd), 'Django', filename)
 
-    @unittest.skip('Needs fixing')
+    @unittest.skip('#545')
     def test_with_unhandled_exceptions(self):
         filename = TEST_FILES.resolve('django', 'attach', 'app.py')
         cwd = os.path.dirname(filename)
@@ -611,4 +631,8 @@ class DjangoAttachFileTests(WebFrameworkTests):
             DebugInfo(
                 filename=filename,
                 argv=['runserver', '--noreload', '--nothreading'],
+                env={
+                    'PTVSD_HOST': 'localhost',
+                    'PTVSD_PORT': str(PORT),
+                },
                 cwd=cwd), 'Django', filename)

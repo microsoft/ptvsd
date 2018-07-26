@@ -6,10 +6,12 @@ from django.urls import path
 from django.core.management import execute_from_command_line
 from django.http import HttpResponse
 from django.template import loader
-
-
 import ptvsd
-ptvsd.enable_attach((('localhost', 9879)))
+
+
+ptvsd_host = os.getenv('PTVSD_HOST', 'localhost')
+ptvsd_port = os.getenv('PTVSD_PORT', '9879')
+ptvsd.enable_attach((ptvsd_host, ptvsd_port))
 ptvsd.wait_for_attach()
 
 

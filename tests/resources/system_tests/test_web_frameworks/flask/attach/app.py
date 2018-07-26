@@ -1,8 +1,14 @@
+import os
+import ptvsd
 from flask import Flask
 from flask import render_template
-import ptvsd
-ptvsd.enable_attach((('localhost', 9879)))
+
+
+ptvsd_host = os.getenv('PTVSD_HOST', 'localhost')
+ptvsd_port = os.getenv('PTVSD_PORT', '9879')
+ptvsd.enable_attach((ptvsd_host, ptvsd_port))
 ptvsd.wait_for_attach()
+
 
 app = Flask(__name__)
 
