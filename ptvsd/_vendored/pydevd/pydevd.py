@@ -969,11 +969,19 @@ class PyDB:
                         file = filename
             else:
                 file = filename
-                if filename.endswith('__init__.pyc') or filename.endswith('__init__.py'):
-                    mod_dir = os.path.dirname(filename)
-                    filename = os.path.join(mod_dir, '__main__.py')
-                    if not os.path.exists(filename):
-                        filename = os.path.join(mod_dir, '__main__.pyc')
+                mod_dir = os.path.dirname(filename)
+                main_py = os.path.join(mod_dir, '__main__.py')
+                main_pyc = os.path.join(mod_dir, '__main__.pyc')
+                if filename.endswith('__init__.pyc'):
+                    if os.path.exists(main_pyc):
+                        filename = main_pyc
+                    elif os.path.exists(main_py):
+                        filename = main_py
+                elif filename.endswith('__init__.py'):
+                    if os.path.exists(main_pyc) and not os.path.exists(main_py):
+                        filename = main_pyc
+                    elif os.path.exists(main_py):
+                        filename = main_py
 
             sys.argv[0] = filename
 
