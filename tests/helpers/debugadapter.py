@@ -87,9 +87,9 @@ def wait_for_socket_server(addr, timeout=SERVER_READY_TIMEOUT):
     start_time = time.time()
     while True:
         try:
-            time.sleep(2)
-            # sock = socket.create_connection((addr.host, addr.port))
-            # sock.close()
+            sock = socket.create_connection((addr.host, addr.port))
+            sock.close()
+            time.sleep(0.1) # wait for daemon to detect to socket close.
             return
         except Exception:
             pass
