@@ -189,3 +189,9 @@ class PyDevdDebugSession(DebugSession):
     def _handle_vsc_debugger_ready(self):
         debug('ready to debug')
         self._notify_debugger_ready(self)
+
+    def re_build_breakpoints(self):
+        """Restore the breakpoints to their last values."""
+        if self._msgprocessor is None:
+            return
+        return self._msgprocessor.re_build_breakpoints()

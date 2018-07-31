@@ -34,13 +34,13 @@ def wait_for_attach(timeout=None):
     """
     _attached.wait(timeout)
 
-    tid = threading.current_thread().ident
-    if tid in _pending_threads:
-        _pending_threads.remove(tid)
-        # Enable pydevd in the current thread.  This is necessary because
-        # we started pydevd in a new thread.  We must do it here because
-        # that previous invocation must have finished already.
-        _debug_current_thread()
+    # tid = threading.current_thread().ident
+    # if tid in _pending_threads:
+    #     _pending_threads.remove(tid)
+    #     # Enable pydevd in the current thread.  This is necessary because
+    #     # we started pydevd in a new thread.  We must do it here because
+    #     # that previous invocation must have finished already.
+    #     _debug_current_thread()
 
 
 def enable_attach(address=(DEFAULT_HOST, DEFAULT_PORT), redirect_output=True):
@@ -85,20 +85,21 @@ def enable_attach(address=(DEFAULT_HOST, DEFAULT_PORT), redirect_output=True):
     # TODO: Is there any way to ensure that debug_current_thread()
     # gets called in the current thread, regardless of if
     # wait_for_attach() gets called?
-    _, wait, debug_current_thread = ptvsd_enable_attach(
+    ptvsd_enable_attach(
         address,
         on_attach=_attached.set,
         redirect_output=redirect_output,
     )
-    global _debug_current_thread
-    _debug_current_thread = debug_current_thread
+    # global _debug_current_thread
+    # _debug_current_thread = debug_current_thread
 
-    # Give it a chance to finish starting.  This helps reduce possible
-    # issues due to relying on wait_for_attach().
-    if wait(WAIT_TIMEOUT):
-        debug_current_thread()
-    else:
-        _pending_threads.add(threading.current_thread().ident)
+    # # Give it a chance to finish starting.  This helps reduce possible
+    # # issues due to relying on wait_for_attach().
+    # debug_current_thread()
+    # if wait(WAIT_TIMEOUT):
+    #     debug_current_thread()
+    # else:
+    #     _pending_threads.add(threading.current_thread().ident)
 
 
 # TODO: Add disable_attach()?

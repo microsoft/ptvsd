@@ -1209,6 +1209,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
 
         self.loop = None
         self.event_loop_thread = None
+        self.bkpoints = None
 
         # debugger state
         self.is_process_created = False
@@ -2046,10 +2047,16 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
 
         return hit_condition
 
+    def re_build_breakpoints(self):
+        if self.bkpoints is None:
+            return
+        self.on_setBreakpoints(None, self.bkpoints)
+
     @async_handler
     def on_setBreakpoints(self, request, args):
         # TODO: docstring
         bps = []
+        self.bkpoints = args
         path = args['source']['path']
         self.path_casing.track_file_path_case(path)
         src_bps = args.get('breakpoints', [])
