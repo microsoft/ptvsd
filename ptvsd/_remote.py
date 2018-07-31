@@ -57,12 +57,9 @@ def enable_attach(address, redirect_output=True,
                       singlesession=False,
                       **kwargs)
 
-    connection_thread = threading.Thread(target=wait_for_connection,
-                                         args=(daemon, host, port),
-                                         name='ptvsd.listen_for_connection')
-    connection_thread.pydev_do_not_trace = True
-    connection_thread.is_pydev_daemon_thread = True
-    connection_thread.daemon = True
+    connection_thread = new_hidden_thread('ptvsd.listen_for_connection',
+                                         wait_for_connection,
+                                         args=(daemon, host, port))
     connection_thread.start()
 
     _pydevd.settrace(host=host,
