@@ -72,6 +72,7 @@ def enable_attach(address, redirect_output=True,
                      stderrToServer=redirect_output,
                      port=port,
                      suspend=False)
+<<<<<<< HEAD
 
 # def enable_attach(address,
 #                   on_attach=(lambda: None),
@@ -114,6 +115,50 @@ def enable_attach(address, redirect_output=True,
 #         t.join(timeout)
 #         return not t.is_alive()
 
+=======
+
+# def enable_attach(address,
+#                   on_attach=(lambda: None),
+#                   redirect_output=True,
+#                   _pydevd=pydevd,
+#                   _install=install,
+#                   _settrace=_pydevd_settrace,
+#                   **kwargs):
+#     addr = Address.as_server(*address)
+#     debug('installing ptvsd as server')
+#     # pydevd.settrace() forces a "client" connection, so we trick it
+#     # by setting start_client to start_server..
+#     daemon = _install(
+#         _pydevd,
+#         addr,
+#         start_client=start_server,
+#         notify_session_debugger_ready=(lambda s: on_attach()),
+#         singlesession=False,
+#         **kwargs
+#     )
+
+#     def start_pydevd():
+#         debug('enabling pydevd')
+#         # Only pass the port so start_server() gets triggered.
+#         # As noted above, we also have to trick settrace() because it
+#         # *always* forces a client connection.
+#         _settrace(
+#             host=addr.host,
+#             stdoutToServer=redirect_output,
+#             stderrToServer=redirect_output,
+#             port=addr.port,
+#             suspend=False,
+#             _pydevd=_pydevd,
+#         )
+#         debug('pydevd enabled')
+#     t = new_hidden_thread('start-pydevd', start_pydevd)
+#     t.start()
+
+#     def wait(timeout=None):
+#         t.join(timeout)
+#         return not t.is_alive()
+
+>>>>>>> a644d6d955dd32d66267d9117882bbd427cafa2d
 #     def debug_current_thread(suspend=False, **kwargs):
 #         # Make sure that pydevd has finished starting before enabling
 #         # in the current thread.

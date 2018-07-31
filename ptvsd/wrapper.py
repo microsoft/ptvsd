@@ -2056,13 +2056,8 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         if self.bkpoints is None:
             return
         print('1.re_build_breakpoints')
-        for i in self.on_setBreakpoints(None, self.bkpoints):
-            print('2.re_build_breakpoints')
-            pass
-        print('3.re_build_breakpoints')
-        for i in self.on_setExceptionBreakpoints(None, self.exception_bkpoints):
-            print('4.re_build_breakpoints')
-            pass
+        self.on_setBreakpoints(None, self.bkpoints)
+        self.on_setExceptionBreakpoints(None, self.exception_bkpoints)
         print('5.re_build_breakpoints')
 
     @async_handler

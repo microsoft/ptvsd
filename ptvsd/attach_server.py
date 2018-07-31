@@ -45,7 +45,7 @@ def wait_for_attach(timeout=None):
     #     _debug_current_thread()
 
 
-def enable_attach(address=(DEFAULT_HOST, DEFAULT_PORT), redirect_output=False):
+def enable_attach(address=(DEFAULT_HOST, DEFAULT_PORT), redirect_output=True):
     """Enables a client to attach to this process remotely to debug Python code.
 
     Parameters
