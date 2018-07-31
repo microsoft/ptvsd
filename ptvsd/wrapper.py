@@ -49,7 +49,7 @@ WAIT_FOR_THREAD_FINISH_TIMEOUT = 1  # seconds
 
 
 debug = _util.debug
-
+configuration_done = threading.Event()
 
 #def ipcjson_trace(s):
 #    print(s)
@@ -1080,6 +1080,7 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
 
     def on_attach(self, request, args):
         # TODO: docstring
+        print('on_attach')
         self.start_reason = 'attach'
         self._set_debug_options(args)
         self._handle_attach(args)
@@ -1095,6 +1096,9 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
 
     def on_configurationDone(self, request, args):
         # TODO: docstring
+        print('on_configurationDone')
+        global configuration_done
+        configuration_done.set()
         self.send_response(request)
         self._process_debug_options(self.debug_options)
         self._handle_configurationDone(args)
@@ -1209,6 +1213,8 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
 
         self.loop = None
         self.event_loop_thread = None
+        self.bkpoints = None
+        self.exception_bkpoints = None
 
         # debugger state
         self.is_process_created = False
@@ -2046,10 +2052,25 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
 
         return hit_condition
 
+    def re_build_breakpoints(self):
+        if self.bkpoints is None:
+            return
+        print('1.re_build_breakpoints')
+        for i in self.on_setBreakpoints(None, self.bkpoints):
+            print('2.re_build_breakpoints')
+            pass
+        print('3.re_build_breakpoints')
+        for i in self.on_setExceptionBreakpoints(None, self.exception_bkpoints):
+            print('4.re_build_breakpoints')
+            pass
+        print('5.re_build_breakpoints')
+
     @async_handler
     def on_setBreakpoints(self, request, args):
+        print('on_setBreakpoints')
         # TODO: docstring
         bps = []
+        self.bkpoints = args
         path = args['source']['path']
         self.path_casing.track_file_path_case(path)
         src_bps = args.get('breakpoints', [])
@@ -2107,14 +2128,19 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
                 'verified': True,
                 'line': line,
             })
+        print('before yield in on_setBreakpoints')
         yield self._ensure_pydevd_requests_handled()
+        print('after yield in on_setBreakpoints')
 
         if request is not None:
             self.send_response(request, breakpoints=bps)
+        print('done in on_setBreakpoints')
 
     @async_handler
     def on_setExceptionBreakpoints(self, request, args):
         # TODO: docstring
+        print('on_setExceptionBreakpoints')
+        self.exception_bkpoints = args
         filters = args['filters']
         exception_options = args.get('exceptionOptions', [])
         jmc = self._is_just_my_code_stepping_enabled()
@@ -2130,7 +2156,8 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
                 self.exceptions_mgr.add_exception_break(
                     'BaseException', break_raised, break_uncaught,
                     skip_stdlib=jmc)
-        self.send_response(request)
+        if request is not None:
+            self.send_response(request)
 
     @async_handler
     def on_exceptionInfo(self, request, args):
