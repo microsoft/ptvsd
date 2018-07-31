@@ -87,8 +87,9 @@ def wait_for_socket_server(addr, timeout=SERVER_READY_TIMEOUT):
     start_time = time.time()
     while True:
         try:
-            sock = socket.create_connection((addr.host, addr.port))
-            sock.close()
+            time.sleep(2)
+            # sock = socket.create_connection((addr.host, addr.port))
+            # sock.close()
             return
         except Exception:
             pass
