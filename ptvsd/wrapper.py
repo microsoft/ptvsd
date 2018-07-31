@@ -1080,7 +1080,6 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
 
     def on_attach(self, request, args):
         # TODO: docstring
-        print('on_attach')
         self.start_reason = 'attach'
         self._set_debug_options(args)
         self._handle_attach(args)
@@ -1096,7 +1095,6 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
 
     def on_configurationDone(self, request, args):
         # TODO: docstring
-        print('on_configurationDone')
         global configuration_done
         configuration_done.set()
         self.send_response(request)
@@ -2055,14 +2053,11 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
     def re_build_breakpoints(self):
         if self.bkpoints is None:
             return
-        print('1.re_build_breakpoints')
         self.on_setBreakpoints(None, self.bkpoints)
         self.on_setExceptionBreakpoints(None, self.exception_bkpoints)
-        print('5.re_build_breakpoints')
 
     @async_handler
     def on_setBreakpoints(self, request, args):
-        print('on_setBreakpoints')
         # TODO: docstring
         bps = []
         self.bkpoints = args
@@ -2123,18 +2118,14 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
                 'verified': True,
                 'line': line,
             })
-        print('before yield in on_setBreakpoints')
         yield self._ensure_pydevd_requests_handled()
-        print('after yield in on_setBreakpoints')
 
         if request is not None:
             self.send_response(request, breakpoints=bps)
-        print('done in on_setBreakpoints')
 
     @async_handler
     def on_setExceptionBreakpoints(self, request, args):
         # TODO: docstring
-        print('on_setExceptionBreakpoints')
         self.exception_bkpoints = args
         filters = args['filters']
         exception_options = args.get('exceptionOptions', [])

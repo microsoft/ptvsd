@@ -47,11 +47,8 @@ def enable_attach(address, redirect_output=True,
         while True:
             client, _ = server.accept()
             daemon.start_session(client, 'ptvsd.Server')
-            print('before re_build_breakpoints')
             daemon.re_build_breakpoints()
-            print('after re_build_breakpoints')
             on_attach()
-            print('after on_attach')
 
     daemon = _install(_pydevd,
                       address,
