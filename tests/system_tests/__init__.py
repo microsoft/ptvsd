@@ -147,7 +147,7 @@ def _strip_pydevd_output(out):
 def lifecycle_handshake(session, command='launch', options=None,
                         breakpoints=None, excbreakpoints=None,
                         threads=False):
-    with session.wait_for_event('initialized'):
+    with session.wait_for_event('initialized', timeout=CONNECT_TIMEOUT):
         req_initialize = session.send_request(
             'initialize',
             adapterID='spam',
