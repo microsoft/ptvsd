@@ -151,7 +151,7 @@ class LifecycleTests(LifecycleTestsBase):
         with DebugClient() as editor:
             adapter, session = editor.launch_script(
                 filename,
-                timeout=3.0,
+                timeout=5.0,
             )
 
             with session.wait_for_event('thread'):
@@ -374,7 +374,7 @@ class LifecycleTests(LifecycleTestsBase):
         with adapter:
             wait1()
             with DebugClient() as editor:
-                session1 = editor.attach_socket(addr, adapter, timeout=1)
+                session1 = editor.attach_socket(addr, adapter, timeout=5)
                 #session1.VERBOSE = True
                 with session1.wait_for_event('thread') as result:
                     with session1.wait_for_event('process'):
@@ -417,7 +417,7 @@ class LifecycleTests(LifecycleTestsBase):
                               'or breakpoints never cleared')
                 out2 = str(adapter.output)
 
-                session2 = editor.attach_socket(addr, adapter, timeout=1)
+                session2 = editor.attach_socket(addr, adapter, timeout=5)
                 #session2.VERBOSE = True
                 with session2.wait_for_event('thread') as result:
                     with session2.wait_for_event('process'):
@@ -621,7 +621,7 @@ class LifecycleTests(LifecycleTestsBase):
         adapter = DebugAdapter.start_embedded(addr, filename)
         with adapter:
             with DebugClient() as editor:
-                session = editor.attach_socket(addr, adapter, timeout=1)
+                session = editor.attach_socket(addr, adapter, timeout=5)
 
                 with session.wait_for_event('thread') as result:
                     with session.wait_for_event('process'):
@@ -631,6 +631,7 @@ class LifecycleTests(LifecycleTestsBase):
                                                  breakpoints=breakpoints,
                                                  options=options,
                                                  threads=True)
+                        Awaitable.wait_all(req_init, req_attach, req_config)
                         req_bps, = reqs_bps  # There should only be one.
                 event = result['msg']
                 tid = event.body['threadId']
