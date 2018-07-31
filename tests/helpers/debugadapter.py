@@ -102,6 +102,7 @@ def wait_for_port_to_free(port, timeout=3.0):
     start_time = time.time()
     while True:
         try:
+            time.sleep(0.5)
             sock = socket.create_connection(('localhost', port))
             sock.close()
         except Exception:
