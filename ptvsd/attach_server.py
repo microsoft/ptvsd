@@ -71,6 +71,10 @@ def enable_attach(address=(DEFAULT_HOST, DEFAULT_PORT), redirect_output=True):
     _enabled = True
     _attached.clear()
 
+    # Ensure port is int
+    port = address[1]
+    address = (address[0], port if type(port) is int else int(port))
+
     # Note: this only starts pydevd (e.g. sets it up) and enables
     # debugging for *future* threads.  It does not actually enable
     # debugging in the *current* thread.  That is done in
