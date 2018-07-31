@@ -152,6 +152,7 @@ def lifecycle_handshake(session, command='launch', options=None,
             'initialize',
             adapterID='spam',
         )
+        req_initialize.wait()
     req_command = session.send_request(command, **options or {})
     req_command.wait()
     req_threads = session.send_request('threads') if threads else None
