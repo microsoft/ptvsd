@@ -238,6 +238,7 @@ class LifecycleTests(LifecycleTestsBase):
 
                 (req_initialize, req_launch, req_config, _, _, _
                  ) = lifecycle_handshake(session, 'attach')
+                Awaitable.wait_all(req_initialize, req_launch)
                 done()
                 adapter.wait()
 
