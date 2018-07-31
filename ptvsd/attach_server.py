@@ -35,14 +35,6 @@ def wait_for_attach(timeout=None):
     """
     _attached.wait(timeout)
     configuration_done.wait(timeout)
-    # time.sleep(2)
-    # tid = threading.current_thread().ident
-    # if tid in _pending_threads:
-    #     _pending_threads.remove(tid)
-    #     # Enable pydevd in the current thread.  This is necessary because
-    #     # we started pydevd in a new thread.  We must do it here because
-    #     # that previous invocation must have finished already.
-    #     _debug_current_thread()
 
 
 def enable_attach(address=(DEFAULT_HOST, DEFAULT_PORT), redirect_output=True):
@@ -109,7 +101,7 @@ def enable_attach(address=(DEFAULT_HOST, DEFAULT_PORT), redirect_output=True):
 
 def is_attached():
     """Returns ``True`` if debugger is attached, ``False`` otherwise."""
-    return _attached.isSet()
+    return _attached.isSet() and configuration_done.isSet()
 
 
 def break_into_debugger():
