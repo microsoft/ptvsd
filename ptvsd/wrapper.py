@@ -1216,8 +1216,6 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
 
         self.loop = None
         self.event_loop_thread = None
-        self.bkpoints = None
-        self.exception_bkpoints = None
 
         # debugger state
         self.is_process_created = False
@@ -2055,17 +2053,10 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
 
         return hit_condition
 
-    def re_build_breakpoints(self):
-        if self.bkpoints is None:
-            return
-        self.on_setBreakpoints(None, self.bkpoints)
-        self.on_setExceptionBreakpoints(None, self.exception_bkpoints)
-
     @async_handler
     def on_setBreakpoints(self, request, args):
         # TODO: docstring
         bps = []
-        self.bkpoints = args
         path = args['source']['path']
         self.path_casing.track_file_path_case(path)
         src_bps = args.get('breakpoints', [])
@@ -2131,7 +2122,6 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
     @async_handler
     def on_setExceptionBreakpoints(self, request, args):
         # TODO: docstring
-        self.exception_bkpoints = args
         filters = args['filters']
         exception_options = args.get('exceptionOptions', [])
         jmc = self._is_just_my_code_stepping_enabled()
