@@ -253,7 +253,7 @@ class LifecycleTests(LifecycleTestsBase):
             time.sleep(.1)
 
         received = list(_strip_newline_output_events(session.received))
-        self.assert_received(received, [
+        self.assert_contains(received, [
             self.new_version_event(session.received),
             self.new_response(req_initialize.req, **INITIALIZE_RESPONSE),
             self.new_event('initialized'),
