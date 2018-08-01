@@ -367,7 +367,7 @@ class LifecycleTests(LifecycleTestsBase):
 
         #DebugAdapter.VERBOSE = True
         adapter = DebugAdapter.start_embedded(addr, filename)
-        mysession1 = None
+                    mysession1 = None
         mysession2 = None
         try:
             with adapter:
@@ -415,7 +415,8 @@ class LifecycleTests(LifecycleTestsBase):
                         self.fail('execution never resumed upon detach '
                                 'or breakpoints never cleared')
                     out2 = str(adapter.output)
-
+                    import time
+                    time.sleep(2)
                     session2 = editor.attach_socket(addr, adapter, timeout=5)
                     mysession2 = session2
                     #session2.VERBOSE = True
