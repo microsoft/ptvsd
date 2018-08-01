@@ -6,14 +6,8 @@ from _pydevd_bundle.pydevd_comm import get_global_debugger
 from ptvsd._util import new_hidden_thread
 from ptvsd.pydevd_hooks import install
 from ptvsd.socket import create_server
-from ptvsd.daemon import session_not_bound
+from ptvsd.daemon import session_not_bound, DaemonClosedError
 
-
-def log(msg):
-    # with open(r'C:/Development/vscode/ptvsd/.vscode/log.log' , 'a') as fs:
-    #     fs.write(msg)
-    #     fs.write('\n')
-    pass
 
 def _pydevd_settrace(redirect_output=None, _pydevd=pydevd, **kwargs):
     if redirect_output is not None:
@@ -37,13 +31,12 @@ def _pydevd_settrace(redirect_output=None, _pydevd=pydevd, **kwargs):
 # start_server() method).
 # Then move at least some parts to the appropriate modules.  This module
 # is focused on running the debugger.
-g_next_session = None
+global_next_session = None
 
 def enable_attach(address, redirect_output=True,
                   _pydevd=pydevd, _install=install,
                   on_attach=lambda: None, **kwargs):
     host, port = address
-    # next_session = None
 
     def wait_for_connection(daemon, host, port, next_session=None):
         debugger = get_global_debugger()
@@ -52,61 +45,28 @@ def enable_attach(address, redirect_output=True,
             debugger = get_global_debugger()
 
         debugger.ready_to_run = True
-        log('1.1')
-        log(str(g_next_session))
-        # server = create_server(host, port)
-        # try:
-        #     _, next_session = daemon.start_server(addr=(host,port))
-        # except Exception:
-        #     log('1.3')
-        #     import traceback            
-        #     log(traceback.format_exc())
 
-        log('1.2')
         while True:
-            log('1.3')
-            log('wait for session not bound')
             session_not_bound.wait()
-            # client, _ = server.accept()
-            # log('new session bound')
-            # daemon.start_session(client, 'ptvsd.Server')
             try:
-                g_next_session()
-                log('new session bound')
-                # debugger.ready_to_run = True
+                global_next_session()
                 on_attach()
-            except Exception:
-                pass
+            except DaemonClosedError:
+                return
 
-    def do_nothing():    
-        try:
-            log('did something')
-            daemon._sock = daemon._start()
-
-            _, next_session = daemon.start_server(addr=(host,port))
-            log(str(next_session))
-            global g_next_session
-            g_next_session = next_session
-            return daemon._sock
-        except Exception:
-            log('1.3ex')
-            import traceback            
-            log(traceback.format_exc())
+    def start_daemon():    
+        daemon._sock = daemon._start()
+        _, next_session = daemon.start_server(addr=(host,port))
+        global global_next_session
+        global_next_session = next_session
+        return daemon._sock
 
     daemon = _install(_pydevd,
                       address,
                       start_server=None,
-                    #   start_client=(lambda daemon, h, port: daemon.start()),
-                      start_client=(lambda daemon, h, port: do_nothing()),
+                      start_client=(lambda daemon, h, port: start_daemon()),
                       singlesession=False,
                       **kwargs)
-    
-    # try:
-    #     _, next_session = daemon.start_server(addr=(host,port))
-    # except Exception:
-    #     log('1.3')
-    #     import traceback            
-    #     log(traceback.format_exc())
 
     connection_thread = new_hidden_thread('ptvsd.listen_for_connection',
                                           wait_for_connection,
