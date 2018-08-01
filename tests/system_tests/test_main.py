@@ -355,7 +355,6 @@ class LifecycleTests(LifecycleTestsBase):
 
             # <done>
             """.format(ROOT, tuple(addr)))
-        lockfile1 = self.workspace.lockfile()
         lockfile2 = self.workspace.lockfile()
         done1, _ = set_lock(filename, lockfile2, 'before')
         lockfile3 = self.workspace.lockfile()
