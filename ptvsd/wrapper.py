@@ -49,7 +49,7 @@ WAIT_FOR_THREAD_FINISH_TIMEOUT = 1  # seconds
 
 
 debug = _util.debug
-configuration_done = threading.Event()
+debugger_attached = threading.Event()
 
 #def ipcjson_trace(s):
 #    print(s)
@@ -1095,14 +1095,16 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
 
     def on_configurationDone(self, request, args):
         # TODO: docstring
-        global configuration_done
-        configuration_done.set()
+        global debugger_attached
+        debugger_attached.set()
         self.send_response(request)
         self._process_debug_options(self.debug_options)
         self._handle_configurationDone(args)
         self._notify_ready()
 
     def on_disconnect(self, request, args):
+        global debugger_attached
+        debugger_attached.clear()
         self._restart_debugger = args.get('restart', False)
 
         # TODO: docstring
