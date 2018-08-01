@@ -1077,6 +1077,7 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
     def on_initialize(self, request, args):
         # TODO: docstring
         self._restart_debugger = False
+        self.is_process_created = False
         self.send_response(request, **INITIALIZE_RESPONSE)
         self.send_event('initialized')
 
