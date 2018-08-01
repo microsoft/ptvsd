@@ -2301,7 +2301,8 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         xframe = xframes[0]
         filepath = unquote(xframe['file'])
         if reason in STEP_REASONS or reason in EXCEPTION_REASONS:
-            if not self._should_debug(filepath):
+            if self.internals_filter.is_internal_path(filepath) or \
+                not self._should_debug(filepath):
                 self.pydevd_notify(pydevd_comm.CMD_THREAD_RUN, pyd_tid)
                 return
 
