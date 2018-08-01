@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+import os
 try:
     import queue
 except ImportError:
@@ -168,6 +169,8 @@ class Proc(Closeable):
             stdout = subprocess.PIPE
         if stderr is _NOT_SET:
             stderr = subprocess.STDOUT
+        if env is not None:
+            env = {**os.environ, **env}
         proc = subprocess.Popen(
             argv,
             stdout=stdout,
