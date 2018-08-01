@@ -1,12 +1,11 @@
 import pydevd
-import threading
 import time
 
 from _pydevd_bundle.pydevd_comm import get_global_debugger
 
-from ptvsd._util import debug, new_hidden_thread
-from ptvsd.pydevd_hooks import install, start_server
-from ptvsd.socket import Address, create_server
+from ptvsd._util import new_hidden_thread
+from ptvsd.pydevd_hooks import install
+from ptvsd.socket import create_server
 
 
 def _pydevd_settrace(redirect_output=None, _pydevd=pydevd, **kwargs):
@@ -47,7 +46,6 @@ def enable_attach(address, redirect_output=True,
         while True:
             client, _ = server.accept()
             daemon.start_session(client, 'ptvsd.Server')
-            # daemon.re_build_breakpoints()
             on_attach()
 
     daemon = _install(_pydevd,
@@ -58,8 +56,8 @@ def enable_attach(address, redirect_output=True,
                       **kwargs)
 
     connection_thread = new_hidden_thread('ptvsd.listen_for_connection',
-                                         wait_for_connection,
-                                         args=(daemon, host, port))
+                                          wait_for_connection,
+                                          args=(daemon, host, port))
     connection_thread.start()
 
     _pydevd.settrace(host=host,

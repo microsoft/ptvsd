@@ -2,9 +2,6 @@
 # Licensed under the MIT License. See LICENSE in the project root
 # for license information.
 
-import threading
-import time
-
 # TODO: Why import run_module & run_file?
 from ptvsd._local import run_module, run_file  # noqa
 from ptvsd._remote import (

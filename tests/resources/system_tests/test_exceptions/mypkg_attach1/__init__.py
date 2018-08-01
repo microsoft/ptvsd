@@ -11,4 +11,5 @@ def main():
         pass
     sys.stdout.write('end')
 
+
 main()

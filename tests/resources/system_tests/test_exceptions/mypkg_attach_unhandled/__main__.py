@@ -8,4 +8,5 @@ def main():
     raise ArithmeticError('Hello')
     sys.stdout.write('end')
 
+
 main()
