@@ -343,8 +343,6 @@ class LifecycleTests(LifecycleTestsBase):
             sys.path.insert(0, {!r})
             import ptvsd
 
-            # <start>
-
             addr = {}
             ptvsd.enable_attach(addr)
             ptvsd.wait_for_attach()
@@ -358,7 +356,6 @@ class LifecycleTests(LifecycleTestsBase):
             # <done>
             """.format(ROOT, tuple(addr)))
         lockfile1 = self.workspace.lockfile()
-        _, wait1 = set_release(filename, lockfile1, 'start')
         lockfile2 = self.workspace.lockfile()
         done1, _ = set_lock(filename, lockfile2, 'before')
         lockfile3 = self.workspace.lockfile()
@@ -372,10 +369,8 @@ class LifecycleTests(LifecycleTestsBase):
         #DebugAdapter.VERBOSE = True
         adapter = DebugAdapter.start_embedded(addr, filename)
         with adapter:
-            wait1()
             with DebugClient() as editor:
                 session1 = editor.attach_socket(addr, adapter, timeout=5)
-                #session1.VERBOSE = True
                 with session1.wait_for_event('thread') as result:
                     with session1.wait_for_event('process'):
                         (req_init1, req_attach1, req_config1,
