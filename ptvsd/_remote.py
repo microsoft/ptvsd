@@ -6,6 +6,7 @@ from _pydevd_bundle.pydevd_comm import get_global_debugger
 from ptvsd._util import new_hidden_thread
 from ptvsd.pydevd_hooks import install
 from ptvsd.socket import create_server
+from ptvsd.daemon import session_not_bound
 
 
 def _pydevd_settrace(redirect_output=None, _pydevd=pydevd, **kwargs):
@@ -44,6 +45,7 @@ def enable_attach(address, redirect_output=True,
         debugger.ready_to_run = True
         server = create_server(host, port)
         while True:
+            session_not_bound.wait()
             client, _ = server.accept()
             daemon.start_session(client, 'ptvsd.Server')
             on_attach()
