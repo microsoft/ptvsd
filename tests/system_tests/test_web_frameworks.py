@@ -419,7 +419,6 @@ class FlaskLaunchFileTests(WebFrameworkTests):
                     'FLASK_DEBUG': '0',
                     'LC_ALL': 'C.UTF-8',
                     'LANG': 'C.UTF-8',
-                    'PTVSD_TEST_DEBUG': '1',
                 },
                 cwd=cwd), 'Jinja', filename)
 
@@ -436,7 +435,6 @@ class FlaskLaunchFileTests(WebFrameworkTests):
                     'FLASK_DEBUG': '0',
                     'LC_ALL': 'C.UTF-8',
                     'LANG': 'C.UTF-8',
-                    'PTVSD_TEST_DEBUG': '1',
                 },
                 cwd=cwd), 'Jinja', filename)
 
