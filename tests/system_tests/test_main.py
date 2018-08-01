@@ -416,7 +416,6 @@ class LifecycleTests(LifecycleTestsBase):
                 #session2.VERBOSE = True
                 with session2.wait_for_event('thread') as result:
                     with session2.wait_for_event('process'):
-                        print('step2')
                         (req_init2, req_attach2, req_config2,
                          _, _, req_threads3,
                          ) = lifecycle_handshake(session2, 'attach',
