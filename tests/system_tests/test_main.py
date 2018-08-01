@@ -367,81 +367,67 @@ class LifecycleTests(LifecycleTestsBase):
 
         #DebugAdapter.VERBOSE = True
         adapter = DebugAdapter.start_embedded(addr, filename)
-        mysession1 = None
-        mysession2 = None
-        try:
-            with adapter:
-                with DebugClient() as editor:
-                    session1 = editor.attach_socket(addr, adapter, timeout=5)
-                    mysession1 = session1
-                    with session1.wait_for_event('thread') as result:
-                        with session1.wait_for_event('process'):
-                            print('step1')
-                            (req_init1, req_attach1, req_config1,
-                            _, _, req_threads1,
-                            ) = lifecycle_handshake(session1, 'attach',
-                                                    threads=True)
-                    event = result['msg']
-                    tid1 = event.body['threadId']
+        with adapter:
+            with DebugClient() as editor:
+                session1 = editor.attach_socket(addr, adapter, timeout=5)
+                with session1.wait_for_event('thread') as result:
+                    with session1.wait_for_event('process'):
+                        print('step1')
+                        (req_init1, req_attach1, req_config1,
+                        _, _, req_threads1,
+                        ) = lifecycle_handshake(session1, 'attach',
+                                                threads=True)
+                event = result['msg']
+                tid1 = event.body['threadId']
 
-                    stopped_event = session1.get_awaiter_for_event('stopped')
-                    req_bps = session1.send_request(
-                        'setBreakpoints',
-                        source={'path': filename},
-                        breakpoints=[
-                            {'line': bp1},
-                            {'line': bp2},
-                        ],
-                    )
-                    req_bps.wait()
+                stopped_event = session1.get_awaiter_for_event('stopped')
+                req_bps = session1.send_request(
+                    'setBreakpoints',
+                    source={'path': filename},
+                    breakpoints=[
+                        {'line': bp1},
+                        {'line': bp2},
+                    ],
+                )
+                req_bps.wait()
 
-                    done1()
-                    stopped_event.wait()
+                done1()
+                stopped_event.wait()
 
-                    req_threads2 = session1.send_request('threads')
-                    req_stacktrace1 = session1.send_request(
-                        'stackTrace',
-                        threadId=tid1,
-                    )
-                    out1 = str(adapter.output)
+                req_threads2 = session1.send_request('threads')
+                req_stacktrace1 = session1.send_request(
+                    'stackTrace',
+                    threadId=tid1,
+                )
+                out1 = str(adapter.output)
 
-                    # Detach with execution stopped and 1 breakpoint left.
-                    req_disconnect = session1.send_request('disconnect')
-                    Awaitable.wait_all(req_threads2, req_stacktrace1, req_disconnect) # noqa
-                    editor.detach(adapter)
-                    try:
-                        wait2()
-                    except LockTimeoutError:
-                        self.fail('execution never resumed upon detach '
-                                'or breakpoints never cleared')
-                    out2 = str(adapter.output)
-                    import time
-                    time.sleep(2)
-                    session2 = editor.attach_socket(addr, adapter, timeout=5)
-                    mysession2 = session2
-                    #session2.VERBOSE = True
-                    with session2.wait_for_event('thread') as result:
-                        with session2.wait_for_event('process'):
-                            print('step2')
-                            (req_init2, req_attach2, req_config2,
-                            _, _, req_threads3,
-                            ) = lifecycle_handshake(session2, 'attach',
-                                                    threads=True)
-                    event = result['msg']
-                    tid2 = event.body['threadId']
+                # Detach with execution stopped and 1 breakpoint left.
+                req_disconnect = session1.send_request('disconnect')
+                Awaitable.wait_all(req_threads2, req_stacktrace1, req_disconnect) # noqa
+                editor.detach(adapter)
+                try:
+                    wait2()
+                except LockTimeoutError:
+                    self.fail('execution never resumed upon detach '
+                            'or breakpoints never cleared')
+                out2 = str(adapter.output)
+                import time
+                time.sleep(2)
+                session2 = editor.attach_socket(addr, adapter, timeout=5)
+                #session2.VERBOSE = True
+                with session2.wait_for_event('thread') as result:
+                    with session2.wait_for_event('process'):
+                        print('step2')
+                        (req_init2, req_attach2, req_config2,
+                        _, _, req_threads3,
+                        ) = lifecycle_handshake(session2, 'attach',
+                                                threads=True)
+                event = result['msg']
+                tid2 = event.body['threadId']
 
-                    done2()
-                    adapter.wait()
-                out3 = str(adapter.output)
-        except Exception:
-            if mysession1 is not None:
-                received = list(_strip_newline_output_events(mysession1.received))
-                for a, b in enumerate(received):
-                    print(a, b)
-            if mysession2 is not None:
-                received = list(_strip_newline_output_events(mysession2.received))
-                for a, b in enumerate(received):
-                    print(a, b)
+                done2()
+                adapter.wait()
+            out3 = str(adapter.output)
 
         received = list(_strip_newline_output_events(session1.received))
         self.assert_contains(received, [
