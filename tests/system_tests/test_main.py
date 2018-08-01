@@ -367,7 +367,7 @@ class LifecycleTests(LifecycleTestsBase):
 
         #DebugAdapter.VERBOSE = True
         adapter = DebugAdapter.start_embedded(addr, filename)
-                    mysession1 = None
+        mysession1 = None
         mysession2 = None
         try:
             with adapter:
