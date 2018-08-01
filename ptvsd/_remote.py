@@ -5,7 +5,6 @@ from _pydevd_bundle.pydevd_comm import get_global_debugger
 
 from ptvsd._util import new_hidden_thread
 from ptvsd.pydevd_hooks import install
-from ptvsd.socket import create_server
 from ptvsd.daemon import session_not_bound, DaemonClosedError
 
 
@@ -31,7 +30,9 @@ def _pydevd_settrace(redirect_output=None, _pydevd=pydevd, **kwargs):
 # start_server() method).
 # Then move at least some parts to the appropriate modules.  This module
 # is focused on running the debugger.
+
 global_next_session = None
+
 
 def enable_attach(address, redirect_output=True,
                   _pydevd=pydevd, _install=install,
@@ -54,9 +55,9 @@ def enable_attach(address, redirect_output=True,
             except DaemonClosedError:
                 return
 
-    def start_daemon():    
+    def start_daemon():
         daemon._sock = daemon._start()
-        _, next_session = daemon.start_server(addr=(host,port))
+        _, next_session = daemon.start_server(addr=(host, port))
         global global_next_session
         global_next_session = next_session
         return daemon._sock
