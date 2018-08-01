@@ -170,7 +170,9 @@ class Proc(Closeable):
         if stderr is _NOT_SET:
             stderr = subprocess.STDOUT
         if env is not None:
-            env = {**os.environ, **env}
+            env_copy = os.environ.copy()
+            env_copy.update(env)
+            env = env_copy
         proc = subprocess.Popen(
             argv,
             stdout=stdout,
