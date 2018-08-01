@@ -2360,6 +2360,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
                                                func_name, None))
                 stack = ''.join(traceback.format_list(frame_data))
                 source = unquote(xframe['file'])
+                description = '\n'.join([description, stack])
                 if self.internals_filter.is_internal_path(source):
                     source = None
             except Exception:
