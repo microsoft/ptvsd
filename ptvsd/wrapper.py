@@ -1098,7 +1098,6 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
 
     def on_configurationDone(self, request, args):
         # TODO: docstring
-        global debugger_attached
         debugger_attached.set()
         self.send_response(request)
         self._process_debug_options(self.debug_options)
@@ -1106,7 +1105,6 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
         self._notify_ready()
 
     def on_disconnect(self, request, args):
-        global debugger_attached
         debugger_attached.clear()
         self._restart_debugger = args.get('restart', False)
 
