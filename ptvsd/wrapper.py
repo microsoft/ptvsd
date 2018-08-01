@@ -1393,6 +1393,9 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         return not dbg_stdlib
 
     def _apply_code_stepping_settings(self):
+        if os.getenv('PTVSD_TEST_DEBUG', None) is not None:
+            self.send_event('output', category='stdout',
+                            output='prefixes: ' + str(STDLIB_PATH_PREFIXES))
         if self._is_just_my_code_stepping_enabled():
             vendored_pydevd = os.path.sep + \
                               os.path.join('ptvsd', '_vendored', 'pydevd')
@@ -1413,6 +1416,9 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
 
                 if not is_stdlib and len(path) > 0:
                     project_dirs.append(path)
+            if os.getenv('PTVSD_TEST_DEBUG', None) is not None:
+                self.send_event('output', category='stdout',
+                                output='projdirs: ' + str(project_dirs))
             self.pydevd_request(pydevd_comm.CMD_SET_PROJECT_ROOTS,
                                 '\t'.join(project_dirs))
 
