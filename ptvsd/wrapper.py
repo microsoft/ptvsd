@@ -719,6 +719,7 @@ DEBUG_OPTIONS_PARSER = {
     'FIX_FILE_PATH_CASE': bool_parser,
     'CLIENT_OS_TYPE': unquote,
     'DEBUG_STDLIB': bool_parser,
+    'STOP_ON_ENTRY': bool_parser,
 }
 
 
@@ -733,6 +734,7 @@ DEBUG_OPTIONS_BY_FLAG = {
     'DebugStdLib': 'DEBUG_STDLIB=True',
     'WindowsClient': 'CLIENT_OS_TYPE=WINDOWS',
     'UnixClient': 'CLIENT_OS_TYPE=UNIX',
+    'StopOnEntry': 'STOP_ON_ENTRY=True',
 }
 
 
@@ -1379,6 +1381,10 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         else:
             redirect_output = ''
         self.pydevd_request(pydevd_comm.CMD_REDIRECT_OUTPUT, redirect_output)
+
+        if opts.get('STOP_ON_ENTRY', False) and self.start_reason == 'launch':
+            self.pydevd_request(pydevd_comm.CMD_STOP_ON_START, '1')
+
         self._apply_code_stepping_settings()
 
     def _is_just_my_code_stepping_enabled(self):
@@ -1474,14 +1480,10 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         # We leave the "project roots" alone (see CMD_SET_PROJECT_ROOTS).
         pass
 
-    def _clear_breakpoints(self, filename=None):
+    def _clear_breakpoints(self):
         cmd = pydevd_comm.CMD_REMOVE_BREAK
         for pyd_bpid, vsc_bpid in self.bp_map.pairs():
-            if filename is None:
-                filename = pyd_bpid[0]
-            elif pyd_bpid[0] != filename:
-                continue
-            msg = '{}\t{}\t{}'.format('python-line', filename, vsc_bpid)
+            msg = '{}\t{}\t{}'.format('python-line', pyd_bpid[0], vsc_bpid)
             self.pydevd_notify(cmd, msg)
             self.bp_map.remove(pyd_bpid, vsc_bpid)
         # TODO: Wait until the last request has been handled?
