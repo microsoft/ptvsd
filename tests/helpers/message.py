@@ -66,7 +66,7 @@ def assert_contains_messages(received, expected):
     error_message = ['']
     received_copy = list(msg._replace(seq=0) for msg in received)
     expected_copy = list(msg._replace(seq=0) for msg in expected)
-    received_messages = '\nReceievd:' + \
+    received_messages = '\nReceievd:\n' + \
                         '\n'.join(str(msg) for msg in received_copy)
     for msg in expected_copy:
         if msg in received_copy:
@@ -76,7 +76,7 @@ def assert_contains_messages(received, expected):
             error_message.append(str(msg))
 
     if len(error_message) > 1:
-        expected_messages = '\nExpected:' + \
+        expected_messages = '\nExpected:\n' + \
                             '\n'.join(str(msg) for msg in expected_copy)
         raise AssertionError('\n'.join(error_message) +
                              received_messages +
