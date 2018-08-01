@@ -17,13 +17,6 @@ session_not_bound = threading.Event()
 session_not_bound.set()
 
 
-def log(msg):
-    # with open('/Users/donjayamanne/Desktop/Development/vscode/ptvsd/log.log', 'a') as fs:
-    #     fs.write(msg)
-    #     fs.write('\n')
-    pass
-
-
 def _wait_for_user():
     if sys.__stdout__ is not None:
         try:
@@ -351,7 +344,6 @@ class DaemonBase(object):
 
     def _bind_session(self, session):
         session_not_bound.clear()
-        log('start session')
         # TODO: Pass notify_* to session.start() instead.
         session = self.SESSION.from_raw(
             session,
@@ -362,7 +354,6 @@ class DaemonBase(object):
         )
         self._session = session
         self._numsessions += 1
-        log(str(self._numsessions))
 
     def _start_session_safely(self, threadname, **kwargs):
         try:
@@ -373,7 +364,6 @@ class DaemonBase(object):
             raise
 
     def _finish_session(self):
-        log('Finish session')
         self._numsessions -= 1
         session_not_bound.set()
         try:
