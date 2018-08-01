@@ -372,11 +372,10 @@ class LifecycleTests(LifecycleTestsBase):
                 session1 = editor.attach_socket(addr, adapter, timeout=5)
                 with session1.wait_for_event('thread') as result:
                     with session1.wait_for_event('process'):
-                        print('step1')
                         (req_init1, req_attach1, req_config1,
-                        _, _, req_threads1,
-                        ) = lifecycle_handshake(session1, 'attach',
-                                                threads=True)
+                         _, _, req_threads1,
+                         ) = lifecycle_handshake(session1, 'attach',
+                                                 threads=True)
                 event = result['msg']
                 tid1 = event.body['threadId']
 
@@ -409,7 +408,7 @@ class LifecycleTests(LifecycleTestsBase):
                     wait2()
                 except LockTimeoutError:
                     self.fail('execution never resumed upon detach '
-                            'or breakpoints never cleared')
+                              'or breakpoints never cleared')
                 out2 = str(adapter.output)
                 import time
                 time.sleep(2)
@@ -419,9 +418,9 @@ class LifecycleTests(LifecycleTestsBase):
                     with session2.wait_for_event('process'):
                         print('step2')
                         (req_init2, req_attach2, req_config2,
-                        _, _, req_threads3,
-                        ) = lifecycle_handshake(session2, 'attach',
-                                                threads=True)
+                         _, _, req_threads3,
+                         ) = lifecycle_handshake(session2, 'attach',
+                                                 threads=True)
                 event = result['msg']
                 tid2 = event.body['threadId']
 
