@@ -1403,9 +1403,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
             for path in sys.path + [os.getcwd()]:
                 is_stdlib = False
                 norm_path = os.path.normcase(path)
-                if path.endswith(ptvsd_path) or \
-                   path.endswith(vendored_pydevd) or \
-                   path.endswith(site_path):
+                if path.endswith((ptvsd_path, vendored_pydevd, site_path)):
                     is_stdlib = True
                 else:
                     for prefix in STDLIB_PATH_PREFIXES:
