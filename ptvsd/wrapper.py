@@ -2146,7 +2146,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
 
             name = unquote(xml.var[1]['type'])
             description = unquote(xml.var[1]['value'])
-            return (name, description)
+            return name, description
 
     @async_handler
     def on_exceptionInfo(self, request, args):
