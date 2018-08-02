@@ -2138,6 +2138,16 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         if request is not None:
             self.send_response(request)
 
+    def _get_exception_description(self, pyd_tid, pyd_fid):
+            cmdargs = '{}\t{}\tFRAME\t__exception__'.format(pyd_tid, pyd_fid)
+            cmdid = pydevd_comm.CMD_GET_VARIABLE
+            _, _, resp_args = yield self.pydevd_request(cmdid, cmdargs)
+            xml = self.parse_xml_response(resp_args)
+
+            name = unquote(xml.var[1]['type'])
+            description = unquote(xml.var[1]['value'])
+            return (name, description)
+
     @async_handler
     def on_exceptionInfo(self, request, args):
         # TODO: docstring
@@ -2155,13 +2165,10 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
 
             xframe = xframes[0]
             pyd_fid = xframe['id']
-            cmdargs = '{}\t{}\tFRAME\t__exception__'.format(pyd_tid, pyd_fid)
-            cmdid = pydevd_comm.CMD_GET_VARIABLE
-            _, _, resp_args = yield self.pydevd_request(cmdid, cmdargs)
-            xml = self.parse_xml_response(resp_args)
+            name, description = self._get_exception_description(
+                                    pyd_tid,
+                                    pyd_fid)
 
-            name = unquote(xml.var[1]['type'])
-            description = unquote(xml.var[1]['value'])
             frame_data = []
             for f in xframes:
                 file_path = unquote(f['file'])
@@ -2367,6 +2374,15 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
             reason = 'breakpoint'
         else:
             reason = 'pause'
+
+        if reason == 'exception':
+            try:
+                pyd_fid = xframe['id']
+                text, description = self._get_exception_description(
+                                        pyd_tid,
+                                        pyd_fid)
+            except Exception:
+                pass
 
         self.send_event(
             'stopped',
