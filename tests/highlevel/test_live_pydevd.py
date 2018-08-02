@@ -401,7 +401,7 @@ class BreakpointTests(VSCFlowTest, unittest.TestCase):
                  threadId=tid,
                  text='MyError',
                  description=description)),
-            self.new_response(req_continue_last),
+            self.new_response(req_continue_last, allThreadsContinued=True),
             self.new_event('continued', **dict(threadId=tid, )),
         ])
         self.assertIn('2 4 4', out)
