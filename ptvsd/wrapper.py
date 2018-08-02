@@ -2146,7 +2146,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
 
             name = unquote(xml.var[1]['type'])
             description = unquote(xml.var[1]['value'])
-            return name, description
+            return (name, description)
 
     @async_handler
     def on_exceptionInfo(self, request, args):
@@ -2165,13 +2165,10 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
 
             xframe = xframes[0]
             pyd_fid = xframe['id']
-            cmdargs = '{}\t{}\tFRAME\t__exception__'.format(pyd_tid, pyd_fid)
-            cmdid = pydevd_comm.CMD_GET_VARIABLE
-            _, _, resp_args = yield self.pydevd_request(cmdid, cmdargs)
-            xml = self.parse_xml_response(resp_args)
+            name, description = self._get_exception_description(
+                                    pyd_tid,
+                                    pyd_fid)
 
-            name = unquote(xml.var[1]['type'])
-            description = unquote(xml.var[1]['value'])
             frame_data = []
             for f in xframes:
                 file_path = unquote(f['file'])
