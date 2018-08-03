@@ -18,8 +18,6 @@ from _pydevd_bundle.pydevd_comm import (
     CMD_REMOVE_BREAK,
     CMD_REMOVE_EXCEPTION_BREAK,
     CMD_RETURN,
-    CMD_SEND_CURR_EXCEPTION_TRACE,
-    CMD_SEND_CURR_EXCEPTION_TRACE_PROCEEDED,
     CMD_SET_BREAK,
     CMD_SHOW_CONSOLE,
     CMD_STEP_CAUGHT_EXCEPTION,
@@ -2828,82 +2826,6 @@ class ThreadRunEventTests(ThreadEventTest, unittest.TestCase):
             ),
         ])
         self.assert_received(self.debugger, [])
-
-
-class SendCurrExcTraceEventTests(PyDevdEventTest, unittest.TestCase):
-
-    CMD = CMD_SEND_CURR_EXCEPTION_TRACE
-    EVENT = None
-
-    def pydevd_payload(self, thread, exc, frame):
-        return self.debugger_msgs.format_exception(thread[0], exc, frame)
-
-    # TODO: Is this right?
-    @unittest.skip('now a no-op')
-    def test_basic(self):
-        exc = RuntimeError('something went wrong')
-        frame = (2, 'spam', 'abc.py', 10)  # (pfid, func, file, line)
-        with self.launched():
-            with self.hidden():
-                tid, thread = self.set_thread('x')
-            self.send_event(thread, exc, frame)
-            received = self.vsc.received
-
-            self.send_request('exceptionInfo', dict(
-                threadId=tid,
-            ))
-            resp = self.vsc.received[-1]
-
-        self.assert_vsc_received(received, [])
-        self.assert_received(self.debugger, [])
-        self.assertTrue(resp.success, resp.message)
-        self.assertEqual(resp.body, dict(
-            exceptionId='RuntimeError',
-            description='something went wrong',
-            breakMode='unhandled',
-            details=dict(
-                message='something went wrong',
-                typeName='RuntimeError',
-            ),
-        ))
-
-
-class SendCurrExcTraceProceededEventTests(PyDevdEventTest, unittest.TestCase):
-
-    CMD = CMD_SEND_CURR_EXCEPTION_TRACE_PROCEEDED
-    EVENT = None
-
-    def pydevd_payload(self, threadid):
-        return str(threadid)
-
-    def test_basic(self):
-        exc = RuntimeError('something went wrong')
-        frame = (2, 'spam', 'abc.py', 10)  # (pfid, func, file, line)
-        #text = self.debugger_msgs.format_exception(thread[0], exc, frame)
-        with self.launched():
-            with self.hidden():
-                #tid, thread = self.set_thread('x')
-                #self.fix.send_event(CMD_SEND_CURR_EXCEPTION_TRACE, text)
-                tid, thread = self.error('x', exc, frame)
-                self.send_request('exceptionInfo', dict(
-                    threadId=tid,
-                ))
-                before = self.vsc.received[-1]
-
-            self.send_event(thread.id)
-            received = self.vsc.received
-
-            self.send_request('exceptionInfo', dict(
-                threadId=tid,
-            ))
-            after = self.vsc.received[-1]
-
-        self.assert_vsc_received(received, [])
-        self.assert_received(self.debugger, [])
-        # The exception got cleared so we do not see RuntimeError.
-        self.assertEqual(after.body['exceptionId'], 'BaseException')
-        self.assertNotEqual(after.body['exceptionId'],
-                            before.body['exceptionId'])
 
 
 class GetExceptionBreakpointEventTests(PyDevdEventTest, unittest.TestCase):
