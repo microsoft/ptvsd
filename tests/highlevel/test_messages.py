@@ -2172,35 +2172,18 @@ class ExceptionInfoTests(NormalRequestTest, unittest.TestCase):
                 '{}\t2\tFRAME\t__exception__'.format(thread.id)),
         ])
 
-    # TODO: verify behavior
-    @unittest.skip('poorly specified (broken?)')
     def test_no_exception(self):
-        with self.launched():
-            with self.hidden():
-                tid, _ = self.pause('x')
-            self.send_request(
-                threadId=tid,
-            )
-            received = self.vsc.received
-
-        self.assert_vsc_received(received, [
-            self.expected_response(
-            ),
-        ])
-        self.assert_received(self.debugger, [])
-
-    # TODO: verify behavior
-    @unittest.skip('poorly specified (broken?)')
-    def test_exception_cleared(self):
         exc = RuntimeError('something went wrong')
-        frame = (2, 'spam', 'abc.py', 10)  # (pfid, func, file, line)
+        lineno = fail.__code__.co_firstlineno + 1
+        frame = (2, 'fail', __file__, lineno)  # (pfid, func, file, line)
         with self.launched():
             with self.hidden():
                 tid, thread = self.error('x', exc, frame)
-                self.send_debugger_event(
-                    CMD_SEND_CURR_EXCEPTION_TRACE_PROCEEDED,
-                    str(thread.id),
-                )
+            self.set_debugger_response(thread.id, frame)
+            self.PYDEVD_CMD = CMD_GET_VARIABLE
+            # Don't provide exception info to simulate no exception
+            self.set_debugger_response(
+                thread.id)
             self.send_request(
                 threadId=tid,
             )
@@ -2208,9 +2191,25 @@ class ExceptionInfoTests(NormalRequestTest, unittest.TestCase):
 
         self.assert_vsc_received(received, [
             self.expected_response(
+                exceptionId='BaseException',
+                description='exception: no description',
+                breakMode='unhandled',
+                details=dict(
+                    typeName='BaseException',
+                    message='exception: no description',
+                    stackTrace=None,
+                    source=None
+                ),
             ),
         ])
-        self.assert_received(self.debugger, [])
+        self.assert_received(self.debugger, [
+            self.debugger_msgs.new_request(
+                CMD_GET_THREAD_STACK,
+                str(thread.id)),
+            self.debugger_msgs.new_request(
+                CMD_GET_VARIABLE,
+                '{}\t2\tFRAME\t__exception__'.format(thread.id)),
+        ])
 
 
 class RunInTerminalTests(NormalRequestTest, unittest.TestCase):
