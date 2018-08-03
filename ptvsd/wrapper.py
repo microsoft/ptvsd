@@ -2381,7 +2381,8 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
                 text = unquote(xml.var[1]['type'])
                 description = unquote(xml.var[1]['value'])
             except Exception:
-                pass
+                text = 'BaseException'
+                description = 'exception: no description'
 
         self.send_event(
             'stopped',
