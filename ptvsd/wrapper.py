@@ -1586,8 +1586,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
             xml = self.parse_xml_response(resp_args)
             xframes = list(xml.thread.frame)
         except Exception:
-            self.send_error_response(request, 'Stack unavailable')
-            return
+            xframes = []
 
         totalFrames = len(xframes)
         if levels == 0:
@@ -1988,7 +1987,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
     @async_handler
     def on_continue(self, request, args):
         # TODO: docstring
-        # Always suspend all threads.
+        # Always continue all threads.
         for pyd_tid in self.thread_map.pydevd_ids():
             self.pydevd_notify(pydevd_comm.CMD_THREAD_RUN, pyd_tid)
         self.send_response(request, allThreadsContinued=True)
