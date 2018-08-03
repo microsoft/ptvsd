@@ -1,6 +1,8 @@
+import os
 import os.path
 import unittest
 
+print('test_setup: ' + os.getcwd())
 from setup import iter_vendored_files
 
 
