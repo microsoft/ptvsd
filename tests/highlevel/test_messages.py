@@ -252,7 +252,7 @@ class StackTraceTests(NormalRequestTest, unittest.TestCase):
     PYDEVD_CMD = CMD_GET_THREAD_STACK
 
     def pydevd_payload(self, threadid, *frames):
-        return self.debugger_msgs.format_frames(threadid, 'any', *frames)
+        return self.debugger_msgs.format_frames(threadid, 'pause', *frames)
 
     def test_basic(self):
         frames = [
@@ -2115,13 +2115,27 @@ class ExceptionInfoTests(NormalRequestTest, unittest.TestCase):
     #       ],
     #   ),
 
+    PYDEVD_CMD = CMD_GET_THREAD_STACK
+
+    def pydevd_payload(self, threadid, *args):
+        if self.PYDEVD_CMD == CMD_GET_THREAD_STACK:
+            return self.debugger_msgs.format_frames(threadid, 'pause', *args)
+        else:
+            return self.debugger_msgs.format_variables(*args)
+
     def test_active_exception(self):
         exc = RuntimeError('something went wrong')
         lineno = fail.__code__.co_firstlineno + 1
         frame = (2, 'fail', __file__, lineno)  # (pfid, func, file, line)
         with self.launched():
             with self.hidden():
-                tid, _ = self.error('x', exc, frame)
+                tid, thread = self.error('x', exc, frame)
+            self.set_debugger_response(thread.id, frame)
+            self.PYDEVD_CMD = CMD_GET_VARIABLE
+            self.set_debugger_response(
+                thread.id,
+                ('type', exc.__class__.__name__),
+                ('value', exc))
             self.send_request(
                 threadId=tid,
             )
@@ -2129,7 +2143,7 @@ class ExceptionInfoTests(NormalRequestTest, unittest.TestCase):
 
         # TODO: Is this the right str?
         excstr = "RuntimeError('something went wrong')"
-        if sys.version_info[1] < 7:
+        if sys.version_info < (3, 7):
             excstr = excstr[:-1] + ',)'
         self.assert_vsc_received(received, [
             self.expected_response(
@@ -2149,7 +2163,14 @@ class ExceptionInfoTests(NormalRequestTest, unittest.TestCase):
                 ),
             ),
         ])
-        self.assert_received(self.debugger, [])
+        self.assert_received(self.debugger, [
+            self.debugger_msgs.new_request(
+                CMD_GET_THREAD_STACK,
+                str(thread.id)),
+            self.debugger_msgs.new_request(
+                CMD_GET_VARIABLE,
+                '{}\t2\tFRAME\t__exception__'.format(thread.id)),
+        ])
 
     # TODO: verify behavior
     @unittest.skip('poorly specified (broken?)')
