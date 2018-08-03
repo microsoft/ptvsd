@@ -1581,6 +1581,11 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
 
         try:
             pyd_tid = self.thread_map.to_pydevd(vsc_tid)
+        except KeyError:
+            self.send_error_response(request)
+            return
+
+        try:
             cmd = pydevd_comm.CMD_GET_THREAD_STACK
             _, _, resp_args = yield self.pydevd_request(cmd, pyd_tid)
             xml = self.parse_xml_response(resp_args)
