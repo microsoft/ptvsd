@@ -859,23 +859,27 @@ class ContinueTests(NormalRequestTest, unittest.TestCase):
     PYDEVD_RESP = None
 
     def test_basic(self):
+        frames = [
+            (2, 'spam', 'abc.py', 10),
+        ]
         with self.launched():
             with self.hidden():
-                tid, thread = self.pause('x', *[
-                    (2, 'spam', 'abc.py', 10),
-                ])
+                tid, thread = self.pause('x', *frames)
             self.send_request(
                 threadId=tid,
             )
             received = self.vsc.received
 
         self.assert_vsc_received(received, [
-            self.expected_response(),
+            self.expected_response(allThreadsContinued=True),
             # no events
         ])
-        self.assert_received(self.debugger, [
-            self.expected_pydevd_request(str(thread.id)),
-        ])
+        thread_ids = list(t.id for t in self._known_threads)
+        thread_ids.sort()
+        expected = list(self.debugger_msgs.new_request(
+                        self.PYDEVD_CMD, str(t))
+                        for t in thread_ids)
+        self.assert_received(self.debugger, expected)
 
 
 class NextTests(NormalRequestTest, unittest.TestCase):

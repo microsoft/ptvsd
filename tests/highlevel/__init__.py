@@ -17,6 +17,7 @@ from _pydevd_bundle.pydevd_comm import (
     CMD_THREAD_CREATE,
     CMD_GET_VARIABLE,
     CMD_SET_PROJECT_ROOTS,
+    CMD_GET_THREAD_STACK,
 )
 
 from ptvsd._util import new_hidden_thread
@@ -833,6 +834,8 @@ class HighlevelFixture(object):
         self._pydevd.send_pause_event(thread, *stack)
         if self._vsc._hidden:
             self._vsc.msgs.next_event()
+        payload = self.debugger_msgs.format_frames(thread.id, 'pause', *stack)
+        self.set_debugger_response(CMD_GET_THREAD_STACK, payload)
         self.send_request('stackTrace', {'threadId': tid})
         self.send_request('scopes', {'frameId': 1})
         return tid, thread

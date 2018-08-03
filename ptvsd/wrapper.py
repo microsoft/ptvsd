@@ -2372,7 +2372,8 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         if reason == 'exception':
             try:
                 pyd_fid = xframe['id']
-                cmdargs = '{}\t{}\tFRAME\t__exception__'.format(pyd_tid, pyd_fid)
+                cmdargs = '{}\t{}\tFRAME\t__exception__'.format(pyd_tid,
+                                                                pyd_fid)
                 cmdid = pydevd_comm.CMD_GET_VARIABLE
                 _, _, resp_args = yield self.pydevd_request(cmdid, cmdargs)
                 xml = self.parse_xml_response(resp_args)
