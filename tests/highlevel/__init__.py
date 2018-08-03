@@ -923,10 +923,11 @@ class VSCTest(object):
         expected = list(daemon.protocol.parse_each(expected))
         self.assertEqual(received, expected)
 
-    def assert_contains(self, received, expected):
+    def assert_contains(self, received, expected, parser='vsc'):
+        parser = self.vsc.protocol if parser == 'vsc' else parser
         from tests.helpers.message import assert_contains_messages
-        received = list(self.vsc.protocol.parse_each(received))
-        expected = list(self.vsc.protocol.parse_each(expected))
+        received = list(parser.parse_each(received))
+        expected = list(parser.parse_each(expected))
         assert_contains_messages(received, expected)
 
     def assert_received_unordered_payload(self, daemon, expected):

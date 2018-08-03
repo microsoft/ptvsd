@@ -873,11 +873,11 @@ class ContinueTests(NormalRequestTest, unittest.TestCase):
             # no events
         ])
         thread_ids = list(t.id for t in self._known_threads)
-        thread_ids.sort()
         expected = list(self.debugger_msgs.new_request(
                         self.PYDEVD_CMD, str(t))
                         for t in thread_ids)
-        self.assert_received(self.debugger, expected)
+        self.assert_contains(self.debugger.received, expected,
+                             parser=self.debugger.protocol)
 
 
 class NextTests(NormalRequestTest, unittest.TestCase):
