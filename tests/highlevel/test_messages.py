@@ -33,6 +33,7 @@ from _pydevd_bundle.pydevd_comm import (
     CMD_VERSION,
     CMD_WRITE_TO_CONSOLE,
     CMD_STEP_INTO_MY_CODE,
+    CMD_GET_THREAD_STACK,
 )
 
 from . import RunningTest
@@ -248,16 +249,22 @@ class ThreadsTests(NormalRequestTest, unittest.TestCase):
 class StackTraceTests(NormalRequestTest, unittest.TestCase):
 
     COMMAND = 'stackTrace'
+    PYDEVD_CMD = CMD_GET_THREAD_STACK
+
+    def pydevd_payload(self, threadid, *frames):
+        return self.debugger_msgs.format_frames(threadid, 'any', *frames)
 
     def test_basic(self):
+        frames = [
+            # (pfid, func, file, line)
+            (2, 'spam', 'abc.py', 10),
+            (5, 'eggs', 'xyz.py', 2),
+        ]
         with self.launched():
             with self.hidden():
                 tid, thread = self.set_thread('x')
-                self.suspend(thread, CMD_THREAD_SUSPEND, *[
-                    # (pfid, func, file, line)
-                    (2, 'spam', 'abc.py', 10),
-                    (5, 'eggs', 'xyz.py', 2),
-                ])
+                self.suspend(thread, CMD_THREAD_SUSPEND, *frames)
+            self.set_debugger_response(thread.id, *frames)
             self.send_request(
                 threadId=tid,
                 #startFrame=1,
@@ -287,16 +294,20 @@ class StackTraceTests(NormalRequestTest, unittest.TestCase):
             ),
             # no events
         ])
-        self.assert_received(self.debugger, [])
+        self.assert_received(self.debugger, [
+            self.debugger_msgs.new_request(self.PYDEVD_CMD, str(thread.id)),
+        ])
 
     def test_one_frame(self):
+        frames = [
+            # (pfid, func, file, line)
+            (2, 'spam', 'abc.py', 10),
+        ]
         with self.launched():
             with self.hidden():
                 tid, thread = self.set_thread('x')
-                self.suspend(thread, CMD_THREAD_SUSPEND, *[
-                    # (pfid, func, file, line)
-                    (2, 'spam', 'abc.py', 10),
-                ])
+                self.suspend(thread, CMD_THREAD_SUSPEND, *frames)
+            self.set_debugger_response(thread.id, *frames)
             self.send_request(
                 threadId=tid,
             )
@@ -317,17 +328,21 @@ class StackTraceTests(NormalRequestTest, unittest.TestCase):
             ),
             # no events
         ])
-        self.assert_received(self.debugger, [])
+        self.assert_received(self.debugger, [
+            self.debugger_msgs.new_request(self.PYDEVD_CMD, str(thread.id)),
+        ])
 
     def test_with_frame_format(self):
+        frames = [
+            # (pfid, func, file, line)
+            (2, 'spam', 'abc.py', 10),
+            (5, 'eggs', 'xyz.py', 2),
+        ]
         with self.launched():
             with self.hidden():
                 tid, thread = self.set_thread('x')
-                self.suspend(thread, CMD_THREAD_SUSPEND, *[
-                    # (pfid, func, file, line)
-                    (2, 'spam', 'abc.py', 10),
-                    (5, 'eggs', 'xyz.py', 2),
-                ])
+                self.suspend(thread, CMD_THREAD_SUSPEND, *frames)
+            self.set_debugger_response(thread.id, *frames)
             self.send_request(
                 threadId=tid,
                 format={
@@ -361,7 +376,9 @@ class StackTraceTests(NormalRequestTest, unittest.TestCase):
             ),
             # no events
         ])
-        self.assert_received(self.debugger, [])
+        self.assert_received(self.debugger, [
+            self.debugger_msgs.new_request(self.PYDEVD_CMD, str(thread.id)),
+        ])
 
     def test_no_threads(self):
         with self.launched():

@@ -1579,9 +1579,8 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         levels = int(args.get('levels', 0))
         fmt = args.get('format', {})
 
-        pyd_tid = self.thread_map.to_pydevd(vsc_tid)
-
         try:
+            pyd_tid = self.thread_map.to_pydevd(vsc_tid)
             cmd = pydevd_comm.CMD_GET_THREAD_STACK
             _, _, resp_args = yield self.pydevd_request(cmd, pyd_tid)
             xml = self.parse_xml_response(resp_args)
