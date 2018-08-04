@@ -84,7 +84,6 @@ def accept_file(f):
 
     return f in ['readme', 'makefile']
 
-print('setup: ' + os.getcwd())
 data_files.append(('pydevd_attach_to_process', [os.path.join('pydevd_attach_to_process', f) for f in os.listdir('pydevd_attach_to_process') if accept_file(f)]))
 for root, dirs, files in os.walk("pydevd_attach_to_process"):
     for d in dirs:
