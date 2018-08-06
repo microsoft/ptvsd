@@ -714,7 +714,7 @@ class AbstractWriterThread(threading.Thread):
             self, 
             break_on_uncaught,
             break_on_caught,
-            break_on_exceptions_thrown_in_same_context, 
+            skip_on_exceptions_thrown_in_same_context, 
             ignore_exceptions_thrown_in_lines_with_ignore_exception,
             ignore_libraries,
             exceptions=()
@@ -723,7 +723,7 @@ class AbstractWriterThread(threading.Thread):
         self.write("131\t%s\t%s" % (self.next_seq(), '%s;%s;%s;%s;%s;%s' % (
             'true' if break_on_uncaught else 'false', 
             'true' if break_on_caught else 'false', 
-            'true' if break_on_exceptions_thrown_in_same_context else 'false', 
+            'true' if skip_on_exceptions_thrown_in_same_context else 'false', 
             'true' if ignore_exceptions_thrown_in_lines_with_ignore_exception else 'false',
             'true' if ignore_libraries else 'false',
             ';'.join(exceptions)

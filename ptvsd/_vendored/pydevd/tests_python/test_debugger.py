@@ -1682,9 +1682,9 @@ class WriterThreadCaseSkipBreakpointInExceptions(debugger_unittest.AbstractWrite
         self.finished_ok = True
 
 #=======================================================================================================================
-# WriterThreadCaseHandledExceptions - Stop only once per handled exception.
+# WriterThreadCaseHandledExceptions0 - Stop only once per handled exception.
 #======================================================================================================================
-class WriterThreadCaseHandledExceptions(debugger_unittest.AbstractWriterThread):
+class WriterThreadCaseHandledExceptions0(debugger_unittest.AbstractWriterThread):
 
     TEST_FILE = debugger_unittest._get_debugger_test_file('_debugger_case_exceptions.py')
 
@@ -1699,7 +1699,7 @@ class WriterThreadCaseHandledExceptions(debugger_unittest.AbstractWriterThread):
         )
         self.write_make_initial_run()
 
-        hit = self.wait_for_breakpoint_hit(REASON_CAUGHT_EXCEPTION, line=2)
+        hit = self.wait_for_breakpoint_hit(REASON_CAUGHT_EXCEPTION, line=3)
         self.write_run_thread(hit.thread_id)
 
         self.finished_ok = True
@@ -1728,13 +1728,19 @@ class WriterThreadCaseHandledExceptions1(debugger_unittest.AbstractWriterThread)
         )
         self.write_make_initial_run()
 
-        hit = self.wait_for_breakpoint_hit(REASON_CAUGHT_EXCEPTION, line=2)
+        hit = self.wait_for_breakpoint_hit(REASON_CAUGHT_EXCEPTION, line=3)
+        self.write_get_frame(hit.thread_id, hit.frame_id)
+        self.wait_for_message(accept_message=lambda msg:'__exception__' in msg and 'IndexError' in msg, unquote_msg=False)
         self.write_run_thread(hit.thread_id)
         
-        hit = self.wait_for_breakpoint_hit(REASON_CAUGHT_EXCEPTION, line=5)
+        hit = self.wait_for_breakpoint_hit(REASON_CAUGHT_EXCEPTION, line=6)
+        self.write_get_frame(hit.thread_id, hit.frame_id)
+        self.wait_for_message(accept_message=lambda msg:'__exception__' in msg and 'IndexError' in msg, unquote_msg=False)
         self.write_run_thread(hit.thread_id)
         
-        hit = self.wait_for_breakpoint_hit(REASON_CAUGHT_EXCEPTION, line=9)
+        hit = self.wait_for_breakpoint_hit(REASON_CAUGHT_EXCEPTION, line=10)
+        self.write_get_frame(hit.thread_id, hit.frame_id)
+        self.wait_for_message(accept_message=lambda msg:'__exception__' in msg and 'IndexError' in msg, unquote_msg=False)
         self.write_run_thread(hit.thread_id)
 
         self.finished_ok = True
@@ -1787,14 +1793,47 @@ class WriterThreadCaseHandledExceptions3(debugger_unittest.AbstractWriterThread)
         self.write_set_py_exception_globals(
             break_on_uncaught=False,
             break_on_caught=True,
-            break_on_exceptions_thrown_in_same_context=False, # Because of this we'll only stop at line 5, not 2
+            skip_on_exceptions_thrown_in_same_context=False,
             ignore_exceptions_thrown_in_lines_with_ignore_exception=True,
             ignore_libraries=True, 
             exceptions=('IndexError',)
         )
             
         self.write_make_initial_run()
-        hit = self.wait_for_breakpoint_hit(REASON_CAUGHT_EXCEPTION, line=2)
+        hit = self.wait_for_breakpoint_hit(REASON_CAUGHT_EXCEPTION, line=3)
+        self.write_run_thread(hit.thread_id)
+
+        self.finished_ok = True
+
+
+#=======================================================================================================================
+# WriterThreadCaseHandledExceptions4 -- don't stop on exception thrown in the same context (only at caller).
+#======================================================================================================================
+class WriterThreadCaseHandledExceptions4(debugger_unittest.AbstractWriterThread):
+
+    TEST_FILE = debugger_unittest._get_debugger_test_file('_debugger_case_exceptions.py')
+
+    @overrides(debugger_unittest.AbstractWriterThread.get_environ)
+    def get_environ(self):
+        env = os.environ.copy()
+
+        env["IDE_PROJECT_ROOTS"] = os.path.dirname(self.TEST_FILE)
+        return env
+    
+    def run(self):
+        self.start_socket()
+        # Note: in this mode we'll only stop once.
+        self.write_set_py_exception_globals(
+            break_on_uncaught=False,
+            break_on_caught=True,
+            skip_on_exceptions_thrown_in_same_context=True,
+            ignore_exceptions_thrown_in_lines_with_ignore_exception=True,
+            ignore_libraries=True, 
+            exceptions=('IndexError',)
+        )
+            
+        self.write_make_initial_run()
+        hit = self.wait_for_breakpoint_hit(REASON_CAUGHT_EXCEPTION, line=6)
         self.write_run_thread(hit.thread_id)
 
         self.finished_ok = True
@@ -2474,8 +2513,8 @@ class Test(unittest.TestCase, debugger_unittest.DebuggerRunner):
     def test_case_skip_breakpoints_in_exceptions(self):
         self.check_case(WriterThreadCaseSkipBreakpointInExceptions)
 
-    def test_case_handled_exceptions(self):
-        self.check_case(WriterThreadCaseHandledExceptions)
+    def test_case_handled_exceptions0(self):
+        self.check_case(WriterThreadCaseHandledExceptions0)
         
     @pytest.mark.skipif(IS_JYTHON, reason='Not working on Jython (needs to be investigated).')
     def test_case_handled_exceptions1(self):
@@ -2486,6 +2525,9 @@ class Test(unittest.TestCase, debugger_unittest.DebuggerRunner):
         
     def test_case_handled_exceptions3(self):
         self.check_case(WriterThreadCaseHandledExceptions3)
+        
+    def test_case_handled_exceptions4(self):
+        self.check_case(WriterThreadCaseHandledExceptions4)
         
     def test_case_settrace(self):
         self.check_case(WriterCaseSetTrace)
