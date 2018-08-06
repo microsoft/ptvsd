@@ -1478,6 +1478,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         # TODO: Wait until the last request has been handled?
 
     def _resume_all_threads(self):
+        # TODO: Replace this with resume all command after #732 is fixed
         for pyd_tid in self.thread_map.pydevd_ids():
             self.pydevd_notify(pydevd_comm.CMD_THREAD_RUN, pyd_tid)
 
@@ -1582,6 +1583,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         try:
             pyd_tid = self.thread_map.to_pydevd(vsc_tid)
         except KeyError:
+            # Unknown thread, nothing much we cna do about it here
             self.send_error_response(request)
             return
 
@@ -1985,6 +1987,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
                 return
 
         # Always suspend all threads.
+        # TODO: Replace this with suspend all command after #732 is fixed
         for pyd_tid in self.thread_map.pydevd_ids():
             self.pydevd_notify(pydevd_comm.CMD_THREAD_SUSPEND, pyd_tid)
         self.send_response(request)
@@ -1993,6 +1996,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
     def on_continue(self, request, args):
         # TODO: docstring
         # Always continue all threads.
+        # TODO: Replace this with resume all command after #732 is fixed
         for pyd_tid in self.thread_map.pydevd_ids():
             self.pydevd_notify(pydevd_comm.CMD_THREAD_RUN, pyd_tid)
         self.send_response(request, allThreadsContinued=True)
