@@ -1,6 +1,6 @@
 import os
 import os.path
-import unittest
+
 
 from tests.helpers.debugsession import Awaitable
 from tests.helpers.resource import TestResources
@@ -449,7 +449,6 @@ class ServerAttachExceptionLifecycleTests(ExceptionTests):
 
 
 class PTVSDAttachExceptionLifecycleTests(ExceptionTests):
-    @unittest.skip('Needs fixing in #609, #580')
     def test_not_breaking_into_handled_exceptions(self):
         filename = TEST_FILES.resolve('handled_exceptions_attach.py')
         cwd = os.path.dirname(filename)
@@ -463,7 +462,6 @@ class PTVSDAttachExceptionLifecycleTests(ExceptionTests):
                 argv=argv,
             ))
 
-    @unittest.skip('Needs fixing in #609, #580')
     def test_not_breaking_into_unhandled_exceptions(self):
         filename = TEST_FILES.resolve('unhandled_exceptions_attach.py')
         cwd = os.path.dirname(filename)
@@ -477,7 +475,6 @@ class PTVSDAttachExceptionLifecycleTests(ExceptionTests):
                 argv=argv,
             ))
 
-    @unittest.skip('#686')
     def test_breaking_into_handled_exceptions(self):
         filename = TEST_FILES.resolve('handled_exceptions_attach.py')
         cwd = os.path.dirname(filename)
@@ -504,7 +501,6 @@ class PTVSDAttachExceptionLifecycleTests(ExceptionTests):
                 argv=argv,
             ), filename)
 
-    @unittest.skip('Needs fixing in #609')
     def test_breaking_into_raised_exceptions_only(self):
         filename = TEST_FILES.resolve('unhandled_exceptions_attach.py')
         cwd = os.path.dirname(filename)
@@ -518,7 +514,6 @@ class PTVSDAttachExceptionLifecycleTests(ExceptionTests):
                 argv=argv,
             ), filename)
 
-    @unittest.skip('Needs fixing in #609')
     def test_breaking_into_raised_and_unhandled_exceptions(self):
         filename = TEST_FILES.resolve('unhandled_exceptions_attach.py')
         cwd = os.path.dirname(filename)
@@ -684,7 +679,6 @@ class PTVSDAttachModuleExceptionLifecycleTests(ExceptionTests):
             ),
             os.path.join(TEST_FILES.root, module_name, '__main__.py'))
 
-    @unittest.skip('To be fixed #724')
     def test_breaking_into_raised_exceptions_only(self):
         module_name = 'mypkg_attach_unhandled'
         env = TEST_FILES.env_with_py_path()
@@ -701,7 +695,6 @@ class PTVSDAttachModuleExceptionLifecycleTests(ExceptionTests):
             ),
             os.path.join(TEST_FILES.root, module_name, '__main__.py'))
 
-    @unittest.skip('To be fixed #723')
     def test_breaking_into_raised_and_unhandled_exceptions(self):
         module_name = 'mypkg_attach_unhandled'
         env = TEST_FILES.env_with_py_path()
