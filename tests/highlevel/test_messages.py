@@ -32,6 +32,7 @@ from _pydevd_bundle.pydevd_comm import (
     CMD_WRITE_TO_CONSOLE,
     CMD_STEP_INTO_MY_CODE,
     CMD_GET_THREAD_STACK,
+    CMD_GET_EXCEPTION_DETAILS,
 )
 
 from . import RunningTest
@@ -2666,31 +2667,26 @@ class ThreadSuspendEventTests(ThreadEventTest, unittest.TestCase):
             with self.hidden():
                 _, thread = self.set_thread('x')
             self.set_debugger_response(
-                CMD_GET_VARIABLE,
-                self.debugger_msgs.format_variables(
-                    ('???', '???'),
-                    ('???', exc),
+                CMD_GET_EXCEPTION_DETAILS,
+                self.debugger_msgs.format_exception_details(
+                    thread.id, exc, frames=[]
                 ),
             )
             tid = self.send_event(thread.id, CMD_STEP_CAUGHT_EXCEPTION)
             received = self.vsc.received
 
-        # TODO: Is this the right str?
-        excstr = "RuntimeError('something went wrong')"
-        if sys.version_info[1] < 7:
-            excstr = excstr[:-1] + ',)'
         self.assert_vsc_received(received, [
             self.expected_event(
                 reason='exception',
                 threadId=tid,
                 text='RuntimeError',
-                description=excstr,
+                description='something went wrong',
             ),
         ])
         self.assert_received(self.debugger, [
             self.debugger_msgs.new_request(
-                CMD_GET_VARIABLE,
-                str(thread.id), '2', 'FRAME', '__exception__'),
+                CMD_GET_EXCEPTION_DETAILS,
+                str(thread.id)),
         ])
 
     def test_exception_break(self):
@@ -2699,31 +2695,26 @@ class ThreadSuspendEventTests(ThreadEventTest, unittest.TestCase):
             with self.hidden():
                 _, thread = self.set_thread('x')
             self.set_debugger_response(
-                CMD_GET_VARIABLE,
-                self.debugger_msgs.format_variables(
-                    ('???', '???'),
-                    ('???', exc),
+                CMD_GET_EXCEPTION_DETAILS,
+                self.debugger_msgs.format_exception_details(
+                    thread.id, exc, frames=[]
                 ),
             )
             tid = self.send_event(thread.id, CMD_ADD_EXCEPTION_BREAK)
             received = self.vsc.received
 
-        # TODO: Is this the right str?
-        excstr = "RuntimeError('something went wrong')"
-        if sys.version_info[1] < 7:
-            excstr = excstr[:-1] + ',)'
         self.assert_vsc_received(received, [
             self.expected_event(
                 reason='exception',
                 threadId=tid,
                 text='RuntimeError',
-                description=excstr,
+                description='something went wrong',
             ),
         ])
         self.assert_received(self.debugger, [
             self.debugger_msgs.new_request(
-                CMD_GET_VARIABLE,
-                str(thread.id), '2', 'FRAME', '__exception__'),
+                CMD_GET_EXCEPTION_DETAILS,
+                str(thread.id)),
         ])
 
     def test_suspend(self):
