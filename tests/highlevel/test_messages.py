@@ -2654,7 +2654,7 @@ class ThreadSuspendEventTests(ThreadEventTest, unittest.TestCase):
             self.set_debugger_response(
                 CMD_GET_EXCEPTION_DETAILS,
                 self.debugger_msgs.format_exception_details(
-                    thread.id, exc, frames=[]
+                    thread.id, exc
                 ),
             )
             tid = self.send_event(thread.id, CMD_STEP_CAUGHT_EXCEPTION)
@@ -2682,7 +2682,7 @@ class ThreadSuspendEventTests(ThreadEventTest, unittest.TestCase):
             self.set_debugger_response(
                 CMD_GET_EXCEPTION_DETAILS,
                 self.debugger_msgs.format_exception_details(
-                    thread.id, exc, frames=[]
+                    thread.id, exc
                 ),
             )
             tid = self.send_event(thread.id, CMD_ADD_EXCEPTION_BREAK)
