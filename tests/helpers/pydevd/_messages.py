@@ -102,7 +102,7 @@ class PyDevdMessages(object):
             ),
         )
 
-    def format_exception_details(self, threadid, exc, frames):
+    def format_exception_details(self, threadid, exc, *frames):
         name = pydevd_xml.make_valid_xml_value(str(type(exc)))
         if hasattr(exc, 'args') and len(exc.args) > 0:
             desc = str(exc.args[0])
