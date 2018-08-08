@@ -1596,7 +1596,7 @@ class SetExceptionBreakpointsTests(NormalRequestTest, unittest.TestCase):
         self._check_option(
             [path],
             'always',
-            ['python-BaseException\t1\t0\t1'],
+            ['python-BaseException\t2\t0\t1'],
         )
 
     def test_single_option_single_path_mode_unhandled(self):
@@ -1665,7 +1665,7 @@ class SetExceptionBreakpointsTests(NormalRequestTest, unittest.TestCase):
             {'names': ['ImportError']},
         ]
         self._check_option(path, 'always', [
-            'python-ImportError\t1\t0\t1',
+            'python-ImportError\t2\t0\t1',
         ])
 
     def test_single_option_deep_path(self):
@@ -1677,10 +1677,10 @@ class SetExceptionBreakpointsTests(NormalRequestTest, unittest.TestCase):
             {'names': ['MyError']},
         ]
         self._check_option(path, 'always', [
-            'python-ImportError\t1\t0\t1',
-            'python-RuntimeError\t1\t0\t1',
-            'python-ValueError\t1\t0\t1',
-            'python-MyError\t1\t0\t1',
+            'python-ImportError\t2\t0\t1',
+            'python-RuntimeError\t2\t0\t1',
+            'python-ValueError\t2\t0\t1',
+            'python-MyError\t2\t0\t1',
         ])
 
     # TODO: verify behavior
@@ -1691,9 +1691,9 @@ class SetExceptionBreakpointsTests(NormalRequestTest, unittest.TestCase):
             {'names': ['ImportError', 'RuntimeError', 'ValueError']},
         ]
         self._check_option(path, 'always', [
-            'python-ImportError\t1\t0\t1',
-            'python-RuntimeError\t1\t0\t1',
-            'python-ValueError\t1\t0\t1',
+            'python-ImportError\t2\t0\t1',
+            'python-RuntimeError\t2\t0\t1',
+            'python-ValueError\t2\t0\t1',
         ])
 
     # TODO: verify behavior
@@ -1754,7 +1754,7 @@ class SetExceptionBreakpointsTests(NormalRequestTest, unittest.TestCase):
         ]
         self._check_options(options, [
             # shallow path
-            'python-ImportError\t1\t0\t1',
+            'python-ImportError\t2\t0\t1',
             # ignored
             # deep path
             'python-ModuleNotFoundError\t0\t1\t1',
@@ -1807,7 +1807,7 @@ class SetExceptionBreakpointsTests(NormalRequestTest, unittest.TestCase):
         self.PYDEVD_CMD = CMD_ADD_EXCEPTION_BREAK
         self.assert_received(self.debugger, removed + [
             self.expected_pydevd_request('python-ImportError\t0\t0\t1'),
-            self.expected_pydevd_request('python-RuntimeError\t1\t0\t1'),
+            self.expected_pydevd_request('python-RuntimeError\t2\t0\t1'),
         ])
 
     def test_options_with_existing_options(self):
@@ -1818,7 +1818,7 @@ class SetExceptionBreakpointsTests(NormalRequestTest, unittest.TestCase):
                     'python-ImportError\t0\t1\t1',
                 )
                 p2 = self.expected_pydevd_request(
-                    'python-BaseException\t1\t0\t1',
+                    'python-BaseException\t2\t0\t1',
                 )
                 self.fix.send_request('setExceptionBreakpoints', dict(
                     filters=[],
@@ -1890,7 +1890,7 @@ class SetExceptionBreakpointsTests(NormalRequestTest, unittest.TestCase):
         ])
         self.PYDEVD_CMD = CMD_ADD_EXCEPTION_BREAK
         self.assert_received(self.debugger, [
-            self.expected_pydevd_request('python-BaseException\t1\t0\t1'),
+            self.expected_pydevd_request('python-BaseException\t2\t0\t1'),
         ])
 
     def test_single_filter_uncaught(self):
@@ -1925,7 +1925,7 @@ class SetExceptionBreakpointsTests(NormalRequestTest, unittest.TestCase):
         ])
         self.PYDEVD_CMD = CMD_ADD_EXCEPTION_BREAK
         self.assert_received(self.debugger, [
-            self.expected_pydevd_request('python-BaseException\t1\t1\t1'),
+            self.expected_pydevd_request('python-BaseException\t2\t1\t1'),
         ])
 
     def test_multiple_filters_repeat(self):
@@ -1943,7 +1943,7 @@ class SetExceptionBreakpointsTests(NormalRequestTest, unittest.TestCase):
         ])
         self.PYDEVD_CMD = CMD_ADD_EXCEPTION_BREAK
         self.assert_received(self.debugger, [
-            self.expected_pydevd_request('python-BaseException\t1\t0\t1'),
+            self.expected_pydevd_request('python-BaseException\t2\t0\t1'),
         ])
 
     def test_empty_filters(self):
@@ -1987,7 +1987,7 @@ class SetExceptionBreakpointsTests(NormalRequestTest, unittest.TestCase):
         ]
         self.PYDEVD_CMD = CMD_ADD_EXCEPTION_BREAK
         self.assert_received(self.debugger, removed + [
-            self.expected_pydevd_request('python-BaseException\t1\t0\t1'),
+            self.expected_pydevd_request('python-BaseException\t2\t0\t1'),
         ])
 
     def test_filters_with_existing_options(self):
@@ -1998,7 +1998,7 @@ class SetExceptionBreakpointsTests(NormalRequestTest, unittest.TestCase):
                     'python-ImportError\t0\t1\t1',
                 )
                 p2 = self.expected_pydevd_request(
-                    'python-BaseException\t1\t0\t1',
+                    'python-BaseException\t2\t0\t1',
                 )
                 self.fix.send_request('setExceptionBreakpoints', dict(
                     filters=[],
@@ -2038,7 +2038,7 @@ class SetExceptionBreakpointsTests(NormalRequestTest, unittest.TestCase):
             ]
         self.PYDEVD_CMD = CMD_ADD_EXCEPTION_BREAK
         self.assert_received(self.debugger, removed + [
-            self.expected_pydevd_request('python-BaseException\t1\t0\t1'),
+            self.expected_pydevd_request('python-BaseException\t2\t0\t1'),
         ])
 
     def test_filters_with_empty_options(self):
@@ -2056,7 +2056,7 @@ class SetExceptionBreakpointsTests(NormalRequestTest, unittest.TestCase):
         ])
         self.PYDEVD_CMD = CMD_ADD_EXCEPTION_BREAK
         self.assert_received(self.debugger, [
-            self.expected_pydevd_request('python-BaseException\t1\t0\t1'),
+            self.expected_pydevd_request('python-BaseException\t2\t0\t1'),
         ])
 
     # TODO: verify behavior
@@ -2082,7 +2082,7 @@ class SetExceptionBreakpointsTests(NormalRequestTest, unittest.TestCase):
         ])
         self.PYDEVD_CMD = CMD_ADD_EXCEPTION_BREAK
         self.assert_received(self.debugger, [
-            'python-BaseException\t1\t0\t1',
+            'python-BaseException\t2\t0\t1',
             'python-ImportError\t0\t1\t1',
         ])
 
