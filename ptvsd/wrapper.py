@@ -461,7 +461,7 @@ class ExceptionsManager(object):
     def add_exception_break(self, exception, break_raised, break_uncaught,
                             skip_stdlib=False):
 
-        notify_on_handled_exceptions = 1 if break_raised else 0
+        notify_on_handled_exceptions = 2 if break_raised else 0
         notify_on_unhandled_exceptions = 1 if break_uncaught else 0
         ignore_libraries = 1 if skip_stdlib else 0
 
