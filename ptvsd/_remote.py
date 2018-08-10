@@ -79,3 +79,26 @@ def enable_attach(address, redirect_output=True,
                      stderrToServer=redirect_output,
                      port=port,
                      suspend=False)
+
+
+_enable_debug_break = False
+
+
+def _allow_debug_break(enabled=True):
+    """Enable breaking into debugger feature.
+    """
+    global _enable_debug_break
+    _enable_debug_break = enabled
+
+
+def debug_break():
+    if not _enable_debug_break:
+        return
+
+    import sys
+    _pydevd_settrace(
+        suspend=True,
+        trace_only_current_thread=True,
+        patch_multiprocessing=False,
+        stop_at_frame=sys._getframe().f_back,
+    )

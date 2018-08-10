@@ -2,12 +2,12 @@
 # Licensed under the MIT License. See LICENSE in the project root
 # for license information.
 
-# TODO: Why import run_module & run_file?
-from ptvsd._local import run_module, run_file  # noqa
 from ptvsd._remote import (
-    enable_attach as ptvsd_enable_attach, _pydevd_settrace,
+    enable_attach as ptvsd_enable_attach,
+    debug_break as ptvsd_break_into_debugger,
+    _allow_debug_break as allow_break_into_debugger,
 )
-from ptvsd.wrapper import debugger_attached, is_launch
+from ptvsd.wrapper import debugger_attached
 
 WAIT_TIMEOUT = 1.0
 
@@ -64,6 +64,7 @@ def enable_attach(address=(DEFAULT_HOST, DEFAULT_PORT), redirect_output=True):
     if _enabled:
         return
     _enabled = True
+    allow_break_into_debugger()
     debugger_attached.clear()
 
     # Ensure port is int
@@ -88,16 +89,6 @@ def break_into_debugger():
     """If a remote debugger is attached, pauses execution of all threads,
     and breaks into the debugger with current thread as active.
     """
-    if is_launch():
-        if not is_attached():
-            return
-    else:
-        if not is_attached() or not _enabled:
-            return
-    import sys
-    _pydevd_settrace(
-        suspend=True,
-        trace_only_current_thread=True,
-        patch_multiprocessing=False,
-        stop_at_frame=sys._getframe().f_back,
-    )
+    if not is_attached():
+        return
+    ptvsd_break_into_debugger()
