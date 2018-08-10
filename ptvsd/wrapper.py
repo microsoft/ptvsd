@@ -43,7 +43,7 @@ from ptvsd.pathutils import PathUnNormcase  # noqa
 from ptvsd.safe_repr import SafeRepr  # noqa
 from ptvsd.version import __version__  # noqa
 from ptvsd.socket import TimeoutError  # noqa
-from ptvsd._remote import (
+from ptvsd._util import (
     _allow_debug_break as allow_break_into_debugger,
 )
 

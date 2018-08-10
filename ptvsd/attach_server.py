@@ -3,8 +3,10 @@
 # for license information.
 
 from ptvsd._remote import (
-    enable_attach as ptvsd_enable_attach,
-    debug_break as ptvsd_break_into_debugger,
+    enable_attach as ptvsd_enable_attach, _pydevd_settrace,
+)
+from ptvsd._util import (
+    _is_debug_break_allowed as is_break_into_debugger_allowed,
     _allow_debug_break as allow_break_into_debugger,
 )
 from ptvsd.wrapper import debugger_attached
@@ -91,4 +93,13 @@ def break_into_debugger():
     """
     if not is_attached():
         return
-    ptvsd_break_into_debugger()
+    if not is_break_into_debugger_allowed():
+        return
+
+    import sys
+    _pydevd_settrace(
+        suspend=True,
+        trace_only_current_thread=True,
+        patch_multiprocessing=False,
+        stop_at_frame=sys._getframe().f_back,
+    )
