@@ -94,6 +94,25 @@ class BreakIntoDebuggerTests(LifecycleTestsBase):
             self.new_event('terminated'),
         ])
 
+
+class LaunchFileBreakIntoDebuggerTests(BreakIntoDebuggerTests):
+    def test_launch_and_break(self):
+        filename = TEST_FILES.resolve('launch_test.py')
+        cwd = os.path.dirname(filename)
+        debug_info = DebugInfo(filename=filename, cwd=cwd)
+        self.run_test_attach_or_launch(debug_info)
+
+
+class LaunchModuleBreakIntoDebuggerTests(BreakIntoDebuggerTests):
+    def test_launch_and_break(self):
+        module_name = 'mypkg'
+        env = TEST_FILES.env_with_py_path()
+        cwd = TEST_FILES.parent.root
+        self.run_test_attach_or_launch(
+            DebugInfo(modulename=module_name, env=env, cwd=cwd))
+
+
+class PTVSDAttachBreakIntoDebuggerTests(BreakIntoDebuggerTests):
     def test_attach_enable_wait_and_break(self):
         # Uses enable_attach followed by wait_for_attach
         # before calling break_into_debugger
@@ -137,12 +156,6 @@ class BreakIntoDebuggerTests(LifecycleTestsBase):
             attachtype='import',
             )
         self.run_test_attach_or_launch(debug_info, end_loop=True)
-
-    def test_launch(self):
-        filename = TEST_FILES.resolve('launch_test.py')
-        cwd = os.path.dirname(filename)
-        debug_info = DebugInfo(filename=filename, cwd=cwd)
-        self.run_test_attach_or_launch(debug_info)
 
     def test_reattach_enable_wait_and_break(self):
         # Uses enable_attach followed by wait_for_attach
