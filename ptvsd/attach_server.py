@@ -5,10 +5,6 @@
 from ptvsd._remote import (
     enable_attach as ptvsd_enable_attach, _pydevd_settrace,
 )
-from ptvsd._util import (
-    _is_debug_break_allowed as is_break_into_debugger_allowed,
-    _allow_debug_break as allow_break_into_debugger,
-)
 from ptvsd.wrapper import debugger_attached
 
 WAIT_TIMEOUT = 1.0
@@ -16,7 +12,6 @@ WAIT_TIMEOUT = 1.0
 DEFAULT_HOST = '0.0.0.0'
 DEFAULT_PORT = 5678
 
-_enabled = False
 _debug_current_thread = None
 _pending_threads = set()
 
@@ -62,11 +57,8 @@ def enable_attach(address=(DEFAULT_HOST, DEFAULT_PORT), redirect_output=True):
     attached. Any threads that are already running before this function is
     called will not be visible.
     """
-    global _enabled
-    if _enabled:
+    if is_attached():
         return
-    _enabled = True
-    allow_break_into_debugger()
     debugger_attached.clear()
 
     # Ensure port is int
@@ -92,8 +84,6 @@ def break_into_debugger():
     and breaks into the debugger with current thread as active.
     """
     if not is_attached():
-        return
-    if not is_break_into_debugger_allowed():
         return
 
     import sys
