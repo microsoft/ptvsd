@@ -43,10 +43,6 @@ from ptvsd.pathutils import PathUnNormcase  # noqa
 from ptvsd.safe_repr import SafeRepr  # noqa
 from ptvsd.version import __version__  # noqa
 from ptvsd.socket import TimeoutError  # noqa
-from ptvsd._util import (
-    _allow_debug_break as allow_break_into_debugger,
-)
-
 
 WAIT_FOR_THREAD_FINISH_TIMEOUT = 1  # seconds
 
