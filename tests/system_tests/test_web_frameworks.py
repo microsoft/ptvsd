@@ -1,7 +1,6 @@
 import os
 import os.path
 import re
-import time
 import threading
 import time
 
@@ -140,9 +139,6 @@ class WebFrameworkTests(LifecycleTestsBase):
             web_client_thread.start()
             web_client_thread.join(timeout=1)
 
-            # Give enough time for all events to be received
-            time.sleep(3)
-
         received = list(_strip_newline_output_events(session.received))
 
         self.assertGreaterEqual(stacktrace['totalFrames'], 1)
@@ -266,9 +262,6 @@ class WebFrameworkTests(LifecycleTestsBase):
             web_client_thread.start()
             web_client_thread.join(timeout=1)
 
-            # Give enough time for all events to be received
-            time.sleep(3)
-
         received = list(_strip_newline_output_events(dbg.session.received))
         if framework != 'Django':
             # TODO: Figure out better way to shutdown Django
@@ -355,9 +348,6 @@ class WebFrameworkTests(LifecycleTestsBase):
             )
             web_client_thread.start()
             web_client_thread.join(timeout=1)
-
-            # Give enough time for all events to be received
-            time.sleep(3)
 
         received = list(_strip_newline_output_events(dbg.session.received))
         if framework != 'Django':
