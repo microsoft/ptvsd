@@ -31,9 +31,9 @@ from xml.sax import SAXParseException
 import _pydevd_bundle.pydevd_comm as pydevd_comm  # noqa
 import _pydevd_bundle.pydevd_extension_api as pydevd_extapi  # noqa
 import _pydevd_bundle.pydevd_extension_utils as pydevd_extutil  # noqa
-import _pydevd_bundle.pydevd_frame as pydevd_frame # noqa
+import _pydevd_bundle.pydevd_frame as pydevd_frame  # noqa
 #from _pydevd_bundle.pydevd_comm import pydevd_log
-from _pydevd_bundle.pydevd_additional_thread_info import PyDBAdditionalThreadInfo # noqa
+from _pydevd_bundle.pydevd_additional_thread_info import PyDBAdditionalThreadInfo  # noqa
 
 from ptvsd import _util
 import ptvsd.ipcjson as ipcjson  # noqa
@@ -425,6 +425,11 @@ class PydevdSocket(object):
 
 
 class ExceptionsManager(object):
+
+    PYDEVD_IGNORE = 0
+    PYDEVD_NOTIFY_ALWAYS = 1
+    PYDEVD_NOTIFY_ONCE = 2
+
     def __init__(self, proc):
         self.proc = proc
         self.exceptions = {}
@@ -461,8 +466,10 @@ class ExceptionsManager(object):
     def add_exception_break(self, exception, break_raised, break_uncaught,
                             skip_stdlib=False):
 
-        notify_on_handled_exceptions = 2 if break_raised else 0
-        notify_on_unhandled_exceptions = 1 if break_uncaught else 0
+        notify_on_handled_exceptions = \
+            self.PYDEVD_NOTIFY_ONCE if break_raised else self.PYDEVD_IGNORE
+        notify_on_unhandled_exceptions = \
+            self.PYDEVD_NOTIFY_ALWAYS if break_uncaught else self.PYDEVD_IGNORE
         ignore_libraries = 1 if skip_stdlib else 0
 
         cmdargs = (
@@ -785,7 +792,7 @@ def _parse_debug_options(opts):
             continue
 
     if 'CLIENT_OS_TYPE' not in options:
-        options['CLIENT_OS_TYPE'] = 'WINDOWS' if platform.system() == 'Windows' else 'UNIX' # noqa
+        options['CLIENT_OS_TYPE'] = 'WINDOWS' if platform.system() == 'Windows' else 'UNIX'  # noqa
 
     return options
 
@@ -1422,7 +1429,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
 
     def _send_cmd_version_command(self):
         cmd = pydevd_comm.CMD_VERSION
-        default_os_type = 'WINDOWS' if platform.system() == 'Windows' else 'UNIX' # noqa
+        default_os_type = 'WINDOWS' if platform.system() == 'Windows' else 'UNIX'  # noqa
         client_os_type = self.debug_options.get(
             'CLIENT_OS_TYPE', default_os_type)
         os_id = client_os_type
@@ -2095,10 +2102,10 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
                 if len(expressions) == 0:
                     expression = '{}'.format(repr(logMessage))  # noqa
                 else:
-                    raw_text = reduce(lambda a, b: a.replace(b, '{}'), expressions, logMessage) # noqa
+                    raw_text = reduce(lambda a, b: a.replace(b, '{}'), expressions, logMessage)  # noqa
                     raw_text = raw_text.replace('"', '\\"')
-                    expression_list = ', '.join([s.strip('{').strip('}').strip() for s in expressions]) # noqa
-                    expression = '"{}".format({})'.format(raw_text, expression_list) # noqa
+                    expression_list = ', '.join([s.strip('{').strip('}').strip() for s in expressions])  # noqa
+                    expression = '"{}".format({})'.format(raw_text, expression_list)  # noqa
 
             msg = msgfmt.format(vsc_bpid, bp_type, path, line, condition,
                                 expression, hit_condition, is_logpoint)
