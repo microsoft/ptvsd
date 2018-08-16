@@ -27,15 +27,14 @@ class BreakIntoDebuggerTests(LifecycleTestsBase):
             if end_loop:
                 self.set_var_to_end_loop(session, thread_id)
 
-            continued = session.get_awaiter_for_event('continued')
+            exited = session.get_awaiter_for_event('exited')
             session.send_request('continue', threadId=thread_id)
-            continued.wait(timeout=5.0)
+            exited.wait(timeout=5.0)
 
         received = list(_strip_newline_output_events(dbg.session.received))
         self.assert_contains(received, [
             self.new_event('output', category='stdout', output='one'),
             self.new_event('output', category='stdout', output='two'),
-            self.new_event('continued', threadId=thread_id),
             self.new_event('exited', exitCode=0),
             self.new_event('terminated'),
         ])
@@ -90,9 +89,9 @@ class BreakIntoDebuggerTests(LifecycleTestsBase):
             req_launch_attach.wait(timeout=3.0)
 
             self.set_var_to_end_loop(session, thread_id)
-            continued = session.get_awaiter_for_event('continued')
+            exited = session.get_awaiter_for_event('exited')
             session.send_request('continue', threadId=thread_id)
-            continued.wait(timeout=5.0)
+            exited.wait(timeout=5.0)
 
         received = list(_strip_newline_output_events(session.received))
         self.assert_contains(received, [
