@@ -48,41 +48,43 @@ class WebFrameworkTests(LifecycleTestsBase):
 
         with self.start_debugging(debug_info) as dbg:
             session = dbg.session
-            with session.wait_for_event('stopped') as result:
-                (_, req_launch_attach, _, _, _, _,
-                 ) = lifecycle_handshake(session, debug_info.starttype,
-                                         options=options,
-                                         breakpoints=breakpoints)
-                req_launch_attach.wait()
 
-                # wait for flask web server start
-                count = 0
-                path = None
-                while path is None and count < 10:
-                    outevent = session.get_awaiter_for_event('output')
-                    Awaitable.wait_all(outevent)
-                    events = self.find_events(
-                        session.received, 'output')
-                    count += 1
-                    for e in events:
-                        matches = re.findall(re_link, e.body['output'])
-                        if len(matches) > 0 and len(matches[0]) > 0 and \
-                            len(matches[0][0].strip()) > 0:
-                            path = matches[0][0]
-                            break
+            stopped = session.get_awaiter_for_event('stopped')
+            (_, req_launch_attach, _, _, _, _,
+             ) = lifecycle_handshake(session, debug_info.starttype,
+                                     options=options,
+                                     breakpoints=breakpoints)
+            req_launch_attach.wait()
 
-                # connect to web server
-                web_result = {}
-                web_client_thread = threading.Thread(
-                    target=get_web_string_no_error,
-                    args=(path, web_result),
-                    name='test.webClient'
-                )
+            # wait for web server start by looking for
+            # server url
+            count = 0
+            path = None
+            while path is None and count < 10:
+                outevent = session.get_awaiter_for_event('output')
+                Awaitable.wait_all(outevent)
+                events = self.find_events(
+                    session.received, 'output')
+                count += 1
+                for e in events:
+                    matches = re.findall(re_link, e.body['output'])
+                    if len(matches) > 0 and len(matches[0]) > 0 and \
+                        len(matches[0][0].strip()) > 0:
+                        path = matches[0][0]
+                        break
 
-                web_client_thread.start()
+            # connect to web server
+            web_result = {}
+            web_client_thread = threading.Thread(
+                target=get_web_string_no_error,
+                args=(path, web_result),
+                name='test.webClient'
+            )
 
-            event = result['msg']
-            tid = event.body['threadId']
+            web_client_thread.start()
+
+            stopped.wait(timeout=5.0)
+            tid = stopped.event.body['threadId']
 
             req_stacktrace = session.send_request(
                 'stackTrace',
@@ -106,10 +108,12 @@ class WebFrameworkTests(LifecycleTestsBase):
             req_variables.wait()
             variables = req_variables.resp.body['variables']
 
+            continued = session.get_awaiter_for_event('continued')
             session.send_request(
                 'continue',
                 threadId=tid,
             )
+            continued.wait(timeout=3.0)
 
             # wait for flask rendering thread to exit
             web_client_thread.join(timeout=0.1)
@@ -186,45 +190,47 @@ class WebFrameworkTests(LifecycleTestsBase):
         excbreakpoints = [{'filters': ['raised', 'uncaught']}]
         with self.start_debugging(debug_info) as dbg:
             session = dbg.session
-            with session.wait_for_event('stopped') as result:
-                (_, req_launch_attach, _, _, _, _,
-                 ) = lifecycle_handshake(session, debug_info.starttype,
-                                         options=options,
-                                         excbreakpoints=excbreakpoints)
-                req_launch_attach.wait()
 
-                # wait for flask web server start
-                count = 0
-                base_path = None
-                while base_path is None and count < 10:
-                    outevent = session.get_awaiter_for_event('output')
-                    Awaitable.wait_all(outevent)
-                    events = self.find_events(
-                        session.received, 'output')
-                    count += 1
-                    for e in events:
-                        matches = re.findall(re_link, e.body['output'])
-                        if len(matches) > 0 and len(matches[0]) > 0 and \
-                           len(matches[0][0].strip()) > 0:
-                            base_path = matches[0][0]
-                            break
+            stopped = session.get_awaiter_for_event('stopped')
+            (_, req_launch_attach, _, _, _, _,
+             ) = lifecycle_handshake(session, debug_info.starttype,
+                                     options=options,
+                                     excbreakpoints=excbreakpoints)
+            req_launch_attach.wait()
 
-                # connect to web server
-                path = base_path + \
-                    'handled' if base_path.endswith('/') else '/handled'
-                web_result = {}
-                web_client_thread = threading.Thread(
-                    target=get_web_string_no_error,
-                    args=(path, web_result),
-                    name='test.webClient'
-                )
+            # wait for web server start by looking for
+            # server url
+            count = 0
+            base_path = None
+            while base_path is None and count < 10:
+                outevent = session.get_awaiter_for_event('output')
+                Awaitable.wait_all(outevent)
+                events = self.find_events(
+                    session.received, 'output')
+                count += 1
+                for e in events:
+                    matches = re.findall(re_link, e.body['output'])
+                    if len(matches) > 0 and len(matches[0]) > 0 and \
+                        len(matches[0][0].strip()) > 0:
+                        base_path = matches[0][0]
+                        break
 
-                web_client_thread.start()
+            # connect to web server
+            path = base_path + \
+                'handled' if base_path.endswith('/') else '/handled'
+            web_result = {}
+            web_client_thread = threading.Thread(
+                target=get_web_string_no_error,
+                args=(path, web_result),
+                name='test.webClient'
+            )
 
-            event = result['msg']
-            thread_id = event.body['threadId']
+            web_client_thread.start()
 
-            req_exc_info = dbg.session.send_request(
+            stopped.wait(timeout=5.0)
+            thread_id = stopped.event.body['threadId']
+
+            req_exc_info = session.send_request(
                 'exceptionInfo',
                 threadId=thread_id,
             )
@@ -241,12 +247,12 @@ class WebFrameworkTests(LifecycleTestsBase):
                     }
                 })
 
-            continued = dbg.session.get_awaiter_for_event('continued')
-            dbg.session.send_request(
+            continued = session.get_awaiter_for_event('continued')
+            session.send_request(
                 'continue',
                 threadId=thread_id,
-            ).wait()
-            Awaitable.wait_all(continued)
+            )
+            continued.wait(timeout=3.0)
 
             # Shutdown webserver
             path = base_path + 'exit' if base_path.endswith('/') else '/exit'
@@ -284,43 +290,45 @@ class WebFrameworkTests(LifecycleTestsBase):
         excbreakpoints = [{'filters': ['raised', 'uncaught']}]
         with self.start_debugging(debug_info) as dbg:
             session = dbg.session
-            with session.wait_for_event('stopped') as result:
-                (_, req_launch_attach, _, _, _, _,
-                 ) = lifecycle_handshake(session, debug_info.starttype,
-                                         options=options,
-                                         excbreakpoints=excbreakpoints)
-                req_launch_attach.wait()
 
-                # wait for flask web server start
-                count = 0
-                base_path = None
-                while base_path is None and count < 10:
-                    outevent = session.get_awaiter_for_event('output')
-                    Awaitable.wait_all(outevent)
-                    events = self.find_events(
-                        session.received, 'output')
-                    count += 1
-                    for e in events:
-                        matches = re.findall(re_link, e.body['output'])
-                        if len(matches) > 0 and len(matches[0]) > 0 and \
-                           len(matches[0][0].strip()) > 0:
-                            base_path = matches[0][0]
-                            break
+            stopped = session.get_awaiter_for_event('stopped')
+            (_, req_launch_attach, _, _, _, _,
+             ) = lifecycle_handshake(session, debug_info.starttype,
+                                     options=options,
+                                     excbreakpoints=excbreakpoints)
+            req_launch_attach.wait()
 
-                # connect to web server
-                path = base_path + \
-                    'unhandled' if base_path.endswith('/') else '/unhandled'
-                web_result = {}
-                web_client_thread = threading.Thread(
-                    target=get_web_string_no_error,
-                    args=(path, web_result),
-                    name='test.webClient'
-                )
+            # wait for web server start by looking for
+            # server url
+            count = 0
+            base_path = None
+            while base_path is None and count < 10:
+                outevent = session.get_awaiter_for_event('output')
+                Awaitable.wait_all(outevent)
+                events = self.find_events(
+                    session.received, 'output')
+                count += 1
+                for e in events:
+                    matches = re.findall(re_link, e.body['output'])
+                    if len(matches) > 0 and len(matches[0]) > 0 and \
+                        len(matches[0][0].strip()) > 0:
+                        base_path = matches[0][0]
+                        break
 
-                web_client_thread.start()
+            # connect to web server
+            path = base_path + \
+                'unhandled' if base_path.endswith('/') else '/unhandled'
+            web_result = {}
+            web_client_thread = threading.Thread(
+                target=get_web_string_no_error,
+                args=(path, web_result),
+                name='test.webClient'
+            )
 
-            event = result['msg']
-            thread_id = event.body['threadId']
+            web_client_thread.start()
+
+            stopped.wait(timeout=5.0)
+            thread_id = stopped.event.body['threadId']
 
             req_exc_info = dbg.session.send_request(
                 'exceptionInfo',
@@ -339,12 +347,12 @@ class WebFrameworkTests(LifecycleTestsBase):
                     }
                 })
 
-            continued = dbg.session.get_awaiter_for_event('continued')
-            dbg.session.send_request(
+            continued = session.get_awaiter_for_event('continued')
+            session.send_request(
                 'continue',
                 threadId=thread_id,
-            ).wait()
-            Awaitable.wait_all(continued)
+            )
+            continued.wait(timeout=3.0)
 
             # Shutdown webserver
             path = base_path + 'exit' if base_path.endswith('/') else '/exit'
