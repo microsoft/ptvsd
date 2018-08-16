@@ -2,7 +2,6 @@ import os
 import os.path
 import time
 
-from tests.helpers.debugsession import Awaitable
 from tests.helpers.resource import TestResources
 from . import (
     _strip_newline_output_events, lifecycle_handshake,
