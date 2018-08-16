@@ -38,6 +38,25 @@ class CheckFile(object):
 
 
 class ContinueOnDisconnectTests(LifecycleTestsBase):
+    def _wait_for_output(self, session):
+        count = 0
+        while count < 3:
+            events = self.find_events(session.received, 'output')
+            for e in events:
+                try:
+                    # the test outputs a number when it reaches the
+                    # right spot
+                    int(e.body['output'])
+                    return
+                except ValueError:
+                    pass
+            count += 1
+            try:
+                outevent = session.get_awaiter_for_event('output')
+                outevent.wait(timeout=3.0)
+            except Exception:
+                pass
+
     def run_test_attach_disconnect(self, debug_info, path_to_check,
                                    pause=False):
         options = {'debugOptions': ['RedirectOutput']}
@@ -49,6 +68,9 @@ class ContinueOnDisconnectTests(LifecycleTestsBase):
                  session, debug_info.starttype,
                  options=options, threads=True)
             Awaitable.wait_all(req_launch_attach, req_threads)
+
+            # ensure we see a output
+            self._wait_for_output(session)
 
             if pause:
                 req_pause = session.send_request('pause', threadId=0)
@@ -107,7 +129,6 @@ class LaunchFileDisconnectLifecycleTests(ContinueOnDisconnectTests):
                 env={
                     'PTVSD_TARGET_FILE': cf.filepath,
                 },
-                verbose=True
             )
             self.run_test_attach_disconnect(
                 debug_info, cf.filepath, pause=True)

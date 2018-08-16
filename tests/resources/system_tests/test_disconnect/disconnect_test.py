@@ -18,6 +18,7 @@ elif os.getenv('PTVSD_IS_ATTACHED', None) is not None:
 def main():
     count = 0
     while count < 50:
+        print(count)
         time.sleep(0.3)
         if os.getenv('PTVSD_BREAK_INTO_DEBUGGER', None) is not None:
             ptvsd.break_into_debugger()
