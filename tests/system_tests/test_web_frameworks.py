@@ -2,6 +2,7 @@ import os
 import os.path
 import re
 import threading
+import time
 import unittest
 
 from tests.helpers.resource import TestResources
@@ -71,6 +72,9 @@ class WebFrameworkTests(LifecycleTestsBase):
                         len(matches[0][0].strip()) > 0:
                         path = matches[0][0]
                         break
+
+            # Give web server some time for finish writing output
+            time.sleep(1)
 
             # connect to web server
             web_result = {}
@@ -214,6 +218,9 @@ class WebFrameworkTests(LifecycleTestsBase):
                         base_path = matches[0][0]
                         break
 
+            # Give web server some time for finish writing output
+            time.sleep(1)
+
             # connect to web server
             path = base_path + \
                 'handled' if base_path.endswith('/') else '/handled'
@@ -313,6 +320,9 @@ class WebFrameworkTests(LifecycleTestsBase):
                         len(matches[0][0].strip()) > 0:
                         base_path = matches[0][0]
                         break
+
+            # Give web server some time for finish writing output
+            time.sleep(1)
 
             # connect to web server
             path = base_path + \
