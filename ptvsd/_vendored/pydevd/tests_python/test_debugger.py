@@ -1878,7 +1878,65 @@ def test_remote_debugger_basic(case_setup_remote):
         writer.log.append('asserted')
 
         writer.finished_ok = True
+        
 
+@pytest.mark.skipif(not IS_CPYTHON, reason='CPython only test.')
+def test_py_37_breakpoint_remote(case_setup_remote):
+    with case_setup_remote.test_file('_debugger_case_breakpoint_remote.py') as writer:
+        writer.write_make_initial_run()
+
+        hit = writer.wait_for_breakpoint_hit(
+            REASON_THREAD_SUSPEND, 
+            filename='_debugger_case_breakpoint_remote.py',
+            line=13,
+        )
+
+        writer.write_run_thread(hit.thread_id)
+
+        try:
+            assert 5 == writer._sequence, 'Expected 5. Had: %s' % writer._sequence
+        except:
+            writer.log.append('assert failed!')
+            raise
+        writer.log.append('asserted')
+
+        writer.finished_ok = True
+
+@pytest.mark.skipif(not IS_CPYTHON, reason='CPython only test.')
+def test_py_37_breakpoint_remote_no_import(case_setup_remote):
+    def get_environ(writer):
+        env = os.environ.copy()
+        curr_pythonpath = env.get('PYTHONPATH', '')
+
+        pydevd_dirname = os.path.join(
+            os.path.dirname(writer.get_pydevd_file()),
+            'pydev_sitecustomize')
+
+        curr_pythonpath = pydevd_dirname + os.pathsep + curr_pythonpath
+        env['PYTHONPATH'] = curr_pythonpath
+        return env
+
+    with case_setup_remote.test_file(
+        '_debugger_case_breakpoint_remote_no_import.py',
+        get_environ=get_environ) as writer:
+        writer.write_make_initial_run()
+
+        hit = writer.wait_for_breakpoint_hit(
+            "108", 
+            filename='_debugger_case_breakpoint_remote_no_import.py',
+            line=12,
+        )
+
+        writer.write_run_thread(hit.thread_id)
+
+        try:
+            assert 5 == writer._sequence, 'Expected 5. Had: %s' % writer._sequence
+        except:
+            writer.log.append('assert failed!')
+            raise
+        writer.log.append('asserted')
+
+        writer.finished_ok = True
 
 @pytest.mark.skipif(not IS_CPYTHON, reason='CPython only test.')
 def test_remote_debugger_multi_proc(case_setup_remote):
