@@ -22,11 +22,15 @@ class BreakIntoDebuggerTests(LifecycleTestsBase):
                 session,
                 debug_info.starttype,
                 options=options)
-            Awaitable.wait_all(req_launch_attach, stopped)
+            req_launch_attach.wait(timeout=3.0)
+            stopped.wait(timeout=3.0)
             thread_id = stopped.event.body['threadId']
             if end_loop:
                 self.set_var_to_end_loop(session, thread_id)
+
+            continued = session.get_awaiter_for_event('continued')
             session.send_request('continue', threadId=thread_id)
+            continued.wait(timeout=5.0)
 
         received = list(_strip_newline_output_events(dbg.session.received))
         self.assert_contains(received, [
@@ -65,15 +69,16 @@ class BreakIntoDebuggerTests(LifecycleTestsBase):
         options = {'debugOptions': ['RedirectOutput']}
         with self.start_debugging(debug_info) as dbg:
             session = dbg.session
-            stopped1 = session.get_awaiter_for_event('stopped')
+            stopped = session.get_awaiter_for_event('stopped')
             (_, req_launch_attach, _, _, _, _) = lifecycle_handshake(
                 session,
                 debug_info.starttype,
                 options=options,
                 threads=True)
-            Awaitable.wait_all(req_launch_attach, stopped1)
+            req_launch_attach.wait(timeout=3.0)
+            stopped.wait(timeout=3.0)
 
-            thread_id = stopped1.event.body['threadId']
+            thread_id = stopped.event.body['threadId']
             req_disconnect = session.send_request('disconnect', restart=False)
             req_disconnect.wait()
 
@@ -83,10 +88,12 @@ class BreakIntoDebuggerTests(LifecycleTestsBase):
                 debug_info.starttype,
                 options=options,
                 threads=True)
-            Awaitable.wait_all(req_launch_attach)
+            req_launch_attach.wait(timeout=3.0)
 
             self.set_var_to_end_loop(session, thread_id)
+            continued = session.get_awaiter_for_event('continued')
             session.send_request('continue', threadId=thread_id)
+            continued.wait(timeout=5.0)
 
         received = list(_strip_newline_output_events(session.received))
         self.assert_contains(received, [
