@@ -4,7 +4,6 @@ import re
 import threading
 import unittest
 
-from tests.helpers.debugsession import Awaitable
 from tests.helpers.resource import TestResources
 from tests.helpers.webhelper import get_web_string_no_error
 from . import (
@@ -62,7 +61,7 @@ class WebFrameworkTests(LifecycleTestsBase):
             path = None
             while path is None and count < 10:
                 outevent = session.get_awaiter_for_event('output')
-                Awaitable.wait_all(outevent)
+                outevent.wait(timeout=3.0)
                 events = self.find_events(
                     session.received, 'output')
                 count += 1
@@ -204,7 +203,7 @@ class WebFrameworkTests(LifecycleTestsBase):
             base_path = None
             while base_path is None and count < 10:
                 outevent = session.get_awaiter_for_event('output')
-                Awaitable.wait_all(outevent)
+                outevent.wait(timeout=3.0)
                 events = self.find_events(
                     session.received, 'output')
                 count += 1
@@ -304,7 +303,7 @@ class WebFrameworkTests(LifecycleTestsBase):
             base_path = None
             while base_path is None and count < 10:
                 outevent = session.get_awaiter_for_event('output')
-                Awaitable.wait_all(outevent)
+                outevent.wait(timeout=3.0)
                 events = self.find_events(
                     session.received, 'output')
                 count += 1
