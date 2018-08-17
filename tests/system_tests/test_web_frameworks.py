@@ -18,6 +18,30 @@ re_link = r"(http(s|)\:\/\/[\w\.]*\:[0-9]{4,6}(\/|))"
 
 
 class WebFrameworkTests(LifecycleTestsBase):
+    def _get_url_from_output(self, session):
+        strings = (e.body['output'] for e in
+                   self.find_events(session.received, 'output'))
+        for s in strings:
+            matches = re.findall(re_link, s)
+            if len(matches) > 0 and len(matches[0]) > 0 and \
+                len(matches[0][0].strip()) > 0:
+                return matches[0][0]
+        return None
+
+    def _wait_for_server_url(self, session):
+        # wait for web server start by looking for
+        # server url
+        for _ in range(10):
+            try:
+                # wait for an output event.
+                session.get_awaiter_for_event('output').wait(timeout=3.0)
+                path = self._get_url_from_output(session)
+                if path is not None:
+                    return path
+            except TimeoutError:
+                pass
+        return self._get_url_from_output(session)
+
     def run_test_with_break_points(self, debug_info, **kwargs):
         bp_filename = kwargs.pop('bp_filename')
         bp_line = kwargs.pop('bp_line')
@@ -56,23 +80,7 @@ class WebFrameworkTests(LifecycleTestsBase):
                                      breakpoints=breakpoints)
             req_launch_attach.wait()
 
-            # wait for web server start by looking for
-            # server url
-            count = 0
-            path = None
-            while path is None and count < 10:
-                outevent = session.get_awaiter_for_event('output')
-                outevent.wait(timeout=3.0)
-                events = self.find_events(
-                    session.received, 'output')
-                count += 1
-                for e in events:
-                    matches = re.findall(re_link, e.body['output'])
-                    if len(matches) > 0 and len(matches[0]) > 0 and \
-                        len(matches[0][0].strip()) > 0:
-                        path = matches[0][0]
-                        break
-
+            path = self._wait_for_server_url(session)
             # Give web server some time for finish writing output
             time.sleep(1)
 
@@ -201,23 +209,7 @@ class WebFrameworkTests(LifecycleTestsBase):
                                      excbreakpoints=excbreakpoints)
             req_launch_attach.wait()
 
-            # wait for web server start by looking for
-            # server url
-            count = 0
-            base_path = None
-            while base_path is None and count < 10:
-                outevent = session.get_awaiter_for_event('output')
-                outevent.wait(timeout=3.0)
-                events = self.find_events(
-                    session.received, 'output')
-                count += 1
-                for e in events:
-                    matches = re.findall(re_link, e.body['output'])
-                    if len(matches) > 0 and len(matches[0]) > 0 and \
-                        len(matches[0][0].strip()) > 0:
-                        base_path = matches[0][0]
-                        break
-
+            base_path = self._wait_for_server_url(session)
             # Give web server some time for finish writing output
             time.sleep(1)
 
@@ -304,23 +296,7 @@ class WebFrameworkTests(LifecycleTestsBase):
                                      excbreakpoints=excbreakpoints)
             req_launch_attach.wait()
 
-            # wait for web server start by looking for
-            # server url
-            count = 0
-            base_path = None
-            while base_path is None and count < 10:
-                outevent = session.get_awaiter_for_event('output')
-                outevent.wait(timeout=3.0)
-                events = self.find_events(
-                    session.received, 'output')
-                count += 1
-                for e in events:
-                    matches = re.findall(re_link, e.body['output'])
-                    if len(matches) > 0 and len(matches[0]) > 0 and \
-                        len(matches[0][0].strip()) > 0:
-                        base_path = matches[0][0]
-                        break
-
+            base_path = self._wait_for_server_url(session)
             # Give web server some time for finish writing output
             time.sleep(1)
 
