@@ -273,6 +273,8 @@ class ShowReturnValueTests(LifecycleTestsBase):
                                  "'did something'")
                 self.assertEqual(return_values[0]['type'],
                                  'str')
+                attributes = return_values[0]['presentationHint']['attributes']
+                self.assertTrue('readOnly' in attributes)
             else:
                 self.assertEqual(len(return_values), 0)
 
@@ -290,6 +292,8 @@ class ShowReturnValueTests(LifecycleTestsBase):
                                  "'did something'")
                 self.assertEqual(return_values[0]['type'],
                                  'str')
+                attributes = return_values[0]['presentationHint']['attributes']
+                self.assertTrue('readOnly' in attributes)
 
                 self.assertEqual(return_values[1]['name'],
                                  '(return) my_func')
@@ -297,6 +301,8 @@ class ShowReturnValueTests(LifecycleTestsBase):
                                  "'did more things'")
                 self.assertEqual(return_values[1]['type'],
                                  'str')
+                attributes = return_values[1]['presentationHint']['attributes']
+                self.assertTrue('readOnly' in attributes)
             else:
                 self.assertEqual(len(return_values), 0)
 
