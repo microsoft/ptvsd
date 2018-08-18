@@ -1796,6 +1796,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         var_name = args['name']
         var_value = args['value']
         vsc_var = int(args['variablesReference'])
+        fmt = args.get('format', {})
 
         if var_name.startswith('(return) '):
             self.send_error_response(
@@ -1808,9 +1809,6 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         except KeyError:
             self.send_error_response(request)
             return
-
-
-        fmt = args.get('format', {})
 
         lhs_expr = self._get_variable_evaluate_name(pyd_var, var_name)
         if not lhs_expr:
