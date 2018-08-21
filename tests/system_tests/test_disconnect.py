@@ -3,7 +3,6 @@ import os.path
 import random
 import unittest
 
-from tests.helpers.debugsession import Awaitable
 from tests.helpers.resource import TestResources
 from . import (
     lifecycle_handshake,
