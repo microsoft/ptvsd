@@ -71,7 +71,9 @@ class WebFrameworkTests(LifecycleTestsBase):
         with self.start_debugging(debug_info) as dbg:
             session = dbg.session
 
-            stopped = session.get_awaiter_for_event('stopped')
+            stopped = session.get_awaiter_for_event(
+                'stopped',
+                condition=lambda msg: msg.body['reason'] == 'breakpoint')
             (_, req_launch_attach, _, _, _, _,
              ) = lifecycle_handshake(session, debug_info.starttype,
                                      options=options,
