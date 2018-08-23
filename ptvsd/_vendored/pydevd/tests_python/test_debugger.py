@@ -1769,12 +1769,13 @@ def test_stop_on_start_regular(case_setup):
         writer.finished_ok = True
 
 
-def test_py_37_breakpoint(case_setup):
-    with case_setup.test_file('_debugger_case_breakpoint.py') as writer:
+@pytest.mark.parametrize("filename", ('_debugger_case_breakpoint.py', '_debugger_case_breakpoint2.py'))
+def test_py_37_breakpoint(case_setup, filename):
+    with case_setup.test_file(filename) as writer:
         writer.write_make_initial_run()
 
         hit = writer.wait_for_breakpoint_hit(
-            REASON_THREAD_SUSPEND, file='_debugger_case_breakpoint.py', line=2)
+            REASON_THREAD_SUSPEND, file=filename, line=3)
 
         writer.write_run_thread(hit.thread_id)
 
