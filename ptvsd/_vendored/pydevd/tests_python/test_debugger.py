@@ -1769,7 +1769,15 @@ def test_stop_on_start_regular(case_setup):
         writer.finished_ok = True
 
 
-@pytest.mark.parametrize("filename", ('_debugger_case_breakpoint.py', '_debugger_case_breakpoint2.py'))
+def _get_breakpoint_cases():
+    if sys.version_info >= (3, 7):
+        # Just check breakpoint()
+        return ('_debugger_case_breakpoint.py',)
+    else:
+        # Check breakpoint() and sys.__breakpointhook__ replacement.
+        return ('_debugger_case_breakpoint.py', '_debugger_case_breakpoint2.py')
+
+@pytest.mark.parametrize("filename", _get_breakpoint_cases())
 def test_py_37_breakpoint(case_setup, filename):
     with case_setup.test_file(filename) as writer:
         writer.write_make_initial_run()
