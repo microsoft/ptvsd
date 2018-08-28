@@ -56,7 +56,8 @@ class CompletionsTests(LifecycleTestsBase):
             req_completions = session.send_request(
                 'completions',
                 text='some',
-                frameId=int(frame_id)
+                frameId=int(frame_id),
+                column=1
             )
             req_completions.wait(timeout=2.0)
             targets = req_completions.resp.body['targets']
@@ -65,7 +66,8 @@ class CompletionsTests(LifecycleTestsBase):
             bad_req_completions = session.send_request(
                 'completions',
                 text='some',
-                frameId=int(1234)
+                frameId=int(1234),
+                column=1
             )
             bad_req_completions.wait(timeout=2.0)
             bad_result = bad_req_completions.resp.success
