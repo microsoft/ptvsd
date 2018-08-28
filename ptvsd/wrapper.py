@@ -61,6 +61,15 @@ TYPE_FUNCTION = '2'
 TYPE_ATTR = '3'
 TYPE_BUILTIN = '4'
 TYPE_PARAM = '5'
+TYPE_LOOK_UP = {
+    TYPE_IMPORT: 'module',
+    TYPE_CLASS: 'class',
+    TYPE_FUNCTION: 'function',
+    TYPE_ATTR: 'field',
+    TYPE_BUILTIN: 'keyword',
+    TYPE_PARAM: 'variable',
+}
+
 
 
 def NOOP(*args, **kwargs):
@@ -2233,16 +2242,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
 
     @async_handler
     def on_completions(self, request, args):
-        type_look_up = {
-            TYPE_IMPORT: 'module',
-            TYPE_CLASS: 'class',
-            TYPE_FUNCTION: 'function',
-            TYPE_ATTR: 'field',
-            TYPE_BUILTIN: 'keyword',
-            TYPE_PARAM: 'variable',
-        }
-
-        text = args['text'] # required argument
+        text = args['text']
         vsc_fid = args.get('frameId', None)
 
         try:
@@ -2261,7 +2261,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
             target = {}
             target['label'] = unquote(item['p0'])
             try:
-                target['type'] = type_look_up[item['p3']]
+                target['type'] = TYPE_LOOK_UP[item['p3']]
             except KeyError:
                 pass
             targets.append(target)
