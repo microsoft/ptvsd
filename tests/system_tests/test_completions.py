@@ -75,6 +75,8 @@ class CompletionsTests(LifecycleTestsBase):
                 threadId=tid,
             )
 
+        targets.sort(key=lambda t: t['label'])
+        expected.sort(key=lambda t: t['label'])
         self.assertEqual(targets, expected)
         self.assertEqual(bad_result, False)
 
