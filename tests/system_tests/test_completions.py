@@ -61,12 +61,22 @@ class CompletionsTests(LifecycleTestsBase):
             req_completions.wait(timeout=2.0)
             targets = req_completions.resp.body['targets']
 
+            # make a request with bad frame id
+            bad_req_completions = session.send_request(
+                'completions',
+                text='some',
+                frameId=int(1234)
+            )
+            bad_req_completions.wait(timeout=2.0)
+            bad_result = bad_req_completions.resp.success
+
             session.send_request(
                 'continue',
                 threadId=tid,
             )
 
         self.assertEqual(targets, expected)
+        self.assertEqual(bad_result, False)
 
     def run_test_outermost_scope(self, debug_info, filename, line):
         self.run_test_completions(
