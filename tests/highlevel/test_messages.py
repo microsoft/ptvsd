@@ -2590,6 +2590,7 @@ class ThreadSuspendEventTests(ThreadEventTest, unittest.TestCase):
                 threadId=tid,
                 text=None,
                 description=None,
+                preserveFocusHint=False,
             ),
         ])
         self.assert_received(self.debugger, [])
@@ -2607,6 +2608,7 @@ class ThreadSuspendEventTests(ThreadEventTest, unittest.TestCase):
                 threadId=tid,
                 text=None,
                 description=None,
+                preserveFocusHint=False,
             ),
         ])
         self.assert_received(self.debugger, [])
@@ -2624,6 +2626,7 @@ class ThreadSuspendEventTests(ThreadEventTest, unittest.TestCase):
                 threadId=tid,
                 text=None,
                 description=None,
+                preserveFocusHint=False,
             ),
         ])
         self.assert_received(self.debugger, [])
@@ -2648,6 +2651,7 @@ class ThreadSuspendEventTests(ThreadEventTest, unittest.TestCase):
                 threadId=tid,
                 text='RuntimeError',
                 description='something went wrong',
+                preserveFocusHint=False,
             ),
         ])
         self.assert_received(self.debugger, [
@@ -2676,6 +2680,7 @@ class ThreadSuspendEventTests(ThreadEventTest, unittest.TestCase):
                 threadId=tid,
                 text='RuntimeError',
                 description='something went wrong',
+                preserveFocusHint=False,
             ),
         ])
         self.assert_received(self.debugger, [
@@ -2697,6 +2702,7 @@ class ThreadSuspendEventTests(ThreadEventTest, unittest.TestCase):
                 threadId=tid,
                 text=None,
                 description=None,
+                preserveFocusHint=True,
             ),
         ])
         self.assert_received(self.debugger, [])
@@ -2715,6 +2721,7 @@ class ThreadSuspendEventTests(ThreadEventTest, unittest.TestCase):
                 threadId=tid,
                 text=None,
                 description=None,
+                preserveFocusHint=True,
             ),
         ])
         self.assert_received(self.debugger, [])
@@ -2734,6 +2741,7 @@ class ThreadSuspendEventTests(ThreadEventTest, unittest.TestCase):
                 threadId=tid,
                 text=None,
                 description=None,
+                preserveFocusHint=True,
             ),
         ])
         self.assert_received(self.debugger, [])
@@ -2754,6 +2762,7 @@ class ThreadSuspendEventTests(ThreadEventTest, unittest.TestCase):
                 threadId=tid,
                 text=None,
                 description=None,
+                preserveFocusHint=True,
             ),
         ])
         self.assert_received(self.debugger, [])
