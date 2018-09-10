@@ -2453,12 +2453,6 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
                 self._parse_exception_details(resp_args, include_stack=False)
 
         if self.is_vs_client():
-            # preserveFocusHint = False then VS UI will show that thread
-            # preserveFocusHint = True then VS UI will only switch to a thread
-            # if user had not selected any thread
-            extra['preserveFocusHint'] = \
-                reason not in ['step', 'exception', 'breakpoint']
-
             if self._vs_ignore_stopped_events.isSet() and reason == 'pause':
                 return
             else:
