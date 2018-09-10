@@ -2340,7 +2340,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         self.send_response(request)
 
     def is_vs_client(self):
-        """ Return True if the client is Visual Studio 2017 False otherwise
+        """ Return True if the client is 'Visual Studio' False otherwise
         """
         return self._client_id == 'visualstudio'
 
