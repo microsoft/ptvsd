@@ -2453,7 +2453,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
                 self._parse_exception_details(resp_args, include_stack=False)
 
         if self.is_vs_client():
-            if self._vs_ignore_stopped_events.isSet() and reason == 'pause':
+            if self._vs_ignore_stopped_events.is_set() and reason == 'pause':
                 return
             else:
                 extra['allThreadsStopped'] = True
