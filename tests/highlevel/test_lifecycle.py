@@ -154,8 +154,7 @@ class LifecycleTests(HighlevelTest, unittest.TestCase):
 
             # configuration
             req_config = self.send_request('configurationDone')
-            self.wait_for_pydevd('version', 'redirect-output',
-                                 'run', 'set_project_roots')
+            self.wait_for_pydevd('version', 'redirect-output', 'run')
 
             # Normal ops would go here.
 
