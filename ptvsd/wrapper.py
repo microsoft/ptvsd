@@ -2478,9 +2478,8 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
     @pydevd_events.handler(pydevd_comm.CMD_WRITE_TO_CONSOLE)
     def on_pydevd_cmd_write_to_console2(self, seq, args):
         """Handle console output"""
-        args = args.replace('\t', '@_@TAB_CHAR@_@')
         xml = self.parse_xml_response(args)
         ctx = xml.io['ctx']
         category = 'stdout' if ctx == '1' else 'stderr'
-        content = unquote(xml.io['s']).replace('@_@TAB_CHAR@_@', '\t')
+        content = unquote(xml.io['s'])
         self.send_event('output', category=category, output=content)
