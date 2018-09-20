@@ -436,7 +436,6 @@ def _collect_events(func):
 
 def _replay_events(collected, trace_top_level_unhandled):
     for event, lineno, arg in collected:
-        print(event, lineno, arg)
         if event == 'call':
             # Notify only unhandled
             new_trace_func = trace_top_level_unhandled.call_trace_dispatch(lineno)
