@@ -31,3 +31,4 @@ install:
 script:
   #- make $TARGET PYTHON=python$TRAVIS_PYTHON_VERSION
   - make $TARGET PYTHON=$TRAVIS_PYTHON_PATH
+  - $TRAVIS_PYTHON_PATH setup.py test
