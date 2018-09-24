@@ -1512,7 +1512,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         try:
             xml = self.parse_xml_response(resp_args)
         except SAXParseException as ex:
-            self.send_error_response(request)
+            self.send_error_response(request, resp_args)
             return
 
         try:
@@ -1594,8 +1594,10 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         try:
             pyd_tid = self.thread_map.to_pydevd(vsc_tid)
         except KeyError:
-            # Unknown thread, nothing much we cna do about it here
-            self.send_error_response(request)
+            # Unknown thread, nothing much we can do about it here
+            self.send_error_response(
+                request,
+                'Thread {} not found.'.format(vsc_tid))
             return
 
         try:
@@ -1705,7 +1707,9 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         try:
             pyd_var = self.var_map.to_pydevd(vsc_var)
         except KeyError:
-            self.send_error_response(request)
+            self.send_error_response(
+                request,
+                'Variable {} not found in frame.'.format(vsc_var))
             return
 
         if len(pyd_var) == 3:
@@ -1720,7 +1724,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         try:
             xml = self.parse_xml_response(resp_args)
         except SAXParseException as ex:
-            self.send_error_response(request)
+            self.send_error_response(request, resp_args)
             return
 
         try:
@@ -1824,7 +1828,9 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         try:
             pyd_var = self.var_map.to_pydevd(vsc_var)
         except KeyError:
-            self.send_error_response(request)
+            self.send_error_response(
+                request,
+                'Variable {} not found in frame.'.format(vsc_var))
             return
 
         lhs_expr = self._get_variable_evaluate_name(pyd_var, var_name)
@@ -1860,7 +1866,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         try:
             xml = self.parse_xml_response(resp_args)
         except SAXParseException as ex:
-            self.send_error_response(request)
+            self.send_error_response(request, resp_args)
             return
 
         try:
@@ -1899,7 +1905,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         try:
             xml = self.parse_xml_response(resp_args)
         except SAXParseException as ex:
-            self.send_error_response(request)
+            self.send_error_response(request, resp_args)
             return
 
         try:
@@ -2240,7 +2246,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         try:
             pyd_tid, pyd_fid = self.frame_map.to_pydevd(vsc_fid)
         except KeyError:
-            self.send_error_response(request)
+            self.send_error_response(request, '')
 
         cmd_args = '{}\t{}\t{}\t{}'.format(pyd_tid, pyd_fid, 'LOCAL', text)
         _, _, resp_args = yield self.pydevd_request(
