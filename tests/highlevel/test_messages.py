@@ -528,7 +528,7 @@ class VariablesTests(NormalRequestTest, unittest.TestCase):
             received = self.vsc.received
 
         self.assert_vsc_received(received, [
-            self.expected_failure(''),
+            self.expected_failure('Variable 12345 not found in frame.'),
             # no events
         ])
 
@@ -670,7 +670,7 @@ class SetVariableTests(NormalRequestTest, unittest.TestCase):
             received = self.vsc.received
 
         self.assert_vsc_received(received, [
-            self.expected_failure(''),
+            self.expected_failure('Variable 12345 not found in frame.'),
             # no events
         ])
 
