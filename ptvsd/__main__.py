@@ -45,8 +45,8 @@ PYDEVD_FLAGS = {
 }
 
 USAGE = """
-  {0} [-h] [-V] [--nodebug] [--host HOST | --server-host HOST] [--no-addr-reuse] --port PORT -m MODULE [arg ...]
-  {0} [-h] [-V] [--nodebug] [--host HOST | --server-host HOST] [--no-addr-reuse] --port PORT FILENAME [arg ...]
+  {0} [-h] [-V] [--nodebug] [--host HOST | --server-host HOST] --port PORT -m MODULE [arg ...]
+  {0} [-h] [-V] [--nodebug] [--host HOST | --server-host HOST] --port PORT FILENAME [arg ...]
   {0} [-h] [-V] --host HOST --port PORT --pid PROCESS_ID
 """  # noqa
 
@@ -131,8 +131,7 @@ def _group_args(argv):
             supported.append(arg)
 
         # ptvsd support
-        elif arg in ('--host', '--server-host', '--port',
-                     '--pid', '-m', '--no-addr-reuse'):
+        elif arg in ('--host', '--server-host', '--port', '--pid', '-m'):
             if arg == '-m' or arg == '--pid':
                 gottarget = True
             supported.append(arg)
@@ -177,8 +176,6 @@ def _parse_args(prog, argv):
     parser.add_argument('-V', '--version', action='version')
     parser.version = __version__
 
-    parser.add_argument('--no-addr-reuse', action='store_true', default=False)
-
     args = parser.parse_args(argv)
     ns = vars(args)
 
@@ -221,10 +218,9 @@ def handle_args(addr, name, kind, extra=(), nodebug=False, **kwargs):
 
 def main(argv=None):
     args, extra = parse_args(argv)
-    addr_reuse = not args.no_addr_reuse
     handle_args(args.address, args.name, args.kind, extra,
                 nodebug=args.nodebug, singlesession=args.single_session,
-                wait=args.wait, addr_reuse=addr_reuse)
+                wait=args.wait)
 
 
 if __name__ == '__main__':

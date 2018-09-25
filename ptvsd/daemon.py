@@ -148,13 +148,13 @@ class DaemonBase(object):
         self._sock = sock
         return sock
 
-    def start_server(self, addr, hidebadsessions=True, addr_reuse=True):
+    def start_server(self, addr, hidebadsessions=True):
         """Return ("socket", next_session) with a new server socket."""
         addr = Address.from_raw(addr)
         with self.started():
             assert self._sessionlock is None
             assert self.session is None
-            self._server = create_server(addr.host, addr.port, reuse=addr_reuse)
+            self._server = create_server(addr.host, addr.port)
             debug('server socket created')
             self._sessionlock = threading.Lock()
         sock = self._sock
@@ -197,13 +197,13 @@ class DaemonBase(object):
 
         return sock, next_session
 
-    def start_client(self, addr, addr_reuse=True):
+    def start_client(self, addr):
         """Return ("socket", start_session) with a new client socket."""
         addr = Address.from_raw(addr)
         self._singlesession = True
         with self.started():
             assert self.session is None
-            client = create_client(reuse=addr_reuse)
+            client = create_client()
             connect(client, addr)
         sock = self._sock
 

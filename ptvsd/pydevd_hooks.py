@@ -11,7 +11,7 @@ from ptvsd.daemon import Daemon, DaemonStoppedError, DaemonClosedError
 from ptvsd._util import debug, new_hidden_thread
 
 
-def start_server(daemon, host, port, addr_reuse=True, **kwargs):
+def start_server(daemon, host, port, **kwargs):
     """Return a socket to a (new) local pydevd-handling daemon.
 
     The daemon supports the pydevd client wire protocol, sending
@@ -19,7 +19,7 @@ def start_server(daemon, host, port, addr_reuse=True, **kwargs):
 
     This is a replacement for _pydevd_bundle.pydevd_comm.start_server.
     """
-    sock, next_session = daemon.start_server((host, port), addr_reuse=addr_reuse)
+    sock, next_session = daemon.start_server((host, port))
 
     def handle_next():
         try:
@@ -54,7 +54,7 @@ def start_server(daemon, host, port, addr_reuse=True, **kwargs):
     return sock
 
 
-def start_client(daemon, host, port, addr_reuse=True, **kwargs):
+def start_client(daemon, host, port, **kwargs):
     """Return a socket to an existing "remote" pydevd-handling daemon.
 
     The daemon supports the pydevd client wire protocol, sending
@@ -62,14 +62,13 @@ def start_client(daemon, host, port, addr_reuse=True, **kwargs):
 
     This is a replacement for _pydevd_bundle.pydevd_comm.start_client.
     """
-    sock, start_session = daemon.start_client((host, port), addr_reuse=addr_reuse)
+    sock, start_session = daemon.start_client((host, port))
     start_session(**kwargs)
     return sock
 
 
 def install(pydevd, address,
             start_server=start_server, start_client=start_client,
-            addr_reuse=True,
             **kwargs):
     """Configure pydevd to use our wrapper.
 
@@ -81,9 +80,9 @@ def install(pydevd, address,
     addr = Address.from_raw(address)
     daemon = Daemon(**kwargs)
 
-    _start_server = (lambda p: start_server(daemon, addr.host, p, addr_reuse=addr_reuse))
+    _start_server = (lambda p: start_server(daemon, addr.host, p))
     _start_server.orig = start_server
-    _start_client = (lambda h, p: start_client(daemon, h, p, addr_reuse=addr_reuse))
+    _start_client = (lambda h, p: start_client(daemon, h, p))
     _start_client.orig = start_client
 
     # These are the functions pydevd invokes to get a socket to the client.
