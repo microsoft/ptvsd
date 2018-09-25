@@ -1597,7 +1597,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
             # Unknown thread, nothing much we can do about it here
             self.send_error_response(
                 request,
-                'Thread {} not found.'.format(vsc_tid))
+                'Thread {} not found'.format(vsc_tid))
             return
 
         try:
@@ -1709,7 +1709,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         except KeyError:
             self.send_error_response(
                 request,
-                'Variable {} not found in frame.'.format(vsc_var))
+                'Variable {} not found in frame'.format(vsc_var))
             return
 
         if len(pyd_var) == 3:
@@ -1822,7 +1822,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         if var_name.startswith('(return) '):
             self.send_error_response(
                 request,
-                'Cannot change return value.')
+                'Cannot change return value')
             return
 
         try:
@@ -1830,7 +1830,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         except KeyError:
             self.send_error_response(
                 request,
-                'Variable {} not found in frame.'.format(vsc_var))
+                'Variable {} not found in frame'.format(vsc_var))
             return
 
         lhs_expr = self._get_variable_evaluate_name(pyd_var, var_name)
@@ -2246,7 +2246,9 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         try:
             pyd_tid, pyd_fid = self.frame_map.to_pydevd(vsc_fid)
         except KeyError:
-            self.send_error_response(request, '')
+            self.send_error_response(
+                request,
+                'Frame {} not found'.format(vsc_fid))
 
         cmd_args = '{}\t{}\t{}\t{}'.format(pyd_tid, pyd_fid, 'LOCAL', text)
         _, _, resp_args = yield self.pydevd_request(
