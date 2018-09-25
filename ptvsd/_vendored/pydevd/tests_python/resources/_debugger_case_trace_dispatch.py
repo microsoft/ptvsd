@@ -6,7 +6,10 @@ def method():
     b = 20
     c = 30
     d = 40
-    if sys._getframe().f_trace is None:
+    f_trace = sys._getframe().f_trace
+    if sys.version_info[:2] == (2,6) and f_trace.__name__ == '_no_tracing':
+        print('TEST SUCEEDED')
+    elif f_trace is None:
         print('TEST SUCEEDED')
     else:
         raise AssertionError('frame.f_trace is expected to be None at this point.')

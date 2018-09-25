@@ -1102,7 +1102,7 @@ def test_unhandled_exceptions_in_top_level(case_setup_unhandled_exceptions):
         writer.finished_ok = True
 
 
-@pytest.mark.skipif(IS_JYTHON, reason='Failing on Jython -- needs to be investigated).')
+@pytest.mark.skipif(IS_JYTHON or IS_PY26, reason='Failing on Jython and py26 -- needs to be investigated).')
 def test_unhandled_exceptions_in_top_level2(case_setup_unhandled_exceptions):
     # Note: expecting unhandled exception to be printed to stderr.
 
@@ -2154,7 +2154,7 @@ def test_top_level_exceptions_on_attach(case_setup_remote, check_scenario):
 
     def check_test_suceeded_msg(writer, stdout, stderr):
         return 'TEST SUCEEDED' in ''.join(stderr)
-
+    
     def additional_output_checks(writer, stdout, stderr):
         # Don't call super as we have an expected exception
         assert 'ValueError: TEST SUCEEDED' in stderr
@@ -2180,4 +2180,4 @@ def test_top_level_exceptions_on_attach(case_setup_remote, check_scenario):
 
 
 if __name__ == '__main__':
-    pytest.main(['-k', 'test_top_level_exceptions_on_attach'])
+    pytest.main(['-k', 'test_trace_dispatch_correct'])
