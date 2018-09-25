@@ -40,7 +40,9 @@ global_next_session = None
 
 def enable_attach(address, redirect_output=True,
                   _pydevd=pydevd, _install=install,
-                  on_attach=lambda: None, **kwargs):
+                  on_attach=lambda: None,
+                  addr_reuse=True,
+                  **kwargs):
     host, port = address
 
     def wait_for_connection(daemon, host, port, next_session=None):
@@ -61,7 +63,7 @@ def enable_attach(address, redirect_output=True,
 
     def start_daemon():
         daemon._sock = daemon._start()
-        _, next_session = daemon.start_server(addr=(host, port))
+        _, next_session = daemon.start_server(addr=(host, port), addr_reuse=addr_reuse)
         global global_next_session
         global_next_session = next_session
         return daemon._sock

@@ -69,26 +69,27 @@ def is_socket(sock):
     return isinstance(sock, socket.socket)
 
 
-def create_server(host, port):
+def create_server(host, port, reuse=True):
     """Return a local server socket listening on the given port."""
     if host is None:
         host = 'localhost'
-    server = _new_sock()
+    server = _new_sock(reuse)
     server.bind((host, port))
     server.listen(1)
     return server
 
 
-def create_client():
+def create_client(reuse=True):
     """Return a client socket that may be connected to a remote address."""
-    return _new_sock()
+    return _new_sock(reuse)
 
 
-def _new_sock():
+def _new_sock(reuse=True):
     sock = socket.socket(socket.AF_INET,
                          socket.SOCK_STREAM,
                          socket.IPPROTO_TCP)
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    if reuse:
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     return sock
 
 

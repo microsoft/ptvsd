@@ -31,7 +31,8 @@ def wait_for_attach(timeout=None):
     debugger_attached.wait(timeout)
 
 
-def enable_attach(address=(DEFAULT_HOST, DEFAULT_PORT), redirect_output=True):
+def enable_attach(address=(DEFAULT_HOST, DEFAULT_PORT), redirect_output=True,
+                  addr_reuse=True):
     """Enables a client to attach to this process remotely to debug Python code.
 
     Parameters
@@ -70,6 +71,7 @@ def enable_attach(address=(DEFAULT_HOST, DEFAULT_PORT), redirect_output=True):
     ptvsd_enable_attach(
         address,
         redirect_output=redirect_output,
+        addr_reuse=addr_reuse,
     )
 
 
