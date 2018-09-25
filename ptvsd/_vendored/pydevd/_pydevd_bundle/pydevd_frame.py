@@ -432,6 +432,7 @@ class PyDBFrame:
             line_cache_key = (frame_cache_key, line)
 
             if main_debugger._finish_debugging_session:
+                frame.f_trace = None
                 return None
 
             plugin_manager = main_debugger.plugin
@@ -454,6 +455,7 @@ class PyDBFrame:
                 is_call = event == 'call'
                 if not is_line and not is_return and not is_call:
                     # I believe this can only happen in jython on some frontiers on jython and java code, which we don't want to trace.
+                    frame.f_trace = None
                     return None
 
             need_trace_return = False
@@ -518,6 +520,7 @@ class PyDBFrame:
                             if need_trace_return:
                                 return self.trace_return
                             else:
+                                frame.f_trace = None
                                 return None
 
                 else:
@@ -561,6 +564,7 @@ class PyDBFrame:
                             if need_trace_return:
                                 return self.trace_return
                             else:
+                                frame.f_trace = None
                                 return None
 
             #We may have hit a breakpoint or we are already in step mode. Either way, let's check what we should do in this frame
@@ -755,6 +759,7 @@ class PyDBFrame:
                             elif base == TRACE_PROPERTY:
                                 # We dont want to trace the return event of pydevd_traceproperty (custom property for debugging)
                                 #if we're in a return, we want it to appear to the user in the previous frame!
+                                frame.f_trace = None
                                 return None
 
                             elif pydevd_dont_trace.should_trace_hook is not None:
@@ -765,6 +770,7 @@ class PyDBFrame:
                                     # we should anymore (so, a step in/over/return may not stop anywhere if no parent is traced).
                                     # Related test: _debugger_case17a.py
                                     main_debugger.set_trace_for_frame_and_parents(back, overwrite_prev_trace=True)
+                                    frame.f_trace = None
                                     return None
 
                         if back is not None:
@@ -784,14 +790,15 @@ class PyDBFrame:
                     traceback.print_exc()
                     info.pydev_step_cmd = -1
                 except:
+                    frame.f_trace = None
                     return None
 
             #if we are quitting, let's stop the tracing
-            retVal = None
             if not main_debugger.quitting:
-                retVal = self.trace_dispatch
-
-            return retVal
+                return self.trace_dispatch
+            else:
+                frame.f_trace = None
+                return None
         finally:
             info.is_tracing = False
 
