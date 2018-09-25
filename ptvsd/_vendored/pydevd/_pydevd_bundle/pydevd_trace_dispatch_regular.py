@@ -18,6 +18,7 @@ from _pydevd_bundle.pydevd_frame import PyDBFrame
 from os.path import basename, splitext
 from _pydevd_bundle.pydevd_breakpoints import stop_on_unhandled_exception
 from _pydevd_bundle.pydevd_collect_try_except_info import collect_try_except_info
+import sys
 
 threadingCurrentThread = threading.currentThread
 get_file_type = DONT_TRACE.get
@@ -51,6 +52,12 @@ global_cache_frame_skips = {}
 # ELSE
 # ENDIF
 
+_no_tracing = None
+
+if sys.version_info[:2] <= (2,6):
+    def _no_tracing(frame, event, arg):
+        return None
+
 
 def trace_dispatch(py_db, frame, event, arg):
     # IFDEF CYTHON
@@ -76,6 +83,7 @@ def trace_dispatch(py_db, frame, event, arg):
         if name == 'threading':
             if f_unhandled.f_code.co_name in ('__bootstrap', '_bootstrap'):
                 # We need __bootstrap_inner, not __bootstrap.
+                frame.f_trace = _no_tracing
                 return None
 
             elif f_unhandled.f_code.co_name in ('__bootstrap_inner', '_bootstrap_inner'):
@@ -94,6 +102,7 @@ def trace_dispatch(py_db, frame, event, arg):
         elif name == 'pydevd':
             if f_unhandled.f_code.co_name in ('run', 'main'):
                 # We need to get to _exec
+                frame.f_trace = _no_tracing
                 return None
 
             if f_unhandled.f_code.co_name == '_exec':
@@ -112,6 +121,7 @@ def trace_dispatch(py_db, frame, event, arg):
 
     if getattr(thread, 'pydev_do_not_trace', None):
         SetTrace(None, apply_to_pydevd_thread=True)
+        frame.f_trace = _no_tracing
         return None
 
     try:
@@ -345,11 +355,13 @@ class ThreadTracer:
                     except:
                         traceback.print_exc()
                     py_db._termination_event_set = True
+                frame.f_trace = _no_tracing
                 return None
 
             # if thread is not alive, cancel trace_dispatch processing
             if not is_thread_alive(t):
                 py_db.notify_thread_not_alive(get_thread_id(t))
+                frame.f_trace = _no_tracing
                 return None  # suspend tracing
 
             if py_db.thread_analyser is not None:
@@ -363,6 +375,7 @@ class ThreadTracer:
             frame_cache_key = (frame.f_code.co_firstlineno, frame.f_code.co_name, frame.f_code.co_filename)
             if not is_stepping and frame_cache_key in cache_skips:
                 # print('skipped: trace_dispatch (cache hit)', frame_cache_key, frame.f_lineno, event, frame.f_code.co_name)
+                frame.f_trace = _no_tracing
                 return None
 
             try:
@@ -379,22 +392,27 @@ class ThreadTracer:
                     if not py_db.in_project_scope(filename):
                         # print('skipped: trace_dispatch (not in scope)', abs_path_real_path_and_base[-1], frame.f_lineno, event, frame.f_code.co_name, file_type)
                         cache_skips[frame_cache_key] = 1
+                        frame.f_trace = _no_tracing
                         return None
                 else:
                     # print('skipped: trace_dispatch', abs_path_real_path_and_base[-1], frame.f_lineno, event, frame.f_code.co_name, file_type)
                     cache_skips[frame_cache_key] = 1
+                    frame.f_trace = _no_tracing
                     return None
 
             if is_stepping:
                 if py_db.is_filter_enabled and py_db.is_ignored_by_filters(filename):
                     # ignore files matching stepping filters
+                    frame.f_trace = _no_tracing
                     return None
                 if py_db.is_filter_libraries and not py_db.in_project_scope(filename):
                     # ignore library files while stepping
+                    frame.f_trace = _no_tracing
                     return None
 
             # print('trace_dispatch', base, frame.f_lineno, event, frame.f_code.co_name, file_type)
             if additional_info.is_tracing:
+                frame.f_trace = _no_tracing
                 return None  # we don't wan't to trace code invoked from pydevd_frame.trace_dispatch
 
             # Just create PyDBFrame directly (removed support for Python versions < 2.5, which required keeping a weak
@@ -406,6 +424,7 @@ class ThreadTracer:
             ).trace_dispatch(frame, event, arg)
             if ret is None:
                 cache_skips[frame_cache_key] = 1
+                frame.f_trace = _no_tracing
                 return None
 
             # IFDEF CYTHON
@@ -415,10 +434,12 @@ class ThreadTracer:
             # ENDIF
 
         except SystemExit:
+            frame.f_trace = _no_tracing
             return None
 
         except Exception:
             if py_db._finish_debugging_session:
+                frame.f_trace = _no_tracing
                 return None  # Don't log errors when we're shutting down.
             # Log it
             try:
@@ -429,6 +450,7 @@ class ThreadTracer:
                 # Error logging? We're really in the interpreter shutdown...
                 # (https://github.com/fabioz/PyDev.Debugger/issues/8)
                 pass
+            frame.f_trace = _no_tracing
             return None
 
 
