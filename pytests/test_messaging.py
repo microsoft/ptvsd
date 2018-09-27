@@ -85,7 +85,7 @@ class TestJsonMessageChannel(object):
 
         channel = JsonMessageChannel(stream, handlers)
         channel.send_callback = send_callback
-        channel.receive_callback =  receive_callback
+        channel.receive_callback = receive_callback
         return channel
 
     @staticmethod

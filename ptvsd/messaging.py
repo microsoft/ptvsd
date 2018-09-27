@@ -5,12 +5,10 @@
 from __future__ import print_function, with_statement, absolute_import
 
 import collections
-import io
 import itertools
 import json
 import sys
 import threading
-import traceback
 
 
 class JsonIOStream(object):
@@ -34,7 +32,7 @@ class JsonIOStream(object):
                 import os, msvcrt
                 msvcrt.setmode(stdin.fileno(), os.O_BINARY)
                 msvcrt.setmode(stdout.fileno(), os.O_BINARY)
-        return self(stdin, stdout)
+        return cls(stdin, stdout)
 
     def __init__(self, reader, writer):
         """Creates a new JsonIOStream.
