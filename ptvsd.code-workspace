@@ -1,0 +1,12 @@
+{
+    "folders": [
+        {
+            "path": "."
+        }
+    ],
+    "settings": {
+        "python.linting.enabled": true,
+        "python.linting.pylintEnabled": false,
+        "python.unitTest.unittestEnabled": true,
+    }
+}
