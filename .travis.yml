@@ -26,7 +26,7 @@ before_install:
   - export TRAVIS_PYTHON_PATH=`which python`
     # Travis comes with an ancient version of pytest preinstalled globally,
     # which breaks automatic dependency checks for setup.py. Force upgrade.
-  - $TRAVIS_PYTHON_PATH pip install --upgrade pytest
+  - $TRAVIS_PYTHON_PATH -m pip install --upgrade pytest
 
 install:
   - make depends PYTHON=$TRAVIS_PYTHON_PATH
