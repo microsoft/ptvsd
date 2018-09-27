@@ -28,7 +28,6 @@ class Any(object):
 
             json_matches(d1, d2)                # False
             json_matches(d1, ANY.dict_with(d2)) # True
-
         """
 
         def __init__(self, other=None):

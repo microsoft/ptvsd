@@ -132,12 +132,13 @@ class Request(object):
         self.channel = channel
         self.seq = seq
         self.response = None
+        self._lock = threading.Lock()
         self._got_response = threading.Event()
         self._handler = lambda _: None
 
     def _handle_response(self, success, command, error_message=None, body=None):
         assert self.response is None
-        with self.channel._lock:
+        with self._lock:
             response = Response(success, command, error_message, body)
             self.response = response
             handler = self._handler
@@ -149,7 +150,7 @@ class Request(object):
         return self.response
 
     def on_response(self, handler):
-        with self.channel._lock:
+        with self._lock:
             response = self.response
             if response is None:
                 self._handler = handler
