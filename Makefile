@@ -15,6 +15,7 @@ depends:
 	$(PYTHON) -m pip install requests
 	$(PYTHON) -m pip install flask
 	$(PYTHON) -m pip install django
+	$(PYTHON) -m pip install pytest
 
 .PHONY: lint
 lint:  ## Lint the Python source code.
