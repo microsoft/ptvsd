@@ -78,6 +78,8 @@ class JsonIOStream(object):
         except (KeyError, ValueError):
             raise IOError('Content-Length is missing or invalid')
         body = self._reader.read(length)
+        if isinstance(body, bytes):
+            body = body.decode('utf-8')
         return json.loads(body)
 
     def write_json(self, value):
@@ -88,7 +90,10 @@ class JsonIOStream(object):
         body = json.dumps(value, sort_keys=True)
         if not isinstance(body, bytes):
             body = body.encode('utf-8')
-        self._writer.write(b'Content-Length: %d\r\n\r\n' % len(body))
+        header = 'Content-Length: %d\r\n\r\n' % len(body)
+        if not isinstance(header, bytes):
+            header = header.encode('ascii')
+        self._writer.write(header)
         self._writer.write(body)
 
 

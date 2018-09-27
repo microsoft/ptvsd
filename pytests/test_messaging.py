@@ -16,7 +16,7 @@ from ptvsd.messaging import JsonIOStream, JsonMemoryStream, JsonMessageChannel, 
 
 
 class TestJsonIOStream(object):
-    MESSAGE_BODY_TEMPLATE = b'{"arguments": {"threadId": 3}, "command": "next", "seq": %d, "type": "request"}'
+    MESSAGE_BODY_TEMPLATE = u'{"arguments": {"threadId": 3}, "command": "next", "seq": %d, "type": "request"}'
     MESSAGES = []
     SERIALIZED_MESSAGES = b''
 
@@ -25,9 +25,10 @@ class TestJsonIOStream(object):
         for seq in range(0, 3):
             message_body = cls.MESSAGE_BODY_TEMPLATE % seq
             message = json.loads(message_body)
+            message_body = message_body.encode('utf-8')
             cls.MESSAGES.append(message)
-            serialized_message = b'Content-Length: %d\r\n\r\n%s' % (len(message_body), message_body)
-            cls.SERIALIZED_MESSAGES += serialized_message
+            message_header = u'Content-Length: %d\r\n\r\n' % len(message_body)
+            cls.SERIALIZED_MESSAGES += message_header.encode('ascii') + message_body
 
     def test_read(self):
         data = io.BytesIO(self.SERIALIZED_MESSAGES)
