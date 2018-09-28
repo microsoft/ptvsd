@@ -9,7 +9,7 @@ import itertools
 import json
 import sys
 import threading
-
+from ._util import new_hidden_thread
 
 class JsonIOStream(object):
     """Implements a JSON value stream over two byte streams (input and output).
@@ -201,7 +201,7 @@ class JsonMessageChannel(object):
     Debug Adapter Protocol (https://microsoft.github.io/debug-adapter-protocol/overview).
     """
 
-    def __init__(self, stream, handlers=None):
+    def __init__(self, stream, handlers=None, name='vsc_messaging'):
         self.stream = stream
         self.send_callback = lambda channel, message: None
         self.receive_callback = lambda channel, message: None
@@ -210,8 +210,7 @@ class JsonMessageChannel(object):
         self._seq_iter = itertools.count(1)
         self._requests = {}
         self._handlers = handlers
-        self._worker = threading.Thread(target=self._process_incoming_messages)
-        self._worker.daemon = True
+        self._worker = new_hidden_thread(name, self._process_incoming_messages)
 
     def close(self):
         self.stream.close()
@@ -293,7 +292,10 @@ class JsonMessageChannel(object):
         if specific_handler is not None:
             handler = lambda: specific_handler(self, arguments)
         else:
-            generic_handler = getattr(self._handlers, 'request')
+            try:
+                generic_handler = getattr(self._handlers, 'request')
+            except AttributeError:
+                raise AttributeError('%r has no handler for request %r' % (self._handlers, command))
             handler = lambda: generic_handler(self, command, arguments)
         try:
             response_body = handler()
@@ -308,7 +310,10 @@ class JsonMessageChannel(object):
         if specific_handler is not None:
             handler = lambda: specific_handler(self, body)
         else:
-            generic_handler = getattr(self._handlers, 'event')
+            try:
+                generic_handler = getattr(self._handlers, 'event')
+            except AttributeError:
+                raise AttributeError('%r has no handler for event %r' % (self._handlers, event))
             handler = lambda: generic_handler(self, event, body)
         handler()
 
