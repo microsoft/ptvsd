@@ -36,6 +36,8 @@ class JsonIOStream(object):
 
     @classmethod
     def from_socket(cls, socket):
+        if socket.gettimeout() is not None:
+            raise ValueError('Socket must be in blocking mode')
         socket_io = socket.makefile('rwb', 0)
         return cls(socket_io, socket_io)
 

@@ -20,8 +20,9 @@ def daemon():
 
     daemons = []
 
-    def factory(func):
-        thread = threading.Thread(target=func)
+    def factory(func, name_suffix=''):
+        name = func.__name__ + name_suffix
+        thread = threading.Thread(target=func, name=name)
         thread.daemon = True
         daemons.append(thread)
         thread.start()

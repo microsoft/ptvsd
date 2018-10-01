@@ -205,7 +205,7 @@ This is most commonly used as seen above, with related events where their relati
 ```py
 pause1 = debug_session.send_request('pause', {'threadId': '1'})
 pause2 = debug_session.send_request('pause', {'threadId': '2'})
-debug_session.wait_until(Request(pause1) & Request(pause2))
+debug_session.wait_until(Response(pause1) & Response(pause2))
 ```
 
 ### Disjunction (`|`)
