@@ -234,7 +234,7 @@ It is usually used to concurrently send multiple requests, and wait until the fi
 ```py
 pause1 = debug_session.send_request('pause', {'threadId': '1'})
 pause2 = debug_session.send_request('pause', {'threadId': '2'})
-pause_response = debug_session.wait_until(pause1 | pause2)
+pause_response = debug_session.wait_until(Response(pause1) | Response(pause2))
 handled_request = pause_response.request
 if handled_request is pause1:
     ...

@@ -31,10 +31,12 @@ class Timeline(object):
             iter(expectations)
         except TypeError:
             expectations = (expectations,)
+        assert all(isinstance(exp, Expectation) for exp in expectations)
         last = self.last()
         return all(exp.has_occurred_by(last) for exp in expectations)
 
     def _record(self, occurrence):
+        assert isinstance(occurrence, Occurrence)
         assert occurrence.timeline is self
         assert occurrence.preceding is None
         with self._cvar:
@@ -49,6 +51,7 @@ class Timeline(object):
             self._is_frozen = True
 
     def wait_until(self, expectation):
+        assert isinstance(expectation, Expectation)
         with self._cvar:
             while expectation not in self:
                 self._cvar.wait()
@@ -80,6 +83,7 @@ class Timeline(object):
         return occ
 
     def record_response(self, request, body):
+        assert isinstance(request, Occurrence)
         occ = Occurrence(self, 'Response', request, body)
         occ.request = request
         occ.body = body
@@ -104,17 +108,20 @@ class Occurrence(object):
         assert self.timestamp is not None
 
     def backtrack(self, until=None):
+        assert until is None or isinstance(until, Occurrence)
         occ = self
         while occ is not until:
             yield occ
             occ = occ.preceding
 
     def precedes(self, occurrence):
+        assert isinstance(occurrence, Occurrence)
         preceding = occurrence.backtrack()
         next(preceding)
         return any(occ is self for occ in preceding)
 
     def follows(self, occurrence):
+        assert isinstance(occurrence, Occurrence)
         return occurrence.precedes(self)
 
     def __lt__(self, occurrence):
@@ -158,7 +165,6 @@ class Expectation(object):
         return ConditionalExpectation(self, condition)
 
     def __rshift__(self, other):
-        assert isinstance(other, Occurrence) or isinstance(other, Expectation)
         return self.before(other)
 
     def __and__(self, other):
@@ -182,8 +188,13 @@ class BoundedExpectation(Expectation):
         self.expectation = expectation
         self.must_follow = Occurred(must_follow) if isinstance(must_follow, Occurrence) else must_follow
         self.must_precede = Occurred(must_precede) if isinstance(must_precede, Occurrence) else must_precede
+        assert isinstance(self.expectation, Expectation)
+        assert self.must_follow is None or isinstance(self.must_follow, Expectation)
+        assert self.must_precede is None or isinstance(self.must_precede, Expectation)
 
     def has_occurred_by(self, occurrence):
+        assert isinstance(occurrence, Occurrence)
+
         expectation = self.expectation
         must_follow = self.must_follow
         must_precede = self.must_precede
@@ -218,9 +229,11 @@ class BoundedExpectation(Expectation):
 class AndExpectation(Expectation):
     def __init__(self, *expectations):
         assert len(expectations) > 0
+        assert all(isinstance(exp, Expectation) for exp in expectations)
         self.expectations = expectations
 
     def has_occurred_by(self, occurrence):
+        assert isinstance(occurrence, Occurrence)
         return all(exp.has_occurred_by(occurrence) for exp in self.expectations)
 
     def __and__(self, other):
@@ -234,9 +247,11 @@ class AndExpectation(Expectation):
 class OrExpectation(Expectation):
     def __init__(self, *expectations):
         assert len(expectations) > 0
+        assert all(isinstance(exp, Expectation) for exp in expectations)
         self.expectations = expectations
 
     def has_occurred_by(self, occurrence):
+        assert isinstance(occurrence, Occurrence)
         return any(exp.has_occurred_by(occurrence) for exp in self.expectations)
 
     def __or__(self, other):
@@ -250,9 +265,11 @@ class OrExpectation(Expectation):
 class XorExpectation(Expectation):
     def __init__(self, *expectations):
         assert len(expectations) > 0
+        assert all(isinstance(exp, Expectation) for exp in expectations)
         self.expectations = expectations
 
     def has_occurred_by(self, occurrence):
+        assert isinstance(occurrence, Occurrence)
         return sum(exp.has_occurred_by(occurrence) for exp in self.expectations) == 1
 
     def __xor__(self, other):
@@ -265,10 +282,12 @@ class XorExpectation(Expectation):
 
 class ConditionalExpectation(Expectation):
     def __init__(self, expectation, condition):
+        assert isinstance(expectation, Expectation)
         self.expectation = expectation
         self.condition = condition
 
     def has_occurred_by(self, occurrence):
+        assert isinstance(occurrence, Occurrence)
         return self.condition(occurrence) and self.expectation.has_occurred_by(occurrence)
 
     def __repr__(self):
@@ -280,6 +299,7 @@ class BasicExpectation(Expectation):
         self.circumstances = pattern.Pattern(circumstances)
 
     def has_occurred_by(self, occurrence):
+        assert isinstance(occurrence, Occurrence)
         return any(
             occ.circumstances
             in self.circumstances
@@ -293,9 +313,11 @@ class BasicExpectation(Expectation):
 
 class Occurred(BasicExpectation):
     def __init__(self, occurrence):
+        assert isinstance(occurrence, Occurrence)
         self.occurrence = occurrence
 
     def has_occurred_by(self, occurrence):
+        assert isinstance(occurrence, Occurrence)
         return any(occ is self.occurrence for occ in occurrence.backtrack())
 
     def __repr__(self):
