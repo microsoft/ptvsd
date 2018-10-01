@@ -2444,14 +2444,6 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
                 extra['allThreadsStopped'] = True
                 self._vs_ignore_stopped_events.set()
 
-        if exc_desc == '_ep_map':
-            print('SYS.PATH: %s' % ';'.join(sys.path))
-            try:
-                print('MODULE  : %s' % sys.modules['flask'])
-                print('PATH    : %s' % sys.modules['flask'].__file__)
-            except:
-                pass
-
         self.send_event(
             'stopped',
             reason=reason,
