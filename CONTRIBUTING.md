@@ -16,37 +16,13 @@ a CLA and decorate the PR appropriately (e.g., label, comment). Simply follow th
 provided by the bot. You will only need to do this once across all repos using our CLA.
 
 ### Prerequisites
-These packages are needed to to run `ptvsd` tests:
-* setuptools
-* coverage
-* requests
-* flask
-* django
-* pytest
-
-Install from pypi
+Use the [test_requirements.txt](test_requirements.txt) file to install the packages needed to run tests:
 ```console
--m pip install -U setuptools coverage requests flask django pytest
+pip install -r test_requirements.txt
 ```
 
 ### Linting
-We use `flake8` for linting. These are the settings we use with linting:
-```console
-ignore = W,E24,E121,E123,E125,E126,E221,E226,E266,E704,E265,E722,E501,E731,E306,E401,E302,E222
-exclude =
-    ptvsd/_vendored/pydevd,
-    ./.eggs,
-    ./versioneer.py
-```
-VSC Python settings for Linting:
-```json
-"python.linting.flake8Enabled": true,
-"python.linting.pylintEnabled": false,
-"python.linting.flake8Args": [
-    "--ignore", "E24,E121,E123,E125,E126,E221,E226,E266,E704,E265,E722,E501,E731,E306,E401,E302,E222",
-    "--exclude", "ptvsd/_vendored/*",
-],
-```
+We use `flake8` for linting, and the settings can be found here [flake8](flake8)
 
 ### Formatting
 This is optional. Use the following settings for `autopep8` or equivalent settings with the formatter of your choice:
