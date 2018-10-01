@@ -30,6 +30,8 @@ def bad_route_handled():
 
 @app.route("/unhandled")
 def bad_route_unhandled():
+    import sys
+    print('SYS.PATH: %s' % ';'.join(sys.path))
     raise ArithmeticError('Hello')
     return render_template(
         "hello.html",

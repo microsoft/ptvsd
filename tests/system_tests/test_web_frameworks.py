@@ -351,6 +351,10 @@ class WebFrameworkTests(LifecycleTestsBase):
             web_client_thread.join(timeout=1)
 
         received = list(_strip_newline_output_events(dbg.session.received))
+        strings = list(e.body['output'] for e in
+                       self.find_events(session.received, 'output')
+                       if e.body['output'].startswith('SYS.PATH'))
+        print(strings)
         if framework != 'Django':
             # TODO: Figure out better way to shutdown Django
             self.assert_contains(received, [
