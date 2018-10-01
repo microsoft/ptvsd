@@ -4,8 +4,8 @@
 
 from __future__ import print_function, with_statement, absolute_import
 
-from ..helpers.pattern import Pattern, ANY
-from ..helpers.timeline import Request, Response, Event
+from ..helpers.pattern import ANY
+from ..helpers.timeline import Event
 
 
 def test_run(debug_session, pyfile):
