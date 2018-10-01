@@ -24,7 +24,7 @@ PTVSD_SYS_PATH = os.path.basename(os.path.basename(ptvsd.__file__))
 
 
 class DebugSession(object):
-    WAIT_FOR_EXIT_TIMEOUT = 3
+    WAIT_FOR_EXIT_TIMEOUT = 5
 
     def __init__(self, method='launch', ptvsd_port=None):
         assert method in ('launch', 'attach_pid', 'attach_socket')
