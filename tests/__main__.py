@@ -278,11 +278,11 @@ def run_tests(argv, env, coverage, junit_xml):
         if '-v' in argv or '--verbose' in argv:
             verbosity = 2
         with open(junit_xml, 'wb') as output:
-            runner = XMLTestRunner(output=output, verbosity=verbosity)
-            suite = unittest.TestSuite()
-            from tests.system_tests.test_web_frameworks import FlaskLaunchTests
-            suite.addTest(FlaskLaunchTests('test_with_unhandled_exceptions'))
-            runner.run(suite)
+            unittest.main(
+                testRunner=XMLTestRunner(output=output, verbosity=verbosity),
+                module=None,
+                argv=argv,
+            )
     else:
         os.environ.update(env)
         unittest.main(module=None, argv=argv)
