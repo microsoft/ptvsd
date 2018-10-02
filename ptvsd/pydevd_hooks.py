@@ -78,22 +78,31 @@ def start_client(daemon, host, port, **kwargs):
 # See pydevd/_vendored/pydevd/_pydev_bundle/pydev_monkey.py
 def get_python_c_args(host, port, indC, args, setup):
     runner = '''
+import os
+import random
 import sys
+
 sys.path.append(r'{ptvsd_syspath}')
 
 import ptvsd
+from ptvsd._util import DEBUG
 from ptvsd import pydevd_hooks
+
 pydevd_hooks.multiprocess_port_range = ({first_port}, {last_port})
 
 from _pydev_bundle import pydev_monkey
 pydev_monkey.patch_new_process_functions()
 
-for port in range({first_port}, {last_port}):
+ports = list(range({first_port}, {last_port}))
+random.shuffle(ports)
+for port in ports:
     try:
         ptvsd.enable_attach(('localhost', port))
     except IOError:
         pass
     else:
+        if DEBUG:
+            print('Child process %d listening on port %d' % (os.getpid(), port))
         break
 else:
     raise Exception('Could not find a free port in range {first_port}-{last_port}')
