@@ -193,7 +193,7 @@ def _parse_args(prog, argv):
 
     multiprocess_port_range = ns.pop('multiprocess_port_range')
     if multiprocess_port_range is not None:
-        pydevd_hooks.multiprocess_port_iter = iter(range(*multiprocess_port_range))
+        pydevd_hooks.multiprocess_port_range = multiprocess_port_range
 
     pid = ns.pop('pid')
     module = ns.pop('module')

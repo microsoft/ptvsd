@@ -15,7 +15,8 @@ from ptvsd.daemon import Daemon, DaemonStoppedError, DaemonClosedError
 from ptvsd._util import debug, new_hidden_thread
 
 
-multiprocess_port_iter = iter(range(49152, 61000))
+# The intersection of default ephemeral port ranges for various common systems.
+multiprocess_port_range = (49152, 61000)
 
 
 def start_server(daemon, host, port, **kwargs):
@@ -81,17 +82,36 @@ import sys
 sys.path.append(r'{ptvsd_syspath}')
 
 import ptvsd
-ptvsd.enable_attach(('localhost', {port}))
+from ptvsd import pydevd_hooks
+pydevd_hooks.multiprocess_port_range = ({first_port}, {last_port})
+
+from _pydev_bundle import pydev_monkey
+pydev_monkey.patch_new_process_functions()
+
+for port in range({first_port}, {last_port}):
+    try:
+        ptvsd.enable_attach(('localhost', port))
+    except IOError:
+        pass
+    else:
+        break
+else:
+    raise Exception('Could not find a free port in range {first_port}-{last_port}')
+
 ptvsd.wait_for_attach()
 {rest}
 '''
 
-    port = next(multiprocess_port_iter)
+    first_port, last_port = multiprocess_port_range
 
     # __file__ will be .../ptvsd/__init__.py, and we want the ...
     ptvsd_syspath = os.path.join(ptvsd.__file__, '../..')
 
-    return runner.format(port=port, ptvsd_syspath=ptvsd_syspath, rest=args[indC + 1])
+    return runner.format(
+        first_port=first_port,
+        last_port=last_port,
+        ptvsd_syspath=ptvsd_syspath,
+        rest=args[indC + 1])
 
 
 def install(pydevd_module, address,
