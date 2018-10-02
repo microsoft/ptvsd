@@ -418,7 +418,13 @@ class PydevdSocket(object):
         with self.lock:
             seq = self.seq
             self.seq += 1
-        s = u'{}\t{}\t{}\n'.format(cmd_id, seq, args)
+        try:
+            s = u'{}\t{}\t{}\n'.format(cmd_id, seq, args)
+        except UnicodeDecodeError, err:
+            import sys
+            reload(sys)
+            sys.setdefaultencoding('utf8')
+            s = u'{}\t{}\t{}\n'.format(cmd_id, seq, args)
         return seq, s
 
     def pydevd_notify(self, cmd_id, args):
