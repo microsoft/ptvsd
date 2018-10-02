@@ -278,11 +278,11 @@ def run_tests(argv, env, coverage, junit_xml):
         if '-v' in argv or '--verbose' in argv:
             verbosity = 2
         with open(junit_xml, 'wb') as output:
-            unittest.main(
-                testRunner=XMLTestRunner(output=output, verbosity=verbosity),
-                module=None,
-                argv=argv,
-            )
+            runner = XMLTestRunner(output=output, verbosity=verbosity)
+            suite = unittest.TestSuite()
+            from tests.system_tests.test_web_frameworks import FlaskLaunchTests
+            suite.addTest(FlaskLaunchTests('test_with_unhandled_exceptions'))
+            runner.run(suite)
     else:
         os.environ.update(env)
         unittest.main(module=None, argv=argv)
@@ -290,9 +290,6 @@ def run_tests(argv, env, coverage, junit_xml):
 
 if __name__ == '__main__':
     config, argv, env = convert_argv()
-    if '-v' not in argv:
-        argv.append('-v')
-    argv.append('tests.system_tests.test_web_frameworks.FlaskLaunchTests.test_with_unhandled_exceptions')
     fix_sys_path()
 
     if config.lint or config.lint_only:
