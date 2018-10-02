@@ -212,20 +212,18 @@ def run_tests(argv, env, coverage, junit_xml):
 
 
 if __name__ == '__main__':
-    config, argv, env = convert_argv()
-    fix_sys_path()
-
-    if config.lint or config.lint_only:
-        check_lint()
-
-    if not config.lint_only:
-        if '--start-directory' in argv:
-            start = argv[argv.index('--start-directory') + 1]
-            print('(will look for tests under {})'.format(start))
-
-        run_tests(
-            argv,
-            env,
-            config.coverage,
-            config.junit_xml
-        )
+    import sys
+    import os
+    print('--- sys.path -- ')
+    print('\n'.join(sorted(sys.path)))
+    
+    sys.path.append(os.path.join(os.path.dirname(__file__), 'ptvsd', '_vendored', 'pydevd'))
+    assert os.path.exists(sys.path[-1])
+    
+    print('\n--- pydevd library roots -- ')
+    from _pydevd_bundle.pydevd_utils import _get_default_library_roots
+    print('\n'.join(sorted(_get_default_library_roots())))
+    
+    print('\n--- site run -- ')
+    import site
+    site._script()
