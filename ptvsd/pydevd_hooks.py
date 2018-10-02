@@ -2,13 +2,20 @@
 # Licensed under the MIT License. See LICENSE in the project root
 # for license information.
 
+import os
 import sys
 
+import pydevd
+from _pydev_bundle import pydev_monkey
 from _pydevd_bundle import pydevd_comm
 
+import ptvsd
 from ptvsd.socket import Address
 from ptvsd.daemon import Daemon, DaemonStoppedError, DaemonClosedError
 from ptvsd._util import debug, new_hidden_thread
+
+
+multiprocess_port_iter = iter(range(49152, 61000))
 
 
 def start_server(daemon, host, port, **kwargs):
@@ -67,7 +74,27 @@ def start_client(daemon, host, port, **kwargs):
     return sock
 
 
-def install(pydevd, address,
+# See pydevd/_vendored/pydevd/_pydev_bundle/pydev_monkey.py
+def get_python_c_args(host, port, indC, args, setup):
+    runner = '''
+import sys
+sys.path.append(r'{ptvsd_syspath}')
+
+import ptvsd
+ptvsd.enable_attach(('localhost', {port}))
+ptvsd.wait_for_attach()
+{rest}
+'''
+
+    port = next(multiprocess_port_iter)
+
+    # __file__ will be .../ptvsd/__init__.py, and we want the ...
+    ptvsd_syspath = os.path.join(ptvsd.__file__, '../..')
+
+    return runner.format(port=port, ptvsd_syspath=ptvsd_syspath, rest=args[indC + 1])
+
+
+def install(pydevd_module, address,
             start_server=start_server, start_client=start_client,
             **kwargs):
     """Configure pydevd to use our wrapper.
@@ -89,12 +116,16 @@ def install(pydevd, address,
     pydevd_comm.start_server = _start_server
     pydevd_comm.start_client = _start_client
 
+    # This is invoked when a child process is spawned with multiproc debugging enabled.
+    pydev_monkey._get_python_c_args = get_python_c_args
+
     # Ensure that pydevd is using our functions.
-    pydevd.start_server = _start_server
-    pydevd.start_client = _start_client
+    pydevd_module.start_server = _start_server
+    pydevd_module.start_client = _start_client
     __main__ = sys.modules['__main__']
     if __main__ is not pydevd:
         if getattr(__main__, '__file__', None) == pydevd.__file__:
             __main__.start_server = _start_server
             __main__.start_client = _start_client
+
     return daemon

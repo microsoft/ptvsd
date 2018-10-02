@@ -14,6 +14,8 @@ try:
 except ImportError:
     from urlparse import urlparse
 
+import ptvsd
+
 
 try:
     ConnectionError  # noqa
@@ -77,6 +79,7 @@ def create_server(host, port):
     server = _new_sock()
     server.bind((host, port))
     server.listen(1)
+    ptvsd.port = port
     return server
 
 

@@ -16,3 +16,7 @@ from ptvsd.attach_server import (
     enable_attach, wait_for_attach, break_into_debugger, is_attached,
 )
 del force_pydevd
+
+
+port = None
+"""Port on which ptvsd is listening for incoming connections."""
