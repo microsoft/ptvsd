@@ -27,6 +27,11 @@ if __name__ == '__main__':
             else:
                 print('site.%s = %s' % (name, v))
 
+    print('\n--- sysconfig -- ')
+    import sysconfig
+    for key, val in sysconfig.get_config_vars().items():
+        print('%s - %s' % (key, val))
+    
     print('\n--- sys params -- ')
     for name in sorted(dir(sys)):
         if name not in (
