@@ -420,8 +420,7 @@ class PydevdSocket(object):
             self.seq += 1
         try:
             s = u'{}\t{}\t{}\n'.format(cmd_id, seq, args)
-        except UnicodeDecodeError, err:
-            import sys
+        except UnicodeDecodeError:
             reload(sys)
             sys.setdefaultencoding('utf8')
             s = u'{}\t{}\t{}\n'.format(cmd_id, seq, args)
