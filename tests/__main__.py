@@ -31,6 +31,11 @@ if __name__ == '__main__':
     import sysconfig
     for key, val in sysconfig.get_config_vars().items():
         print('%s - %s' % (key, val))
+        
+    print('\n--- sysconfig paths -- ')
+    import sysconfig
+    for key, val in sysconfig.get_paths().items():
+        print('%s - %s' % (key, val))
     
     print('\n--- sys params -- ')
     for name in sorted(dir(sys)):
