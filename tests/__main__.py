@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 import inspect
 
 def print_info():
@@ -74,7 +76,6 @@ def print_info():
 
 
 
-from __future__ import absolute_import
 
 import argparse
 import os
