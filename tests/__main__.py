@@ -16,16 +16,49 @@ if __name__ == '__main__':
     import site
     print('\n--- site params -- ')
     for name in sorted(dir(site)):
-        v = getattr(site, name)
-        if inspect.isfunction(v) or inspect.ismethod(v):
-            try:
-                print('site.%s = %s  (func, method)' % (name, v()))
-            except:
-                print('unable to check: %s' % (v,))
+        if name not in ('__doc__',):
+            v = getattr(site, name)
+            if inspect.isfunction(v) or inspect.ismethod(v):
+                try:
+                    print('site.%s = %s  (func, method)' % (name, v()))
+                except:
+                    print('unable to check: %s' % (v,))
+    
+            else:
+                print('site.%s = %s' % (name, v))
 
-        else:
-            print('site.%s = %s' % (name, v))
+    print('\n--- sys params -- ')
+    for name in sorted(dir(sys)):
+        if name not in (
+            '__doc__',
+            'modules',
+            'builtin_module_names',
+            'breakpoint',
+            '__breakpoint__',
+            'breakpointhook',
+            '__breakpointhook__',
+            'getcheckinterval',
+            'setcheckinterval',
+            'get_coroutine_wrapper',
+            'exit',
+            'call_tracing',
+            'copyright',
+            '_current_frames',
+            '_clear_type_cache',
+            'callstats',
+            '_debugmallocstats',
+            ):
+            v = getattr(sys, name)
+            if inspect.isfunction(v) or inspect.ismethod(v) or inspect.isbuiltin(v):
+                try:
+                    print('sys.%s = %s  (func, method)' % (name, v()))
+                except:
+                    print('unable to check: %s' % (v,))
+    
+            else:
+                print('sys.%s = %s' % (name, v))
 
     print('\n--- site run -- ')
+    sys.argv = ['']
     site._script()
 
