@@ -50,12 +50,7 @@ ci-lint: depends lint
 .PHONY: ci-test
 ci-test: depends
 	# For now we use --quickpy2.
-	$(PYTHON) -m tests -v --full --no-network --quick-py2
-	$(PYTHON) setup.py test
-
-.PHONY: ci-coverage
-ci-coverage: depends
-	$(PYTHON) -m tests -v --full --coverage --no-network
+	$(PYTHON) experiments.py
 
 .PHONY: ci-check-schemafile
 ci-check-schemafile: check-schemafile
