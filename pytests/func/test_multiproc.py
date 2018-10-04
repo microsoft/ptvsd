@@ -5,6 +5,7 @@
 from __future__ import print_function, with_statement, absolute_import
 
 import pytest
+import sys
 
 from ..helpers.pattern import ANY, Pattern
 from ..helpers.session import DebugSession
@@ -12,6 +13,8 @@ from ..helpers.timeline import Event
 
 
 @pytest.mark.timeout(20)
+@pytest.mark.skipif(sys.version_info < (3, 4),
+                    reason='multiprocessing only works with set_start_method("spawn")')
 def test_multiproc(debug_session, pyfile):
     @pyfile
     def code_to_debug():
@@ -35,6 +38,7 @@ def test_multiproc(debug_session, pyfile):
 
         if __name__ == '__main__':
             import pytests.helpers.backchannel as backchannel
+            multiprocessing.set_start_method('spawn')
             q = multiprocessing.Queue()
             p = multiprocessing.Process(target=child, args=(q,))
             p.start()
