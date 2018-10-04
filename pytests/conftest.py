@@ -104,5 +104,3 @@ def debug_session(request):
         session.wait_for_exit()
     finally:
         session.stop()
-
-
