@@ -812,7 +812,8 @@ def process_net_command(py_db, cmd_id, seq, text):
                 py_db.post_internal_command(int_cmd, thread_id)
 
             elif cmd_id == CMD_SET_PROJECT_ROOTS:
-                pydevd_utils.set_project_roots(text.split(u'\t'))
+                pass
+                # pydevd_utils.set_project_roots(text.split(u'\t'))
 
             elif cmd_id == CMD_THREAD_DUMP_TO_STDERR:
                 pydevd_utils.dump_threads()

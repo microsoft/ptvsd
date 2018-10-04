@@ -217,7 +217,7 @@ def _get_default_library_roots():
                 roots.append(site_path)
         else:
             roots.append(site_paths)
-    return roots
+    return sorted(set(roots))
 
 
 # --- Project roots
