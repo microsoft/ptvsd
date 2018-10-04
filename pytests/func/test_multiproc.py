@@ -4,8 +4,8 @@
 
 from __future__ import print_function, with_statement, absolute_import
 
+import platform
 import pytest
-import sys
 
 from ..helpers.pattern import ANY, Pattern
 from ..helpers.session import DebugSession
@@ -13,9 +13,9 @@ from ..helpers.timeline import Event
 
 
 @pytest.mark.timeout(20)
-@pytest.mark.skipif(sys.version_info < (3, 4),
-                    reason='multiprocessing only works with set_start_method("spawn")')
-def test_multiproc(debug_session, pyfile):
+@pytest.mark.skipif(platform.system() != 'Windows',
+                    reason='Debugging multiprocessing module only works on Windows')
+def test_multiprocessing(debug_session, pyfile):
     @pyfile
     def code_to_debug():
         import multiprocessing
