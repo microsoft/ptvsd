@@ -1405,10 +1405,10 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
             self.pydevd_request(pydevd_comm.CMD_SHOW_RETURN_VALUES, '1\t1')
 
         # Print on all but NameError, don't suspend on any.
-        self.pydevd_request(pydevd_comm.CMD_SUSPEND_ON_BREAKPOINT_EXCEPTION, json.dumps(dict(
-            skip_suspend_on_breakpoint_exception=('BaseException',),
-            skip_print_breakpoint_exception=('NameError',),
-        )))
+        # self.pydevd_request(pydevd_comm.CMD_SUSPEND_ON_BREAKPOINT_EXCEPTION, json.dumps(dict(
+        #    skip_suspend_on_breakpoint_exception=('BaseException',),
+        #    skip_print_breakpoint_exception=('NameError',),
+        # )))
         
         self._apply_code_stepping_settings()
 
