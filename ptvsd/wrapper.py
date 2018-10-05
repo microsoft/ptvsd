@@ -43,7 +43,6 @@ from ptvsd.pathutils import PathUnNormcase  # noqa
 from ptvsd.safe_repr import SafeRepr  # noqa
 from ptvsd.version import __version__  # noqa
 from ptvsd.socket import TimeoutError  # noqa
-import json
 
 WAIT_FOR_THREAD_FINISH_TIMEOUT = 1  # seconds
 
@@ -1404,12 +1403,6 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         if opts.get('SHOW_RETURN_VALUE', False):
             self.pydevd_request(pydevd_comm.CMD_SHOW_RETURN_VALUES, '1\t1')
 
-        # Print on all but NameError, don't suspend on any.
-        # self.pydevd_request(pydevd_comm.CMD_SUSPEND_ON_BREAKPOINT_EXCEPTION, json.dumps(dict(
-        #    skip_suspend_on_breakpoint_exception=('BaseException',),
-        #    skip_print_breakpoint_exception=('NameError',),
-        # )))
-        
         self._apply_code_stepping_settings()
 
     def _is_just_my_code_stepping_enabled(self):
@@ -2406,11 +2399,6 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
                                                     autogen=True)
                     self.send_event('thread', reason='started', threadId=tid)
 
-    @pydevd_events.handler(pydevd_comm.CMD_GET_BREAKPOINT_EXCEPTION)
-    def on_pydevd_get_breakpoint_exception(self, seq, args):
-        # If pydevd sends exception info from a failed breakpoint condition, just ignore.
-        pass
-        
     @pydevd_events.handler(pydevd_comm.CMD_THREAD_KILL)
     def on_pydevd_thread_kill(self, seq, args):
         # TODO: docstring
