@@ -10,7 +10,6 @@ from _pydevd_bundle.pydevd_comm import (
     CMD_EVALUATE_EXPRESSION,
     CMD_EXEC_EXPRESSION,
     CMD_EXIT,
-    CMD_GET_BREAKPOINT_EXCEPTION,
     CMD_GET_FRAME,
     CMD_GET_VARIABLE,
     CMD_LIST_THREADS,
@@ -2795,7 +2794,7 @@ class ThreadRunEventTests(ThreadEventTest, unittest.TestCase):
 
 class GetExceptionBreakpointEventTests(PyDevdEventTest, unittest.TestCase):
 
-    CMD = CMD_GET_BREAKPOINT_EXCEPTION
+    CMD = 1234
     EVENT = None
 
     def pydevd_payload(self, tid, exc, frame):
