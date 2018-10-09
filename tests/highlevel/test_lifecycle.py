@@ -114,12 +114,12 @@ class LifecycleTests(HighlevelTest, unittest.TestCase):
             self.debugger_msgs.new_request(CMD_VERSION,
                                            *['1.1', expected_os_id, 'ID']),
             self.debugger_msgs.new_request(CMD_REDIRECT_OUTPUT),
-            self.debugger_msgs.new_request(CMD_SET_PROJECT_ROOTS,
-                                           _get_project_dirs()),
             self.debugger_msgs.new_request(CMD_SUSPEND_ON_BREAKPOINT_EXCEPTION, json.dumps(dict(
                 skip_suspend_on_breakpoint_exception=('BaseException',),
                 skip_print_breakpoint_exception=('NameError',),
             ))),
+            self.debugger_msgs.new_request(CMD_SET_PROJECT_ROOTS,
+                                           _get_project_dirs()),
             self.debugger_msgs.new_request(CMD_RUN),
         ])
 
@@ -197,11 +197,11 @@ class LifecycleTests(HighlevelTest, unittest.TestCase):
             self.debugger_msgs.new_request(CMD_VERSION,
                                            *['1.1', OS_ID, 'ID']),
             self.debugger_msgs.new_request(CMD_REDIRECT_OUTPUT),
-            self.debugger_msgs.new_request(CMD_SET_PROJECT_ROOTS,
-                                           _get_project_dirs()),
             self.debugger_msgs.new_request(CMD_SUSPEND_ON_BREAKPOINT_EXCEPTION, json.dumps(dict(
                 skip_suspend_on_breakpoint_exception=('BaseException',),
                 skip_print_breakpoint_exception=('NameError',),
             ))),
+            self.debugger_msgs.new_request(CMD_SET_PROJECT_ROOTS,
+                                           _get_project_dirs()),
             self.debugger_msgs.new_request(CMD_RUN),
         ])
