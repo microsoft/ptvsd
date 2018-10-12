@@ -1607,7 +1607,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
 
         return self.source_map.to_vscode(filename, autogen=True)
 
-    def _cleanup_frames_and_variables(self, pyd_tid, preserve_frames=[]):
+    def _cleanup_frames_and_variables(self, pyd_tid, preserve_frames=()):
         """ Delete frames and variables for a given thread, except for the ones in preserve list.
         """
         for pyd_fid, vsc_fid in self.frame_map.pairs():
