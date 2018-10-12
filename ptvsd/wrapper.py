@@ -1607,17 +1607,6 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
 
         return self.source_map.to_vscode(filename, autogen=True)
 
-    def _cleanup_frames_and_variables(self, pyd_tid, preserve_frames=[]):
-        """ Delete frames and variables for a given thread, except for the ones in preserve list.
-        """
-        for pyd_fid, vsc_fid in self.frame_map.pairs():
-            if pyd_fid[0] == pyd_tid and pyd_fid[1] not in preserve_frames:
-                self.frame_map.remove(pyd_fid, vsc_fid)
-
-        for pyd_var, vsc_var in self.var_map.pairs():
-            if pyd_var[0] == pyd_tid and pyd_fid[1] not in preserve_frames:
-                self.var_map.remove(pyd_var, vsc_var)
-
     @async_handler
     def on_stackTrace(self, request, args):
         # TODO: docstring
@@ -1648,7 +1637,6 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
             levels = totalFrames
 
         stackFrames = []
-        preserve_fids = []
         for xframe in xframes:
             if startFrame > 0:
                 startFrame -= 1
@@ -1658,9 +1646,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
                 break
             levels -= 1
 
-            pyd_fid = int(xframe['id'])
-            preserve_fids.append(pyd_fid)
-            key = (pyd_tid, pyd_fid)
+            key = (pyd_tid, int(xframe['id']))
             fid = self.frame_map.to_vscode(key, autogen=True)
             name = unquote(xframe['name'])
             # pydevd encodes if necessary and then uses urllib.quote.
@@ -1694,8 +1680,6 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
             if not self.internals_filter.is_internal_path(path) and \
                 self._should_debug(path):
                 user_frames.append(frame)
-
-        self._cleanup_frames_and_variables(pyd_tid, preserve_fids)
 
         totalFrames = len(user_frames)
         self.send_response(request,
@@ -2426,17 +2410,6 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
     def on_pydevd_thread_kill(self, seq, args):
         # TODO: docstring
         pyd_tid = args.strip()
-
-        # All frames, and variables for
-        # this thread are now invalid; clear their IDs.
-        for pyd_fid, vsc_fid in self.frame_map.pairs():
-            if pyd_fid[0] == pyd_tid:
-                self.frame_map.remove(pyd_fid, vsc_fid)
-
-        for pyd_var, vsc_var in self.var_map.pairs():
-            if pyd_var[0] == pyd_tid:
-                self.var_map.remove(pyd_var, vsc_var)
-
         try:
             vsc_tid = self.thread_map.to_vscode(pyd_tid, autogen=False)
         except KeyError:
@@ -2523,6 +2496,16 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         # TODO: docstring
         pyd_tid, _ = args.split('\t')
         pyd_tid = pyd_tid.strip()
+
+        # All frames, and variables for
+        # this thread are now invalid; clear their IDs.
+        for pyd_fid, vsc_fid in self.frame_map.pairs():
+            if pyd_fid[0] == pyd_tid:
+                self.frame_map.remove(pyd_fid, vsc_fid)
+
+        for pyd_var, vsc_var in self.var_map.pairs():
+            if pyd_var[0] == pyd_tid:
+                self.var_map.remove(pyd_var, vsc_var)
 
         try:
             vsc_tid = self.thread_map.to_vscode(pyd_tid, autogen=False)
