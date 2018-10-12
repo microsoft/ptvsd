@@ -12,16 +12,20 @@ class TestSocketServerReuse(object):
     PORT1 = 7890
 
     def test_reuse_same_address_port(self):
-        sock1 = create_server(self.HOST1, self.PORT1)
-        with pytest.raises(Exception):
-            create_server(self.HOST1, self.PORT1)
-        assert sock1.getsockname() == (self.HOST1, self.PORT1)
-        shut_down(sock1)
+        try:
+            sock1 = create_server(self.HOST1, self.PORT1)
+            with pytest.raises(Exception):
+                create_server(self.HOST1, self.PORT1)
+            assert sock1.getsockname() == (self.HOST1, self.PORT1)
+        finally:
+            shut_down(sock1)
 
     def test_reuse_same_port(self):
-        sock1 = create_server(self.HOST1, self.PORT1)
-        sock2 = create_server(self.HOST2, self.PORT1)
-        assert sock1.getsockname() == (self.HOST1, self.PORT1)
-        assert sock2.getsockname() == (self.HOST2, self.PORT1)
-        shut_down(sock1)
-        shut_down(sock2)
+        try:
+            sock1 = create_server(self.HOST1, self.PORT1)
+            sock2 = create_server(self.HOST2, self.PORT1)
+            assert sock1.getsockname() == (self.HOST1, self.PORT1)
+            assert sock2.getsockname() == (self.HOST2, self.PORT1)
+        finally:
+            shut_down(sock1)
+            shut_down(sock2)
