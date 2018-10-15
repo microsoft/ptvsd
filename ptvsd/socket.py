@@ -96,14 +96,15 @@ def _new_sock():
                          socket.SOCK_STREAM,
                          socket.IPPROTO_TCP)
     if platform.system() == 'Windows':
-        if hasattr(socket, 'SIO_LOOPBACK_FAST_PATH'):
-            try:
-                sock.ioctl(socket.SIO_LOOPBACK_FAST_PATH, True)
-            except OSError as ose:
-                if ose.winerror == 10045:  # Not supported by OS
-                    pass
-                else:
-                    raise
+        try:
+            sock.ioctl(socket.SIO_LOOPBACK_FAST_PATH, True)
+        except AttributeError:
+            pass  # Not supported in python 2.* or <3.6
+        except OSError as ose:
+            if ose.winerror == 10045:  # Not supported by OS
+                pass
+            else:
+                raise
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
     else:
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
