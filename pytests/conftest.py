@@ -134,6 +134,6 @@ def debug_session(request):
             pass
         else:
             if not failed:
-                session.wait_for_exit()
+                session.wait_for_exit(session.expected_returncode)
     finally:
         session.stop()

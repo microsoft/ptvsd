@@ -42,6 +42,8 @@ class DebugSession(object):
         self.debug_options = ['RedirectOutput']
         self.env = os.environ.copy()
         self.env['PYTHONPATH'] = PTVSD_SYS_PATH
+        self.cwd = None
+        self.expected_returncode = 0
 
         self.is_running = False
         self.process = None
@@ -115,7 +117,7 @@ class DebugSession(object):
 
         self._wait_for_remaining_output()
 
-    def prepare_to_run(self, perform_handshake=True, filename=None, module=None, code=None, backchannel=False):
+    def prepare_to_run(self, perform_handshake=True, filename=None, module=None, code=None, backchannel=False, cli_args=()):
         """Spawns ptvsd using the configured method, telling it to execute the
         provided Python file, module, or code, and establishes a message channel
         to it.
@@ -151,6 +153,9 @@ class DebugSession(object):
             assert not filename and not module
             argv += ['-c', code]
 
+        if cli_args:
+            argv += list(cli_args)
+
         if backchannel:
             self.setup_backchannel()
         if self.backchannel_port:
@@ -159,7 +164,7 @@ class DebugSession(object):
         print('Current directory: %s' % os.getcwd())
         print('PYTHONPATH: %s' % self.env['PYTHONPATH'])
         print('Spawning %r' % argv)
-        self.process = subprocess.Popen(argv, env=self.env, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        self.process = subprocess.Popen(argv, env=self.env, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=self.cwd)
         self.pid = self.process.pid
         self.psutil_process =  psutil.Process(self.pid)
         self.is_running = True
@@ -204,7 +209,7 @@ class DebugSession(object):
         if close:
             self.timeline.close()
 
-    def wait_for_termination(self, expected_returncode=0):
+    def wait_for_termination(self, expected_returncode):
         print(colors.LIGHT_MAGENTA + 'Waiting for ptvsd#%d to terminate' % self.ptvsd_port + colors.RESET)
 
         # BUG: ptvsd sometimes exits without sending 'terminate' or 'exited', likely due to
@@ -221,7 +226,7 @@ class DebugSession(object):
 
         self.timeline.close()
 
-    def wait_for_exit(self, expected_returncode=0):
+    def wait_for_exit(self, expected_returncode):
         """Waits for the spawned ptvsd process to exit. If it doesn't exit within
         WAIT_FOR_EXIT_TIMEOUT seconds, forcibly kills the process. After the process
         exits, validates its return code to match expected_returncode.
