@@ -44,6 +44,7 @@ class DebugSession(object):
         self.env['PYTHONPATH'] = PTVSD_SYS_PATH
         self.cwd = None
         self.expected_returncode = 0
+        self.cli_args = ()
 
         self.is_running = False
         self.process = None
@@ -117,7 +118,7 @@ class DebugSession(object):
 
         self._wait_for_remaining_output()
 
-    def prepare_to_run(self, perform_handshake=True, filename=None, module=None, code=None, backchannel=False, cli_args=()):
+    def prepare_to_run(self, perform_handshake=True, filename=None, module=None, code=None, backchannel=False):
         """Spawns ptvsd using the configured method, telling it to execute the
         provided Python file, module, or code, and establishes a message channel
         to it.
@@ -153,8 +154,8 @@ class DebugSession(object):
             assert not filename and not module
             argv += ['-c', code]
 
-        if cli_args:
-            argv += list(cli_args)
+        if self.cli_args:
+            argv += list(self.cli_args)
 
         if backchannel:
             self.setup_backchannel()

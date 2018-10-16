@@ -30,7 +30,7 @@ def _wait_for_flask_link(debug_session):
 
 def test_flask_breakpoint_no_multiproc(debug_session):
     debug_session.multiprocess = False
-    cli_args = ['run', '--no-debugger', '--no-reload', '--with-threads']
+    debug_session.cli_args = ['run', '--no-debugger', '--no-reload', '--with-threads']
     env = {
         'FLASK_APP': 'app.py',
         'FLASK_ENV': 'development',
@@ -52,7 +52,7 @@ def test_flask_breakpoint_no_multiproc(debug_session):
     debug_session.cwd = FLASK1_ROOT
     debug_session.env.update(env)
     debug_session.expected_returncode = ANY  # No clean way to kill Django server
-    debug_session.prepare_to_run(module='flask', cli_args=cli_args)
+    debug_session.prepare_to_run(module='flask')
 
     bp_line = 11
     bp_var_content = 'Flask-Jinja-Test'
@@ -120,7 +120,7 @@ def test_flask_breakpoint_no_multiproc(debug_session):
 
 def test_flask_breakpoint_multiproc(debug_session):
     debug_session.multiprocess = True
-    cli_args = ['run', ]
+    debug_session.cli_args = ['run', ]
     env = {
         'FLASK_APP': 'app',
         'FLASK_ENV': 'development',
@@ -142,7 +142,7 @@ def test_flask_breakpoint_multiproc(debug_session):
     debug_session.cwd = FLASK1_ROOT
     debug_session.env.update(env)
     debug_session.expected_returncode = ANY  # No clean way to kill Django server
-    debug_session.prepare_to_run(module='flask', cli_args=cli_args)
+    debug_session.prepare_to_run(module='flask')
 
     bp_line = 11
     bp_var_content = 'Flask-Jinja-Test'
