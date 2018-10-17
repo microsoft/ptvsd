@@ -135,7 +135,7 @@ def test_flask_template_breakpoint_no_multiproc(debug_session):
 def _flask_exception_no_multiproc(debug_session, ex_type, ex_line):
     _flask_no_multiproc_common(debug_session)
     debug_session.prepare_to_run(module='flask')
-    
+
     debug_session.send_request('setExceptionBreakpoints', arguments={
         'filters': ['raised', 'uncaught'],
     }).wait_for_response()

@@ -61,4 +61,4 @@ def test_run(debug_session, pyfile, run_as):
         ptvsd_path == expected_ptvsd_path + 'o'
     )
 
-    debug_session.wait_for_exit()
+    debug_session.wait_for_exit(0)

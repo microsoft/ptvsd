@@ -73,7 +73,10 @@ def bad_route_unhandled(request):
 
 
 def exit_app(request):
-    os.kill(os.getpid(), signal.SIGBREAK)
+    try:
+        os.kill(os.getpid(), signal.SIGBREAK)
+    except AttributeError:
+        os.kill(os.getpid(), signal.SIGINT)
     return HttpResponse('Done')
 
 

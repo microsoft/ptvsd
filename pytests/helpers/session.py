@@ -195,7 +195,7 @@ class DebugSession(object):
         return self
 
     def __exit__(self, *args):
-        self.wait_for_exit()
+        self.wait_for_exit(self.expected_returncode)
 
     def wait_for_disconnect(self, close=True):
         """Waits for the connected ptvsd process to disconnect.
