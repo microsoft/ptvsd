@@ -22,9 +22,10 @@ def _wait_for_django_link(debug_session):
             o = debug_session.wait_for_next(o >> Event('output'))
         else:
             o = debug_session.wait_for_next(Event('output'))
-        link = get_url_from_str(o.body['output'])
-        if link is not None:
-            return link
+        for e in debug_session.all_occurrences_of(Event('output')):
+            link = get_url_from_str(o.body['output'])
+            if link is not None:
+                return link
 
 
 def _django_no_multiproc_common(debug_session):
