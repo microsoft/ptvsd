@@ -5,7 +5,6 @@
 from __future__ import print_function, with_statement, absolute_import
 
 import os.path
-import time
 
 from ..helpers.pattern import ANY
 from ..helpers.timeline import Event
