@@ -44,7 +44,7 @@ class DebugSession(object):
         self.env['PYTHONPATH'] = PTVSD_SYS_PATH
         self.cwd = None
         self.expected_returncode = 0
-        self.cli_args = ()
+        self.program_args = []
 
         self.is_running = False
         self.process = None
@@ -154,8 +154,8 @@ class DebugSession(object):
             assert not filename and not module
             argv += ['-c', code]
 
-        if self.cli_args:
-            argv += list(self.cli_args)
+        if self.program_args:
+            argv += list(self.program_args)
 
         if backchannel:
             self.setup_backchannel()
@@ -195,7 +195,7 @@ class DebugSession(object):
         return self
 
     def __exit__(self, *args):
-        self.wait_for_exit(self.expected_returncode)
+        self.wait_for_exit()
 
     def wait_for_disconnect(self, close=True):
         """Waits for the connected ptvsd process to disconnect.
@@ -210,7 +210,7 @@ class DebugSession(object):
         if close:
             self.timeline.close()
 
-    def wait_for_termination(self, expected_returncode):
+    def wait_for_termination(self):
         print(colors.LIGHT_MAGENTA + 'Waiting for ptvsd#%d to terminate' % self.ptvsd_port + colors.RESET)
 
         # BUG: ptvsd sometimes exits without sending 'terminate' or 'exited', likely due to
@@ -220,14 +220,14 @@ class DebugSession(object):
         self.wait_for_disconnect(close=False)
 
         if sys.version_info < (3,) or Event('exited') in self:
-            self.expect_realized(Event('exited', {'exitCode': expected_returncode}))
+            self.expect_realized(Event('exited', {'exitCode': self.expected_returncode}))
 
         if sys.version_info < (3,) or Event('terminated') in self:
             self.expect_realized(Event('exited') >> Event('terminated', {}))
 
         self.timeline.close()
 
-    def wait_for_exit(self, expected_returncode):
+    def wait_for_exit(self):
         """Waits for the spawned ptvsd process to exit. If it doesn't exit within
         WAIT_FOR_EXIT_TIMEOUT seconds, forcibly kills the process. After the process
         exits, validates its return code to match expected_returncode.
@@ -252,9 +252,9 @@ class DebugSession(object):
 
         if self.process is not None:
             self.process.wait()
-            assert self.process.returncode == expected_returncode
+            assert self.process.returncode == self.expected_returncode
 
-        self.wait_for_termination(expected_returncode)
+        self.wait_for_termination()
 
     def _kill_process_tree(self):
         assert self.psutil_process is not None

@@ -6,36 +6,23 @@ from __future__ import print_function, with_statement, absolute_import
 
 import os.path
 import pytest
-import time
-import socket
 
 from ..helpers.pattern import ANY
 from ..helpers.session import DebugSession
 from ..helpers.timeline import Event
-from ..helpers.webhelper import get_url_from_str, get_web_content
+from ..helpers.webhelper import get_web_content, wait_for_connection
 from .testfiles.testroots import get_test_root
 
 
 FLASK1_ROOT = get_test_root('flask1')
 FLASK1_APP = os.path.join(FLASK1_ROOT, 'app.py')
 FLASK1_TEMPLATE = os.path.join(FLASK1_ROOT, 'templates', 'hello.html')
-
-
-def _wait_for_flask_link(debug_session):
-    o = None
-    while True:
-        if o:
-            o = debug_session.wait_for_next(o >> Event('output'))
-        else:
-            o = debug_session.wait_for_next(Event('output'))
-        for e in debug_session.all_occurrences_of(Event('output')):
-            link = get_url_from_str(o.body['output'])
-            if link is not None:
-                return link
+FLASK_LINK = 'http://127.0.0.1:5000/'
+FLASK_PORT = 5000
 
 def _flask_no_multiproc_common(debug_session):
     debug_session.multiprocess = False
-    debug_session.cli_args = ['run', '--no-debugger', '--no-reload', '--with-threads']
+    debug_session.program_args += ['run', '--no-debugger', '--no-reload', '--with-threads']
     env = {
         'FLASK_APP': 'app.py',
         'FLASK_ENV': 'development',
@@ -44,6 +31,8 @@ def _flask_no_multiproc_common(debug_session):
         'LANG': 'C.UTF-8',
     }
 
+    # we may get multiple stopped(pause), or continued events.
+    # we only care about stopped(breakpoint/exception) events
     debug_session.ignore_unobserved += [
         Event('thread', ANY.dict_with({'reason': 'started'})),
         Event('module'),
@@ -72,60 +61,60 @@ def test_flask_breakpoint_no_multiproc(debug_session, bp_file, bp_line, bp_name)
 
     debug_session.start_debugging()
 
-    link = _wait_for_flask_link(debug_session)
-    assert link is not None
+    # wait for Flask web server to start
+    wait_for_connection(FLASK_PORT)
+    link = FLASK_LINK
+    web_request = get_web_content(link, {})
 
-    # connect to web server
-    with get_web_content(link, {}) as web_result:
-        thread_stopped = debug_session.wait_for_next(Event('stopped'), ANY.dict_with({'reason': 'breakpoint'}))
-        assert thread_stopped.body['threadId'] is not None
+    thread_stopped = debug_session.wait_for_next(Event('stopped'), ANY.dict_with({'reason': 'breakpoint'}))
+    assert thread_stopped.body['threadId'] is not None
 
-        tid = thread_stopped.body['threadId']
+    tid = thread_stopped.body['threadId']
 
-        resp_stacktrace = debug_session.send_request('stackTrace', arguments={
-            'threadId': tid,
-        }).wait_for_response()
-        assert resp_stacktrace.body['totalFrames'] > 0
-        frames = resp_stacktrace.body['stackFrames']
-        assert frames[0] == {
-            'id': ANY,
-            'name': bp_name,
-            'source': {
-                'sourceReference': ANY,
-                'path': bp_file,
-            },
-            'line': bp_line,
-            'column': 1,
-        }
+    resp_stacktrace = debug_session.send_request('stackTrace', arguments={
+        'threadId': tid,
+    }).wait_for_response()
+    assert resp_stacktrace.body['totalFrames'] > 0
+    frames = resp_stacktrace.body['stackFrames']
+    assert frames[0] == {
+        'id': ANY,
+        'name': bp_name,
+        'source': {
+            'sourceReference': ANY,
+            'path': bp_file,
+        },
+        'line': bp_line,
+        'column': 1,
+    }
 
-        fid = frames[0]['id']
-        resp_scopes = debug_session.send_request('scopes', arguments={
-            'frameId': fid
-        }).wait_for_response()
-        scopes = resp_scopes.body['scopes']
-        assert len(scopes) > 0
+    fid = frames[0]['id']
+    resp_scopes = debug_session.send_request('scopes', arguments={
+        'frameId': fid
+    }).wait_for_response()
+    scopes = resp_scopes.body['scopes']
+    assert len(scopes) > 0
 
-        resp_variables = debug_session.send_request('variables', arguments={
-            'variablesReference': scopes[0]['variablesReference']
-        }).wait_for_response()
-        variables = list(v for v in resp_variables.body['variables'] if v['name'] == 'content')
-        assert variables == [{
-                'name': 'content',
-                'type': 'str',
-                'value': repr(bp_var_content),
-                'presentationHint': {'attributes': ['rawString']},
-                'evaluateName': 'content'
-            }]
+    resp_variables = debug_session.send_request('variables', arguments={
+        'variablesReference': scopes[0]['variablesReference']
+    }).wait_for_response()
+    variables = list(v for v in resp_variables.body['variables'] if v['name'] == 'content')
+    assert variables == [{
+            'name': 'content',
+            'type': 'str',
+            'value': repr(bp_var_content),
+            'presentationHint': {'attributes': ['rawString']},
+            'evaluateName': 'content'
+        }]
 
-        debug_session.send_request('continue').wait_for_response()
-        debug_session.wait_for_next(Event('continued'))
+    debug_session.send_request('continue').wait_for_response()
+    debug_session.wait_for_next(Event('continued'))
 
-    assert web_result['content'].find(bp_var_content) != -1
+    web_content = web_request.wait_for_response()
+    assert web_content.find(bp_var_content) != -1
 
     # shutdown to web server
-    link += 'exit' if link.endswith('/') else '/exit'
-    with get_web_content(link):
-        pass
+    link = FLASK_LINK + 'exit'
+    get_web_content(link).wait_for_response()
 
 @pytest.mark.parametrize('ex_type, ex_line', [
   ('handled', 21),
@@ -141,59 +130,62 @@ def test_flask_exception_no_multiproc(debug_session, ex_type, ex_line):
 
     debug_session.start_debugging()
 
-    base_link = _wait_for_flask_link(debug_session)
-    assert base_link is not None
-
+    # wait for Flask web server to start
+    wait_for_connection(FLASK_PORT)
+    base_link = FLASK_LINK
     link = base_link + ex_type if base_link.endswith('/') else ('/' + ex_type)
-    with get_web_content(link, {}):
-        thread_stopped = debug_session.wait_for_next(Event('stopped', ANY.dict_with({'reason': 'exception'})))
-        assert thread_stopped == Event('stopped', ANY.dict_with({
-            'reason': 'exception',
-            'text': 'ArithmeticError',
-            'description': 'Hello'
-        }))
+    web_request = get_web_content(link, {})
 
-        tid = thread_stopped.body['threadId']
-        resp_exception_info = debug_session.send_request(
-            'exceptionInfo',
-            arguments={'threadId': tid, }
-        ).wait_for_response()
-        exception = resp_exception_info.body
-        assert exception == {
-            'exceptionId': 'ArithmeticError',
-            'breakMode': 'always',
-            'description': 'Hello',
-            'details': {
-                'message': 'Hello',
-                'typeName': 'ArithmeticError',
-                'source': FLASK1_APP,
-                'stackTrace': ANY,
-            }
+    thread_stopped = debug_session.wait_for_next(Event('stopped', ANY.dict_with({'reason': 'exception'})))
+    assert thread_stopped == Event('stopped', ANY.dict_with({
+        'reason': 'exception',
+        'text': 'ArithmeticError',
+        'description': 'Hello'
+    }))
+
+    tid = thread_stopped.body['threadId']
+    resp_exception_info = debug_session.send_request(
+        'exceptionInfo',
+        arguments={'threadId': tid, }
+    ).wait_for_response()
+    exception = resp_exception_info.body
+    assert exception == {
+        'exceptionId': 'ArithmeticError',
+        'breakMode': 'always',
+        'description': 'Hello',
+        'details': {
+            'message': 'Hello',
+            'typeName': 'ArithmeticError',
+            'source': FLASK1_APP,
+            'stackTrace': ANY,
         }
+    }
 
-        resp_stacktrace = debug_session.send_request('stackTrace', arguments={
-            'threadId': tid,
-        }).wait_for_response()
-        assert resp_stacktrace.body['totalFrames'] > 0
-        frames = resp_stacktrace.body['stackFrames']
-        assert frames[0] == {
-            'id': ANY,
-            'name': 'bad_route_' + ex_type,
-            'source': {
-                'sourceReference': ANY,
-                'path': FLASK1_APP,
-            },
-            'line': ex_line,
-            'column': 1,
-        }
+    resp_stacktrace = debug_session.send_request('stackTrace', arguments={
+        'threadId': tid,
+    }).wait_for_response()
+    assert resp_stacktrace.body['totalFrames'] > 0
+    frames = resp_stacktrace.body['stackFrames']
+    assert frames[0] == {
+        'id': ANY,
+        'name': 'bad_route_' + ex_type,
+        'source': {
+            'sourceReference': ANY,
+            'path': FLASK1_APP,
+        },
+        'line': ex_line,
+        'column': 1,
+    }
 
-        debug_session.send_request('continue').wait_for_response()
-        debug_session.wait_for_next(Event('continued'))
+    debug_session.send_request('continue').wait_for_response()
+    debug_session.wait_for_next(Event('continued'))
+
+    # ignore response for exception tests
+    web_request.wait_for_response()
 
     # shutdown to web server
     link = base_link + 'exit' if base_link.endswith('/') else '/exit'
-    with get_web_content(link):
-        pass
+    get_web_content(link).wait_for_response()
 
 
 def _wait_for_child_process(debug_session):
@@ -210,27 +202,10 @@ def _wait_for_child_process(debug_session):
     return child_session
 
 
-def wait_for_connection(port, interval=1, attempts=10):
-    count = 0
-    while count < attempts:
-        count += 1
-        try:
-            print('Waiting to connect to port: %s' % port)
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.connect(('localhost', port))
-        except socket.error:
-            pass
-        finally:
-            sock.close()
-        time.sleep(interval)
-
-
 @pytest.mark.timeout(120)
 def test_flask_breakpoint_multiproc(debug_session):
     debug_session.multiprocess = True
-    debug_session.cli_args = ['run', ]
-    link = 'http://127.0.0.1:5000/'
-    port = 5000
+    debug_session.program_args += ['run', ]
     env = {
         'FLASK_APP': 'app',
         'FLASK_ENV': 'development',
@@ -268,56 +243,56 @@ def test_flask_breakpoint_multiproc(debug_session):
     }).wait_for_response()
     child_session.start_debugging()
 
-    wait_for_connection(port)
+    # wait for Flask server to start
+    wait_for_connection(FLASK_PORT)
+    web_request = get_web_content(FLASK_LINK, {})
 
-    # connect to web server
-    with get_web_content(link, {}) as web_result:
-        thread_stopped = child_session.wait_for_next(Event('stopped', ANY.dict_with({'reason': 'breakpoint'})))
-        assert thread_stopped.body['threadId'] is not None
+    thread_stopped = child_session.wait_for_next(Event('stopped', ANY.dict_with({'reason': 'breakpoint'})))
+    assert thread_stopped.body['threadId'] is not None
 
-        tid = thread_stopped.body['threadId']
+    tid = thread_stopped.body['threadId']
 
-        resp_stacktrace = child_session.send_request('stackTrace', arguments={
-            'threadId': tid,
-        }).wait_for_response()
-        assert resp_stacktrace.body['totalFrames'] == 1
-        frames = resp_stacktrace.body['stackFrames']
-        assert frames == [{
-            'id': ANY.int,
-            'name': 'home',
-            'source': {
-                'sourceReference': ANY.int,
-                'path': FLASK1_APP,
-            },
-            'line': bp_line,
-            'column': 1,
+    resp_stacktrace = child_session.send_request('stackTrace', arguments={
+        'threadId': tid,
+    }).wait_for_response()
+    assert resp_stacktrace.body['totalFrames'] == 1
+    frames = resp_stacktrace.body['stackFrames']
+    assert frames == [{
+        'id': ANY.int,
+        'name': 'home',
+        'source': {
+            'sourceReference': ANY.int,
+            'path': FLASK1_APP,
+        },
+        'line': bp_line,
+        'column': 1,
+    }]
+
+    fid = frames[0]['id']
+    resp_scopes = child_session.send_request('scopes', arguments={
+        'frameId': fid
+    }).wait_for_response()
+    scopes = resp_scopes.body['scopes']
+    assert len(scopes) > 0
+
+    resp_variables = child_session.send_request('variables', arguments={
+        'variablesReference': scopes[0]['variablesReference']
+    }).wait_for_response()
+    variables = [v for v in resp_variables.body['variables'] if v['name'] == 'content']
+    assert variables == [{
+            'name': 'content',
+            'type': 'str',
+            'value': repr(bp_var_content),
+            'presentationHint': {'attributes': ['rawString']},
+            'evaluateName': 'content'
         }]
 
-        fid = frames[0]['id']
-        resp_scopes = child_session.send_request('scopes', arguments={
-            'frameId': fid
-        }).wait_for_response()
-        scopes = resp_scopes.body['scopes']
-        assert len(scopes) > 0
+    child_session.send_request('continue').wait_for_response()
+    child_session.wait_for_next(Event('continued'))
 
-        resp_variables = child_session.send_request('variables', arguments={
-            'variablesReference': scopes[0]['variablesReference']
-        }).wait_for_response()
-        variables = [v for v in resp_variables.body['variables'] if v['name'] == 'content']
-        assert variables == [{
-                'name': 'content',
-                'type': 'str',
-                'value': repr(bp_var_content),
-                'presentationHint': {'attributes': ['rawString']},
-                'evaluateName': 'content'
-            }]
-
-        child_session.send_request('continue').wait_for_response()
-        child_session.wait_for_next(Event('continued'))
-
-    assert web_result['content'].find(bp_var_content) != -1
+    web_content = web_request.wait_for_response()
+    assert web_content.find(bp_var_content) != -1
 
     # shutdown to web server
-    link += 'exit' if link.endswith('/') else '/exit'
-    with get_web_content(link):
-        pass
+    link = FLASK_LINK + 'exit'
+    get_web_content(link).wait_for_response()
