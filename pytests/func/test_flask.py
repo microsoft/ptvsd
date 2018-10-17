@@ -83,10 +83,10 @@ def _flask_breakpoint_no_multiproc(debug_session, bp_file, bp_line, bp_name):
         resp_stacktrace = debug_session.send_request('stackTrace', arguments={
             'threadId': tid,
         }).wait_for_response()
-        assert resp_stacktrace.body['totalFrames'] > 1
+        assert resp_stacktrace.body['totalFrames'] > 0
         frames = resp_stacktrace.body['stackFrames']
-        assert frames == [{
-            'id': 1,
+        assert frames[0] == {
+            'id': ANY,
             'name': bp_name,
             'source': {
                 'sourceReference': ANY,
@@ -94,7 +94,7 @@ def _flask_breakpoint_no_multiproc(debug_session, bp_file, bp_line, bp_name):
             },
             'line': bp_line,
             'column': 1,
-        }]
+        }
 
         fid = frames[0]['id']
         resp_scopes = debug_session.send_request('scopes', arguments={
@@ -131,6 +131,76 @@ def test_flask_breakpoint_no_multiproc(debug_session):
 def test_flask_template_breakpoint_no_multiproc(debug_session):
     _flask_breakpoint_no_multiproc(debug_session, FLASK1_TEMPLATE, 8, 'template')
 
+
+def _flask_exception_no_multiproc(debug_session, ex_type, ex_line):
+    _flask_no_multiproc_common(debug_session)
+    debug_session.prepare_to_run(module='flask')
+    
+    debug_session.send_request('setExceptionBreakpoints', arguments={
+        'filters': ['raised', 'uncaught'],
+    }).wait_for_response()
+
+    debug_session.start_debugging()
+
+    base_link = _wait_for_flask_link(debug_session)
+    assert base_link is not None
+
+    link = base_link + ex_type if base_link.endswith('/') else ('/' + ex_type)
+    with get_web_content(link, {}):
+        thread_stopped = debug_session.wait_for_next(Event('stopped', ANY.dict_with({'reason': 'exception'})))
+        assert thread_stopped == Event('stopped', ANY.dict_with({
+            'reason': 'exception',
+            'text': 'ArithmeticError',
+            'description': 'Hello'
+        }))
+
+        tid = thread_stopped.body['threadId']
+        resp_exception_info = debug_session.send_request(
+            'exceptionInfo',
+            arguments={'threadId': tid, }
+        ).wait_for_response()
+        exception = resp_exception_info.body
+        assert exception == {
+            'exceptionId': 'ArithmeticError',
+            'breakMode': 'always',
+            'description': 'Hello',
+            'details': {
+                'message': 'Hello',
+                'typeName': 'ArithmeticError',
+                'source': FLASK1_APP,
+                'stackTrace': ANY,
+            }
+        }
+
+        resp_stacktrace = debug_session.send_request('stackTrace', arguments={
+            'threadId': tid,
+        }).wait_for_response()
+        assert resp_stacktrace.body['totalFrames'] > 0
+        frames = resp_stacktrace.body['stackFrames']
+        assert frames[0] == {
+            'id': ANY,
+            'name': 'bad_route_' + ex_type,
+            'source': {
+                'sourceReference': ANY,
+                'path': FLASK1_APP,
+            },
+            'line': ex_line,
+            'column': 1,
+        }
+
+        debug_session.send_request('continue').wait_for_response()
+        debug_session.wait_for_next(Event('continued'))
+
+    # shutdown to web server
+    link = base_link + 'exit' if base_link.endswith('/') else '/exit'
+    with get_web_content(link):
+        pass
+
+def test_flask_handled_exception_no_multiproc(debug_session):
+    _flask_exception_no_multiproc(debug_session, 'handled', 21)
+
+def test_flask_unhandled_exception_no_multiproc(debug_session):
+    _flask_exception_no_multiproc(debug_session, 'unhandled', 33)
 
 def _wait_for_child_process(debug_session):
     child_subprocess = debug_session.wait_for_next(Event('ptvsd_subprocess'))
