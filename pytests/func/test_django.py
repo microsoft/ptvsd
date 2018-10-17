@@ -117,7 +117,7 @@ def test_django_template_breakpoint_no_multiproc(debug_session):
     _django_breakpoint_no_multiproc(debug_session, DJANGO1_TEMPLATE, 8, 'Django Template')
 
 
-def _django_exception(debug_session, ex_type, ex_line):
+def _django_exception_no_multiproc(debug_session, ex_type, ex_line):
     _django_no_multiproc_common(debug_session)
     debug_session.prepare_to_run(filename=DJANGO1_MANAGE)
 
@@ -182,9 +182,9 @@ def _django_exception(debug_session, ex_type, ex_line):
         pass
 
 
-def test_django_handled_exception(debug_session):
-    _django_exception(debug_session, 'handled', 50)
+def test_django_handled_exception_no_multiproc(debug_session):
+    _django_exception_no_multiproc(debug_session, 'handled', 50)
 
 
-def test_django_unhandled_exception(debug_session):
-    _django_exception(debug_session, 'unhandled', 64)
+def test_django_unhandled_exception_no_multiproc(debug_session):
+    _django_exception_no_multiproc(debug_session, 'unhandled', 64)
