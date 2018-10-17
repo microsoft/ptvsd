@@ -6,7 +6,8 @@ from __future__ import print_function, with_statement, absolute_import
 
 import os.path
 import pytest
-import platform
+import time
+import socket
 
 from ..helpers.pattern import ANY
 from ..helpers.session import DebugSession
@@ -44,8 +45,6 @@ def _flask_no_multiproc_common(debug_session):
     }
 
     debug_session.ignore_unobserved += [
-        # The queue module can spawn helper background threads, depending on Python version
-        # and platform. Since this is an implementation detail, we don't care about those.
         Event('thread', ANY.dict_with({'reason': 'started'})),
         Event('module'),
         Event('stopped'),
@@ -55,10 +54,13 @@ def _flask_no_multiproc_common(debug_session):
     debug_session.debug_options = ['RedirectOutput', 'Jinja']
     debug_session.cwd = FLASK1_ROOT
     debug_session.env.update(env)
-    debug_session.expected_returncode = ANY  # No clean way to kill Django server
+    debug_session.expected_returncode = ANY  # No clean way to kill Flask server
 
-
-def _flask_breakpoint_no_multiproc(debug_session, bp_file, bp_line, bp_name):
+@pytest.mark.parametrize('bp_file, bp_line, bp_name', [
+  (FLASK1_APP, 11, 'home'),
+  (FLASK1_TEMPLATE, 8, 'template'),
+])
+def test_flask_breakpoint_no_multiproc(debug_session, bp_file, bp_line, bp_name):
     _flask_no_multiproc_common(debug_session)
     debug_session.prepare_to_run(module='flask')
 
@@ -125,14 +127,11 @@ def _flask_breakpoint_no_multiproc(debug_session, bp_file, bp_line, bp_name):
     with get_web_content(link):
         pass
 
-def test_flask_breakpoint_no_multiproc(debug_session):
-    _flask_breakpoint_no_multiproc(debug_session, FLASK1_APP, 11, 'home')
-
-def test_flask_template_breakpoint_no_multiproc(debug_session):
-    _flask_breakpoint_no_multiproc(debug_session, FLASK1_TEMPLATE, 8, 'template')
-
-
-def _flask_exception_no_multiproc(debug_session, ex_type, ex_line):
+@pytest.mark.parametrize('ex_type, ex_line', [
+  ('handled', 21),
+  ('unhandled', 33),
+])
+def test_flask_exception_no_multiproc(debug_session, ex_type, ex_line):
     _flask_no_multiproc_common(debug_session)
     debug_session.prepare_to_run(module='flask')
 
@@ -196,11 +195,6 @@ def _flask_exception_no_multiproc(debug_session, ex_type, ex_line):
     with get_web_content(link):
         pass
 
-def test_flask_handled_exception_no_multiproc(debug_session):
-    _flask_exception_no_multiproc(debug_session, 'handled', 21)
-
-def test_flask_unhandled_exception_no_multiproc(debug_session):
-    _flask_exception_no_multiproc(debug_session, 'unhandled', 33)
 
 def _wait_for_child_process(debug_session):
     child_subprocess = debug_session.wait_for_next(Event('ptvsd_subprocess'))
@@ -215,10 +209,28 @@ def _wait_for_child_process(debug_session):
     child_session.handshake()
     return child_session
 
+
+def wait_for_connection(port, interval=1, attempts=10):
+    count = 0
+    while count < attempts:
+        count += 1
+        try:
+            print('Waiting to connect to port: %s' % port)
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.connect(('localhost', port))
+        except socket.error:
+            pass
+        finally:
+            sock.close()
+        time.sleep(interval)
+
+
 @pytest.mark.timeout(120)
 def test_flask_breakpoint_multiproc(debug_session):
     debug_session.multiprocess = True
     debug_session.cli_args = ['run', ]
+    link = 'http://127.0.0.1:5000/'
+    port = 5000
     env = {
         'FLASK_APP': 'app',
         'FLASK_ENV': 'development',
@@ -228,8 +240,6 @@ def test_flask_breakpoint_multiproc(debug_session):
     }
 
     debug_session.ignore_unobserved += [
-        # The queue module can spawn helper background threads, depending on Python version
-        # and platform. Since this is an implementation detail, we don't care about those.
         Event('thread', ANY.dict_with({'reason': 'started'})),
         Event('module'),
         Event('stopped'),
@@ -239,7 +249,7 @@ def test_flask_breakpoint_multiproc(debug_session):
     debug_session.debug_options = ['RedirectOutput', 'Jinja']
     debug_session.cwd = FLASK1_ROOT
     debug_session.env.update(env)
-    debug_session.expected_returncode = ANY  # No clean way to kill Django server
+    debug_session.expected_returncode = ANY  # No clean way to kill Flask server
     debug_session.prepare_to_run(module='flask')
 
     bp_line = 11
@@ -250,11 +260,6 @@ def test_flask_breakpoint_multiproc(debug_session):
     }).wait_for_response()
 
     debug_session.start_debugging()
-
-    if platform.system() != 'Windows':
-        link = _wait_for_flask_link(debug_session)
-        assert link is not None
-
     child_session = _wait_for_child_process(debug_session)
 
     child_session.send_request('setBreakpoints', arguments={
@@ -262,11 +267,8 @@ def test_flask_breakpoint_multiproc(debug_session):
         'breakpoints': [{'line': bp_line}, ],
     }).wait_for_response()
     child_session.start_debugging()
-    debug_session.proceed()
 
-    if platform.system() == 'Windows':
-        link = _wait_for_flask_link(child_session)
-        assert link is not None
+    wait_for_connection(port)
 
     # connect to web server
     with get_web_content(link, {}) as web_result:
@@ -281,10 +283,10 @@ def test_flask_breakpoint_multiproc(debug_session):
         assert resp_stacktrace.body['totalFrames'] == 1
         frames = resp_stacktrace.body['stackFrames']
         assert frames == [{
-            'id': 1,
+            'id': ANY.int,
             'name': 'home',
             'source': {
-                'sourceReference': ANY,
+                'sourceReference': ANY.int,
                 'path': FLASK1_APP,
             },
             'line': bp_line,
@@ -301,7 +303,7 @@ def test_flask_breakpoint_multiproc(debug_session):
         resp_variables = child_session.send_request('variables', arguments={
             'variablesReference': scopes[0]['variablesReference']
         }).wait_for_response()
-        variables = list(v for v in resp_variables.body['variables'] if v['name'] == 'content')
+        variables = [v for v in resp_variables.body['variables'] if v['name'] == 'content']
         assert variables == [{
                 'name': 'content',
                 'type': 'str',

@@ -5,6 +5,7 @@
 from __future__ import print_function, with_statement, absolute_import
 
 import os.path
+import pytest
 
 from ..helpers.pattern import ANY
 from ..helpers.timeline import Event
@@ -43,7 +44,11 @@ def _django_no_multiproc_common(debug_session):
     debug_session.cwd = DJANGO1_ROOT
     debug_session.expected_returncode = ANY  # No clean way to kill Django server
 
-def _django_breakpoint_no_multiproc(debug_session, bp_file, bp_line, bp_name):
+@pytest.mark.parametrize('bp_file, bp_line, bp_name', [
+  (DJANGO1_MANAGE, 40, 'home'),
+  (DJANGO1_TEMPLATE, 8, 'Django Template'),
+])
+def test_django_breakpoint_no_multiproc(debug_session, bp_file, bp_line, bp_name):
     _django_no_multiproc_common(debug_session)
     debug_session.prepare_to_run(filename=DJANGO1_MANAGE)
 
@@ -110,14 +115,11 @@ def _django_breakpoint_no_multiproc(debug_session, bp_file, bp_line, bp_name):
     with get_web_content(link):
         pass
 
-def test_django_breakpoint_no_multiproc(debug_session):
-    _django_breakpoint_no_multiproc(debug_session, DJANGO1_MANAGE, 40, 'home')
-
-def test_django_template_breakpoint_no_multiproc(debug_session):
-    _django_breakpoint_no_multiproc(debug_session, DJANGO1_TEMPLATE, 8, 'Django Template')
-
-
-def _django_exception_no_multiproc(debug_session, ex_type, ex_line):
+@pytest.mark.parametrize('ex_type, ex_line', [
+  ('handled', 50),
+  ('unhandled', 64),
+])
+def test_django_exception_no_multiproc(debug_session, ex_type, ex_line):
     _django_no_multiproc_common(debug_session)
     debug_session.prepare_to_run(filename=DJANGO1_MANAGE)
 
@@ -180,11 +182,3 @@ def _django_exception_no_multiproc(debug_session, ex_type, ex_line):
     link = base_link + 'exit' if base_link.endswith('/') else '/exit'
     with get_web_content(link):
         pass
-
-
-def test_django_handled_exception_no_multiproc(debug_session):
-    _django_exception_no_multiproc(debug_session, 'handled', 50)
-
-
-def test_django_unhandled_exception_no_multiproc(debug_session):
-    _django_exception_no_multiproc(debug_session, 'unhandled', 64)
