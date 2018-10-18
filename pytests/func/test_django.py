@@ -6,6 +6,7 @@ from __future__ import print_function, with_statement, absolute_import
 
 import os.path
 import pytest
+import sys
 
 from ..helpers.pattern import ANY
 from ..helpers.session import DebugSession
@@ -36,6 +37,7 @@ def _django_no_multiproc_common(debug_session):
   (DJANGO1_MANAGE, 40, 'home'),
   (DJANGO1_TEMPLATE, 8, 'Django Template'),
 ])
+@pytest.mark.skipif(sys.version_info < (3, 0), reason='Bug #923')
 def test_django_breakpoint_no_multiproc(debug_session, bp_file, bp_line, bp_name):
     _django_no_multiproc_common(debug_session)
     debug_session.prepare_to_run(filename=DJANGO1_MANAGE)
@@ -106,6 +108,7 @@ def test_django_breakpoint_no_multiproc(debug_session, bp_file, bp_line, bp_name
   ('handled', 50),
   ('unhandled', 64),
 ])
+@pytest.mark.skipif(sys.version_info < (3, 0), reason='Bug #923')
 def test_django_exception_no_multiproc(debug_session, ex_type, ex_line):
     _django_no_multiproc_common(debug_session)
     debug_session.prepare_to_run(filename=DJANGO1_MANAGE)
