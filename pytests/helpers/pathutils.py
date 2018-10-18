@@ -10,3 +10,11 @@ def get_test_root(name):
     if os.path.exists(p):
         return p
     return None
+
+def compare_path(left, right, show=True):
+    n_left = os.path.normcase(left)
+    n_right = os.path.normcase(right)
+    if show:
+        print('LEFT : ' + n_left)
+        print('RIGHT: ' + n_right)
+    return n_left == n_right

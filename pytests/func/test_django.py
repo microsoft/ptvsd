@@ -11,7 +11,7 @@ import sys
 from ..helpers.pattern import ANY
 from ..helpers.session import DebugSession
 from ..helpers.timeline import Event
-from ..helpers.pathutils import get_test_root
+from ..helpers.pathutils import get_test_root, compare_path
 from ..helpers.webhelper import get_url_from_str, get_web_content, wait_for_connection
 
 DJANGO1_ROOT = get_test_root('django1')
@@ -38,6 +38,7 @@ def _django_no_multiproc_common(debug_session):
   (DJANGO1_TEMPLATE, 8, 'Django Template'),
 ])
 @pytest.mark.skipif(sys.version_info < (3, 0), reason='Bug #923')
+@pytest.mark.timeout(60)
 def test_django_breakpoint_no_multiproc(debug_session, bp_file, bp_line, bp_name):
     _django_no_multiproc_common(debug_session)
     debug_session.prepare_to_run(filename=DJANGO1_MANAGE)
@@ -69,7 +70,7 @@ def test_django_breakpoint_no_multiproc(debug_session, bp_file, bp_line, bp_name
         'name': bp_name,
         'source': {
             'sourceReference': ANY,
-            'path': bp_file,
+            'path': ANY.such_that(lambda s: compare_path(s, bp_file)),
         },
         'line': bp_line,
         'column': 1,
@@ -109,6 +110,7 @@ def test_django_breakpoint_no_multiproc(debug_session, bp_file, bp_line, bp_name
   ('unhandled', 64),
 ])
 @pytest.mark.skipif(sys.version_info < (3, 0), reason='Bug #923')
+@pytest.mark.timeout(60)
 def test_django_exception_no_multiproc(debug_session, ex_type, ex_line):
     _django_no_multiproc_common(debug_session)
     debug_session.prepare_to_run(filename=DJANGO1_MANAGE)
@@ -128,7 +130,7 @@ def test_django_exception_no_multiproc(debug_session, ex_type, ex_line):
     thread_stopped = debug_session.wait_for_next(Event('stopped', ANY.dict_with({'reason': 'exception'})))
     assert thread_stopped == Event('stopped', ANY.dict_with({
         'reason': 'exception',
-        'text': 'ArithmeticError',
+        'text': ANY.such_that(lambda s: s.endswith('ArithmeticError')),
         'description': 'Hello'
     }))
 
@@ -139,14 +141,14 @@ def test_django_exception_no_multiproc(debug_session, ex_type, ex_line):
     ).wait_for_response()
     exception = resp_exception_info.body
     assert exception == {
-        'exceptionId': 'ArithmeticError',
+        'exceptionId': ANY.such_that(lambda s: s.endswith('ArithmeticError')),
         'breakMode': 'always',
         'description': 'Hello',
         'details': {
             'message': 'Hello',
-            'typeName': 'ArithmeticError',
-            'source': DJANGO1_MANAGE,
-            'stackTrace': ANY,
+            'typeName': ANY.such_that(lambda s: s.endswith('ArithmeticError')),
+            'source': ANY.such_that(lambda s: compare_path(s, DJANGO1_MANAGE)),
+            'stackTrace': ANY.such_that(lambda s: True),
         }
     }
 
@@ -160,7 +162,7 @@ def test_django_exception_no_multiproc(debug_session, ex_type, ex_line):
         'name': 'bad_route_' + ex_type,
         'source': {
             'sourceReference': ANY,
-            'path': DJANGO1_MANAGE,
+            'path': ANY.such_that(lambda s: compare_path(s, DJANGO1_MANAGE)),
         },
         'line': ex_line,
         'column': 1,
@@ -190,8 +192,8 @@ def _wait_for_child_process(debug_session):
     child_session.handshake()
     return child_session
 
+@pytest.mark.skipif(sys.version_info < (3, 0), reason='Bug #923')
 @pytest.mark.timeout(120)
-@pytest.mark.skip()
 def test_django_breakpoint_multiproc(debug_session):
     debug_session.multiprocess = True
     debug_session.program_args += ['runserver']
@@ -249,7 +251,7 @@ def test_django_breakpoint_multiproc(debug_session):
         'name': 'home',
         'source': {
             'sourceReference': ANY.int,
-            'path': DJANGO1_MANAGE,
+            'path': ANY.such_that(lambda s: compare_path(s, DJANGO1_MANAGE)),
         },
         'line': bp_line,
         'column': 1,

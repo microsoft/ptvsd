@@ -11,7 +11,7 @@ from ..helpers.pattern import ANY
 from ..helpers.session import DebugSession
 from ..helpers.timeline import Event
 from ..helpers.webhelper import get_web_content, wait_for_connection
-from ..helpers.pathutils import get_test_root
+from ..helpers.pathutils import get_test_root, compare_path
 
 
 FLASK1_ROOT = get_test_root('flask1')
@@ -43,12 +43,13 @@ def _flask_no_multiproc_common(debug_session):
     debug_session.debug_options = ['RedirectOutput', 'Jinja']
     debug_session.cwd = FLASK1_ROOT
     debug_session.env.update(env)
-    debug_session.expected_returncode = ANY  # No clean way to kill Flask server
+    debug_session.expected_returncode = ANY.int  # No clean way to kill Flask server
 
 @pytest.mark.parametrize('bp_file, bp_line, bp_name', [
   (FLASK1_APP, 11, 'home'),
   (FLASK1_TEMPLATE, 8, 'template'),
 ])
+@pytest.mark.timeout(60)
 def test_flask_breakpoint_no_multiproc(debug_session, bp_file, bp_line, bp_name):
     _flask_no_multiproc_common(debug_session)
     debug_session.prepare_to_run(module='flask')
@@ -77,11 +78,11 @@ def test_flask_breakpoint_no_multiproc(debug_session, bp_file, bp_line, bp_name)
     assert resp_stacktrace.body['totalFrames'] > 0
     frames = resp_stacktrace.body['stackFrames']
     assert frames[0] == {
-        'id': ANY,
+        'id': ANY.int,
         'name': bp_name,
         'source': {
-            'sourceReference': ANY,
-            'path': bp_file,
+            'sourceReference': ANY.int,
+            'path': ANY.such_that(lambda s: compare_path(s, bp_file)),
         },
         'line': bp_line,
         'column': 1,
@@ -116,10 +117,14 @@ def test_flask_breakpoint_no_multiproc(debug_session, bp_file, bp_line, bp_name)
     link = FLASK_LINK + 'exit'
     get_web_content(link).wait_for_response()
 
+    debug_session.wait_for_exit()
+
+
 @pytest.mark.parametrize('ex_type, ex_line', [
   ('handled', 21),
   ('unhandled', 33),
 ])
+@pytest.mark.timeout(60)
 def test_flask_exception_no_multiproc(debug_session, ex_type, ex_line):
     _flask_no_multiproc_common(debug_session)
     debug_session.prepare_to_run(module='flask')
@@ -139,7 +144,7 @@ def test_flask_exception_no_multiproc(debug_session, ex_type, ex_line):
     thread_stopped = debug_session.wait_for_next(Event('stopped', ANY.dict_with({'reason': 'exception'})))
     assert thread_stopped == Event('stopped', ANY.dict_with({
         'reason': 'exception',
-        'text': 'ArithmeticError',
+        'text': ANY.such_that(lambda s: s.endswith('ArithmeticError')),
         'description': 'Hello'
     }))
 
@@ -150,14 +155,14 @@ def test_flask_exception_no_multiproc(debug_session, ex_type, ex_line):
     ).wait_for_response()
     exception = resp_exception_info.body
     assert exception == {
-        'exceptionId': 'ArithmeticError',
+        'exceptionId': ANY.such_that(lambda s: s.endswith('ArithmeticError')),
         'breakMode': 'always',
         'description': 'Hello',
         'details': {
             'message': 'Hello',
-            'typeName': 'ArithmeticError',
-            'source': FLASK1_APP,
-            'stackTrace': ANY,
+            'typeName': ANY.such_that(lambda s: s.endswith('ArithmeticError')),
+            'source': ANY.such_that(lambda s: compare_path(s, FLASK1_APP)),
+            'stackTrace': ANY.such_that(lambda s: True)
         }
     }
 
@@ -167,11 +172,11 @@ def test_flask_exception_no_multiproc(debug_session, ex_type, ex_line):
     assert resp_stacktrace.body['totalFrames'] > 0
     frames = resp_stacktrace.body['stackFrames']
     assert frames[0] == {
-        'id': ANY,
+        'id': ANY.int,
         'name': 'bad_route_' + ex_type,
         'source': {
-            'sourceReference': ANY,
-            'path': FLASK1_APP,
+            'sourceReference': ANY.int,
+            'path': ANY.such_that(lambda s: compare_path(s, FLASK1_APP)),
         },
         'line': ex_line,
         'column': 1,
@@ -187,6 +192,7 @@ def test_flask_exception_no_multiproc(debug_session, ex_type, ex_line):
     link = base_link + 'exit' if base_link.endswith('/') else '/exit'
     get_web_content(link).wait_for_response()
 
+    debug_session.wait_for_exit()
 
 def _wait_for_child_process(debug_session):
     child_subprocess = debug_session.wait_for_next(Event('ptvsd_subprocess'))
@@ -224,7 +230,7 @@ def test_flask_breakpoint_multiproc(debug_session):
     debug_session.debug_options = ['RedirectOutput', 'Jinja']
     debug_session.cwd = FLASK1_ROOT
     debug_session.env.update(env)
-    debug_session.expected_returncode = ANY  # No clean way to kill Flask server
+    debug_session.expected_returncode = ANY.int  # No clean way to kill Flask server
     debug_session.prepare_to_run(module='flask')
 
     bp_line = 11
@@ -262,7 +268,7 @@ def test_flask_breakpoint_multiproc(debug_session):
         'name': 'home',
         'source': {
             'sourceReference': ANY.int,
-            'path': FLASK1_APP,
+            'path': ANY.such_that(lambda s: compare_path(s, FLASK1_APP)),
         },
         'line': bp_line,
         'column': 1,
@@ -296,3 +302,5 @@ def test_flask_breakpoint_multiproc(debug_session):
     # shutdown to web server
     link = FLASK_LINK + 'exit'
     get_web_content(link).wait_for_response()
+
+    debug_session.wait_for_exit()
