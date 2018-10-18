@@ -6,7 +6,6 @@ from __future__ import print_function, with_statement, absolute_import
 
 import os.path
 import pytest
-import sys
 
 from ..helpers.pattern import ANY
 from ..helpers.session import DebugSession
