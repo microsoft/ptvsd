@@ -192,7 +192,7 @@ def _wait_for_child_process(debug_session):
     child_session.handshake()
     return child_session
 
-@pytest.mark.skipif(sys.version_info < (3, 0), reason='Bug #923')
+@pytest.mark.skip()
 @pytest.mark.timeout(120)
 def test_django_breakpoint_multiproc(debug_session):
     debug_session.multiprocess = True
