@@ -565,6 +565,14 @@ class NetCommandFactory:
         return NetCommand(CMD_SET_PROTOCOL, seq, '')
 
     def make_thread_created_message(self, thread):
+        # print('\nmake_thread_created_message', thread)
+        # current_frames = sys._current_frames()
+        # frame = current_frames.get(thread.ident)
+        # while frame:
+        #     print('  %s    (%s: %s)' % (frame.f_code.co_name, frame.f_code.co_filename, frame.f_lineno))
+        #     frame = frame.f_back
+        # print()
+
         cmdText = "<xml>" + self._thread_to_xml(thread) + "</xml>"
         return NetCommand(CMD_THREAD_CREATE, 0, cmdText)
 
