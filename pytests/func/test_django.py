@@ -6,6 +6,7 @@ from __future__ import print_function, with_statement, absolute_import
 
 import os.path
 import pytest
+import sys
 
 from ..helpers.pattern import ANY
 from ..helpers.session import DebugSession
@@ -188,6 +189,7 @@ def _wait_for_child_process(debug_session):
     return child_session
 
 @pytest.mark.timeout(120)
+@pytest.mark.skip()
 def test_django_breakpoint_multiproc(debug_session):
     debug_session.multiprocess = True
     debug_session.program_args += ['runserver']
