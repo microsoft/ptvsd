@@ -5,7 +5,9 @@
 from __future__ import print_function, with_statement, absolute_import
 
 import os.path
+import platform
 import pytest
+import sys
 
 from ..helpers.pattern import ANY
 from ..helpers.session import DebugSession
@@ -209,6 +211,7 @@ def _wait_for_child_process(debug_session):
 
 
 @pytest.mark.timeout(120)
+@pytest.mark.skipif((sys.version_info < (3, 0)) and (platform.system() != 'Windows'), reason='Bug #935')
 def test_flask_breakpoint_multiproc(debug_session):
     debug_session.multiprocess = True
     debug_session.program_args += ['run', ]
