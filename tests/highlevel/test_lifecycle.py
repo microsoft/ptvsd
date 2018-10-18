@@ -116,6 +116,7 @@ class LifecycleTests(HighlevelTest, unittest.TestCase):
             self.debugger_msgs.new_request(CMD_PYDEVD_JSON_CONFIG, json.dumps(dict(
                 skip_suspend_on_breakpoint_exception=('BaseException',),
                 skip_print_breakpoint_exception=('NameError',),
+                multi_threads_single_notification=True,
             ))),
             self.debugger_msgs.new_request(CMD_RUN),
         ])
@@ -196,6 +197,7 @@ class LifecycleTests(HighlevelTest, unittest.TestCase):
             self.debugger_msgs.new_request(CMD_PYDEVD_JSON_CONFIG, json.dumps(dict(
                 skip_suspend_on_breakpoint_exception=('BaseException',),
                 skip_print_breakpoint_exception=('NameError',),
+                multi_threads_single_notification=True,
             ))),
             self.debugger_msgs.new_request(CMD_RUN),
         ])
