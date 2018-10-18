@@ -5,7 +5,8 @@
 import os.path
 
 def get_test_root(name):
-    p = os.path.join(os.path.dirname(__file__), name)
+    pytests_dir = os.path.dirname(os.path.dirname(__file__))
+    p = os.path.join(pytests_dir, 'func', 'testfiles', name)
     if os.path.exists(p):
         return p
     return None

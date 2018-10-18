@@ -11,7 +11,7 @@ from ..helpers.pattern import ANY
 from ..helpers.session import DebugSession
 from ..helpers.timeline import Event
 from ..helpers.webhelper import get_web_content, wait_for_connection
-from .testfiles.testroots import get_test_root
+from ..helpers.pathutils import get_test_root
 
 
 FLASK1_ROOT = get_test_root('flask1')
