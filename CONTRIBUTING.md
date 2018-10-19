@@ -41,17 +41,17 @@ We are currently migrating the tests to use `pytest`. Please run both set of tes
 C:\> git clone https://github.com/Microsoft/ptvsd
 C:\> cd ptvsd
 C:\ptvsd> py -3.7 -m pip install -r test_requirements.txt
-C:\ptvsd> py -3.7 -m pytest -v ./pytests
+C:\ptvsd> py -3.7 -m pytest -v
 ```
 #### Linux\Mac
 ```
 ~: git clone https://github.com/Microsoft/ptvsd
 ~: cd ptvsd
 ~/ptvsd: python3 -m pip install -r ./test_requirements.txt
-~/ptvsd: python3 -m pytest -v ./pytests
+~/ptvsd: python3 -m pytest -v
 ```
 ### Running `unittest` based tests
-Set `PYTHONPATH` environment variable to the ptvsd root directory. In this example, we `git clone` ptvsd and use the directory to run tests. Newer tests must be written using `pytest` and must go into the [pytests](pytests) directory. Please do not add tests to this directory.
+`git clone` ptvsd and change directory to `ptvsd`. Run the `tests` module from there. Newer tests must be written using `pytest` and must go into the [pytests](pytests) directory. Please do not add tests to this directory.
 #### Windows
 ```
 C:\> git clone https://github.com/Microsoft/ptvsd
