@@ -29,6 +29,8 @@ def wait_for_attach(timeout=None):
         The timeout for the operation in seconds (or fractions thereof).
     """
     debugger_attached.wait(timeout)
+    import time
+    time.sleep(1)
 
 
 def enable_attach(address=(DEFAULT_HOST, DEFAULT_PORT), redirect_output=True):
