@@ -75,14 +75,14 @@ def create_server(host, port, timeout=None):
     if host is None:
         host = 'localhost'
     server = _new_sock()
-    server.bind((host, port))
-
-    # _, listener_port = server.getsockname()
-    # print('Listening on', listener_port)
-
-    if timeout is not None:
-        server.settimeout(timeout)
-    server.listen(1)
+    try:
+        server.bind((host, port))
+        if timeout is not None:
+            server.settimeout(timeout)
+        server.listen(1)
+    except Exception:
+        server.close()
+        raise
     return server
 
 
@@ -209,7 +209,6 @@ def close_socket(sock):
     try:
         shut_down(sock)
     except Exception:
-        # TODO: Log errors?
         pass
     sock.close()
 
