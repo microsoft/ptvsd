@@ -1447,9 +1447,6 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         if opts.get('MULTIPROCESS', False):
             if not options.multiprocess:
                 options.multiprocess = True
-                # This has to be called explicitly since '--multiprocess' flag
-                # was not passed via the CLI
-                pydev_monkey.patch_new_process_functions()
                 multiproc.listen_for_subprocesses()
                 self.start_subprocess_notifier()
 
