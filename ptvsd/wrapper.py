@@ -33,7 +33,6 @@ except ImportError:
 import warnings
 from xml.sax import SAXParseException
 
-import _pydev_bundle.pydev_monkey as pydev_monkey
 import _pydevd_bundle.pydevd_comm as pydevd_comm  # noqa
 import _pydevd_bundle.pydevd_extension_api as pydevd_extapi  # noqa
 import _pydevd_bundle.pydevd_extension_utils as pydevd_extutil  # noqa
