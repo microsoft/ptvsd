@@ -748,7 +748,7 @@ DEBUG_OPTIONS_BY_FLAG = {
     'UnixClient': 'CLIENT_OS_TYPE=UNIX',
     'StopOnEntry': 'STOP_ON_ENTRY=True',
     'ShowReturnValue': 'SHOW_RETURN_VALUE=True',
-	'Multiprocess': 'MULTIPROCESS=True',
+    'Multiprocess': 'MULTIPROCESS=True',
 }
 
 
