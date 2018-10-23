@@ -129,7 +129,7 @@ class LifecycleTests(LifecycleTestsBase):
         # Skipping the "thread exited" and "terminated" messages which
         # may appear randomly in the received list.
         received = list(_strip_newline_output_events(session.received))
-        self.assert_received(received[:7], [
+        self.assert_received(received[:8], [
             self.new_version_event(session.received),
             self.new_response(req_initialize.req, **INITIALIZE_RESPONSE),
             self.new_event('initialized'),
@@ -168,7 +168,7 @@ class LifecycleTests(LifecycleTestsBase):
             adapter.wait()
 
         received = list(_strip_newline_output_events(session.received))
-        self.assert_received(received[:7], [
+        self.assert_received(received[:8], [
             self.new_version_event(session.received),
             self.new_response(req_initialize.req, **INITIALIZE_RESPONSE),
             self.new_event('initialized'),
@@ -209,7 +209,7 @@ class LifecycleTests(LifecycleTestsBase):
                 adapter.wait()
 
         received = list(_strip_newline_output_events(session.received))
-        self.assert_received(received[:7], [
+        self.assert_received(received[:8], [
             self.new_version_event(session.received),
             self.new_response(req_initialize.req, **INITIALIZE_RESPONSE),
             self.new_event('initialized'),
