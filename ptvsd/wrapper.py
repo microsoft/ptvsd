@@ -1283,7 +1283,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
     def start(self, threadname):
         super(VSCodeMessageProcessor, self).start(threadname)
         if options.multiprocess:
-            self.start_subprocess_notifier(self)
+            self.start_subprocess_notifier()
 
     def start_subprocess_notifier(self):
         self._subprocess_notifier_thread = _util.new_hidden_thread('SubprocessNotifier', self._subprocess_notifier)
