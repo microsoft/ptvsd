@@ -4,7 +4,9 @@
 
 from __future__ import print_function, with_statement, absolute_import
 
+import platform
 import pytest
+import sys
 
 from pytests.helpers import print
 from pytests.helpers.pattern import ANY
@@ -67,6 +69,8 @@ def test_break_on_entry(debug_session, pyfile, run_as):
 
 
 @pytest.mark.parametrize('run_as', ['file', 'module'])
+@pytest.mark.skipif(sys.version_info < (3, 0) and platform.system() == 'Windows',
+                    reason="On windows py2.7 unable to send key strokes to test.")
 def test_wait_on_normal_exit_enabled(debug_session, pyfile, run_as):
     @pyfile
     def code_to_debug():
@@ -99,6 +103,7 @@ def test_wait_on_normal_exit_enabled(debug_session, pyfile, run_as):
     assert len(output) == 3
     assert output == ['one', 'two', 'three']
 
+    debug_session.process.stdin.write(b' \r\n')
     debug_session.wait_for_exit()
 
     def _decode(text):
@@ -110,6 +115,8 @@ def test_wait_on_normal_exit_enabled(debug_session, pyfile, run_as):
 
 
 @pytest.mark.parametrize('run_as', ['file', 'module'])
+@pytest.mark.skipif(sys.version_info < (3, 0) and platform.system() == 'Windows',
+                    reason="On windows py2.7 unable to send key strokes to test.")
 def test_wait_on_abnormal_exit_enabled(debug_session, pyfile, run_as):
     @pyfile
     def code_to_debug():
@@ -144,6 +151,7 @@ def test_wait_on_abnormal_exit_enabled(debug_session, pyfile, run_as):
     assert len(output) == 3
     assert output == ['one', 'two', 'three']
 
+    debug_session.process.stdin.write(b' \r\n')
     debug_session.wait_for_exit()
 
     def _decode(text):
@@ -152,6 +160,7 @@ def test_wait_on_abnormal_exit_enabled(debug_session, pyfile, run_as):
         return text
     assert any(l for l in debug_session.output_data['OUT']
                if _decode(l).startswith('Press'))
+
 
 @pytest.mark.parametrize('run_as', ['file', 'module'])
 def test_exit_normally_with_wait_on_abnormal_exit_enabled(debug_session, pyfile, run_as):
