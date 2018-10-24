@@ -191,8 +191,10 @@ def test_set_variable(debug_session, pyfile, run_as):
     debug_session.send_request('continue').wait_for_response()
     debug_session.wait_for_next(Event('continued'))
 
-    output = debug_session.wait_for_next(Event('output'))
-    assert output.body['output'] == '1000'
+    debug_session.wait_for_next(Event('output'))
+    output = [e for e in debug_session.all_occurrences_of(Event('output'))
+              if e.body['output'].startswith('1000')]
+    assert any(output)
 
     debug_session.wait_for_exit()
 
