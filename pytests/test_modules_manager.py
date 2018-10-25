@@ -45,14 +45,14 @@ class TestModulesManager(object):
         assert 1 == len(sink.event_data)
         assert [expected_module] == mgr.get_all()
         assert sink.event_data == [
-                {
-                    'event': 'module',
-                    'args': {
-                        'reason': 'new',
-                        'module': expected_module,
-                    },
+            {
+                'event': 'module',
+                'args': {
+                    'reason': 'new',
+                    'module': expected_module,
                 },
-            ]
+            },
+        ]
 
     def test_get_only_module(self):
         sink = ModulesEventSink()
