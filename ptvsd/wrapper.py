@@ -1136,8 +1136,8 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
         self.send_response(request)
 
     def on_configurationDone(self, request, args):
-        self._process_debug_options(self.debug_options)
         self.send_response(request)
+        self._process_debug_options(self.debug_options)
         debugger_attached.set()
         self._handle_configurationDone(args)
         self._notify_ready()
