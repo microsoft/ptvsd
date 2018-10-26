@@ -12,7 +12,7 @@ class TestSocketServerReuse(object):
     HOST1 = '127.0.0.1'
     # NOTE: Windows allows loopback range 127/8. Some flavors of Linux support
     # 127/8 range. Mac by default supports only 127/0. Configuring /etc/network/interface
-    # for this one test is overkill so use '0.0.0.0' on linux and mac instead.
+    # for this one test is overkill so use '0.0.0.0' on Mac instead.
     HOST2 = '127.0.0.2' if platform.system() in ['Windows', 'Linux'] else '0.0.0.0'
     PORT1 = 7890
 
