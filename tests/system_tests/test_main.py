@@ -296,7 +296,7 @@ class LifecycleTests(LifecycleTestsBase):
                 session2 = editor.attach_socket(addr, adapter)
                 (req_initialize2, req_attach2, req_config2, _, _, _
                  ) = lifecycle_handshake(session2, 'attach')
-                req_launch2.wait(timeout=5.0)
+                req_attach2.wait(timeout=5.0)
                 done2()
 
                 adapter.wait()
