@@ -126,7 +126,8 @@ class ExceptionTests(LifecycleTestsBase):
                 options=options,
                 threads=True)
 
-            Awaitable.wait_all(req_launch_attach, stopped)
+            req_launch_attach.wait(timeout=3.0)
+            stopped.wait(timeout=3.0)
             self.assertEqual(stopped.event.body['text'], 'ArithmeticError')
             self.assertEqual(stopped.event.body['description'], 'Hello')
 
