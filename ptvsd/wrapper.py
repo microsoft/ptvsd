@@ -1114,7 +1114,6 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
     # VSC protocol handlers
 
     def on_initialize(self, request, args):
-        # TODO: docstring
         self._client_id = args.get('clientID', None)
         self._restart_debugger = False
         self.is_process_created = False
@@ -1137,10 +1136,9 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
         self.send_response(request)
 
     def on_configurationDone(self, request, args):
-        # TODO: docstring
-        debugger_attached.set()
         self.send_response(request)
         self._process_debug_options(self.debug_options)
+        debugger_attached.set()
         self._handle_configurationDone(args)
         self._notify_ready()
 
@@ -2399,11 +2397,6 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
 
         self.send_response(request)
 
-    def is_vs_client(self):
-        """ Return True if the client is 'Visual Studio' False otherwise
-        """
-        return self._client_id == 'visualstudio'
-
     # PyDevd protocol event handlers
 
     @pydevd_events.handler(pydevd_comm.CMD_INPUT_REQUESTED)
@@ -2532,7 +2525,6 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
     @pydevd_events.handler(pydevd_comm.CMD_THREAD_RUN)
     def on_pydevd_thread_run(self, seq, args):
         pass  # Ignore: only send continued on CMD_THREAD_RESUME_SINGLE_NOTIFICATION
-
 
     @pydevd_events.handler(pydevd_comm_constants.CMD_THREAD_RESUME_SINGLE_NOTIFICATION)
     def on_pydevd_thread_resume_single_notification(self, seq, args):

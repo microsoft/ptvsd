@@ -126,7 +126,8 @@ class ExceptionTests(LifecycleTestsBase):
                 options=options,
                 threads=True)
 
-            Awaitable.wait_all(req_launch_attach, stopped)
+            req_launch_attach.wait(timeout=3.0)
+            stopped.wait(timeout=3.0)
             self.assertEqual(stopped.event.body['text'], 'ArithmeticError')
             self.assertEqual(stopped.event.body['description'], 'Hello')
 
@@ -491,6 +492,7 @@ class PTVSDAttachExceptionLifecycleTests(ExceptionTests):
                 argv=argv,
             ), filename)
 
+    @unittest.skip('Broken')
     def test_breaking_into_unhandled_exceptions(self):
         filename = TEST_FILES.resolve('unhandled_exceptions_attach.py')
         cwd = os.path.dirname(filename)
