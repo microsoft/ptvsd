@@ -271,6 +271,7 @@ class LifecycleTests(LifecycleTestsBase):
         ])
         self.assertIn('success!', out)
 
+    @unittest.skip('Flaky test, see test_reattach* for alternate re-attach tests')
     def test_reattach(self):
         lockfile1 = self.workspace.lockfile()
         done1, waitscript1 = lockfile1.wait_in_script(timeout=5)
