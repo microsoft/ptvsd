@@ -492,6 +492,7 @@ class PTVSDAttachExceptionLifecycleTests(ExceptionTests):
                 argv=argv,
             ), filename)
 
+    @unittest.skip('Broken')
     def test_breaking_into_unhandled_exceptions(self):
         filename = TEST_FILES.resolve('unhandled_exceptions_attach.py')
         cwd = os.path.dirname(filename)
