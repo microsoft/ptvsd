@@ -2524,11 +2524,12 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
 
     @pydevd_events.handler(pydevd_comm.CMD_THREAD_RUN)
     def on_pydevd_thread_run(self, seq, args):
-        # note this event is not actually needed as per protocol
-        # But is useful in tests to very if the thread actually
-        # resumed
-        pyd_tid, _ = args.split('\t')
-        pyd_tid = pyd_tid.strip()
+        pass  # Ignore: only send continued on CMD_THREAD_RESUME_SINGLE_NOTIFICATION
+
+    @pydevd_events.handler(pydevd_comm_constants.CMD_THREAD_RESUME_SINGLE_NOTIFICATION)
+    def on_pydevd_thread_resume_single_notification(self, seq, args):
+        resumed_info = json.loads(args)
+        pyd_tid = resumed_info['thread_id']
 
         try:
             vsc_tid = self.thread_map.to_vscode(pyd_tid, autogen=False)
@@ -2536,10 +2537,6 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
             pass
         else:
             self.send_event('continued', threadId=vsc_tid)
-
-    @pydevd_events.handler(pydevd_comm_constants.CMD_THREAD_RESUME_SINGLE_NOTIFICATION)
-    def on_pydevd_thread_resume_single_notification(self, seq, args):
-        pass
 
     @pydevd_events.handler(pydevd_comm.CMD_SEND_CURR_EXCEPTION_TRACE)
     def on_pydevd_send_curr_exception_trace(self, seq, args):
