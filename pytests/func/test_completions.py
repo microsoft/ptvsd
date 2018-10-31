@@ -57,7 +57,6 @@ def run_test_completion(debug_session, pyfile, bp_line, expected):
     targets = resp_completions.body['targets']
 
     debug_session.send_request('continue').wait_for_response()
-    debug_session.wait_for_next(Event('continued'))
 
     targets.sort(key=lambda t: t['label'])
     expected.sort(key=lambda t: t['label'])
