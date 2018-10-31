@@ -670,6 +670,7 @@ class PTVSDAttachModuleExceptionLifecycleTests(ExceptionTests):
                 starttype='attach',
             ), os.path.join(TEST_FILES.root, module_name, '__init__.py'))
 
+    @unittest.skip('Broken')
     def test_breaking_into_unhandled_exceptions(self):
         module_name = 'mypkg_attach_unhandled'
         env = TEST_FILES.env_with_py_path()
