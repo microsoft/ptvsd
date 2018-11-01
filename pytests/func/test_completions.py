@@ -3,6 +3,8 @@
 # for license information.
 
 from __future__ import print_function, with_statement, absolute_import
+
+import pytest
 from ..helpers.pattern import ANY
 from ..helpers.timeline import Event
 
@@ -64,29 +66,28 @@ def run_test_completion(debug_session, pyfile, bp_line, expected):
 
     debug_session.wait_for_exit()
 
-def test_outermost_scope(debug_session, pyfile):
-    expected = [
+
+expected_at_line = {
+    6: [
         {'label': 'SomeClass', 'type': 'class'},
         {'label': 'someFunction', 'type': 'function'},
-    ]
-    run_test_completion(debug_session, pyfile, 11, expected)
-
-def test_in_function(debug_session, pyfile):
-    expected = [
+        {'label': 'someVariable', 'type': 'field'},
+    ],
+    9: [
         {'label': 'SomeClass', 'type': 'class'},
         {'label': 'someFunction', 'type': 'function'},
         {'label': 'someVar', 'type': 'field'},
         {'label': 'someVariable', 'type': 'field'},
-    ]
-    run_test_completion(debug_session, pyfile, 9, expected)
-
-def test_in_method(debug_session, pyfile):
-    expected = [
+    ],
+    11: [
         {'label': 'SomeClass', 'type': 'class'},
         {'label': 'someFunction', 'type': 'function'},
-        {'label': 'someVariable', 'type': 'field'},
-    ]
-    run_test_completion(debug_session, pyfile, 6, expected)
+    ],
+}
+
+@pytest.mark.parametrize('bp_line', expected_at_line.keys())
+def test_completions_scope(debug_session, pyfile, bp_line):
+    run_test_completion(debug_session, pyfile, bp_line, expected_at_line[bp_line])
 
 def test_completions(debug_session, simple_hit_paused_on_break):
     hit = simple_hit_paused_on_break
