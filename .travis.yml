@@ -1,6 +1,7 @@
 language: python
+cache: pip
 install:
-  - pip install tox
+  - pip install -r test_requirements.txt
 matrix:
   include:
     - python: 2.7
