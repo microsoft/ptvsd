@@ -32,4 +32,25 @@ import pydevd
 py_db = pydevd.PyDB()
 py_db.run(%(foo_dir)r, set_trace=False)
 ''' % locals()))
-    
+
+    foo_module = 'tests_python.resources.launch.foo'
+
+    _run_and_check(testdir, testdir.makepyfile('''
+import sys
+sys.path.append(%(pydevd_dir)r)
+sys.argv.append('--as-module')
+import pydevd
+py_db = pydevd.PyDB()
+py_db.ready_to_run = True
+py_db.run(%(foo_module)r, is_module=True)
+''' % locals()))
+
+    _run_and_check(testdir, testdir.makepyfile('''
+import sys
+sys.argv.append('--as-module')
+sys.path.append(%(pydevd_dir)r)
+import pydevd
+py_db = pydevd.PyDB()
+py_db.run(%(foo_module)r, is_module=True, set_trace=False)
+''' % locals()))
+
