@@ -10,7 +10,8 @@ def _run_and_check(testdir, path):
 
 def test_run(testdir):
     from tests_python import debugger_unittest
-    from os.path import os
+    import sys
+    import os
 
     if debugger_unittest.IS_PY3K:
         foo_dir = debugger_unittest._get_debugger_test_file(os.path.join('resources', 'launch', 'foo'))
@@ -39,6 +40,9 @@ py_db = pydevd.PyDB()
 py_db.run(%(foo_dir)r, set_trace=False)
 ''' % locals()))
 
+    if sys.version_info[0:2] == (2, 6):
+        # Not valid for Python 2.6
+        return
 
     _run_and_check(testdir, testdir.makepyfile('''
 import sys
