@@ -4,13 +4,28 @@
 
 from __future__ import print_function, with_statement, absolute_import
 
+import pytest
 from pytests.helpers import print
 from pytests.helpers.pattern import ANY
 from pytests.helpers.timeline import Event
+from pytests.helpers.session import START_TYPE_LAUNCH, START_TYPE_CMDLINE
 
 
-def test_variables_and_evaluate(debug_session, simple_hit_paused_on_break):
-    hit = simple_hit_paused_on_break
+@pytest.mark.parametrize('starttype', [START_TYPE_LAUNCH, START_TYPE_CMDLINE])
+def test_variables_and_evaluate(debug_session, pyfile, run_as, starttype):
+
+    @pyfile
+    def code_to_debug():
+        a = 1
+        b = {"one": 1, "two": 2}
+        c = 3
+        print([a, b, c])
+
+    bp_line = 4
+    bp_file = code_to_debug
+    debug_session.common_setup(bp_file, starttype, run_as, breakpoints=[bp_line])
+    debug_session.start_debugging()
+    hit = debug_session.wait_for_thread_stopped()
 
     resp_scopes = debug_session.send_request('scopes', arguments={
         'frameId': hit.frame_id,
@@ -79,9 +94,14 @@ def test_variables_and_evaluate(debug_session, simple_hit_paused_on_break):
         'result': '2'
     })
 
+    debug_session.send_request('continue').wait_for_response()
+    debug_session.wait_for_next(Event('continued'))
 
-def test_set_variable(debug_session, pyfile, run_as):
+    debug_session.wait_for_exit()
 
+
+@pytest.mark.parametrize('starttype', [START_TYPE_LAUNCH, START_TYPE_CMDLINE])
+def test_set_variable(debug_session, pyfile, run_as, starttype):
     @pyfile
     def code_to_debug():
         a = 1
@@ -89,7 +109,7 @@ def test_set_variable(debug_session, pyfile, run_as):
 
     bp_line = 2
     bp_file = code_to_debug
-    debug_session.common_setup(bp_file, run_as, breakpoints=[bp_line])
+    debug_session.common_setup(bp_file, starttype, run_as, breakpoints=[bp_line])
     debug_session.start_debugging()
     hit = debug_session.wait_for_thread_stopped()
 
@@ -132,7 +152,8 @@ def test_set_variable(debug_session, pyfile, run_as):
     debug_session.wait_for_exit()
 
 
-def test_variable_sort(debug_session, pyfile, run_as):
+@pytest.mark.parametrize('starttype', [START_TYPE_LAUNCH, START_TYPE_CMDLINE])
+def test_variable_sort(debug_session, pyfile, run_as, starttype):
 
     @pyfile
     def code_to_debug():
@@ -153,7 +174,7 @@ def test_variable_sort(debug_session, pyfile, run_as):
 
     bp_line = 13
     bp_file = code_to_debug
-    debug_session.common_setup(bp_file, run_as, breakpoints=[bp_line])
+    debug_session.common_setup(bp_file, starttype, run_as, breakpoints=[bp_line])
     debug_session.start_debugging()
     hit = debug_session.wait_for_thread_stopped()
 

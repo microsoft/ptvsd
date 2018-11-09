@@ -5,11 +5,32 @@
 from __future__ import print_function, with_statement, absolute_import
 
 import pytest
-from ..helpers.pattern import ANY
-from ..helpers.timeline import Event
+from pytests.helpers.pattern import ANY
+from pytests.helpers.timeline import Event
+from pytests.helpers.session import START_TYPE_LAUNCH, START_TYPE_CMDLINE
 
 
-def run_test_completion(debug_session, pyfile, bp_line, expected):
+expected_at_line = {
+    6: [
+        {'label': 'SomeClass', 'type': 'class'},
+        {'label': 'someFunction', 'type': 'function'},
+        {'label': 'someVariable', 'type': 'field'},
+    ],
+    9: [
+        {'label': 'SomeClass', 'type': 'class'},
+        {'label': 'someFunction', 'type': 'function'},
+        {'label': 'someVar', 'type': 'field'},
+        {'label': 'someVariable', 'type': 'field'},
+    ],
+    11: [
+        {'label': 'SomeClass', 'type': 'class'},
+        {'label': 'someFunction', 'type': 'function'},
+    ],
+}
+
+@pytest.mark.parametrize('starttype', [START_TYPE_LAUNCH, START_TYPE_CMDLINE])
+@pytest.mark.parametrize('bp_line', expected_at_line.keys())
+def test_completions_scope(debug_session, pyfile, bp_line, run_as, starttype):
     @pyfile
     def code_to_debug():
         class SomeClass():
@@ -24,19 +45,13 @@ def run_test_completion(debug_session, pyfile, bp_line, expected):
         someFunction('value')
         print('done')
 
+    expected = expected_at_line[bp_line]
+    debug_session.common_setup(code_to_debug, starttype, run_as, [bp_line])
     debug_session.multiprocess = False
     debug_session.ignore_unobserved += [
-        Event('thread', ANY.dict_with({'reason': 'started'})),
-        Event('module'),
         Event('stopped'),
         Event('continued')
     ]
-    debug_session.prepare_to_run(filename=code_to_debug)
-    debug_session.send_request('setBreakpoints', arguments={
-        'source': {'path': code_to_debug},
-        'breakpoints': [{'line': bp_line}, ],
-    }).wait_for_response()
-
     debug_session.start_debugging()
 
     thread_stopped = debug_session.wait_for_next(Event('stopped'), ANY.dict_with({'reason': 'breakpoint'}))
@@ -59,6 +74,7 @@ def run_test_completion(debug_session, pyfile, bp_line, expected):
     targets = resp_completions.body['targets']
 
     debug_session.send_request('continue').wait_for_response()
+    debug_session.wait_for_next(Event('continued'))
 
     targets.sort(key=lambda t: t['label'])
     expected.sort(key=lambda t: t['label'])
@@ -67,30 +83,20 @@ def run_test_completion(debug_session, pyfile, bp_line, expected):
     debug_session.wait_for_exit()
 
 
-expected_at_line = {
-    6: [
-        {'label': 'SomeClass', 'type': 'class'},
-        {'label': 'someFunction', 'type': 'function'},
-        {'label': 'someVariable', 'type': 'field'},
-    ],
-    9: [
-        {'label': 'SomeClass', 'type': 'class'},
-        {'label': 'someFunction', 'type': 'function'},
-        {'label': 'someVar', 'type': 'field'},
-        {'label': 'someVariable', 'type': 'field'},
-    ],
-    11: [
-        {'label': 'SomeClass', 'type': 'class'},
-        {'label': 'someFunction', 'type': 'function'},
-    ],
-}
+@pytest.mark.parametrize('starttype', [START_TYPE_LAUNCH, START_TYPE_CMDLINE])
+def test_completions(debug_session, pyfile, starttype, run_as):
+    @pyfile
+    def code_to_debug():
+        a = 1
+        b = {"one": 1, "two": 2}
+        c = 3
+        print([a, b, c])
 
-@pytest.mark.parametrize('bp_line', expected_at_line.keys())
-def test_completions_scope(debug_session, pyfile, bp_line):
-    run_test_completion(debug_session, pyfile, bp_line, expected_at_line[bp_line])
-
-def test_completions(debug_session, simple_hit_paused_on_break):
-    hit = simple_hit_paused_on_break
+    bp_line = 4
+    bp_file = code_to_debug
+    debug_session.common_setup(bp_file, starttype, run_as, breakpoints=[bp_line])
+    debug_session.start_debugging()
+    hit = debug_session.wait_for_thread_stopped()
 
     response = debug_session.send_request('completions', arguments={
         'frameId': hit.frame_id,
@@ -106,3 +112,8 @@ def test_completions(debug_session, simple_hit_paused_on_break):
     }).wait_for_response()
 
     assert not response.body['targets']
+
+    debug_session.send_request('continue').wait_for_response()
+    debug_session.wait_for_next(Event('continued'))
+
+    debug_session.wait_for_exit()

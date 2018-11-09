@@ -9,11 +9,12 @@ import platform
 import pytest
 import sys
 
-from ..helpers.pattern import ANY
-from ..helpers.session import DebugSession
-from ..helpers.timeline import Event
-from ..helpers.webhelper import get_web_content, wait_for_connection
-from ..helpers.pathutils import get_test_root, compare_path
+from pytests.helpers.pattern import ANY
+from pytests.helpers.session import DebugSession
+from pytests.helpers.timeline import Event
+from pytests.helpers.webhelper import get_web_content, wait_for_connection
+from pytests.helpers.pathutils import get_test_root, compare_path
+from pytests.helpers.session import START_TYPE_LAUNCH, START_TYPE_CMDLINE
 
 
 FLASK1_ROOT = get_test_root('flask1')
@@ -22,7 +23,8 @@ FLASK1_TEMPLATE = os.path.join(FLASK1_ROOT, 'templates', 'hello.html')
 FLASK_LINK = 'http://127.0.0.1:5000/'
 FLASK_PORT = 5000
 
-def _flask_no_multiproc_common(debug_session):
+def _flask_no_multiproc_common(debug_session, starttype):
+    debug_session.method = starttype
     debug_session.multiprocess = False
     debug_session.program_args += ['run', '--no-debugger', '--no-reload', '--with-threads']
     env = {
@@ -50,15 +52,16 @@ def _flask_no_multiproc_common(debug_session):
     debug_session.cwd = FLASK1_ROOT
     debug_session.env.update(env)
     debug_session.expected_returncode = ANY.int  # No clean way to kill Flask server
+    debug_session.prepare_to_run(module='flask')
 
 @pytest.mark.parametrize('bp_file, bp_line, bp_name', [
   (FLASK1_APP, 11, 'home'),
   (FLASK1_TEMPLATE, 8, 'template'),
 ])
+@pytest.mark.parametrize('starttype', [START_TYPE_LAUNCH, START_TYPE_CMDLINE])
 @pytest.mark.timeout(60)
-def test_flask_breakpoint_no_multiproc(debug_session, bp_file, bp_line, bp_name):
-    _flask_no_multiproc_common(debug_session)
-    debug_session.prepare_to_run(module='flask')
+def test_flask_breakpoint_no_multiproc(debug_session, bp_file, bp_line, bp_name, starttype):
+    _flask_no_multiproc_common(debug_session, starttype)
 
     bp_var_content = 'Flask-Jinja-Test'
     debug_session.send_request('setBreakpoints', arguments={
@@ -130,10 +133,10 @@ def test_flask_breakpoint_no_multiproc(debug_session, bp_file, bp_line, bp_name)
   ('handled', 21),
   ('unhandled', 33),
 ])
+@pytest.mark.parametrize('starttype', [START_TYPE_LAUNCH, START_TYPE_CMDLINE])
 @pytest.mark.timeout(60)
-def test_flask_exception_no_multiproc(debug_session, ex_type, ex_line):
-    _flask_no_multiproc_common(debug_session)
-    debug_session.prepare_to_run(module='flask')
+def test_flask_exception_no_multiproc(debug_session, ex_type, ex_line, starttype):
+    _flask_no_multiproc_common(debug_session, starttype)
 
     debug_session.send_request('setExceptionBreakpoints', arguments={
         'filters': ['raised', 'uncaught'],
@@ -206,7 +209,7 @@ def _wait_for_child_process(debug_session):
 
     child_port = child_subprocess.body['port']
 
-    child_session = DebugSession(method='attach_socket', ptvsd_port=child_port)
+    child_session = DebugSession(method=START_TYPE_CMDLINE, ptvsd_port=child_port)
     child_session.ignore_unobserved = debug_session.ignore_unobserved
     child_session.debug_options = debug_session.debug_options
     child_session.connect()
@@ -215,8 +218,10 @@ def _wait_for_child_process(debug_session):
 
 
 @pytest.mark.timeout(120)
+@pytest.mark.parametrize('starttype', [START_TYPE_LAUNCH])
 @pytest.mark.skipif((sys.version_info < (3, 0)) and (platform.system() != 'Windows'), reason='Bug #935')
-def test_flask_breakpoint_multiproc(debug_session):
+def test_flask_breakpoint_multiproc(debug_session, starttype):
+    debug_session.method = starttype
     debug_session.multiprocess = True
     debug_session.program_args += ['run', ]
     env = {
