@@ -199,7 +199,7 @@ def test_django_breakpoint_multiproc(debug_session, start_method):
         start_method=start_method,
         target=('file', DJANGO1_MANAGE),
         multiprocess=True,
-        program_args=['runserver',],
+        program_args=['runserver', ],
         debug_options=['Django'],
         cwd=DJANGO1_ROOT,
         ignore_events=[Event('stopped'), Event('continued')],
