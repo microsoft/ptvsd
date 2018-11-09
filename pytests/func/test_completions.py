@@ -7,7 +7,7 @@ from __future__ import print_function, with_statement, absolute_import
 import pytest
 from pytests.helpers.pattern import ANY
 from pytests.helpers.timeline import Event
-from pytests.helpers.session import START_TYPE_LAUNCH, START_TYPE_CMDLINE
+from pytests.helpers.session import START_METHOD_LAUNCH, START_METHOD_CMDLINE
 
 
 expected_at_line = {
@@ -28,9 +28,9 @@ expected_at_line = {
     ],
 }
 
-@pytest.mark.parametrize('starttype', [START_TYPE_LAUNCH, START_TYPE_CMDLINE])
+@pytest.mark.parametrize('start_method', [START_METHOD_LAUNCH, START_METHOD_CMDLINE])
 @pytest.mark.parametrize('bp_line', expected_at_line.keys())
-def test_completions_scope(debug_session, pyfile, bp_line, run_as, starttype):
+def test_completions_scope(debug_session, pyfile, bp_line, run_as, start_method):
     @pyfile
     def code_to_debug():
         class SomeClass():
@@ -46,7 +46,7 @@ def test_completions_scope(debug_session, pyfile, bp_line, run_as, starttype):
         print('done')
 
     expected = expected_at_line[bp_line]
-    debug_session.common_setup(code_to_debug, starttype, run_as, [bp_line])
+    debug_session.common_setup(code_to_debug, start_method, run_as, [bp_line])
     debug_session.multiprocess = False
     debug_session.ignore_unobserved += [
         Event('stopped'),
@@ -83,8 +83,8 @@ def test_completions_scope(debug_session, pyfile, bp_line, run_as, starttype):
     debug_session.wait_for_exit()
 
 
-@pytest.mark.parametrize('starttype', [START_TYPE_LAUNCH, START_TYPE_CMDLINE])
-def test_completions(debug_session, pyfile, starttype, run_as):
+@pytest.mark.parametrize('start_method', [START_METHOD_LAUNCH, START_METHOD_CMDLINE])
+def test_completions(debug_session, pyfile, start_method, run_as):
     @pyfile
     def code_to_debug():
         a = 1
@@ -94,7 +94,7 @@ def test_completions(debug_session, pyfile, starttype, run_as):
 
     bp_line = 4
     bp_file = code_to_debug
-    debug_session.common_setup(bp_file, starttype, run_as, breakpoints=[bp_line])
+    debug_session.common_setup(bp_file, start_method, run_as, breakpoints=[bp_line])
     debug_session.start_debugging()
     hit = debug_session.wait_for_thread_stopped()
 

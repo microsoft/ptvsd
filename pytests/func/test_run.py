@@ -12,12 +12,12 @@ import ptvsd
 from pytests.helpers import print
 from pytests.helpers.pattern import ANY
 from pytests.helpers.timeline import Event
-from pytests.helpers.session import START_TYPE_LAUNCH, START_TYPE_CMDLINE
+from pytests.helpers.session import START_METHOD_LAUNCH, START_METHOD_CMDLINE
 
 
 @pytest.mark.parametrize('run_as', ['file', 'module', 'code'])
-@pytest.mark.parametrize('starttype', [START_TYPE_LAUNCH, START_TYPE_CMDLINE])
-def test_run(debug_session, pyfile, run_as, starttype):
+@pytest.mark.parametrize('start_method', [START_METHOD_LAUNCH, START_METHOD_CMDLINE])
+def test_run(debug_session, pyfile, run_as, start_method):
     @pyfile
     def code_to_debug():
         import os
@@ -29,7 +29,7 @@ def test_run(debug_session, pyfile, run_as, starttype):
         backchannel.write_json(os.path.abspath(sys.modules['ptvsd'].__file__))
         print('end')
 
-    debug_session.common_setup(code_to_debug, starttype, run_as, backchannel=True)
+    debug_session.common_setup(code_to_debug, start_method, run_as, backchannel=True)
     debug_session.start_debugging()
     assert debug_session.timeline.is_frozen
 

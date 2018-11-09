@@ -27,24 +27,24 @@ from collections import namedtuple
 
 _Hit = namedtuple('_Hit', 'thread_stopped, stacktrace, thread_id, frame_id')
 
-START_TYPE_LAUNCH = ('launch',)
-START_TYPE_CMDLINE = ('attach', 'socket', 'cmdline')
-START_TYPE_IMPORT = ('attach', 'socket', 'import')
-START_TYPE_PID = ('attach', 'pid')
+START_METHOD_LAUNCH = ('launch',)
+START_METHOD_CMDLINE = ('attach', 'socket', 'cmdline')
+START_METHOD_IMPORT = ('attach', 'socket', 'import')
+START_METHOD_PID = ('attach', 'pid')
 
 
 class DebugSession(object):
     WAIT_FOR_EXIT_TIMEOUT = 5
     BACKCHANNEL_TIMEOUT = 15
 
-    def __init__(self, method=('launch',), ptvsd_port=None, pid=None):
-        assert method[0] in ('launch', 'attach')
-        assert ptvsd_port is None or (len(method) > 1 and method[1] == 'socket')
-        assert method != ('attach', 'socket', 'import')
+    def __init__(self, start_method=('launch',), ptvsd_port=None, pid=None):
+        assert start_method[0] in ('launch', 'attach')
+        assert ptvsd_port is None or (len(start_method) > 1 and start_method[1] == 'socket')
+        assert start_method != ('attach', 'socket', 'import')
 
-        print('New debug session with method %r' % str(method))
+        print('New debug session with method %r' % str(start_method))
 
-        self.method = method
+        self.start_method = start_method
         self.ptvsd_port = ptvsd_port or 5678
         self.multiprocess = False
         self.multiprocess_port_range = None
@@ -139,10 +139,10 @@ class DebugSession(object):
         """
 
         argv = [sys.executable]
-        if self.method != ('attach', 'pid'):
+        if self.start_method != ('attach', 'pid'):
             argv += [ptvsd.__main__.__file__]
 
-        if self.method == ('attach', 'socket', 'cmdline'):
+        if self.start_method == ('attach', 'socket', 'cmdline'):
             argv += ['--wait']
         else:
             self._listen()
@@ -185,7 +185,7 @@ class DebugSession(object):
         self._capture_output(self.process.stdout, 'OUT')
         self._capture_output(self.process.stderr, 'ERR')
 
-        if self.method == ('attach', 'socket', 'cmdline'):
+        if self.start_method == ('attach', 'socket', 'cmdline'):
             self.connect()
         self.connected.wait()
         assert self.ptvsd_port
@@ -357,7 +357,7 @@ class DebugSession(object):
         self.send_request('initialize', {'adapterID': 'test'}).wait_for_response()
         self.wait_for_next(Event('initialized', {}))
 
-        request = 'launch' if self.method == ('launch',) else 'attach'
+        request = 'launch' if self.start_method == ('launch',) else 'attach'
         self.send_request(request, {'debugOptions': self.debug_options}).wait_for_response()
 
         # Issue 'threads' so that we get the 'thread' event for the main thread now,
@@ -384,7 +384,7 @@ class DebugSession(object):
         self.expect_new(Event('process', {
             'name': ANY.str,
             'isLocalProcess': True,
-            'startMethod': 'launch' if self.method == ('launch',) else 'attach',
+            'startMethod': 'launch' if self.start_method == ('launch',) else 'attach',
             'systemProcessId': self.pid if self.pid is not None else ANY.int,
         }))
 
@@ -467,9 +467,9 @@ class DebugSession(object):
         for thread in self._output_capture_threads:
             thread.join()
 
-    def common_setup(self, path, starttype, run_as, breakpoints=(), backchannel=False):
-        assert starttype[0] in ('launch', 'attach')
-        self.method = starttype
+    def common_setup(self, path, start_method, run_as, breakpoints=(), backchannel=False):
+        assert start_method[0] in ('launch', 'attach')
+        self.start_method = start_method
         self.ignore_unobserved += [
             Event('thread', ANY.dict_with({'reason': 'started'})),
             Event('module')

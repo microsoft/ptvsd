@@ -11,14 +11,14 @@ import sys
 from pytests.helpers.pattern import ANY
 from pytests.helpers.session import DebugSession
 from pytests.helpers.timeline import Event, Request, Response
-from pytests.helpers.session import START_TYPE_LAUNCH, START_TYPE_CMDLINE
+from pytests.helpers.session import START_METHOD_LAUNCH, START_METHOD_CMDLINE
 
 
 @pytest.mark.timeout(60)
 @pytest.mark.skipif(platform.system() != 'Windows',
                     reason='Debugging multiprocessing module only works on Windows')
-@pytest.mark.parametrize('starttype', [START_TYPE_LAUNCH, START_TYPE_CMDLINE])
-def test_multiprocessing(debug_session, pyfile, run_as, starttype):
+@pytest.mark.parametrize('start_method', [START_METHOD_LAUNCH, START_METHOD_CMDLINE])
+def test_multiprocessing(debug_session, pyfile, run_as, start_method):
     @pyfile
     def code_to_debug():
         import multiprocessing
@@ -67,7 +67,7 @@ def test_multiprocessing(debug_session, pyfile, run_as, starttype):
             backchannel.write_json('done')
 
     debug_session.multiprocess = True
-    debug_session.common_setup(code_to_debug, starttype, run_as, backchannel=True)
+    debug_session.common_setup(code_to_debug, start_method, run_as, backchannel=True)
     debug_session.start_debugging()
 
     root_start_request, = debug_session.all_occurrences_of(Request('launch') | Request('attach'))
@@ -91,7 +91,7 @@ def test_multiprocessing(debug_session, pyfile, run_as, starttype):
     })
     child_port = child_subprocess.body['port']
 
-    child_session = DebugSession(method=START_TYPE_CMDLINE, ptvsd_port=child_port)
+    child_session = DebugSession(start_method=START_METHOD_CMDLINE, ptvsd_port=child_port)
     child_session.ignore_unobserved = debug_session.ignore_unobserved
     child_session.connect()
     child_session.handshake()
@@ -113,7 +113,7 @@ def test_multiprocessing(debug_session, pyfile, run_as, starttype):
     })
     child_child_port = child_child_subprocess.body['port']
 
-    child_child_session = DebugSession(method=START_TYPE_CMDLINE, ptvsd_port=child_child_port)
+    child_child_session = DebugSession(start_method=START_METHOD_CMDLINE, ptvsd_port=child_child_port)
     child_child_session.ignore_unobserved = debug_session.ignore_unobserved
     child_child_session.connect()
     child_child_session.handshake()
@@ -135,12 +135,11 @@ def test_multiprocessing(debug_session, pyfile, run_as, starttype):
     debug_session.wait_for_exit()
 
 
-
 @pytest.mark.timeout(60)
 @pytest.mark.skipif(sys.version_info < (3, 0) and (platform.system() != 'Windows'),
                     reason='Bug #935')
-@pytest.mark.parametrize('starttype', [START_TYPE_LAUNCH, START_TYPE_CMDLINE])
-def test_subprocess(debug_session, pyfile, starttype, run_as):
+@pytest.mark.parametrize('start_method', [START_METHOD_LAUNCH, START_METHOD_CMDLINE])
+def test_subprocess(debug_session, pyfile, start_method, run_as):
     @pyfile
     def child():
         import sys
@@ -159,7 +158,7 @@ def test_subprocess(debug_session, pyfile, starttype, run_as):
 
     debug_session.multiprocess = True
     debug_session.program_args += [child]
-    debug_session.common_setup(parent, starttype, run_as, backchannel=True)
+    debug_session.common_setup(parent, start_method, run_as, backchannel=True)
     debug_session.start_debugging()
 
     root_start_request, = debug_session.all_occurrences_of(Request('launch') | Request('attach'))
@@ -183,7 +182,7 @@ def test_subprocess(debug_session, pyfile, starttype, run_as):
     child_port = child_subprocess.body['port']
     debug_session.proceed()
 
-    child_session = DebugSession(method=START_TYPE_CMDLINE, ptvsd_port=child_port, pid=child_pid)
+    child_session = DebugSession(start_method=START_METHOD_CMDLINE, ptvsd_port=child_port, pid=child_pid)
     child_session.ignore_unobserved = debug_session.ignore_unobserved
     child_session.connect()
     child_session.handshake()
@@ -199,8 +198,8 @@ def test_subprocess(debug_session, pyfile, starttype, run_as):
 @pytest.mark.timeout(60)
 @pytest.mark.skipif(sys.version_info < (3, 0) and (platform.system() != 'Windows'),
                     reason='Bug #935')
-@pytest.mark.parametrize('starttype', [START_TYPE_LAUNCH, START_TYPE_CMDLINE])
-def test_autokill(debug_session, pyfile, starttype, run_as):
+@pytest.mark.parametrize('start_method', [START_METHOD_LAUNCH, START_METHOD_CMDLINE])
+def test_autokill(debug_session, pyfile, start_method, run_as):
     @pyfile
     def child():
         while True:
@@ -219,7 +218,7 @@ def test_autokill(debug_session, pyfile, starttype, run_as):
 
     debug_session.multiprocess = True
     debug_session.program_args += [child]
-    debug_session.common_setup(parent, starttype, run_as, backchannel=True)
+    debug_session.common_setup(parent, start_method, run_as, backchannel=True)
     debug_session.start_debugging()
 
     child_subprocess = debug_session.wait_for_next(Event('ptvsd_subprocess'))
@@ -228,13 +227,13 @@ def test_autokill(debug_session, pyfile, starttype, run_as):
 
     debug_session.proceed()
 
-    child_session = DebugSession(method=START_TYPE_CMDLINE, ptvsd_port=child_port, pid=child_pid)
+    child_session = DebugSession(start_method=START_METHOD_CMDLINE, ptvsd_port=child_port, pid=child_pid)
     child_session.expected_returncode = ANY
     child_session.connect()
     child_session.handshake()
     child_session.start_debugging()
 
-    if debug_session.method == 'launch':
+    if debug_session.start_method == START_METHOD_LAUNCH:
         # In launch scenario, terminate the parent process by disconnecting from it.
         debug_session.expected_returncode = ANY
         disconnect = debug_session.send_request('disconnect', {})

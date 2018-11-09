@@ -11,11 +11,11 @@ import sys
 from pytests.helpers import print
 from pytests.helpers.pattern import ANY
 from pytests.helpers.timeline import Event
-from pytests.helpers.session import START_TYPE_LAUNCH, START_TYPE_CMDLINE
+from pytests.helpers.session import START_METHOD_LAUNCH, START_METHOD_CMDLINE
 
 
-@pytest.mark.parametrize('starttype', [START_TYPE_LAUNCH])
-def test_break_on_entry(debug_session, pyfile, run_as, starttype):
+@pytest.mark.parametrize('start_method', [START_METHOD_LAUNCH])
+def test_break_on_entry(debug_session, pyfile, run_as, start_method):
     @pyfile
     def code_to_debug():
         print('one')
@@ -23,7 +23,7 @@ def test_break_on_entry(debug_session, pyfile, run_as, starttype):
         print('three')
 
     debug_session.debug_options += ['StopOnEntry']
-    debug_session.common_setup(code_to_debug, starttype, run_as)
+    debug_session.common_setup(code_to_debug, start_method, run_as)
     debug_session.start_debugging()
 
     thread_stopped = debug_session.wait_for_next(Event('stopped'), ANY.dict_with({'reason': 'step'}))
@@ -50,10 +50,10 @@ def test_break_on_entry(debug_session, pyfile, run_as, starttype):
     debug_session.wait_for_exit()
 
 
-@pytest.mark.parametrize('starttype', [START_TYPE_LAUNCH, START_TYPE_CMDLINE])
+@pytest.mark.parametrize('start_method', [START_METHOD_LAUNCH, START_METHOD_CMDLINE])
 @pytest.mark.skipif(sys.version_info < (3, 0) and platform.system() == 'Windows',
                     reason="On windows py2.7 unable to send key strokes to test.")
-def test_wait_on_normal_exit_enabled(debug_session, pyfile, run_as, starttype):
+def test_wait_on_normal_exit_enabled(debug_session, pyfile, run_as, start_method):
     @pyfile
     def code_to_debug():
         print('one')
@@ -64,7 +64,7 @@ def test_wait_on_normal_exit_enabled(debug_session, pyfile, run_as, starttype):
 
     bp_line = 3
     bp_file = code_to_debug
-    debug_session.common_setup(bp_file, starttype, run_as, breakpoints=[bp_line])
+    debug_session.common_setup(bp_file, start_method, run_as, breakpoints=[bp_line])
     debug_session.start_debugging()
 
     debug_session.wait_for_next(Event('stopped'), ANY.dict_with({'reason': 'breakpoint'}))
@@ -91,10 +91,10 @@ def test_wait_on_normal_exit_enabled(debug_session, pyfile, run_as, starttype):
                if _decode(l).startswith('Press'))
 
 
-@pytest.mark.parametrize('starttype', [START_TYPE_LAUNCH, START_TYPE_CMDLINE])
+@pytest.mark.parametrize('start_method', [START_METHOD_LAUNCH, START_METHOD_CMDLINE])
 @pytest.mark.skipif(sys.version_info < (3, 0) and platform.system() == 'Windows',
                     reason="On windows py2.7 unable to send key strokes to test.")
-def test_wait_on_abnormal_exit_enabled(debug_session, pyfile, run_as, starttype):
+def test_wait_on_abnormal_exit_enabled(debug_session, pyfile, run_as, start_method):
     @pyfile
     def code_to_debug():
         import sys
@@ -107,7 +107,7 @@ def test_wait_on_abnormal_exit_enabled(debug_session, pyfile, run_as, starttype)
 
     bp_line = 5
     bp_file = code_to_debug
-    debug_session.common_setup(bp_file, starttype, run_as, breakpoints=[bp_line])
+    debug_session.common_setup(bp_file, start_method, run_as, breakpoints=[bp_line])
     debug_session.start_debugging()
 
     debug_session.wait_for_next(Event('stopped'), ANY.dict_with({'reason': 'breakpoint'}))
@@ -134,8 +134,8 @@ def test_wait_on_abnormal_exit_enabled(debug_session, pyfile, run_as, starttype)
                if _decode(l).startswith('Press'))
 
 
-@pytest.mark.parametrize('starttype', [START_TYPE_LAUNCH, START_TYPE_CMDLINE])
-def test_exit_normally_with_wait_on_abnormal_exit_enabled(debug_session, pyfile, run_as, starttype):
+@pytest.mark.parametrize('start_method', [START_METHOD_LAUNCH, START_METHOD_CMDLINE])
+def test_exit_normally_with_wait_on_abnormal_exit_enabled(debug_session, pyfile, run_as, start_method):
     @pyfile
     def code_to_debug():
         print('one')
@@ -146,7 +146,7 @@ def test_exit_normally_with_wait_on_abnormal_exit_enabled(debug_session, pyfile,
 
     bp_line = 3
     bp_file = code_to_debug
-    debug_session.common_setup(bp_file, starttype, run_as, breakpoints=[bp_line])
+    debug_session.common_setup(bp_file, start_method, run_as, breakpoints=[bp_line])
     debug_session.start_debugging()
 
     debug_session.wait_for_next(Event('stopped'), ANY.dict_with({'reason': 'breakpoint'}))

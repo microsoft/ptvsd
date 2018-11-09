@@ -174,7 +174,7 @@ def _run_as(request):
 
 
 @pytest.fixture(
-    name='starttype',
+    name='start_method',
     params=_ATTACH_PARAMS
 )
 def _start_method(request):
