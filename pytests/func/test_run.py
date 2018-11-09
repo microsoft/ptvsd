@@ -29,7 +29,7 @@ def test_run(debug_session, pyfile, run_as, start_method):
         backchannel.write_json(os.path.abspath(sys.modules['ptvsd'].__file__))
         print('end')
 
-    debug_session.initialize(target=(run_as, code_to_debug), start_method=start_method, backchannel=True)
+    debug_session.initialize(target=(run_as, code_to_debug), start_method=start_method, use_backchannel=True)
     debug_session.start_debugging()
     assert debug_session.timeline.is_frozen
 

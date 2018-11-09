@@ -37,7 +37,7 @@ class DebugSession(object):
     WAIT_FOR_EXIT_TIMEOUT = 5
     BACKCHANNEL_TIMEOUT = 15
 
-    def __init__(self, start_method=('launch',), ptvsd_port=None, pid=None):
+    def __init__(self, start_method=START_METHOD_LAUNCH, ptvsd_port=None, pid=None):
         assert start_method[0] in ('launch', 'attach')
         assert ptvsd_port is None or (len(start_method) > 1 and start_method[1] == 'socket')
         assert start_method != ('attach', 'socket', 'import')
@@ -483,35 +483,23 @@ class DebugSession(object):
 
     def initialize(
         self,
-        start_method=START_METHOD_LAUNCH,
-        target=('code', 'print("OK")'),
-        multiprocess=False,
-        expected_returncode=0,
-        cwd=None,
-        env={},
-        ignore_events=[],
-        debug_options=[],
-        program_args=[],
-        backchannel=False,
+        **kwargs
     ):
-        assert start_method[0] in ('launch', 'attach')
-        assert len(target) == 2
-        assert target[0] in ('file', 'module', 'code')
-
-        self.start_method = start_method
-        self.target = target
-        self.multiprocess = multiprocess
-        self.expected_returncode = expected_returncode
-        self.cwd = cwd
-        self.env.update(env)
-        self.debug_options += debug_options
-        self.program_args += program_args
-        self.use_backchannel = backchannel
-
         self.ignore_unobserved += [
             Event('thread', ANY.dict_with({'reason': 'started'})),
             Event('module')
-        ] + ignore_events
+        ] + kwargs.pop('ignore_events', [])
+
+        self.env.update(kwargs.pop('env', {}))
+        self.debug_options += kwargs.pop('debug_options', [])
+        self.program_args += kwargs.pop('program_args', [])
+
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+
+        assert self.start_method[0] in ('launch', 'attach')
+        assert len(self.target) == 2
+        assert self.target[0] in ('file', 'module', 'code')
 
         self.prepare_to_run()
 

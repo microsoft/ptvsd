@@ -66,7 +66,7 @@ def test_multiprocessing(debug_session, pyfile, run_as, start_method):
             q.close()
             backchannel.write_json('done')
 
-    debug_session.initialize(multiprocess=True, target=(run_as, code_to_debug), start_method=start_method, backchannel=True)
+    debug_session.initialize(multiprocess=True, target=(run_as, code_to_debug), start_method=start_method, use_backchannel=True)
     debug_session.start_debugging()
 
     root_start_request, = debug_session.all_occurrences_of(Request('launch') | Request('attach'))
@@ -156,7 +156,7 @@ def test_subprocess(debug_session, pyfile, start_method, run_as):
         process.wait()
 
     debug_session.program_args += [child]
-    debug_session.initialize(multiprocess=True, target=(run_as, parent), start_method=start_method, backchannel=True)
+    debug_session.initialize(multiprocess=True, target=(run_as, parent), start_method=start_method, use_backchannel=True)
     debug_session.start_debugging()
 
     root_start_request, = debug_session.all_occurrences_of(Request('launch') | Request('attach'))
@@ -215,7 +215,7 @@ def test_autokill(debug_session, pyfile, start_method, run_as):
         backchannel.read_json()
 
     debug_session.program_args += [child]
-    debug_session.initialize(multiprocess=True, target=(run_as, parent), start_method=start_method, backchannel=True)
+    debug_session.initialize(multiprocess=True, target=(run_as, parent), start_method=start_method, use_backchannel=True)
     debug_session.start_debugging()
 
     child_subprocess = debug_session.wait_for_next(Event('ptvsd_subprocess'))
