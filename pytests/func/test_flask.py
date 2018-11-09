@@ -24,9 +24,6 @@ FLASK_LINK = 'http://127.0.0.1:5000/'
 FLASK_PORT = 5000
 
 def _flask_no_multiproc_common(debug_session, start_method):
-    debug_session.start_method = start_method
-    debug_session.multiprocess = False
-    debug_session.program_args += ['run', '--no-debugger', '--no-reload', '--with-threads']
     env = {
         'FLASK_APP': 'app.py',
         'FLASK_ENV': 'development',
@@ -39,20 +36,17 @@ def _flask_no_multiproc_common(debug_session, start_method):
             'LANG': locale,
         })
 
-    # we may get multiple stopped(pause), or continued events.
-    # we only care about stopped(breakpoint/exception) events
-    debug_session.ignore_unobserved += [
-        Event('thread', ANY.dict_with({'reason': 'started'})),
-        Event('module'),
-        Event('stopped'),
-        Event('continued')
-    ]
+    debug_session.initialize(
+        start_method=start_method,
+        target=('module', 'flask'),
+        program_args=['run', '--no-debugger', '--no-reload', '--with-threads'],
+        ignore_events=[Event('stopped'), Event('continued')],
+        debug_options=['Jinja'],
+        cwd=FLASK1_ROOT,
+        env=env,
+        expected_returncode=ANY.int,  # No clean way to kill Flask server
+    )
 
-    debug_session.debug_options += ['Jinja']
-    debug_session.cwd = FLASK1_ROOT
-    debug_session.env.update(env)
-    debug_session.expected_returncode = ANY.int  # No clean way to kill Flask server
-    debug_session.prepare_to_run(module='flask')
 
 @pytest.mark.parametrize('bp_file, bp_line, bp_name', [
   (FLASK1_APP, 11, 'home'),
@@ -64,11 +58,7 @@ def test_flask_breakpoint_no_multiproc(debug_session, bp_file, bp_line, bp_name,
     _flask_no_multiproc_common(debug_session, start_method)
 
     bp_var_content = 'Flask-Jinja-Test'
-    debug_session.send_request('setBreakpoints', arguments={
-        'source': {'path': bp_file},
-        'breakpoints': [{'line': bp_line}, ],
-    }).wait_for_response()
-
+    debug_session.set_breakpoints(bp_file, [bp_line])
     debug_session.start_debugging()
 
     # wait for Flask web server to start
@@ -221,9 +211,6 @@ def _wait_for_child_process(debug_session):
 @pytest.mark.parametrize('start_method', [START_METHOD_LAUNCH])
 @pytest.mark.skipif((sys.version_info < (3, 0)) and (platform.system() != 'Windows'), reason='Bug #935')
 def test_flask_breakpoint_multiproc(debug_session, start_method):
-    debug_session.start_method = start_method
-    debug_session.multiprocess = True
-    debug_session.program_args += ['run', ]
     env = {
         'FLASK_APP': 'app',
         'FLASK_ENV': 'development',
@@ -236,26 +223,21 @@ def test_flask_breakpoint_multiproc(debug_session, start_method):
             'LANG': locale,
         })
 
-    debug_session.ignore_unobserved += [
-        Event('thread', ANY.dict_with({'reason': 'started'})),
-        Event('module'),
-        Event('stopped'),
-        Event('continued')
-    ]
-
-    debug_session.debug_options += ['Jinja']
-    debug_session.cwd = FLASK1_ROOT
-    debug_session.env.update(env)
-    debug_session.expected_returncode = ANY.int  # No clean way to kill Flask server
-    debug_session.prepare_to_run(module='flask')
+    debug_session.initialize(
+        start_method=start_method,
+        target=('module', 'flask'),
+        multiprocess=True,
+        program_args=['run', ],
+        ignore_events=[Event('stopped'), Event('continued')],
+        debug_options=['Jinja'],
+        cwd=FLASK1_ROOT,
+        env=env,
+        expected_returncode=ANY.int,  # No clean way to kill Flask server
+    )
 
     bp_line = 11
     bp_var_content = 'Flask-Jinja-Test'
-    debug_session.send_request('setBreakpoints', arguments={
-        'source': {'path': FLASK1_APP},
-        'breakpoints': [{'line': bp_line}, ],
-    }).wait_for_response()
-
+    debug_session.set_breakpoints(FLASK1_APP, [bp_line])
     debug_session.start_debugging()
     child_session = _wait_for_child_process(debug_session)
 

@@ -23,7 +23,7 @@ def test_break_on_entry(debug_session, pyfile, run_as, start_method):
         print('three')
 
     debug_session.debug_options += ['StopOnEntry']
-    debug_session.common_setup(code_to_debug, start_method, run_as)
+    debug_session.initialize(target=(run_as, code_to_debug), start_method=start_method)
     debug_session.start_debugging()
 
     thread_stopped = debug_session.wait_for_next(Event('stopped'), ANY.dict_with({'reason': 'step'}))
@@ -64,7 +64,8 @@ def test_wait_on_normal_exit_enabled(debug_session, pyfile, run_as, start_method
 
     bp_line = 3
     bp_file = code_to_debug
-    debug_session.common_setup(bp_file, start_method, run_as, breakpoints=[bp_line])
+    debug_session.initialize(target=(run_as, bp_file), start_method=start_method)
+    debug_session.set_breakpoints(bp_file, [bp_line])
     debug_session.start_debugging()
 
     debug_session.wait_for_next(Event('stopped'), ANY.dict_with({'reason': 'breakpoint'}))
@@ -107,7 +108,8 @@ def test_wait_on_abnormal_exit_enabled(debug_session, pyfile, run_as, start_meth
 
     bp_line = 5
     bp_file = code_to_debug
-    debug_session.common_setup(bp_file, start_method, run_as, breakpoints=[bp_line])
+    debug_session.initialize(target=(run_as, bp_file), start_method=start_method)
+    debug_session.set_breakpoints(bp_file, [bp_line])
     debug_session.start_debugging()
 
     debug_session.wait_for_next(Event('stopped'), ANY.dict_with({'reason': 'breakpoint'}))
@@ -146,7 +148,8 @@ def test_exit_normally_with_wait_on_abnormal_exit_enabled(debug_session, pyfile,
 
     bp_line = 3
     bp_file = code_to_debug
-    debug_session.common_setup(bp_file, start_method, run_as, breakpoints=[bp_line])
+    debug_session.initialize(target=(run_as, bp_file), start_method=start_method)
+    debug_session.set_breakpoints(bp_file, [bp_line])
     debug_session.start_debugging()
 
     debug_session.wait_for_next(Event('stopped'), ANY.dict_with({'reason': 'breakpoint'}))

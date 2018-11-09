@@ -21,20 +21,6 @@ DJANGO1_TEMPLATE = os.path.join(DJANGO1_ROOT, 'templates', 'hello.html')
 DJANGO_LINK = 'http://127.0.0.1:8000/'
 DJANGO_PORT = 8000
 
-def _django_no_multiproc_common(debug_session, start_method):
-    debug_session.start_method = start_method
-    debug_session.multiprocess = False
-    debug_session.program_args += ['runserver', '--noreload', '--nothreading']
-
-    debug_session.ignore_unobserved += [
-        Event('thread', ANY.dict_with({'reason': 'started'})),
-        Event('module')
-    ]
-
-    debug_session.debug_options += ['Django']
-    debug_session.cwd = DJANGO1_ROOT
-    debug_session.expected_returncode = ANY  # No clean way to kill Django server
-    debug_session.prepare_to_run(filename=DJANGO1_MANAGE)
 
 @pytest.mark.parametrize('bp_file, bp_line, bp_name', [
   (DJANGO1_MANAGE, 40, 'home'),
@@ -44,14 +30,17 @@ def _django_no_multiproc_common(debug_session, start_method):
 @pytest.mark.skipif(sys.version_info < (3, 0), reason='Bug #923')
 @pytest.mark.timeout(60)
 def test_django_breakpoint_no_multiproc(debug_session, bp_file, bp_line, bp_name, start_method):
-    _django_no_multiproc_common(debug_session, start_method)
+    debug_session.initialize(
+        start_method=start_method,
+        target=('file', DJANGO1_MANAGE),
+        program_args=['runserver', '--noreload', '--nothreading'],
+        debug_options=['Django'],
+        cwd=DJANGO1_ROOT,
+        expected_returncode=ANY.int,  # No clean way to kill Flask server
+    )
 
     bp_var_content = 'Django-Django-Test'
-    debug_session.send_request('setBreakpoints', arguments={
-        'source': {'path': bp_file},
-        'breakpoints': [{'line': bp_line}, ],
-    }).wait_for_response()
-
+    debug_session.set_breakpoints(bp_file, [bp_line])
     debug_session.start_debugging()
 
     # wait for Django server to start
@@ -116,7 +105,14 @@ def test_django_breakpoint_no_multiproc(debug_session, bp_file, bp_line, bp_name
 @pytest.mark.skipif(sys.version_info < (3, 0), reason='Bug #923')
 @pytest.mark.timeout(60)
 def test_django_exception_no_multiproc(debug_session, ex_type, ex_line, start_method):
-    _django_no_multiproc_common(debug_session, start_method)
+    debug_session.initialize(
+        start_method=start_method,
+        target=('file', DJANGO1_MANAGE),
+        program_args=['runserver', '--noreload', '--nothreading'],
+        debug_options=['Django'],
+        cwd=DJANGO1_ROOT,
+        expected_returncode=ANY.int,  # No clean way to kill Flask server
+    )
 
     debug_session.send_request('setExceptionBreakpoints', arguments={
         'filters': ['raised', 'uncaught'],
@@ -199,28 +195,20 @@ def _wait_for_child_process(debug_session):
 @pytest.mark.timeout(120)
 @pytest.mark.parametrize('start_method', [START_METHOD_LAUNCH])
 def test_django_breakpoint_multiproc(debug_session, start_method):
-    debug_session.multiprocess = True
-    debug_session.program_args += ['runserver']
-
-    debug_session.ignore_unobserved += [
-        Event('thread', ANY.dict_with({'reason': 'started'})),
-        Event('module'),
-        Event('stopped'),
-        Event('continued')
-    ]
-
-    debug_session.debug_options += ['Django']
-    debug_session.cwd = DJANGO1_ROOT
-    debug_session.expected_returncode = ANY  # No clean way to kill Django server
-    debug_session.prepare_to_run(filename=DJANGO1_MANAGE)
+    debug_session.initialize(
+        start_method=start_method,
+        target=('file', DJANGO1_MANAGE),
+        multiprocess=True,
+        program_args=['runserver',],
+        debug_options=['Django'],
+        cwd=DJANGO1_ROOT,
+        ignore_events=[Event('stopped'), Event('continued')],
+        expected_returncode=ANY.int,  # No clean way to kill Flask server
+    )
 
     bp_line = 40
     bp_var_content = 'Django-Django-Test'
-    debug_session.send_request('setBreakpoints', arguments={
-        'source': {'path': DJANGO1_MANAGE},
-        'breakpoints': [{'line': bp_line}, ],
-    }).wait_for_response()
-
+    debug_session.set_breakpoints(DJANGO1_MANAGE, [bp_line])
     debug_session.start_debugging()
 
     child_session = _wait_for_child_process(debug_session)

@@ -23,7 +23,8 @@ def test_variables_and_evaluate(debug_session, pyfile, run_as, start_method):
 
     bp_line = 4
     bp_file = code_to_debug
-    debug_session.common_setup(bp_file, start_method, run_as, breakpoints=[bp_line])
+    debug_session.initialize(target=(run_as, bp_file), start_method=start_method)
+    debug_session.set_breakpoints(bp_file, [bp_line])
     debug_session.start_debugging()
     hit = debug_session.wait_for_thread_stopped()
 
@@ -109,7 +110,8 @@ def test_set_variable(debug_session, pyfile, run_as, start_method):
 
     bp_line = 2
     bp_file = code_to_debug
-    debug_session.common_setup(bp_file, start_method, run_as, breakpoints=[bp_line])
+    debug_session.initialize(target=(run_as, bp_file), start_method=start_method)
+    debug_session.set_breakpoints(bp_file, [bp_line])
     debug_session.start_debugging()
     hit = debug_session.wait_for_thread_stopped()
 
@@ -174,7 +176,8 @@ def test_variable_sort(debug_session, pyfile, run_as, start_method):
 
     bp_line = 13
     bp_file = code_to_debug
-    debug_session.common_setup(bp_file, start_method, run_as, breakpoints=[bp_line])
+    debug_session.initialize(target=(run_as, bp_file), start_method=start_method)
+    debug_session.set_breakpoints(bp_file, [bp_line])
     debug_session.start_debugging()
     hit = debug_session.wait_for_thread_stopped()
 
