@@ -12,11 +12,11 @@ import ptvsd
 from pytests.helpers import print
 from pytests.helpers.pattern import ANY
 from pytests.helpers.timeline import Event
-from pytests.helpers.session import START_METHOD_LAUNCH, START_METHOD_CMDLINE
+from pytests.helpers.session import START_METHOD_LAUNCH, START_METHOD_CMDLINE, START_METHOD_IMPORT
 
 
 @pytest.mark.parametrize('run_as', ['file', 'module', 'code'])
-@pytest.mark.parametrize('start_method', [START_METHOD_LAUNCH, START_METHOD_CMDLINE])
+@pytest.mark.parametrize('start_method', [START_METHOD_LAUNCH, START_METHOD_CMDLINE, START_METHOD_IMPORT])
 def test_run(debug_session, pyfile, run_as, start_method):
     @pyfile
     def code_to_debug():
@@ -24,12 +24,25 @@ def test_run(debug_session, pyfile, run_as, start_method):
         import sys
         import backchannel
 
+        if os.getenv('PTVSD_ENABLE_ATTACH', False):
+            import ptvsd
+            ptvsd.enable_attach((sys.argv[1], sys.argv[2]))
+            ptvsd.wait_for_attach()
+
         print('begin')
         assert backchannel.read_json() == 'continue'
         backchannel.write_json(os.path.abspath(sys.modules['ptvsd'].__file__))
         print('end')
 
-    debug_session.initialize(target=(run_as, code_to_debug), start_method=start_method, use_backchannel=True)
+    prog_args = []
+    env = {}
+    if start_method == START_METHOD_IMPORT:
+        env['PTVSD_ENABLE_ATTACH'] = '1'
+        prog_args = ['localhost', str(debug_session.ptvsd_port)]
+
+    debug_session.initialize(
+        target=(run_as, code_to_debug), start_method=start_method,
+        use_backchannel=True, program_args=prog_args, env=env)
     debug_session.start_debugging()
     assert debug_session.timeline.is_frozen
 
