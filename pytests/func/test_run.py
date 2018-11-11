@@ -23,26 +23,15 @@ def test_run(debug_session, pyfile, run_as, start_method):
         import os
         import sys
         import backchannel
-
-        if os.getenv('PTVSD_ENABLE_ATTACH', False):
-            import ptvsd
-            ptvsd.enable_attach((sys.argv[1], sys.argv[2]))
-            ptvsd.wait_for_attach()
+        from dbgimporter import import_and_enable_debugger
+        import_and_enable_debugger()
 
         print('begin')
         assert backchannel.read_json() == 'continue'
         backchannel.write_json(os.path.abspath(sys.modules['ptvsd'].__file__))
         print('end')
 
-    prog_args = []
-    env = {}
-    if start_method == START_METHOD_IMPORT:
-        env['PTVSD_ENABLE_ATTACH'] = '1'
-        prog_args = ['localhost', str(debug_session.ptvsd_port)]
-
-    debug_session.initialize(
-        target=(run_as, code_to_debug), start_method=start_method,
-        use_backchannel=True, program_args=prog_args, env=env)
+    debug_session.initialize(target=(run_as, code_to_debug), start_method=start_method, use_backchannel=True)
     debug_session.start_debugging()
     assert debug_session.timeline.is_frozen
 

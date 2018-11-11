@@ -8,16 +8,16 @@ from __future__ import print_function, with_statement, absolute_import
 import os.path
 import pytest
 import sys
-from pytests.helpers.timeline import Event
+from pytests.helpers.timeline import Event, Response
 from pytests.helpers.pathutils import get_test_root, compare_path
-from pytests.helpers.session import START_METHOD_LAUNCH, START_METHOD_CMDLINE
+from pytests.helpers.session import START_METHOD_LAUNCH, START_METHOD_CMDLINE, START_METHOD_IMPORT
 
 BP_TEST_ROOT = get_test_root('bp')
 
 
-@pytest.mark.parametrize('start_method', [START_METHOD_LAUNCH, START_METHOD_CMDLINE])
+@pytest.mark.parametrize('start_method', [START_METHOD_LAUNCH, START_METHOD_CMDLINE, START_METHOD_IMPORT])
 def test_path_with_ampersand(debug_session, start_method, run_as):
-    bp_line = 2
+    bp_line = 4
     testfile = os.path.join(BP_TEST_ROOT, 'a&b', 'test.py')
     debug_session.initialize(target=(run_as, testfile), start_method=start_method)
     debug_session.set_breakpoints(testfile, [bp_line])
@@ -26,16 +26,16 @@ def test_path_with_ampersand(debug_session, start_method, run_as):
     frames = hit.stacktrace.body['stackFrames']
     assert compare_path(frames[0]['source']['path'], testfile, show=False)
 
-    debug_session.send_request('continue').wait_for_response()
-    debug_session.wait_for_next(Event('continued'))
+    continue_request = debug_session.send_request('continue')
+    debug_session.wait_for_next(Response(continue_request) & Event('continued'))
 
     debug_session.wait_for_exit()
 
 
 @pytest.mark.skipif(sys.version_info < (3, 0), reason='Not supported on 2.7')
-@pytest.mark.parametrize('start_method', [START_METHOD_LAUNCH, START_METHOD_CMDLINE])
+@pytest.mark.parametrize('start_method', [START_METHOD_LAUNCH, START_METHOD_CMDLINE, START_METHOD_IMPORT])
 def test_path_with_unicode(debug_session, start_method, run_as):
-    bp_line = 4
+    bp_line = 6
     testfile = os.path.join(BP_TEST_ROOT, u'ನನ್ನ_ಸ್ಕ್ರಿಪ್ಟ್.py')
     debug_session.initialize(target=(run_as, testfile), start_method=start_method)
     debug_session.set_breakpoints(testfile, [bp_line])
@@ -45,7 +45,7 @@ def test_path_with_unicode(debug_session, start_method, run_as):
     assert compare_path(frames[0]['source']['path'], testfile, show=False)
     assert u'ಏನಾದರೂ_ಮಾಡು' == frames[0]['name']
 
-    debug_session.send_request('continue').wait_for_response()
-    debug_session.wait_for_next(Event('continued'))
+    continue_request = debug_session.send_request('continue')
+    debug_session.wait_for_next(Response(continue_request) & Event('continued'))
 
     debug_session.wait_for_exit()
