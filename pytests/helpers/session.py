@@ -31,6 +31,9 @@ START_METHOD_LAUNCH = ('launch',)
 START_METHOD_CMDLINE = ('attach', 'socket', 'cmdline')
 START_METHOD_IMPORT = ('attach', 'socket', 'import')
 START_METHOD_PID = ('attach', 'pid')
+PTVSD_ENABLE_KEY = 'PTVSD_ENABLE_ATTACH'
+PTVSD_HOST_KEY = 'PTVSD_TEST_HOST'
+PTVSD_PORT_KEY = 'PTVSD_TEST_PORT'
 
 
 class DebugSession(object):
@@ -137,8 +140,6 @@ class DebugSession(object):
         argv += [ptvsd.__main__.__file__]
         argv += ['--client']
         argv += ['--host', 'localhost', '--port', str(self.ptvsd_port)]
-        if self.multiprocess_port_range:
-            argv += ['--multiprocess-port-range', '%d-%d' % self.multiprocess_port_range]
         return argv
 
     def _get_argv_for_attach_using_cmdline(self):
@@ -146,8 +147,6 @@ class DebugSession(object):
         argv += [ptvsd.__main__.__file__]
         argv += ['--wait']
         argv += ['--host', 'localhost', '--port', str(self.ptvsd_port)]
-        if self.multiprocess_port_range:
-            argv += ['--multiprocess-port-range', '%d-%d' % self.multiprocess_port_range]
         return argv
 
     def _get_argv_for_attach_using_pid(self):
@@ -155,8 +154,6 @@ class DebugSession(object):
         argv += [ptvsd.__main__.__file__]
         argv += ['--host', 'localhost', '--port', str(self.ptvsd_port)]
         argv += ['--pid', str(self.pid)]
-        if self.multiprocess_port_range:
-            argv += ['--multiprocess-port-range', '%d-%d' % self.multiprocess_port_range]
         return argv
 
     def _get_target(self):
@@ -204,8 +201,12 @@ class DebugSession(object):
             argv += self._get_argv_for_attach_using_cmdline()
         elif self.start_method == START_METHOD_IMPORT:
             argv += self._get_argv_for_attach_using_import()
+            # TODO: Remove adding ot python path after enabling TOX
             ptvsd_path = os.path.dirname(os.path.dirname(ptvsd.__main__.__file__))
             self.env['PYTHONPATH'] = ptvsd_path + os.pathsep + self.env['PYTHONPATH']
+            self.env[PTVSD_ENABLE_KEY] = '1'
+            self.env[PTVSD_HOST_KEY] = 'localhost'
+            self.env[PTVSD_PORT_KEY] = str(self.ptvsd_port)
         elif self.start_method == START_METHOD_PID:
             argv += self._get_argv_for_attach_using_pid()
         else:
