@@ -12,11 +12,9 @@ import ptvsd
 from pytests.helpers import print
 from pytests.helpers.pattern import ANY
 from pytests.helpers.timeline import Event
-from pytests.helpers.session import START_METHOD_LAUNCH, START_METHOD_CMDLINE, START_METHOD_IMPORT
 
 
 @pytest.mark.parametrize('run_as', ['file', 'module', 'code'])
-@pytest.mark.parametrize('start_method', [START_METHOD_LAUNCH, START_METHOD_CMDLINE, START_METHOD_IMPORT])
 def test_run(debug_session, pyfile, run_as, start_method):
     @pyfile
     def code_to_debug():

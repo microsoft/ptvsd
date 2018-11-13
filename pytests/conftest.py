@@ -142,8 +142,8 @@ else:
     _ATTACH_PARAMS = [
         ('launch',),
         ('attach', 'socket', 'cmdline'),
-        ('attach', 'socket', 'import'),
-        ('attach', 'pid'),
+        # ('attach', 'socket', 'import'),
+        # ('attach', 'pid'),
     ]
 
     _RUN_AS_PARAMS = [

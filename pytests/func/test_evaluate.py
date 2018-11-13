@@ -4,14 +4,11 @@
 
 from __future__ import print_function, with_statement, absolute_import
 
-import pytest
 from pytests.helpers import print
 from pytests.helpers.pattern import ANY
 from pytests.helpers.timeline import Event
-from pytests.helpers.session import START_METHOD_LAUNCH, START_METHOD_CMDLINE, START_METHOD_IMPORT
 
 
-@pytest.mark.parametrize('start_method', [START_METHOD_LAUNCH, START_METHOD_CMDLINE, START_METHOD_IMPORT])
 def test_variables_and_evaluate(debug_session, pyfile, run_as, start_method):
 
     @pyfile
@@ -103,7 +100,6 @@ def test_variables_and_evaluate(debug_session, pyfile, run_as, start_method):
     debug_session.wait_for_exit()
 
 
-@pytest.mark.parametrize('start_method', [START_METHOD_LAUNCH, START_METHOD_CMDLINE, START_METHOD_IMPORT])
 def test_set_variable(debug_session, pyfile, run_as, start_method):
     @pyfile
     def code_to_debug():
@@ -158,7 +154,6 @@ def test_set_variable(debug_session, pyfile, run_as, start_method):
     debug_session.wait_for_exit()
 
 
-@pytest.mark.parametrize('start_method', [START_METHOD_LAUNCH, START_METHOD_CMDLINE, START_METHOD_IMPORT])
 def test_variable_sort(debug_session, pyfile, run_as, start_method):
 
     @pyfile

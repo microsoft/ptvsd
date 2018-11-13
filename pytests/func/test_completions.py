@@ -7,7 +7,6 @@ from __future__ import print_function, with_statement, absolute_import
 import pytest
 from pytests.helpers.pattern import ANY
 from pytests.helpers.timeline import Event
-from pytests.helpers.session import START_METHOD_LAUNCH, START_METHOD_CMDLINE, START_METHOD_IMPORT
 
 
 expected_at_line = {
@@ -28,7 +27,6 @@ expected_at_line = {
     ],
 }
 
-@pytest.mark.parametrize('start_method', [START_METHOD_LAUNCH, START_METHOD_CMDLINE, START_METHOD_IMPORT])
 @pytest.mark.parametrize('bp_line', expected_at_line.keys())
 def test_completions_scope(debug_session, pyfile, bp_line, run_as, start_method):
     @pyfile
@@ -85,7 +83,6 @@ def test_completions_scope(debug_session, pyfile, bp_line, run_as, start_method)
     debug_session.wait_for_exit()
 
 
-@pytest.mark.parametrize('start_method', [START_METHOD_LAUNCH, START_METHOD_CMDLINE, START_METHOD_IMPORT])
 def test_completions(debug_session, pyfile, start_method, run_as):
     @pyfile
     def code_to_debug():
