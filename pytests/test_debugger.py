@@ -3,7 +3,19 @@ import pytest
 
 from ptvsd.debugger import debug, LOCALHOST
 from ptvsd.socket import Address
-from tests.helpers.argshelper import _get_args
+
+
+PROG = 'eggs'
+PORT_ARGS = ['--port', '8888']
+PYDEVD_DEFAULT_ARGS = ['--qt-support=auto']
+
+
+def _get_args(*args, **kwargs):
+    ptvsd_extras = kwargs.get('ptvsd_extras', [])
+    prog = [kwargs.get('prog', PROG)]
+    port = kwargs.get('port', PORT_ARGS)
+    pydevd_args = kwargs.get('pydevd', PYDEVD_DEFAULT_ARGS)
+    return prog + port + ptvsd_extras + pydevd_args + list(args)
 
 
 class TestDebug(object):
@@ -89,15 +101,13 @@ class TestDebug(object):
 
 class TestIntegration(object):
 
-    @pytest.fixture()
+    @pytest.fixture(scope='function')
     def setUp(self):
         self.argv = None
         self.addr = None
         self.kwargs = None
         self._sys_argv = list(sys.argv)
-
-    @pytest.fixture(scope='module')
-    def tearDown(self):
+        yield
         sys.argv[:] = self._sys_argv
 
     def _run(self, argv, addr, **kwargs):
