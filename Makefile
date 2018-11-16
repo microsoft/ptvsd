@@ -46,7 +46,7 @@ ci-lint: depends lint
 ci-test: depends
 	# For now we use --quickpy2.
 	$(PYTHON) -m tests -v --full --no-network --quick-py2
-	$(PYTHON) -m pytest -vv
+	$(PYTHON) -m pytest -vvs -k test_path_with_ampersand
 
 .PHONY: ci-osx-test
 ci-osx-test: depends
