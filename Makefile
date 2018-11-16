@@ -11,7 +11,7 @@ depends:
 	$(PYTHON) -m pip install setuptools
 	$(PYTHON) -m pip install flake8_formatter_junit_xml
 	$(PYTHON) -m pip install unittest-xml-reporting
-	$(PYTHON) -m pip install -r test_requirements.txt
+	$(PYTHON) -m pip install --upgrade -r test_requirements.txt
 
 .PHONY: lint
 lint:  ## Lint the Python source code.
@@ -46,11 +46,11 @@ ci-lint: depends lint
 ci-test: depends
 	# For now we use --quickpy2.
 	$(PYTHON) -m tests -v --full --no-network --quick-py2
-	$(PYTHON) setup.py test
+	$(PYTHON) -m pytest -vv
 
 .PHONY: ci-osx-test
 ci-osx-test: depends
-	$(PYTHON) setup.py test
+	$(PYTHON) -m pytest -vv
 
 .PHONY: ci-coverage
 ci-coverage: depends
