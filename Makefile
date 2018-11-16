@@ -46,11 +46,11 @@ ci-lint: depends lint
 ci-test: depends
 	# For now we use --quickpy2.
 	$(PYTHON) -m tests -v --full --no-network --quick-py2
-	$(PYTHON) -m pytest -vv
+	$(PYTHON) -m pytest -vvs
 
 .PHONY: ci-osx-test
 ci-osx-test: depends
-	$(PYTHON) -m pytest -vv
+	$(PYTHON) -m pytest -vvs
 
 .PHONY: ci-coverage
 ci-coverage: depends
