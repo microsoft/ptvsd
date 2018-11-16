@@ -50,7 +50,7 @@ ci-test: depends
 
 .PHONY: ci-osx-test
 ci-osx-test: depends
-	$(PYTHON) -m pytest -vv
+	$(PYTHON) -m pytest -vvs -k test_path_with_ampersand
 
 .PHONY: ci-coverage
 ci-coverage: depends
