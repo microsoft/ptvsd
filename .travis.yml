@@ -1,33 +1,69 @@
-language: python
-cache: pip
-python:
-  - "2.7"
-  - "3.4"
-  - "3.5-dev"
-  # 3.6 is tested via coverage
-  - "3.7-dev"
-env:
-  - TARGET=ci-test
-
 matrix:
   include:
-    - python: 3.6
+    - os: linux
+      language: python
+      python: 2.7
+      cache: pip
+      env: TARGET=ci-test
+    - os: linux
+      language: python
+      python: 3.4
+      cache: pip
+      env: TARGET=ci-test
+    - os: linux
+      language: python
+      python: 3.5
+      cache: pip
+      env: TARGET=ci-test
+    - os: linux
+      language: python
+      python: 3.6
+      cache: pip
+      env: TARGET=ci-test
+    - os: linux
+      language: python
+      python: "3.7-dev"
+      cache: pip
+      env: TARGET=ci-test
+    - os: linux
+      language: python
+      python: 3.6
       env: TARGET=ci-lint
-    - python: "3.6-dev"
+    - os: linux
+      language: python
+      python: "3.6-dev"
       env: TARGET=ci-coverage
       after_success:
         - bash <(curl -s https://codecov.io/bash)
-      # The schema check is failing with a 403 error, possibly
-      # due to GitHub API limits.
-      #- python: 3.6
-      #- env: TARGET=ci-check-schemafile
+    - os: osx
+      language: generic
+      env:
+        - PYENV_VERSION=2.7.12
+        - TARGET=ci-osx-test
+    - os: osx
+      language: generic
+      env: 
+        - INSTALL_TYPE=macpython
+        - VERSION=3.6
+        - VENV=venv
+        - TARGET=ci-osx-test
+        - TEST_PTVSD_OSXPYVER36=True
 
-before_install:
-  - export TRAVIS_PYTHON_PATH=`which python`
+before_install: |
+  if [ "$TEST_PTVSD_OSXPYVER36" == "True" ]; then
+    git clone https://github.com/MacPython/terryfy.git
+    source terryfy/travis_tools.sh
+    get_python_environment $INSTALL_TYPE $VERSION $VENV
+    export TRAVIS_PYTHON_PATH=`which python`
+    $TRAVIS_PYTHON_PATH -m pip install --upgrade pip
+    $TRAVIS_PYTHON_PATH -m pip install --upgrade pytest
+  else
     # Travis comes with an ancient version of pytest preinstalled globally,
     # which breaks automatic dependency checks for setup.py. Force upgrade.
-  - $TRAVIS_PYTHON_PATH -m pip install --upgrade pip
-  - $TRAVIS_PYTHON_PATH -m pip install --upgrade pytest
+    export TRAVIS_PYTHON_PATH=`which python`
+    $TRAVIS_PYTHON_PATH -m pip install --upgrade pip
+    $TRAVIS_PYTHON_PATH -m pip install --upgrade pytest
+  fi
 
 install:
   - make depends PYTHON=$TRAVIS_PYTHON_PATH
@@ -35,4 +71,3 @@ install:
 script:
   #- make $TARGET PYTHON=python$TRAVIS_PYTHON_VERSION
   - make $TARGET PYTHON=$TRAVIS_PYTHON_PATH
-
