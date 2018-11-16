@@ -6,6 +6,7 @@ from __future__ import print_function, with_statement, absolute_import
 
 import inspect
 import os
+import platform
 import pytest
 import threading
 import types
@@ -144,7 +145,7 @@ else:
         'attach_socket_cmdline',
         #'attach_socket_import',
         #'attach_pid',
-    ]
+    ] + ['attach_socket_import'] if platform.system() == 'Windows' else []
 
     _RUN_AS_PARAMS = [
         'file',
