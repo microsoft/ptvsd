@@ -235,3 +235,79 @@ def test_variable_sort(pyfile, run_as, start_method):
 
         session.send_request('continue').wait_for_response(freeze=False)
         session.wait_for_exit()
+
+
+def test_return_values(debug_session, pyfile, run_as, start_method):
+    @pyfile
+    def code_to_debug():
+        from dbgimporter import import_and_enable_debugger
+        import_and_enable_debugger()
+        class MyClass(object):
+            def do_something(self):
+                return 'did something'
+        def my_func():
+            return 'did more things'
+        MyClass().do_something()
+        my_func()
+        print('done')
+
+    expected1 = ANY.dict_with({
+        'name': '(return) MyClass.do_something',
+        'value': "'did something'",
+        'type': 'str',
+        'presentationHint': ANY.dict_with({
+            'attributes': ANY.such_that(lambda x: 'readOnly' in x)
+        }),
+    })
+
+    expected2 = ANY.dict_with({
+        'name': '(return) my_func',
+        'value': "'did more things'",
+        'type': 'str',
+        'presentationHint': ANY.dict_with({
+            'attributes': ANY.such_that(lambda x: 'readOnly' in x)
+        }),
+    })
+
+    debug_session.initialize(
+        target=(run_as, code_to_debug),
+        start_method=start_method,
+        debug_options=['ShowReturnValue'],
+        ignore_events=[Event('continued')])
+    debug_session.set_breakpoints(code_to_debug, [8])
+    debug_session.start_debugging()
+    hit = debug_session.wait_for_thread_stopped()
+
+    debug_session.send_request('next', {'threadId': hit.thread_id}).wait_for_response()
+    hit = debug_session.wait_for_thread_stopped(reason='step')
+
+    resp_scopes = debug_session.send_request('scopes', arguments={
+        'frameId': hit.frame_id
+    }).wait_for_response()
+    scopes = resp_scopes.body['scopes']
+    assert len(scopes) > 0
+
+    resp_variables = debug_session.send_request('variables', arguments={
+        'variablesReference': scopes[0]['variablesReference']
+    }).wait_for_response()
+    variables = list(v for v in resp_variables.body['variables']
+                     if v['name'].startswith('(return)'))
+
+    assert len(variables) == 1
+    assert variables[0] == expected1
+
+    debug_session.send_request('next', {'threadId': hit.thread_id}).wait_for_response()
+    hit = debug_session.wait_for_thread_stopped(reason='step')
+
+    # Scope should not have changed so use the same scope
+    resp_variables = debug_session.send_request('variables', arguments={
+        'variablesReference': scopes[0]['variablesReference']
+    }).wait_for_response()
+    variables = list(v for v in resp_variables.body['variables']
+                     if v['name'].startswith('(return)'))
+
+    assert len(variables) == 2
+    assert variables == [expected1, expected2]
+
+    debug_session.send_request('continue').wait_for_response()
+    debug_session.wait_for_exit()
