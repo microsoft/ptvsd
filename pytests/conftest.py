@@ -144,7 +144,8 @@ else:
         'attach_socket_cmdline',
         #'attach_socket_import',
         #'attach_pid',
-    ] + ['attach_socket_import'] if platform.system() == 'Windows' else []
+    ]
+    _ATTACH_PARAMS += ['attach_socket_import'] if platform.system() == 'Windows' else []
 
     _RUN_AS_PARAMS = [
         'file',
@@ -164,5 +165,5 @@ def _run_as(request):
     name='start_method',
     params=_ATTACH_PARAMS
 )
-def _start_method(request):
+def start_method(request):
     return request.param
