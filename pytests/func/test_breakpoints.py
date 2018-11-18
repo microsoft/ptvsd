@@ -60,7 +60,7 @@ def test_path_with_unicode(run_as, start_method):
         session.wait_for_exit()
 
 
-@pytest.mark.parametrize('condition_type, condition, value, hits',[
+@pytest.mark.parametrize('condition_type, condition, value, hits', [
     ('condition', 'i==5', '5', 1),
     ('hitCondition', '5', '4', 1),
     ('hitCondition', '==5', '4', 1),
