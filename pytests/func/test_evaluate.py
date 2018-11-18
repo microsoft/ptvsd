@@ -274,7 +274,7 @@ def test_return_values(pyfile, run_as, start_method):
             target=(run_as, code_to_debug),
             start_method=start_method,
             debug_options=['ShowReturnValue'],
-            ignore_events=[Event('continued')])
+            ignore_unobserved=[Event('continued')])
         session.set_breakpoints(code_to_debug, [8])
         session.start_debugging()
         hit = session.wait_for_thread_stopped()
