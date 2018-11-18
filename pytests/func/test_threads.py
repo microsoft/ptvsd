@@ -8,11 +8,8 @@ from pytests.helpers.timeline import Event
 from pytests.helpers.session import DebugSession
 
 
-@pytest.mark.parametrize('args, count', [
-    ('single', 1),
-    ('multi', 3),
-])
-def test_multi_thread(pyfile, run_as, start_method, args, count):
+@pytest.mark.parametrize('count', [1, 3])
+def test_thread_count(pyfile, run_as, start_method, count):
     @pyfile
     def code_to_debug():
         import threading
@@ -28,7 +25,7 @@ def test_multi_thread(pyfile, run_as, start_method, args, count):
                 time.sleep(0.01)
                 i += 1
         threads = []
-        if sys.argv[1] == 'multi':
+        if sys.argv[1] != '1':
             for i in [111, 222]:
                 thread = threading.Thread(target=worker, args=(i, len(threads)))
                 threads.append(thread)
@@ -37,7 +34,7 @@ def test_multi_thread(pyfile, run_as, start_method, args, count):
         stop = True
 
     with DebugSession() as session:
-        session.initialize(target=(run_as, code_to_debug), start_method=start_method, program_args=[args])
+        session.initialize(target=(run_as, code_to_debug), start_method=start_method, program_args=[str(count)])
         session.set_breakpoints(code_to_debug, [19])
         session.start_debugging()
         session.wait_for_thread_stopped()

@@ -4,6 +4,8 @@
 
 from __future__ import print_function, with_statement, absolute_import
 from pytests.helpers.session import DebugSession
+from pytests.helpers.timeline import Event
+from pytests.helpers.pattern import ANY
 
 
 def test_with_no_output(pyfile, run_as, start_method):
@@ -32,5 +34,6 @@ def test_with_tab_in_output(pyfile, run_as, start_method):
         session.initialize(target=(run_as, code_to_debug), start_method=start_method)
         session.start_debugging()
         session.wait_for_exit()
-        data = session.get_stdout_as_string() + session.get_stderr_as_string()
-        assert data.startswith(b'Hello\tWorld')
+        output = session.all_occurrences_of(Event('output', body=ANY.dict_with({'category': 'stdout'})))
+        output_str = ''.join(o.body['output'] for o in output)
+        assert output_str.startswith('Hello\tWorld')
