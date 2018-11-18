@@ -192,7 +192,6 @@ class DebugSession(object):
             pytest.fail()
         return argv
 
-
     def initialize(self, **kwargs):
         """Spawns ptvsd using the configured method, telling it to execute the
         provided Python file, module, or code, and establishes a message channel
