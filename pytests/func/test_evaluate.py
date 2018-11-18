@@ -292,7 +292,7 @@ def test_return_values(pyfile, run_as, start_method):
             'variablesReference': scopes[0]['variablesReference']
         }).wait_for_response()
         variables = list(v for v in resp_variables.body['variables']
-                        if v['name'].startswith('(return)'))
+                         if v['name'].startswith('(return)'))
 
         assert len(variables) == 1
         assert variables[0] == expected1
@@ -305,7 +305,7 @@ def test_return_values(pyfile, run_as, start_method):
             'variablesReference': scopes[0]['variablesReference']
         }).wait_for_response()
         variables = list(v for v in resp_variables.body['variables']
-                        if v['name'].startswith('(return)'))
+                         if v['name'].startswith('(return)'))
 
         assert len(variables) == 2
         assert variables == [expected1, expected2]
