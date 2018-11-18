@@ -12,6 +12,7 @@ import sys
 from pytests.helpers.pathutils import get_test_root, compare_path
 from pytests.helpers.session import DebugSession
 from pytests.helpers.timeline import Event
+from pytests.helpers.pattern import ANY
 
 
 BP_TEST_ROOT = get_test_root('bp')
@@ -56,4 +57,68 @@ def test_path_with_unicode(run_as, start_method):
         assert u'ಏನಾದರೂ_ಮಾಡು' == frames[0]['name']
 
         session.send_request('continue').wait_for_response(freeze=False)
+        session.wait_for_exit()
+
+
+@pytest.mark.parametrize('condition_type, condition, value, hits',[
+    ('condition', 'i==5', '5', 1),
+    ('hitCondition', '5', '4', 1),
+    ('hitCondition', '==5', '4', 1),
+    ('hitCondition', '>5', '5', 5),
+    ('hitCondition', '>=5', '4', 6),
+    ('hitCondition', '<5', '0', 4),
+    ('hitCondition', '<=5', '0', 5),
+    ('hitCondition', '%3', '2', 3),
+])
+def test_conditional_breakpoint(pyfile, run_as, start_method, condition_type, condition, value, hits):
+    @pyfile
+    def code_to_debug():
+        from dbgimporter import import_and_enable_debugger
+        import_and_enable_debugger()
+        i = 0
+        while i < 10:
+            print(i)
+            i += 1
+
+    bp_line = 5
+    with DebugSession() as session:
+        session.initialize(
+            target=(run_as, code_to_debug),
+            start_method=start_method,
+            ignore_unobserved=[Event('continued')],
+        )
+        session.send_request('setBreakpoints', arguments={
+                'source': {'path': code_to_debug},
+                'breakpoints': [{'line': bp_line, condition_type: condition}],
+            }).wait_for_response()
+        session.start_debugging()
+        hit = session.wait_for_thread_stopped()
+        frames = hit.stacktrace.body['stackFrames']
+        assert 5 == frames[0]['line']
+
+        resp_scopes = session.send_request('scopes', arguments={
+            'frameId': hit.frame_id
+        }).wait_for_response()
+        scopes = resp_scopes.body['scopes']
+        assert len(scopes) > 0
+
+        resp_variables = session.send_request('variables', arguments={
+            'variablesReference': scopes[0]['variablesReference']
+        }).wait_for_response()
+        variables = list(v for v in resp_variables.body['variables']
+                         if v['name'] == 'i')
+        assert len(variables) == 1
+        assert variables[0] == ANY.dict_with({
+            'name': 'i',
+            'type': 'int',
+            'value': value,
+            'evaluateName': 'i',
+        })
+
+        session.send_request('continue').wait_for_response(freeze=False)
+        i = 1
+        while i < hits:
+            session.wait_for_thread_stopped()
+            session.send_request('continue').wait_for_response(freeze=False)
+            i += 1
         session.wait_for_exit()
