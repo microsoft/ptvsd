@@ -126,3 +126,45 @@ def test_conditional_breakpoint(pyfile, run_as, start_method, condition_key):
             session.wait_for_thread_stopped()
             session.send_request('continue').wait_for_response(freeze=False)
         session.wait_for_exit()
+
+
+def test_crossfile_breakpoint(pyfile, run_as, start_method):
+    @pyfile
+    def script1():
+        # import_and_enable_debugger()
+        def do_something():
+            print('do something')
+
+    @pyfile
+    def script2():
+        from dbgimporter import import_and_enable_debugger
+        import_and_enable_debugger()
+        import script1
+        script1.do_something()
+        print('Done')
+
+    bp_script1_line = 3
+    bp_script2_line = 4
+    with DebugSession() as session:
+        session.initialize(
+            target=(run_as, script2),
+            start_method=start_method,
+            ignore_unobserved=[Event('continued')],
+        )
+        session.set_breakpoints(script1, lines=[bp_script1_line])
+        session.set_breakpoints(script2, lines=[bp_script2_line])
+        session.start_debugging()
+
+        hit = session.wait_for_thread_stopped()
+        frames = hit.stacktrace.body['stackFrames']
+        assert bp_script2_line == frames[0]['line']
+        assert compare_path(frames[0]['source']['path'], script2, show=False)
+
+        session.send_request('continue').wait_for_response(freeze=False)
+        hit = session.wait_for_thread_stopped()
+        frames = hit.stacktrace.body['stackFrames']
+        assert bp_script1_line == frames[0]['line']
+        assert compare_path(frames[0]['source']['path'], script1, show=False)
+
+        session.send_request('continue').wait_for_response(freeze=False)
+        session.wait_for_exit()
