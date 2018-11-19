@@ -168,3 +168,49 @@ def test_crossfile_breakpoint(pyfile, run_as, start_method):
 
         session.send_request('continue').wait_for_response(freeze=False)
         session.wait_for_exit()
+
+
+@pytest.mark.parametrize('error_name', [
+    'NameError',
+    'OtherError',
+])
+def test_error_in_condition(pyfile, run_as, start_method, error_name):
+    @pyfile
+    def code_to_debug():
+        from dbgimporter import import_and_enable_debugger
+        import_and_enable_debugger()
+        def do_something_bad():
+            raise ArithmeticError()
+        for i in range(1, 10):
+            pass
+
+    # NOTE: NameError in condition, is a special case. Pydevd is configured to skip
+    # traceback for name errors. See https://github.com/Microsoft/ptvsd/issues/853
+    # for more details. For all other errors we should be printing traceback.
+    condition = {
+        'NameError': ('x==5'),  # 'x' does not exist in the debuggee
+        'OtherError': ('do_something_bad()==5')  # throws some error
+    }
+
+    bp_line = 5
+    with DebugSession() as session:
+        session.initialize(
+            target=(run_as, code_to_debug),
+            start_method=start_method,
+            ignore_unobserved=[Event('continued')],
+        )
+        session.send_request('setBreakpoints', arguments={
+            'source': {'path': code_to_debug},
+            'breakpoints': [{
+                'line': bp_line,
+                'condition': condition[error_name],
+            }],
+        }).wait_for_response()
+        session.start_debugging()
+
+        session.wait_for_exit()
+        assert session.get_stdout_as_string() == b''
+        if error_name == 'NameError':
+            assert session.get_stderr_as_string() == b''
+        else:
+            assert session.get_stderr_as_string().find(b'ArithmeticError') > 0
