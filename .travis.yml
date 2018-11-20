@@ -26,13 +26,10 @@ install:
   - pip install -U pip setuptools tox tox-travis
 
 script:
-  - tox
+  - tox -c tox-cov.ini
 
-# TODO: re-enable after https://github.com/Microsoft/ptvsd/issues/1033
-# after_success:
-#   - |
-#     if [[ $TRAVIS_PYTHON_VERSION != '2.7' ]]; then
-#       pushd src
-#       bash <(curl -s https://codecov.io/bash)
-#       popd
-#     fi
+after_success:
+  - |
+    pushd src
+    bash <(curl -s https://codecov.io/bash)
+    popd

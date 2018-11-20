@@ -1,11 +1,8 @@
 colorama
-coverage
 django
 requests
 flask
 psutil
 pygments
 pytest
-pytest-cov
 pytest-timeout
-tox
