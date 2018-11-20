@@ -42,11 +42,11 @@ def test_vsc_exception_options_raise_with_except(pyfile, run_as, start_method, r
         session.start_debugging()
 
         expected = ANY.dict_with({
-            'exceptionId': 'ArithmeticError',
+            'exceptionId': ANY.such_that(lambda s: s.endswith('ArithmeticError')),
             'description': 'bad code',
             'breakMode': 'always' if raised == 'raisedOn' else 'unhandled',
             'details': ANY.dict_with({
-                'typeName': 'ArithmeticError',
+                'typeName': ANY.such_that(lambda s: s.endswith('ArithmeticError')),
                 'message': 'bad code',
                 'source': ANY.such_that(lambda s: compare_path(code_to_debug, s)),
                 # 'stackTrace': ANY.such_that(lambda s: True),
@@ -98,11 +98,11 @@ def test_vsc_exception_options_raise_without_except(pyfile, run_as, start_method
         session.start_debugging()
 
         expected = ANY.dict_with({
-            'exceptionId': 'ArithmeticError',
+            'exceptionId': ANY.such_that(lambda s: s.endswith('ArithmeticError')),
             'description': 'bad code',
             'breakMode': 'always' if raised == 'raisedOn' else 'unhandled',
             'details': ANY.dict_with({
-                'typeName': 'ArithmeticError',
+                'typeName': ANY.such_that(lambda s: s.endswith('ArithmeticError')),
                 'message': 'bad code',
                 'source': ANY.such_that(lambda s: compare_path(code_to_debug, s)),
                 # 'stackTrace': ANY.such_that(lambda s: True),

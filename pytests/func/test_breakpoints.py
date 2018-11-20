@@ -217,6 +217,7 @@ def test_error_in_condition(pyfile, run_as, start_method, error_name):
             assert session.get_stderr_as_string().find(b'ArithmeticError') > 0
 
 
+@pytest.mark.skip(reason='bug #799')
 def test_log_point(pyfile, run_as, start_method):
     @pyfile
     def code_to_debug():
