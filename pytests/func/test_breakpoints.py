@@ -8,6 +8,7 @@ from __future__ import print_function, with_statement, absolute_import
 import os.path
 import pytest
 import sys
+import re
 
 from pytests.helpers.pathutils import get_test_root, compare_path
 from pytests.helpers.session import DebugSession
@@ -214,3 +215,40 @@ def test_error_in_condition(pyfile, run_as, start_method, error_name):
             assert session.get_stderr_as_string() == b''
         else:
             assert session.get_stderr_as_string().find(b'ArithmeticError') > 0
+
+
+def test_log_point(pyfile, run_as, start_method):
+    @pyfile
+    def code_to_debug():
+        from dbgimporter import import_and_enable_debugger
+        import_and_enable_debugger()
+        a = 10
+        for i in range(1, a):
+            print('value: %d' % i)
+
+    bp_line = 5
+    with DebugSession() as session:
+        session.initialize(
+            target=(run_as, code_to_debug),
+            start_method=start_method,
+            ignore_unobserved=[Event('continued')],
+        )
+        session.send_request('setBreakpoints', arguments={
+            'source': {'path': code_to_debug},
+            'breakpoints': [{
+                'line': bp_line,
+                'logMessage': 'log: {a + i}'
+            }],
+        }).wait_for_response()
+        session.start_debugging()
+
+        session.wait_for_exit()
+        assert session.get_stderr_as_string() == b''
+
+        output = session.all_occurrences_of(Event('output', ANY.dict_with({'category': 'stdout'})))
+        output_str = ''.join(o.body['output'] for o in output)
+        logged = sorted(int(i) for i in re.findall(r"log:\s([0-9]*)", output_str))
+        assert logged == list(range(11, 20))
+
+        values = sorted(int(i) for i in re.findall(r"value:\s([0-9]*)", output_str))
+        assert values == list(range(1, 10))
