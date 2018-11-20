@@ -132,7 +132,7 @@ def test_conditional_breakpoint(pyfile, run_as, start_method, condition_key):
 def test_crossfile_breakpoint(pyfile, run_as, start_method):
     @pyfile
     def script1():
-        # import_and_enable_debugger()
+        from dbgimporter import import_and_enable_debugger  # noqa
         def do_something():
             print('do something')
 

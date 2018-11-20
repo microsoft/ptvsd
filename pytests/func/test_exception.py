@@ -49,7 +49,6 @@ def test_vsc_exception_options_raise_with_except(pyfile, run_as, start_method, r
                 'typeName': ANY.such_that(lambda s: s.endswith('ArithmeticError')),
                 'message': 'bad code',
                 'source': ANY.such_that(lambda s: compare_path(code_to_debug, s)),
-                # 'stackTrace': ANY.such_that(lambda s: True),
             }),
         })
 
@@ -105,7 +104,6 @@ def test_vsc_exception_options_raise_without_except(pyfile, run_as, start_method
                 'typeName': ANY.such_that(lambda s: s.endswith('ArithmeticError')),
                 'message': 'bad code',
                 'source': ANY.such_that(lambda s: compare_path(code_to_debug, s)),
-                # 'stackTrace': ANY.such_that(lambda s: True),
             }),
         })
 
@@ -139,7 +137,5 @@ def test_vsc_exception_options_raise_without_except(pyfile, run_as, start_method
 
             assert resp_exc_info.body == expected
             session.send_request('continue').wait_for_response(freeze=False)
-
-        # uncaught should not 'stop' matter since the exception is caught
 
         session.wait_for_exit()
