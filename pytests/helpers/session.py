@@ -385,7 +385,7 @@ class DebugSession(object):
         while not self.socket:
             try:
                 self._try_connect()
-            except socket.error as e:
+            except socket.error:
                 pass
             time.sleep(0.1)
 

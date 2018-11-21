@@ -5,7 +5,6 @@
 from __future__ import print_function, with_statement, absolute_import
 
 import os
-import platform
 import pytest
 from pytests.helpers.session import DebugSession
 from pytests.helpers.pathutils import get_test_root

@@ -58,7 +58,7 @@ def test_breakpoint_function(pyfile, run_as, start_method):
         session.start_debugging()
         hit = session.wait_for_thread_stopped()
         frames = hit.stacktrace.body['stackFrames']
-        assert frames[0]['line'] == 6
+        assert frames[0]['line'] == 5
 
         session.send_request('continue').wait_for_response(freeze=False)
         session.wait_for_exit()
