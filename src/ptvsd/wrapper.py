@@ -2194,13 +2194,12 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
             hit_condition = self._get_hit_condition_expression(
                                 src_bp.get('hitCondition', None))
             logMessage = src_bp.get('logMessage', '')
+            condition = src_bp.get('condition', None)
             if len(logMessage) == 0:
                 is_logpoint = None
-                condition = src_bp.get('condition', None)
                 expression = None
             else:
                 is_logpoint = True
-                condition = None
                 expressions = re.findall(r'\{.*?\}', logMessage)
                 if len(expressions) == 0:
                     expression = '{}'.format(repr(logMessage))  # noqa
