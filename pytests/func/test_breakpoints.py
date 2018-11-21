@@ -260,6 +260,7 @@ def test_log_point(pyfile, run_as, start_method):
         # assert values == list(range(1, 10))
 
 
+@pytest.mark.skip(reason='bug #799')
 def test_condition_with_log_point(pyfile, run_as, start_method):
     @pyfile
     def code_to_debug():
