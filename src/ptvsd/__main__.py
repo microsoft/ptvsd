@@ -2,10 +2,11 @@
 # Licensed under the MIT License. See LICENSE in the project root
 # for license information.
 
-from __future__ import print_function, with_statement, absolute_import
+from __future__ import absolute_import, print_function, with_statement
 
-import argparse
 import os.path
+import pydevd
+import runpy
 import sys
 
 
@@ -33,11 +34,8 @@ if __name__ == '__main__' and 'ptvsd' not in sys.modules:
     del sys.path[0]
 
 
-from ptvsd import multiproc, options
-from ptvsd._attach import attach_main
-from ptvsd._local import debug_main, run_main
-from ptvsd.socket import Address
-from ptvsd.version import __version__, __author__  # noqa
+import ptvsd.options
+import ptvsd.version
 
 
 # When forming the command line involving __main__.py, it might be tempting to
@@ -51,219 +49,201 @@ from ptvsd.version import __version__, __author__  # noqa
 __file__ = os.path.abspath(__file__)
 
 
-##################################
-# the script
+TARGET = '<filename> | -m <module> | -c <code> | --pid <pid>'
 
-"""
-For the PyDevd CLI handling see:
+HELP = ('''ptvsd %s
+See https://aka.ms/ptvsd for documentation.
 
-  https://github.com/fabioz/PyDev.Debugger/blob/master/_pydevd_bundle/pydevd_command_line_handling.py
-  https://github.com/fabioz/PyDev.Debugger/blob/master/pydevd.py#L1450  (main func)
-"""  # noqa
-
-PYDEVD_OPTS = {
-    '--file',
-    '--vm_type',
-}
-
-PYDEVD_FLAGS = {
-    '--DEBUG',
-    '--DEBUG_RECORD_SOCKET_READS',
-    '--cmd-line',
-    '--module',
-    '--print-in-debugger-startup',
-    '--save-signatures',
-    '--save-threading',
-    '--save-asyncio',
-    '--server',
-    '--qt-support=auto',
-}
+Usage: ptvsd --host <address> --port <port> [--wait] [--multiprocess]
+             ''' + TARGET + '''
+''') % (ptvsd.version.__version__)
 
 
-def parse_args(argv=None):
-    """Return the parsed args to use in main()."""
-    if argv is None:
-        argv = sys.argv
-        prog = argv[0]
-        if prog == __file__:
-            prog = '{} -m ptvsd'.format(os.path.basename(sys.executable))
-    else:
-        prog = argv[0]
-    argv = argv[1:]
+# In Python 2, arguments are passed as bytestrings in locale encoding
+# For uniformity, parse them into Unicode strings.
+def string(s):
+    if isinstance(s, bytes):
+        s = s.decode(sys.getfilesystemencoding())
+    return s
 
-    supported, pydevd, script = _group_args(argv)
-    args = _parse_args(prog, supported)
-    # '--' is used in _run_args to extract pydevd specific args
-    extra = pydevd + ['--']
-    if script:
-        extra += script
-    return args, extra
+def in_range(parser, start, stop):
+    def parse(s):
+        n = parser(s)
+        if start is not None and n < start:
+            raise ValueError('must be >= %s' % start)
+        if stop is not None and n >= stop:
+            raise ValueError('must be < %s' % stop)
+        return n
+    return parse
+
+port = in_range(int, 0, 2**16)
+
+pid = in_range(int, 0, None)
 
 
-def _group_args(argv):
-    supported = []
-    pydevd = []
-    script = []
+def print_help_and_exit(switch, it):
+    print(HELP, file=sys.stderr)
+    sys.exit(0)
 
-    try:
-        pos = argv.index('--')
-    except ValueError:
-        script = []
-    else:
-        script = argv[pos + 1:]
-        argv = argv[:pos]
+def print_version_and_exit(switch, it):
+    print(ptvsd.version.__version__)
+    sys.exit(0)
 
-    for arg in argv:
-        if arg == '-h' or arg == '--help':
-            return argv, [], script
+def set_arg(varname, parser):
+    def action(arg, it):
+        value = parser(next(it))
+        setattr(ptvsd.options, varname, value)
+    return action
 
-    gottarget = False
-    skip = 0
-    for i in range(len(argv)):
-        if skip:
-            skip -= 1
-            continue
+def set_true(varname):
+    def do(arg, it):
+        setattr(ptvsd.options, varname, True)
+    return do
 
-        arg = argv[i]
+def set_target(kind, parser=None):
+    def do(arg, it):
+        ptvsd.options.target_kind = kind
+        ptvsd.options.target = arg if parser is None else parser(next(it))
+    return do
+
+
+switches = [
+    # Switch                    Placeholder         Action                                  Required
+    # ======                    ===========         ======                                  ========
+
+    # Switches that are documented for use by end users.
+    (('-?', '-h', '--help'),    None,               print_help_and_exit,                    False),
+    (('-V', '--version'),       None,               print_version_and_exit,                 False),
+    ('--host',                  '<address>',        set_arg('host', string),                True),
+    ('--port',                  '<port>',           set_arg('port', port),                  False),
+    ('--wait',                  None,               set_true('wait'),                       False),
+    ('--multiprocess',          None,               set_true('multiprocess'),               False),
+
+    # Switches that are used internally by the IDE or ptvsd itself.
+    ('--nodebug',               None,               set_true('no_debug'),                   False),
+    ('--client',                None,               set_true('client'),                     False),
+    ('--subprocess-of',         '<pid>',            set_arg('subprocess_of', pid),          False),
+    ('--subprocess-notify',     '<port>',           set_arg('subprocess_notify', port),     False),
+
+    # Targets. The '' entry corresponds to positional command line arguments,
+    # i.e. the ones not preceded by any switch name.
+    ('',                        '<filename>',       set_target('file'),                     False),
+    ('-m',                      '<module>',         set_target('module', string),           False),
+    ('-c',                      '<code>',           set_target('code', string),             False),
+    ('--pid',                   '<pid>',            set_target('pid', pid),                 False),
+]
+
+
+def parse(args):
+    it = iter(args)
+    while True:
         try:
-            nextarg = argv[i + 1]
-        except IndexError:
-            nextarg = None
+            arg = next(it)
+        except StopIteration:
+            raise ValueError('missing target: ' + TARGET)
 
-        # TODO: Deprecate the PyDevd arg support.
-        # PyDevd support
-        if gottarget:
-            script = argv[i:] + script
-            break
-        if arg == '--file':
-            if nextarg is None:  # The filename is missing...
-                pydevd.append(arg)
-                continue  # This will get handled later.
-            if nextarg.endswith(':') and '--module' in pydevd:
-                pydevd.remove('--module')
-                arg = '-m'
-                argv[i + 1] = nextarg = nextarg[:-1]
-            else:
-                arg = nextarg
-                skip += 1
-
-        if arg in PYDEVD_OPTS:
-            pydevd.append(arg)
-            if nextarg is not None:
-                pydevd.append(nextarg)
-            skip += 1
-        elif arg in PYDEVD_FLAGS:
-            pydevd.append(arg)
-        elif arg == '--nodebug':
-            supported.append(arg)
-
-        # ptvsd support
-        elif arg in ('--host', '--port', '--pid', '-m', '-c', '--subprocess-of', '--subprocess-notify'):
-            if arg in ('-m', '-c', '--pid'):
-                gottarget = True
-            supported.append(arg)
-            if nextarg is not None:
-                supported.append(nextarg)
-            skip += 1
-        elif arg in ('--single-session', '--wait', '--client'):
-            supported.append(arg)
-        elif arg == '--multiprocess':
-            supported.append(arg)
-            pydevd.append(arg)
-        elif not arg.startswith('-'):
-            supported.append(arg)
-            gottarget = True
-
-        # unsupported arg
+        switch = arg if arg.startswith('-') else ''
+        for i, (sw, placeholder, action, _) in enumerate(switches):
+            if isinstance(sw, str):
+                sw = (sw,)
+            if switch in sw:
+                del switches[i]
+                break
         else:
-            supported.append(arg)
+            raise ValueError('unrecognized switch ' + switch)
+
+        try:
+            action(arg, it)
+        except StopIteration:
+            assert placeholder is not None
+            raise ValueError('%s: missing %s' % (switch, placeholder))
+        except Exception as ex:
+            raise ValueError('invalid %s %s: %s' % (switch, placeholder, str(ex)))
+
+        if ptvsd.options.target is not None:
             break
 
-    return supported, pydevd, script
+    for sw, placeholder, _, required in switches:
+        if required:
+            if not isinstance(sw, str):
+                sw = sw[0]
+            message = 'missing required %s' % sw
+            if placeholder is not None:
+                message += ' ' + placeholder
+            raise ValueError(message)
 
 
-def _parse_args(prog, argv):
-    parser = argparse.ArgumentParser(prog=prog)
+def run_file():
+    ptvsd.enable_attach()
+    runpy.run_path(ptvsd.options.target)
 
-    parser.add_argument('--nodebug', action='store_true')
-    parser.add_argument('--client', action='store_true')
+def run_module():
+    ptvsd.enable_attach()
+    runpy.run_module(ptvsd.options.target)
 
-    parser.add_argument('--host', required=True)
-    parser.add_argument('--port', type=int, required=True)
+def run_code():
+    code = compile(ptvsd.options.target, '<string>', 'exec')
+    ptvsd.enable_attach()
+    eval(code, {})
 
-    def port_range(arg):
-        arg = tuple(int(s) for s in arg.split('-'))
-        if len(arg) != 2:
-            raise ValueError
-        return arg
+def attach_to_pid():
+    def quoted_str(s):
+        assert not isinstance(s, bytes)
+        unescaped = set(chr(ch) for ch in range(32, 127)) - {'"', "'", '\\'}
+        def escape(ch):
+            return ch if ch in unescaped else '\\u%04X' % ord(ch)
+        return 'u"' + ''.join(map(escape, s)) + '"'
 
-    parser.add_argument('--multiprocess', action='store_true')
-    parser.add_argument('--subprocess-of', type=int, help=argparse.SUPPRESS)
-    parser.add_argument('--subprocess-notify', type=int, help=argparse.SUPPRESS)
+    pid = ptvsd.options.target
+    host = quoted_str(ptvsd.options.host)
+    port = ptvsd.options.port
 
-    target = parser.add_mutually_exclusive_group(required=True)
-    target.add_argument('-m', dest='module')
-    target.add_argument('-c', dest='code')
-    target.add_argument('--pid', type=int)
-    target.add_argument('filename', nargs='?')
+    ptvsd_path = os.path.abspath(os.path.join(ptvsd.__file__, '../..'))
+    if isinstance(ptvsd_path, bytes):
+        ptvsd_path = ptvsd_path.decode(sys.getfilesystemencoding())
+    ptvsd_path = quoted_str(ptvsd_path)
 
-    parser.add_argument('--single-session', action='store_true')
-    parser.add_argument('--wait', action='store_true')
+    # pydevd requires injected code to not contain any single quotes.
+    code = '''
+import os
+assert os.getpid() == {pid}
 
-    parser.add_argument('-V', '--version', action='version')
-    parser.version = __version__
+import sys
+sys.path.insert(0, {ptvsd_path})
+import ptvsd
+del sys.path[0]
 
-    args = parser.parse_args(argv)
-    ns = vars(args)
+import ptvsd.options
+ptvsd.options.client = True
+ptvsd.options.host = {host}
+ptvsd.options.port = {port}
 
-    options.host = ns.pop('host', None)
-    options.port = ns.pop('port')
-    options.client = ns.pop('client')
-    args.address = (Address.as_client if options.client else Address.as_server)(options.host, options.port) # noqa
+ptvsd.enable_attach()
+'''.format(**locals())
+    print(code)
 
-    if ns['multiprocess']:
-        options.multiprocess = True
-        multiproc.listen_for_subprocesses()
-
-    options.subprocess_of = ns.pop('subprocess_of')
-    options.subprocess_notify = ns.pop('subprocess_notify')
-
-    pid = ns.pop('pid')
-    module = ns.pop('module')
-    filename = ns.pop('filename')
-    code = ns.pop('code')
-    if pid is not None:
-        args.name = pid
-        args.kind = 'pid'
-    elif module is not None:
-        args.name = module
-        args.kind = 'module'
-    elif code is not None:
-        options.code = code
-        args.name = 'ptvsd.run_code'
-        args.kind = 'module'
-    else:
-        args.name = filename
-        args.kind = 'script'
-
-    return args
+    pydevd_attach_to_process_path = os.path.join(
+        os.path.dirname(pydevd.__file__),
+        'pydevd_attach_to_process')
+    sys.path.insert(0, pydevd_attach_to_process_path)
+    from add_code_to_python_process import run_python_code
+    run_python_code(pid, code, connect_debugger_tracing=True)
 
 
-def handle_args(addr, name, kind, extra=(), nodebug=False, **kwargs):
-    if kind == 'pid':
-        attach_main(addr, name, *extra, **kwargs)
-    elif nodebug:
-        run_main(addr, name, kind, *extra, **kwargs)
-    else:
-        debug_main(addr, name, kind, *extra, **kwargs)
+def main(argv=sys.argv):
+    try:
+        parse(argv[1:])
+    except Exception as ex:
+        print(HELP + '\nError: ' + str(ex), file=sys.stderr)
+        sys.exit(2)
 
-
-def main(argv=None):
-    args, extra = parse_args(argv)
-    handle_args(args.address, args.name, args.kind, extra,
-                nodebug=args.nodebug, singlesession=args.single_session,
-                wait=args.wait)
-
+    run = {
+        'file': run_file,
+        'module': run_module,
+        'code': run_code,
+        'pid': attach_to_pid,
+    }[ptvsd.options.target_kind]
+    run()
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv)
