@@ -49,6 +49,7 @@ class DebugSession(object):
         self.multiprocess = False
         self.multiprocess_port_range = None
         self.debug_options = ['RedirectOutput']
+        self.path_mappings = []
         self.env = os.environ.copy()
         self.env['PYTHONPATH'] = os.path.dirname(debuggee.__file__)
         self.cwd = None
@@ -199,6 +200,8 @@ class DebugSession(object):
         ] + kwargs.pop('ignore_unobserved', [])
 
         self.env.update(kwargs.pop('env', {}))
+
+        self.path_mappings += kwargs.pop('path_mappings', [])
         self.debug_options += kwargs.pop('debug_options', [])
         self.program_args += kwargs.pop('program_args', [])
 
@@ -435,7 +438,10 @@ class DebugSession(object):
         self.wait_for_next(Event('initialized', {}))
 
         request = 'launch' if self.start_method == 'launch' else 'attach'
-        self.send_request(request, {'debugOptions': self.debug_options}).wait_for_response()
+        self.send_request(request, {
+            'debugOptions': self.debug_options,
+            'pathMappings': self.path_mappings,
+        }).wait_for_response()
 
         # Issue 'threads' so that we get the 'thread' event for the main thread now,
         # rather than at some random time later during the test.
