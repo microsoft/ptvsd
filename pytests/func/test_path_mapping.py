@@ -35,7 +35,6 @@ def test_with_path_mappings(pyfile, tmpdir, run_as, start_method):
         session.initialize(
             target=(run_as, path_remote),
             start_method=start_method,
-            debug_options=['WaitOnAbnormalExit'],
             ignore_unobserved=[Event('continued')],
             use_backchannel=True,
             path_mappings=[{
