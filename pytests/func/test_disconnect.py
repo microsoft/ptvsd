@@ -4,6 +4,7 @@
 
 from __future__ import print_function, with_statement, absolute_import
 
+import os.path
 import pytest
 from pytests.helpers.pattern import ANY
 from pytests.helpers.session import DebugSession
@@ -43,13 +44,12 @@ def test_exit_on_disconnect_for_launch(pyfile, run_as, start_method):
     def code_to_debug():
         from dbgimporter import import_and_enable_debugger
         import_and_enable_debugger()
-        import backchannel
-        import atexit
-        def onexit():
-            backchannel.write_json('exit')
-        atexit.register(onexit)
-        backchannel.write_json('continue')  # should not execute this
-    bp_line = 8
+        import os.path
+        fp = os.join(os.path.dirname(os.path.abspath(__file__)), 'here.txt')
+        # should not execute this
+        with open(fp, 'w') as f:
+            print('Should not continue after disconnect on launch', file=f)
+    bp_line = 4
     with DebugSession() as session:
         session.initialize(
                 target=(run_as, code_to_debug),
@@ -65,4 +65,5 @@ def test_exit_on_disconnect_for_launch(pyfile, run_as, start_method):
         assert frames[0]['line'] == bp_line
         session.send_request('disconnect').wait_for_response()
         session.wait_for_exit()
-        assert 'exit' == session.read_json()
+        fp = os.join(os.path.dirname(os.path.abspath(code_to_debug)), 'here.txt')
+        assert not os.path.exists(fp)
