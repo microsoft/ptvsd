@@ -7,6 +7,8 @@ from __future__ import print_function, with_statement, absolute_import
 import pytest
 from pytests.helpers.session import DebugSession
 from pytests.helpers.timeline import Event
+from pytests.helpers.pattern import ANY
+from pytests.helpers.pathutils import compare_path
 
 
 @pytest.mark.parametrize('module', [True, False])
@@ -46,6 +48,50 @@ def test_stack_format(pyfile, run_as, start_method, module, line):
         assert line == (frames[0]['name'].find(': ' + str(bp_line)) > -1)
 
         assert module == (frames[0]['name'].find('test_module') > -1)
+
+        session.send_request('continue').wait_for_response(freeze=False)
+        session.wait_for_exit()
+
+
+def test_module_events(pyfile, run_as, start_method):
+    @pyfile
+    def module2():
+        # import_and_enable_debugger()
+        def do_more_things():
+            print('done')
+
+    @pyfile
+    def module1():
+        # import_and_enable_debugger()
+        import module2
+        def do_something():
+            module2.do_more_things()
+
+    @pyfile
+    def test_code():
+        from dbgimporter import import_and_enable_debugger
+        import_and_enable_debugger()
+        from module1 import do_something
+        do_something()
+
+    bp_line = 3
+    with DebugSession() as session:
+        session.initialize(
+            target=(run_as, test_code),
+            start_method=start_method,
+            ignore_unobserved=[Event('stopped'), Event('continued')],
+        )
+        session.set_breakpoints(module2, [bp_line])
+        session.start_debugging()
+
+        session.wait_for_thread_stopped()
+        modules = session.all_occurrences_of(Event('module'))
+        modules = [(m.body['module']['name'], m.body['module']['path']) for m in modules]
+        assert modules[:3] == [
+            ('module2', ANY.such_that(lambda s: compare_path(module2, s))),
+            ('module1', ANY.such_that(lambda s: compare_path(module1, s))),
+            ('__main__', ANY.such_that(lambda s: compare_path(test_code, s))),
+        ]
 
         session.send_request('continue').wait_for_response(freeze=False)
         session.wait_for_exit()
