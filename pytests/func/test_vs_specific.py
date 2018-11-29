@@ -8,7 +8,6 @@ import pytest
 from pytests.helpers.session import DebugSession
 from pytests.helpers.timeline import Event
 from pytests.helpers.pattern import ANY
-from pytests.helpers.pathutils import compare_path
 
 
 @pytest.mark.parametrize('module', [True, False])
@@ -88,9 +87,9 @@ def test_module_events(pyfile, run_as, start_method):
         modules = session.all_occurrences_of(Event('module'))
         modules = [(m.body['module']['name'], m.body['module']['path']) for m in modules]
         assert modules[:3] == [
-            ('module2', ANY.such_that(lambda s: compare_path(module2, s))),
-            ('module1', ANY.such_that(lambda s: compare_path(module1, s))),
-            ('__main__', ANY.such_that(lambda s: compare_path(test_code, s))),
+            ('module2', ANY.path(module2)),
+            ('module1', ANY.path(module1)),
+            ('__main__', ANY.path(test_code)),
         ]
 
         session.send_request('continue').wait_for_response(freeze=False)
