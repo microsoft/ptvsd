@@ -258,7 +258,7 @@ class DebugSession(object):
         print('ptvsd: %s' % ptvsd.__file__)
         print('Start method: %s' % self.start_method)
         print('Target: (%s) %s' % self.target)
-        print('Current directory: %s' % os.getcwd())
+        print('Current directory: %s' % self.cwd)
         print('PYTHONPATH: %s' % self.env['PYTHONPATH'])
         print('Spawning %r' % argv)
 

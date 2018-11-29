@@ -318,3 +318,27 @@ def test_condition_with_log_point(pyfile, run_as, start_method):
 
         assert 15 in logged
         assert 5 in values
+
+
+@pytest.mark.skip(reason='Bug #1010')
+def test_package_launch():
+    bp_line = 2
+    cwd = get_test_root('testpkgs')
+    testfile = os.path.join(cwd, 'pkg1', '__main__.py')
+
+    with DebugSession() as session:
+        session.initialize(
+            target=('module', 'pkg1'),
+            start_method='launch',
+            ignore_unobserved=[Event('continued')],
+            cwd=cwd,
+        )
+        session.set_breakpoints(testfile, [bp_line])
+        session.start_debugging()
+
+        hit = session.wait_for_thread_stopped()
+        frames = hit.stacktrace.body['stackFrames']
+        assert bp_line == frames[0]['line']
+
+        session.send_request('continue').wait_for_response(freeze=False)
+        session.wait_for_exit()
