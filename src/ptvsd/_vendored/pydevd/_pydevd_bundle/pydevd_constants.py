@@ -455,6 +455,10 @@ def get_protocol():
     return _GlobalSettings.protocol
 
 
+def is_json_protocol():
+    return _GlobalSettings.protocol in (JSON_PROTOCOL, HTTP_JSON_PROTOCOL)
+
+
 class GlobalDebuggerHolder:
     '''
         Holder for the global debugger.

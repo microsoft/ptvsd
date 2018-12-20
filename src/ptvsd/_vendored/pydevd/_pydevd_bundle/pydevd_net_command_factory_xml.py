@@ -27,6 +27,7 @@ from _pydevd_bundle.pydevd_utils import quote_smart as quote, get_non_pydevd_thr
 from pydevd_file_utils import get_abs_path_real_path_and_base_from_frame
 import pydevd_file_utils
 from pydevd_tracing import get_exception_traceback_str
+from _pydev_bundle._pydev_completer import completions_to_xml
 
 if IS_IRONPYTHON:
 
@@ -325,8 +326,9 @@ class NetCommandFactory:
         except Exception:
             return self.make_error_message(seq, get_exception_traceback_str())
 
-    def make_get_completions_message(self, seq, payload):
+    def make_get_completions_message(self, seq, completions, qualifier, start):
         try:
+            payload = completions_to_xml(completions)
             return NetCommand(CMD_GET_COMPLETIONS, seq, payload)
         except Exception:
             return self.make_error_message(seq, get_exception_traceback_str())

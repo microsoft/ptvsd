@@ -99,6 +99,7 @@ DONT_TRACE = {
     'pydevd_plugin_utils.py': PYDEV_FILE,
     'pydevd_plugins_django_form_str.py': PYDEV_FILE,
     'pydevd_process_net_command.py': PYDEV_FILE,
+    'pydevd_process_net_command_json.py': PYDEV_FILE,
     'pydevd_referrers.py': PYDEV_FILE,
     'pydevd_reload.py': PYDEV_FILE,
     'pydevd_resolver.py': PYDEV_FILE,
