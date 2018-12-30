@@ -36,12 +36,14 @@ import warnings
 from xml.sax import SAXParseException
 from xml.sax.saxutils import unescape as xml_unescape
 
+import pydevd  # noqa
 import _pydevd_bundle.pydevd_comm as pydevd_comm  # noqa
 import _pydevd_bundle.pydevd_comm_constants as pydevd_comm_constants  # noqa
 import _pydevd_bundle.pydevd_extension_api as pydevd_extapi  # noqa
 import _pydevd_bundle.pydevd_extension_utils as pydevd_extutil  # noqa
 import _pydevd_bundle.pydevd_frame as pydevd_frame  # noqa
 # from _pydevd_bundle.pydevd_comm import pydevd_log
+from _pydevd_bundle.pydevd_dont_trace_files import PYDEV_FILE  # noqa
 from _pydevd_bundle.pydevd_additional_thread_info import PyDBAdditionalThreadInfo  # noqa
 
 from ptvsd import _util
@@ -160,7 +162,25 @@ def dont_trace_ptvsd_files(file_path):
     return file_path.startswith(PTVSD_DIR_PATH)
 
 
-pydevd_frame.file_tracing_filter = dont_trace_ptvsd_files
+original_get_file_type = pydevd.PyDB.get_file_type
+
+
+def _get_file_type(py_db, abs_real_path_and_basename, _cache_file_type={}):
+    abs_path = abs_real_path_and_basename[0]
+    try:
+        return _cache_file_type[abs_path]
+    except KeyError:
+        file_type = original_get_file_type(py_db, abs_real_path_and_basename)
+        if file_type is not None:
+            _cache_file_type[abs_path] = file_type
+        elif dont_trace_ptvsd_files(abs_path):
+            _cache_file_type[abs_path] = PYDEV_FILE
+        else:
+            _cache_file_type[abs_path] = None
+        return _cache_file_type[abs_path]
+
+
+pydevd.PyDB.get_file_type = _get_file_type
 
 # NOTE: Previously this included sys.prefix, sys.base_prefix and sys.real_prefix
 # On some systems those resolve to '/usr'. That means any user code will
@@ -421,7 +441,7 @@ class PydevdSocket(object):
         follow the pydevd line protocol.
 
         Note that the data is always a full message received from pydevd
-        (sent from _pydevd_bundle.pydevd_comm.WriterThread), so, there's 
+        (sent from _pydevd_bundle.pydevd_comm.WriterThread), so, there's
         no need to actually treat received bytes as a stream of bytes.
         """
         result = len(data)

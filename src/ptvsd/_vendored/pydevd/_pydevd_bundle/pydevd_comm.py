@@ -104,8 +104,6 @@ except:
     except:
         import io as StringIO
 
-from _pydevd_bundle.pydevd_dont_trace_files import DONT_TRACE
-get_file_type = DONT_TRACE.get
 
 # CMD_XXX constants imported for backward compatibility
 from _pydevd_bundle.pydevd_comm_constants import *  # @UnusedWildImport
