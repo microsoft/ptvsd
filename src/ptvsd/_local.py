@@ -139,5 +139,8 @@ def _run(argv, addr, _pydevd=pydevd, _install=install, **kwargs):
     try:
         _pydevd.main()
     except SystemExit as ex:
-        daemon.exitcode = 0 if ex.code is None else int(ex.code)
+        try:
+            daemon.exitcode = 0 if ex.code is None else int(ex.code)
+        except ValueError:
+            daemon.exitcode = 1
         raise
