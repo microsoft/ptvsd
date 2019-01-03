@@ -34,7 +34,10 @@ class IORedirector:
 
     def flush(self):
         for r in self._redirect_to:
-            r.flush()
+            try:
+                r.flush()
+            except OSError:
+                pass
 
     def __getattr__(self, name):
         for r in self._redirect_to:
@@ -56,7 +59,7 @@ class IOBuf:
         b = self.buflist
         self.buflist = []  # clear it
         return ''.join(b)  # bytes on py2, str on py3.
-    
+
     def write(self, s):
         if not IS_PY3K:
             if isinstance(s, unicode):
