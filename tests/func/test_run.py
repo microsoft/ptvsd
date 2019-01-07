@@ -9,10 +9,10 @@ import pytest
 
 import ptvsd
 
-from pytests.helpers import print
-from pytests.helpers.pattern import ANY
-from pytests.helpers.session import DebugSession
-from pytests.helpers.timeline import Event
+from tests.helpers import print
+from tests.helpers.pattern import ANY
+from tests.helpers.session import DebugSession
+from tests.helpers.timeline import Event
 
 
 @pytest.mark.parametrize('run_as', ['file', 'module', 'code'])

@@ -8,7 +8,7 @@ __all__ = ['print', 'wait_for_output']
 
 import threading
 from ptvsd.compat import queue
-from pytests.helpers import timestamp, colors
+from tests.helpers import timestamp, colors
 
 
 real_print = print

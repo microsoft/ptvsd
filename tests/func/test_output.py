@@ -3,9 +3,9 @@
 # for license information.
 
 from __future__ import print_function, with_statement, absolute_import
-from pytests.helpers.session import DebugSession
-from pytests.helpers.timeline import Event
-from pytests.helpers.pattern import ANY
+from tests.helpers.session import DebugSession
+from tests.helpers.timeline import Event
+from tests.helpers.pattern import ANY
 
 
 def test_with_no_output(pyfile, run_as, start_method):

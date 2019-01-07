@@ -6,9 +6,9 @@ from __future__ import print_function, with_statement, absolute_import
 
 import os
 import pytest
-from pytests.helpers.session import DebugSession
-from pytests.helpers.pathutils import get_test_root
-from pytests.helpers.timeline import Event
+from tests.helpers.session import DebugSession
+from tests.helpers.pathutils import get_test_root
+from tests.helpers.timeline import Event
 
 
 @pytest.mark.parametrize('wait_for_attach', ['waitOn', 'waitOff'])

@@ -9,11 +9,11 @@ import platform
 import pytest
 import sys
 
-from pytests.helpers.pattern import ANY, Path
-from pytests.helpers.session import DebugSession
-from pytests.helpers.timeline import Event
-from pytests.helpers.webhelper import get_web_content, wait_for_connection
-from pytests.helpers.pathutils import get_test_root
+from tests.helpers.pattern import ANY, Path
+from tests.helpers.session import DebugSession
+from tests.helpers.timeline import Event
+from tests.helpers.webhelper import get_web_content, wait_for_connection
+from tests.helpers.pathutils import get_test_root
 
 
 FLASK1_ROOT = get_test_root('flask1')

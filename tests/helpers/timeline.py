@@ -10,7 +10,7 @@ import threading
 
 from ptvsd.compat import queue
 
-from pytests.helpers import colors, pattern, print, timestamp
+from tests.helpers import colors, pattern, print, timestamp
 
 
 class Timeline(object):

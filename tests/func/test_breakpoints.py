@@ -10,10 +10,10 @@ import pytest
 import sys
 import re
 
-from pytests.helpers.pathutils import get_test_root
-from pytests.helpers.session import DebugSession
-from pytests.helpers.timeline import Event
-from pytests.helpers.pattern import ANY, Path
+from tests.helpers.pathutils import get_test_root
+from tests.helpers.session import DebugSession
+from tests.helpers.timeline import Event
+from tests.helpers.pattern import ANY, Path
 
 
 BP_TEST_ROOT = get_test_root('bp')

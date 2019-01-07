@@ -3,7 +3,7 @@
 # for license information.
 
 from __future__ import print_function, with_statement, absolute_import
-from pytests.helpers.session import DebugSession
+from tests.helpers.session import DebugSession
 import pytest
 
 @pytest.mark.parametrize('run_as', ['file', 'module', 'code'])

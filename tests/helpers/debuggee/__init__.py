@@ -8,7 +8,7 @@ from __future__ import print_function, with_statement, absolute_import
 # the code that is executed under debugger as part of the test (e.g. via @pyfile).
 # PYTHONPATH has an entry appended to it that allows these modules to be imported
 # directly from such code, i.e. "import backchannel". Consequently, these modules
-# should not assume that any other code from pytests/ is importable.
+# should not assume that any other code from tests/ is importable.
 
 
 # Ensure that __file__ is always absolute.

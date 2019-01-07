@@ -8,9 +8,9 @@ import platform
 import pytest
 import sys
 
-from pytests.helpers.pattern import ANY
-from pytests.helpers.session import DebugSession
-from pytests.helpers.timeline import Event, Request, Response
+from tests.helpers.pattern import ANY
+from tests.helpers.session import DebugSession
+from tests.helpers.timeline import Event, Request, Response
 
 
 @pytest.mark.timeout(30)

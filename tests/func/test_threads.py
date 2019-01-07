@@ -4,8 +4,8 @@
 
 from __future__ import print_function, with_statement, absolute_import
 import pytest
-from pytests.helpers.timeline import Event
-from pytests.helpers.session import DebugSession
+from tests.helpers.timeline import Event
+from tests.helpers.session import DebugSession
 
 
 @pytest.mark.parametrize('count', [1, 3])

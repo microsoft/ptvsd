@@ -9,8 +9,8 @@ import ptvsd.compat
 
 
 def get_test_root(name):
-    pytests_dir = os.path.dirname(os.path.dirname(__file__))
-    p = os.path.join(pytests_dir, 'func', 'testfiles', name)
+    tests_dir = os.path.dirname(os.path.dirname(__file__))
+    p = os.path.join(tests_dir, 'func', 'testfiles', name)
     if os.path.exists(p):
         return p
     return None

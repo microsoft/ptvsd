@@ -6,9 +6,9 @@ from __future__ import print_function, with_statement, absolute_import
 
 import sys
 
-from pytests.helpers.pattern import ANY
-from pytests.helpers.session import DebugSession
-from pytests.helpers.timeline import Event
+from tests.helpers.pattern import ANY
+from tests.helpers.session import DebugSession
+from tests.helpers.timeline import Event
 
 
 def test_variables_and_evaluate(pyfile, run_as, start_method):

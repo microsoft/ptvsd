@@ -5,9 +5,9 @@
 from __future__ import print_function, with_statement, absolute_import
 
 import pytest
-from pytests.helpers.session import DebugSession
-from pytests.helpers.timeline import Event
-from pytests.helpers.pattern import Path
+from tests.helpers.session import DebugSession
+from tests.helpers.timeline import Event
+from tests.helpers.pattern import Path
 
 
 @pytest.mark.parametrize('module', [True, False])

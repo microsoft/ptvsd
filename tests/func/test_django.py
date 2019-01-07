@@ -8,11 +8,11 @@ import os.path
 import pytest
 import sys
 
-from pytests.helpers.pattern import ANY, Path
-from pytests.helpers.session import DebugSession
-from pytests.helpers.timeline import Event
-from pytests.helpers.pathutils import get_test_root
-from pytests.helpers.webhelper import get_url_from_str, get_web_content, wait_for_connection
+from tests.helpers.pattern import ANY, Path
+from tests.helpers.session import DebugSession
+from tests.helpers.timeline import Event
+from tests.helpers.pathutils import get_test_root
+from tests.helpers.webhelper import get_url_from_str, get_web_content, wait_for_connection
 
 DJANGO1_ROOT = get_test_root('django1')
 DJANGO1_MANAGE = os.path.join(DJANGO1_ROOT, 'app.py')

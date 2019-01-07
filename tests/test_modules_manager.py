@@ -7,7 +7,7 @@ import threading
 import time
 import ptvsd.untangle
 
-from pytests.helpers.pattern import ANY
+from tests.helpers.pattern import ANY
 from ptvsd.wrapper import ModulesManager
 
 

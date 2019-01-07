@@ -14,4 +14,4 @@ import pytest_timeout # noqa
 
 
 colorama.init()
-pytest.register_assert_rewrite('pytests.helpers')
+pytest.register_assert_rewrite('tests.helpers')

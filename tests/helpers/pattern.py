@@ -7,7 +7,7 @@ from __future__ import print_function, with_statement, absolute_import
 import numbers
 
 from ptvsd.compat import unicode
-from pytests.helpers.pathutils import compare_path
+from tests.helpers.pathutils import compare_path
 
 
 class BasePattern(object):
