@@ -2,6 +2,8 @@
 # Licensed under the MIT License. See LICENSE in the project root
 # for license information.
 
+import threading
+
 from ptvsd._remote import (
     attach as ptvsd_attach,
     enable_attach as ptvsd_enable_attach,
@@ -17,7 +19,6 @@ WAIT_TIMEOUT = 1.0
 DEFAULT_HOST = '0.0.0.0'
 DEFAULT_PORT = 5678
 
-_debug_current_thread = None
 _pending_threads = set()
 
 

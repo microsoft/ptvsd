@@ -4,8 +4,8 @@
 
 from __future__ import absolute_import, print_function, with_statement
 
+import numbers
 import os.path
-import pydevd
 import runpy
 import sys
 
@@ -34,6 +34,9 @@ if __name__ == '__main__' and 'ptvsd' not in sys.modules:
     del sys.path[0]
 
 
+import pydevd
+
+import ptvsd._remote
 import ptvsd.options
 import ptvsd.version
 
@@ -172,19 +175,103 @@ def parse(args):
                 message += ' ' + placeholder
             raise ValueError(message)
 
+    return it
+
+
+daemon = None
+
+
+def setup_connection():
+    opts = ptvsd.options
+    if opts.no_debug:
+        return
+
+    pydevd.apply_debugger_options({
+        'server': not opts.client,
+        'client': opts.host,
+        'port': opts.port,
+        'multiprocess': opts.multiprocess,
+    })
+
+    # We need to set up sys.argv[0] before invoking attach() or enable_attach(),
+    # because they use it to report the 'process' event. Thus, we can't rely on
+    # run_path() and run_module() doing that, even though they will eventually.
+
+    if opts.target_kind == 'code':
+        sys.argv[0] = '-c'
+    elif opts.target_kind == 'file':
+        sys.argv[0] = opts.target
+    elif opts.target_kind == 'module':
+        # We want to do the same thing that run_module() would do here, without
+        # actually invoking it. On Python 3, it's exposed as a public API, but
+        # on Python 2, we have to invoke a private function in runpy for this.
+        # Either way, if it fails to resolve for any reason, just leave argv as is.
+        try:
+            if sys.version_info >= (3,):
+                from importlib.util import find_spec
+                spec = find_spec(opts.target)
+                if spec is not None:
+                    sys.argv[0] = spec.origin
+            else:
+                _, _, _, sys.argv[0] = runpy._get_module_details(opts.target)
+        except Exception:
+            pass
+    else:
+        assert False
+
+    addr = (opts.host, opts.port)
+
+    global daemon
+    if opts.client:
+        daemon = ptvsd._remote.attach(addr)
+    else:
+        daemon = ptvsd._remote.enable_attach(addr)
+
+    if opts.wait:
+        ptvsd.wait_for_attach()
+
 
 def run_file():
-    ptvsd.enable_attach()
-    runpy.run_path(ptvsd.options.target)
+    setup_connection()
+    target = ptvsd.options.target
+
+    # run_path has one difference with invoking Python from command-line:
+    # if the target is a file (rather than a directory), it does not add its
+    # parent directory to sys.path. Thus, importing other modules from the
+    # same directory is broken unless sys.path is patched here.
+    if os.path.isfile(target):
+        sys.path.insert(0, os.path.dirname(target))
+    runpy.run_path(target, run_name='__main__')
+
 
 def run_module():
-    ptvsd.enable_attach()
-    runpy.run_module(ptvsd.options.target)
+    setup_connection()
+
+    # On Python 2, module name must be a non-Unicode string, because it ends up
+    # a part of module's __package__, and Python will refuse to run the module
+    # if __package__ is Unicode.
+    target = ptvsd.options.target
+    if sys.version_info < (3,) and not isinstance(target, bytes):
+        target = target.encode(sys.getfilesystemencoding())
+
+    # Docs say that runpy.run_module is equivalent to -m, but it's not actually
+    # the case for packages - -m sets __name__ to '__main__', but run_module sets
+    # it to `pkg.__main__`. This breaks everything that uses the standard pattern
+    # __name__ == '__main__' to detect being run as a CLI app. On the other hand,
+    # runpy._run_module_as_main is a private function that actually implements -m.
+    try:
+        run_module_as_main = runpy._run_module_as_main
+    except AttributeError:
+        runpy.run_module(target, alter_sys=True)
+    else:
+        run_module_as_main(target, alter_argv=True)
+
 
 def run_code():
     code = compile(ptvsd.options.target, '<string>', 'exec')
-    ptvsd.enable_attach()
+    setup_connection()
     eval(code, {})
+
 
 def attach_to_pid():
     def quoted_str(s):
@@ -232,18 +319,28 @@ ptvsd.enable_attach()
 
 def main(argv=sys.argv):
     try:
-        parse(argv[1:])
+        argv[:] = [argv[0]] + list(parse(argv[1:]))
     except Exception as ex:
         print(HELP + '\nError: ' + str(ex), file=sys.stderr)
         sys.exit(2)
 
-    run = {
-        'file': run_file,
-        'module': run_module,
-        'code': run_code,
-        'pid': attach_to_pid,
-    }[ptvsd.options.target_kind]
-    run()
+    try:
+        run = {
+            'file': run_file,
+            'module': run_module,
+            'code': run_code,
+            'pid': attach_to_pid,
+        }[ptvsd.options.target_kind]
+        run()
+    except SystemExit as ex:
+        if daemon is not None:
+            if ex.code is None:
+                daemon.exitcode = 0
+            elif isinstance(ex.code, numbers.Integral):
+                daemon.exitcode = int(ex.code)
+            else:
+                daemon.exitcode = 1
+        raise
 
 if __name__ == '__main__':
     main(sys.argv)
