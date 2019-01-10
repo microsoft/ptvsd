@@ -1,12 +1,15 @@
 from _pydevd_bundle._debug_adapter import pydevd_base_schema
 import json
-from _pydevd_bundle.pydevd_comm import InternalGetCompletions
+from _pydevd_bundle.pydevd_api import PyDevdAPI
+from _pydevd_bundle.pydevd_comm_constants import CMD_RETURN
+from _pydevd_bundle.pydevd_net_command import NetCommand
 
 
 class _PyDevJsonCommandProcessor(object):
 
     def __init__(self, from_json):
         self.from_json = from_json
+        self.api = PyDevdAPI()
 
     def process_net_command_json(self, py_db, json_contents):
         '''
@@ -24,22 +27,36 @@ class _PyDevJsonCommandProcessor(object):
         assert request.type == 'request'
         method_name = 'on_%s_request' % (request.command.lower(),)
         on_request = getattr(self, method_name, None)
-        if on_request is not None:
-            if DEBUG:
-                print('Handled in pydevd: %s (in _PyDevdCommandProcessor).\n' % (method_name,))
+        if on_request is None:
+            print('Unhandled: %s not available in _PyDevJsonCommandProcessor.\n' % (method_name,))
+            return
 
-            py_db._main_lock.acquire()
-            try:
+        if DEBUG:
+            print('Handled in pydevd: %s (in _PyDevJsonCommandProcessor).\n' % (method_name,))
 
-                cmd = on_request(py_db, request)
-                if cmd is not None:
-                    py_db.writer.add_command(cmd)
-            finally:
-                py_db._main_lock.release()
+        py_db._main_lock.acquire()
+        try:
 
-        else:
-            print('Unhandled: %s not available in _PyDevdCommandProcessor.\n' % (method_name,))
-            
+            cmd = on_request(py_db, request)
+            if cmd is not None:
+                py_db.writer.add_command(cmd)
+        finally:
+            py_db._main_lock.release()
+
+    def on_configurationdone_request(self, py_db, request):
+        '''
+        :param ConfigurationDoneRequest request:
+        '''
+        self.api.run(py_db)
+        configuration_done_response = pydevd_base_schema.build_response(request)
+        return NetCommand(CMD_RETURN, 0, configuration_done_response.to_dict(), is_json=True)
+
+    def on_threads_request(self, py_db, request):
+        '''
+        :param ThreadsRequest request:
+        '''
+        return self.api.list_threads(py_db, request.seq)
+
     def on_completions_request(self, py_db, request):
         '''
         :param CompletionsRequest request:
@@ -58,8 +75,7 @@ class _PyDevJsonCommandProcessor(object):
         else:
             line = arguments.line - 1
 
-        int_cmd = InternalGetCompletions(seq, thread_id, frame_id, text, line=line, column=column)
-        py_db.post_internal_command(int_cmd, thread_id)
+        self.api.request_completions(py_db, seq, thread_id, frame_id, text, line=line, column=column)
 
 
 process_net_command_json = _PyDevJsonCommandProcessor(pydevd_base_schema.from_json).process_net_command_json

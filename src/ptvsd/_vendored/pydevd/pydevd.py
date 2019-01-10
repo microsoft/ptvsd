@@ -55,7 +55,7 @@ from pydevd_concurrency_analyser.pydevd_thread_wrappers import wrap_threads
 from pydevd_file_utils import get_abs_path_real_path_and_base_from_frame, NORM_PATHS_AND_BASE_CONTAINER, get_abs_path_real_path_and_base_from_file
 from pydevd_file_utils import get_fullname, rPath, get_package_dir
 import pydevd_tracing
-
+from _pydevd_bundle.pydevd_comm import InternalThreadCommand, InternalThreadCommandForAnyThread
 from _pydevd_bundle.pydevd_comm import(InternalConsoleExec,
     PyDBDaemonThread, _queue, ReaderThread, GetGlobalDebugger, get_global_debugger,
     set_global_debugger, WriterThread, pydevd_log,
@@ -692,6 +692,13 @@ class PyDB(object):
         if thread_id.startswith('__frame__'):
             thread_id = thread_id[thread_id.rfind('|') + 1:]
         return self._cmd_queue[thread_id]
+
+    def post_method_as_internal_command(self, thread_id, method, *args, **kwargs):
+        if thread_id == '*':
+            internal_cmd = InternalThreadCommandForAnyThread(thread_id, method, *args, **kwargs)
+        else:
+            internal_cmd = InternalThreadCommand(thread_id, method, *args, **kwargs)
+        self.post_internal_command(internal_cmd, thread_id)
 
     def post_internal_command(self, int_cmd, thread_id):
         """ if thread_id is *, post to the '*' queue"""
