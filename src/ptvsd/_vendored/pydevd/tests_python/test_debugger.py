@@ -1857,7 +1857,7 @@ def test_case_lamdda(case_setup):
 @pytest.mark.skipif(IS_JYTHON, reason='Not working properly on Jython (needs investigation).')
 def test_case_suspension_policy(case_setup):
     with case_setup.test_file('_debugger_case_suspend_policy.py') as writer:
-        writer.write_add_breakpoint(25, '', filename=writer.TEST_FILE, hit_condition='', is_logpoint=False, suspend_policy='ALL')
+        writer.write_add_breakpoint(25, '', suspend_policy='ALL')
         writer.write_make_initial_run()
 
         thread_ids = []

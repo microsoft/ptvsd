@@ -1,5 +1,5 @@
 from _pydevd_bundle._debug_adapter.pydevd_base_schema import from_json
-from _pydevd_bundle._debug_adapter.pydevd_schema import ThreadEvent, ThreadsResponse
+from _pydevd_bundle._debug_adapter.pydevd_schema import ThreadEvent
 from tests_python.debugger_unittest import IS_JYTHON
 import pytest
 from _pydevd_bundle._debug_adapter import pydevd_schema, pydevd_base_schema
@@ -50,6 +50,57 @@ class JsonFacade(object):
     def write_list_threads(self):
         return self.wait_for_response(self.write_request(pydevd_schema.ThreadsRequest()))
 
+    def write_add_breakpoints(self, lines, filename=None, line_to_info=None):
+        '''
+        Adds a breakpoint.
+        '''
+        if isinstance(lines, int):
+            lines = [lines]
+
+        if line_to_info is None:
+            line_to_info = {}
+
+        if filename is None:
+            filename = self.writer.get_main_filename()
+
+        source = pydevd_schema.Source(path=filename)
+        breakpoints = []
+        for line in lines:
+            condition = None
+            hit_condition = None
+            log_message = None
+
+            if line in line_to_info:
+                line_info = line_to_info.get('line')
+                condition = line_info.get('condition')
+                hit_condition = line_info.get('hit_condition')
+                log_message = line_info.get('log_message')
+
+            breakpoints.append(pydevd_schema.SourceBreakpoint(
+                line, condition=condition, hitCondition=hit_condition, logMessage=log_message).to_dict())
+
+        arguments = pydevd_schema.SetBreakpointsArguments(source, breakpoints)
+        request = pydevd_schema.SetBreakpointsRequest(arguments)
+
+        # : :type response: SetBreakpointsResponse
+        response = self.wait_for_response(self.write_request(request))
+        body = response.body
+
+        # : :type body: SetBreakpointsResponseBody
+        assert len(body.breakpoints) == len(lines)
+        lines_in_response = [b['line'] for b in body.breakpoints]
+        assert set(lines_in_response) == set(lines)
+
+    def write_launch(self):
+        arguments = pydevd_schema.LaunchRequestArguments(noDebug=False)
+        request = pydevd_schema.LaunchRequest(arguments)
+        self.wait_for_response(self.write_request(request))
+
+    def write_disconnect(self):
+        arguments = pydevd_schema.DisconnectArguments(terminateDebuggee=False)
+        request = pydevd_schema.DisconnectRequest(arguments)
+        self.wait_for_response(self.write_request(request))
+
 
 @pytest.mark.skipif(IS_JYTHON, reason='Must check why it is failing in Jython.')
 def test_case_json_protocol(case_setup):
@@ -57,7 +108,8 @@ def test_case_json_protocol(case_setup):
         json_facade = JsonFacade(writer)
 
         writer.write_set_protocol('http_json')
-        writer.write_add_breakpoint(writer.get_line_index_with_content('Break here'))
+        json_facade.write_launch()
+        json_facade.write_add_breakpoints(writer.get_line_index_with_content('Break here'))
         json_facade.write_make_initial_run()
 
         json_facade.wait_for_json_message(ThreadEvent, lambda event: event.body.reason == 'started')
@@ -71,7 +123,8 @@ def test_case_json_protocol(case_setup):
         assert len(response.body.threads) == 1
         assert next(iter(response.body.threads))['name'] == 'MainThread'
 
-        writer.write_run_thread(thread_id)
+        # Removes breakpoints and proceeds running.
+        json_facade.write_disconnect()
 
         writer.finished_ok = True
 

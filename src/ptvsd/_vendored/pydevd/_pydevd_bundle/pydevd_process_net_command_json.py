@@ -1,8 +1,14 @@
-from _pydevd_bundle._debug_adapter import pydevd_base_schema
+from functools import reduce, partial
 import json
+import re
+
+from _pydevd_bundle._debug_adapter import pydevd_base_schema
 from _pydevd_bundle.pydevd_api import PyDevdAPI
 from _pydevd_bundle.pydevd_comm_constants import CMD_RETURN
 from _pydevd_bundle.pydevd_net_command import NetCommand
+from _pydevd_bundle._debug_adapter.pydevd_schema import SourceBreakpoint
+import itertools
+from _pydevd_bundle.pydevd_json_debug_options import _extract_debug_options
 
 
 class _PyDevJsonCommandProcessor(object):
@@ -10,6 +16,8 @@ class _PyDevJsonCommandProcessor(object):
     def __init__(self, from_json):
         self.from_json = from_json
         self.api = PyDevdAPI()
+        self.debug_options = {}
+        self._next_breakpoint_id = partial(next, itertools.count(0))
 
     def process_net_command_json(self, py_db, json_contents):
         '''
@@ -76,6 +84,123 @@ class _PyDevJsonCommandProcessor(object):
             line = arguments.line - 1
 
         self.api.request_completions(py_db, seq, thread_id, frame_id, text, line=line, column=column)
+
+    def _set_debug_options(self, args):
+        self.debug_options = _extract_debug_options(
+            args.get('options'),
+            args.get('debugOptions'),
+        )
+
+    def on_launch_request(self, py_db, request):
+        '''
+        :param LaunchRequest request:
+        '''
+        self._set_debug_options(request.arguments.kwargs)
+        response = pydevd_base_schema.build_response(request)
+        return NetCommand(CMD_RETURN, 0, response.to_dict(), is_json=True)
+
+    def on_attach_request(self, py_db, request):
+        '''
+        :param AttachRequest request:
+        '''
+        self._set_debug_options(request.arguments.kwargs)
+        response = pydevd_base_schema.build_response(request)
+        return NetCommand(CMD_RETURN, 0, response.to_dict(), is_json=True)
+
+    def _get_hit_condition_expression(self, hit_condition):
+        '''Following hit condition values are supported
+
+        * x or == x when breakpoint is hit x times
+        * >= x when breakpoint is hit more than or equal to x times
+        * % x when breakpoint is hit multiple of x times
+
+        Returns '@HIT@ == x' where @HIT@ will be replaced by number of hits
+        '''
+        if not hit_condition:
+            return None
+
+        expr = hit_condition.strip()
+        try:
+            int(expr)
+            return '@HIT@ == {}'.format(expr)
+        except ValueError:
+            pass
+
+        if expr.startswith('%'):
+            return '@HIT@ {} == 0'.format(expr)
+
+        if expr.startswith('==') or \
+            expr.startswith('>') or \
+            expr.startswith('<'):
+            return '@HIT@ {}'.format(expr)
+
+        return hit_condition
+
+    def on_disconnect_request(self, py_db, request):
+        '''
+        :param DisconnectRequest request:
+        '''
+        self.api.remove_all_breakpoints(py_db, filename='*')
+        self.api.request_resume_thread(thread_id='*')
+
+        response = pydevd_base_schema.build_response(request)
+        return NetCommand(CMD_RETURN, 0, response.to_dict(), is_json=True)
+
+    def on_setbreakpoints_request(self, py_db, request):
+        '''
+        :param SetBreakpointsRequest request:
+        '''
+        arguments = request.arguments  # : :type arguments: SetBreakpointsArguments
+        filename = arguments.source.path
+        filename = self.api.filename_to_server(filename)
+        func_name = 'None'
+
+        self.api.remove_all_breakpoints(py_db, filename)
+
+        btype = 'python-line'
+        suspend_policy = 'ALL'
+
+        if not filename.lower().endswith('.py'):
+            if self.debug_options.get('DJANGO_DEBUG', False):
+                btype = 'django-line'
+            elif self.debug_options.get('FLASK_DEBUG', False):
+                btype = 'jinja2-line'
+
+        breakpoints_set = []
+
+        for source_breakpoint in arguments.breakpoints:
+            source_breakpoint = SourceBreakpoint(**source_breakpoint)
+            line = source_breakpoint.line
+            condition = source_breakpoint.condition
+            breakpoint_id = line
+
+            hit_condition = self._get_hit_condition_expression(source_breakpoint.hitCondition)
+            log_message = source_breakpoint.logMessage
+            if not log_message:
+                is_logpoint = None
+                expression = None
+            else:
+                is_logpoint = True
+                expressions = re.findall(r'\{.*?\}', log_message)
+                if len(expressions) == 0:
+                    expression = '{}'.format(repr(log_message))  # noqa
+                else:
+                    raw_text = reduce(lambda a, b: a.replace(b, '{}'), expressions, log_message)
+                    raw_text = raw_text.replace('"', '\\"')
+                    expression_list = ', '.join([s.strip('{').strip('}').strip() for s in expressions])
+                    expression = '"{}".format({})'.format(raw_text, expression_list)
+
+            self.api.add_breakpoint(
+                py_db, filename, btype, breakpoint_id, line, condition, func_name, expression, suspend_policy, hit_condition, is_logpoint)
+
+            # Note that the id is made up (the id for pydevd is unique only within a file, so, the
+            # line is used for it).
+            # Also, the id is currently not used afterwards, so, we don't even keep a mapping.
+            breakpoints_set.append({'id':self._next_breakpoint_id(), 'verified': True, 'line': line})
+
+        body = {'breakpoints': breakpoints_set}
+        set_breakpoints_response = pydevd_base_schema.build_response(request, kwargs={'body':body})
+        return NetCommand(CMD_RETURN, 0, set_breakpoints_response.to_dict(), is_json=True)
 
 
 process_net_command_json = _PyDevJsonCommandProcessor(pydevd_base_schema.from_json).process_net_command_json

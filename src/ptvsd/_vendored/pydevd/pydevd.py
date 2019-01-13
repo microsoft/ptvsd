@@ -1312,11 +1312,7 @@ class PyDB(object):
     def prepare_to_run(self):
         ''' Shared code to prepare debugging by installing traces and registering threads '''
         self.patch_threads()
-
-        self._create_pydb_command_thread()
-        if self.redirect_output or self.signature_factory is not None or self.thread_analyser is not None:
-            # we need all data to be sent to IDE even after program finishes
-            self._create_check_output_thread()
+        self.start_auxiliary_daemon_threads()
 
     def patch_threads(self):
         try:
