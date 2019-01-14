@@ -46,9 +46,21 @@ with open('DESCRIPTION.md', 'r') as fh:
     long_description = fh.read()
 
 
+try:
+    from wheel.bdist_wheel import bdist_wheel as _bdist_wheel
+    class bdist_wheel(_bdist_wheel):
+        def finalize_options(self):
+            _bdist_wheel.finalize_options(self)
+            self.root_is_pure = False
+except ImportError:
+    bdist_wheel = None
+
 if __name__ == '__main__':
     if not os.getenv('SKIP_CYTHON_BUILD'):
         cython_build()
+
+    cmds = versioneer.get_cmdclass()
+    cmds['bdist_wheel'] == bdist_wheel
 
     setup(
         name='ptvsd',
@@ -82,5 +94,5 @@ if __name__ == '__main__':
             'ptvsd': ['ThirdPartyNotices.txt'],
             'ptvsd._vendored': list(iter_vendored_files()),
         },
-        cmdclass=versioneer.get_cmdclass(),
+        cmdclass=cmds,
     )
