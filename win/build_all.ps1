@@ -16,7 +16,11 @@ $env:SKIP_CYTHON_BUILD = "1"
 if (-not $pack) {
     (gci $packages\python* -Directory) | %{ gi $_\tools\python.exe } | ?{ Test-Path $_ } | %{
         Write-Host "Building with $_"
+        & $_ -m pip install -U pip
         & $_ -m pip install -U pyfindvs setuptools wheel cython
+        if ($_ -match 'python2'){
+            & $_ -m pip install -U pathlib
+        }
         pushd "$root\..\src\ptvsd\_vendored\pydevd"
         & $_ setup_cython.py enable_msbuildcompiler build_ext -b "$bin" -t "$obj"
         popd
@@ -32,7 +36,7 @@ if (-not $pack) {
 
     (gci $packages\python* -Directory) | %{ gi $_\tools\python.exe } | ?{ Test-Path $_ } | %{
         $plat = 'win_amd64'
-        if ($_ -contains 'x86'){
+        if ($_ -match 'x86'){
             $plat = 'win32'
         }
 
