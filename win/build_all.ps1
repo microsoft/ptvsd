@@ -27,12 +27,15 @@ if (-not $pack) {
     gci $dist\*.whl, $dist\*.zip | Remove-Item -Force
 
     (gci $packages\python* -Directory) | %{ gi $_\tools\python.exe } | ?{ Test-Path $_ } | select -last 1 | %{
+        Write-Host "Building sdist with $_"
+        & $_ setup.py sdist -d "$dist" --formats zip
+    }
+
+    (gci $packages\python* -Directory) | %{ gi $_\tools\python.exe } | ?{ Test-Path $_ } | %{
         $plat = 'win_amd64'
         if ($_ -contains 'x86'){
             $plat = 'win32'
         }
-        Write-Host "Building sdist with $_"
-        & $_ setup.py sdist -d "$dist" --formats zip
 
         Write-Host "Building wheel with $_  for platform $plat"
         & $_ setup.py build -b "$bin" -t "$obj" bdist_wheel -d "$dist" -p $plat
