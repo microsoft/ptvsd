@@ -1337,7 +1337,6 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         self.thread_map = IDMap()
         self.frame_map = IDMap()
         self.var_map = IDMap()
-        self.bp_map = IDMap()
         self.source_map = IDMap()
         self.enable_source_references = False
         self.next_var_ref = 0
