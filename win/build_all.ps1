@@ -17,10 +17,11 @@ if (-not $pack) {
     (gci $packages\python* -Directory) | %{ gi $_\tools\python.exe } | ?{ Test-Path $_ } | %{
         Write-Host "Building with $_"
         & $_ -m pip install -U pip
-        & $_ -m pip install -U pyfindvs setuptools wheel cython
         if ($_ -match 'python2'){
             & $_ -m pip install -U pathlib
         }
+        & $_ -m pip install -U pyfindvs setuptools wheel cython
+        
         pushd "$root\..\src\ptvsd\_vendored\pydevd"
         & $_ setup_cython.py enable_msbuildcompiler build_ext -b "$bin" -t "$obj"
         popd
