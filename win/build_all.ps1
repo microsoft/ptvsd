@@ -12,7 +12,6 @@ if ($env:BUILD_BINARIESDIRECTORY) {
 }
 
 $env:SKIP_CYTHON_BUILD = "1"
-$env:PYDEVD_USE_CYTHON = "NO"
 
 if (-not $pack) {
     (gci $packages\python* -Directory) | %{ gi $_\tools\python.exe } | ?{ Test-Path $_ } | %{
