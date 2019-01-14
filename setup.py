@@ -48,10 +48,15 @@ with open('DESCRIPTION.md', 'r') as fh:
 
 try:
     from wheel.bdist_wheel import bdist_wheel as _bdist_wheel
+
     class bdist_wheel(_bdist_wheel):
         def finalize_options(self):
+            pure = '--pure' in sys.argv
+            if pure:
+                sys.argv.remove('--pure')
+
             _bdist_wheel.finalize_options(self)
-            self.root_is_pure = False
+            self.root_is_pure = pure
 except ImportError:
     bdist_wheel = None
 

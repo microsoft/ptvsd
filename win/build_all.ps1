@@ -48,5 +48,18 @@ if (-not $pack) {
         }
     }
 
+    (gci $packages\python* -Directory) | %{ gi $_\tools\python.exe } | ?{ Test-Path $_ } | select -last 1 | %{
+        $plat = 'win_amd64'
+        if ($_ -match 'x86'){
+            $plat = 'win32'
+        }
+
+        Write-Host "Building wheel with $_  for platform $plat"
+        & $_ setup.py build -b "$bin" -t "$obj" bdist_wheel -d "$dist" -p $plat --pure
+        gci $dist\ptvsd-*.whl | %{
+            Write-Host "Built wheel found at $_"
+        }
+    }
+
 }
 
