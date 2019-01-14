@@ -60,7 +60,7 @@ if __name__ == '__main__':
         cython_build()
 
     cmds = versioneer.get_cmdclass()
-    cmds['bdist_wheel'] == bdist_wheel
+    cmds['bdist_wheel'] = bdist_wheel
 
     setup(
         name='ptvsd',
