@@ -9,13 +9,16 @@ import os.path
 import subprocess
 import sys
 
-from setuptools import setup
+pure = '--pure' in sys.argv
+if pure:
+    sys.argv.remove('--pure')
 
-import versioneer
+from setuptools import setup  # noqa
+import versioneer  # noqa
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src'))
-import ptvsd
-import ptvsd._vendored
+import ptvsd  # noqa
+import ptvsd._vendored  # noqa
 del sys.path[0]
 
 
@@ -51,10 +54,6 @@ try:
 
     class bdist_wheel(_bdist_wheel):
         def finalize_options(self):
-            pure = '--pure' in sys.argv
-            if pure:
-                sys.argv.remove('--pure')
-
             _bdist_wheel.finalize_options(self)
             self.root_is_pure = pure
 except ImportError:

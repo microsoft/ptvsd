@@ -14,7 +14,7 @@ if ($env:BUILD_BINARIESDIRECTORY) {
 $env:SKIP_CYTHON_BUILD = "1"
 
 if (-not $pack) {
-    (gci $packages\python* -Directory) | %{ gi $_\tools\python.exe } | ?{ Test-Path $_ } | %{
+    (Get-ChildItem $packages\python* -Directory) | ForEach-Object{ Get-Item $_\tools\python.exe } | Where-Object{ Test-Path $_ } | ForEach-Object{
         Write-Host "Building with $_"
         & $_ -m pip install -U pip
         if ($_ -match 'python2'){
@@ -22,20 +22,20 @@ if (-not $pack) {
         }
         & $_ -m pip install -U pyfindvs setuptools wheel cython
         
-        pushd "$root\..\src\ptvsd\_vendored\pydevd"
+        Push-Location "$root\..\src\ptvsd\_vendored\pydevd"
         & $_ setup_cython.py enable_msbuildcompiler build_ext -b "$bin" -t "$obj"
-        popd
+        Pop-Location
     }
 
 } else {
-    gci $dist\*.whl, $dist\*.zip | Remove-Item -Force
+    Get-ChildItem $dist\*.whl, $dist\*.zip | Remove-Item -Force
 
-    (gci $packages\python* -Directory) | %{ gi $_\tools\python.exe } | ?{ Test-Path $_ } | select -last 1 | %{
+    (Get-ChildItem $packages\python* -Directory) | ForEach-Object{ Get-Item $_\tools\python.exe } | Where-Object{ Test-Path $_ } | Select-Object -last 1 | ForEach-Object{
         Write-Host "Building sdist with $_"
         & $_ setup.py sdist -d "$dist" --formats zip
     }
 
-    (gci $packages\python* -Directory) | %{ gi $_\tools\python.exe } | ?{ Test-Path $_ } | %{
+    (Get-ChildItem $packages\python* -Directory) | ForEach-Object{ Get-Item $_\tools\python.exe } | Where-Object{ Test-Path $_ } | ForEach-Object{
         $plat = 'win_amd64'
         if ($_ -match 'x86'){
             $plat = 'win32'
@@ -43,12 +43,12 @@ if (-not $pack) {
 
         Write-Host "Building wheel with $_  for platform $plat"
         & $_ setup.py build -b "$bin" -t "$obj" bdist_wheel -d "$dist" -p $plat
-        gci $dist\ptvsd-*.whl | %{
+        Get-ChildItem $dist\ptvsd-*.whl | ForEach-Object{
             Write-Host "Built wheel found at $_"
         }
     }
 
-    (gci $packages\python* -Directory) | %{ gi $_\tools\python.exe } | ?{ Test-Path $_ } | select -last 1 | %{
+    (Get-ChildItem $packages\python* -Directory) | ForEach-Object{ Get-Item $_\tools\python.exe } | Where-Object{ Test-Path $_ } | Select-Object -last 1 | ForEach-Object{
         $plat = 'win_amd64'
         if ($_ -match 'x86'){
             $plat = 'win32'
@@ -56,7 +56,7 @@ if (-not $pack) {
 
         Write-Host "Building wheel with $_  for platform $plat"
         & $_ setup.py build -b "$bin" -t "$obj" bdist_wheel -d "$dist" -p $plat --pure
-        gci $dist\ptvsd-*.whl | %{
+        Get-ChildItem $dist\ptvsd-*.whl | ForEach-Object{
             Write-Host "Built wheel found at $_"
         }
     }
