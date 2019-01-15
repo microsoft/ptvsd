@@ -1,4 +1,4 @@
-param($packages, [switch]$pack)
+param($packages, [switch]$pack, [string]$wheeltype)
 
 $root = $script:MyInvocation.MyCommand.Path | Split-Path -parent;
 if ($env:BUILD_BINARIESDIRECTORY) {
@@ -14,7 +14,7 @@ if ($env:BUILD_BINARIESDIRECTORY) {
 $env:SKIP_CYTHON_BUILD = "1"
 
 if (-not $pack) {
-    (Get-ChildItem $packages\python* -Directory) | ForEach-Object{ Get-Item $_\tools\python.exe } | Where-Object{ Test-Path $_ } | ForEach-Object{
+    (Get-ChildItem $packages\python* -Directory -Filter '*python.3.7*') | ForEach-Object{ Get-Item $_\tools\python.exe } | Where-Object{ Test-Path $_ } | Select-Object -last 1 | ForEach-Object{
         Write-Host "Building with $_"
         & $_ -m pip install -U pip
         & $_ -m pip install -U pyfindvs setuptools wheel cython
@@ -27,31 +27,23 @@ if (-not $pack) {
 } else {
     Get-ChildItem $dist\*.whl, $dist\*.zip | Remove-Item -Force
 
-    (Get-ChildItem $packages\python* -Directory) | ForEach-Object{ Get-Item $_\tools\python.exe } | Where-Object{ Test-Path $_ } | Select-Object -last 1 | ForEach-Object{
-        Write-Host "Building sdist with $_"
-        & $_ setup.py sdist -d "$dist" --formats zip
-
-        Write-Host "Building wheel with $_ pure python wheel"
-        & $_ setup.py build -b "$bin" -t "$obj" bdist_wheel -d "$dist" --pure --keep-temp
-        Get-ChildItem $dist\ptvsd-*.whl | ForEach-Object{
-            Write-Host "Built wheel found at $_"
+    (Get-ChildItem $packages\python* -Directory -Filter '*python.3.7*') | ForEach-Object{ Get-Item $_\tools\python.exe } | Where-Object{ Test-Path $_ } | Select-Object -last 1 | ForEach-Object{
+        if ($wheeltype -eq 'sdist') {
+            Write-Host "Building sdist with $_"
+            & $_ setup.py sdist -d "$dist" --formats zip
         }
 
-        Write-Host "Building wheel with $_ universal"
-        & $_ setup.py build -b "$bin" -t "$obj" bdist_wheel -d "$dist" --universal --keep-temp
-        Get-ChildItem $dist\ptvsd-*.whl | ForEach-Object{
-            Write-Host "Built wheel found at $_"
+        if ($wheeltype -eq 'pure') {
+            Write-Host "Building wheel with $_ pure python wheel"
+            & $_ setup.py build -b "$bin" -t "$obj" bdist_wheel -d "$dist" --pure
         }
-    }
 
-    (Get-ChildItem $packages\python* -Directory) | ForEach-Object{ Get-Item $_\tools\python.exe } | Where-Object{ Test-Path $_ } | ForEach-Object{
-        Write-Host "Building  wheel with $_ for platform."
-        $plat = 'win_amd64'
-        if ($_ -match 'x86'){
-            $plat = 'win32'
+        if ($wheeltype -eq 'universal') {
+            Write-Host "Building wheel with $_ universal wheel"
+            & $_ setup.py build -b "$bin" -t "$obj" bdist_wheel -d "$dist" --universal
         }
-        & $_ setup.py build -b "$bin" -t "$obj" bdist_wheel -d "$dist" -p "$plat" --keep-temp
-        Get-ChildItem $dist\ptvsd-*.whl | ForEach-Object{
+
+        Get-ChildItem $dist\ptvsd-*.whl, $dist\*.zip | ForEach-Object{
             Write-Host "Built wheel found at $_"
         }
     }
