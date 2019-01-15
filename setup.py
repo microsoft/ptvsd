@@ -9,9 +9,16 @@ import os.path
 import subprocess
 import sys
 
-pure = '--pure' in sys.argv
-if pure:
+pure = None
+if '--pure' in sys.argv:
+    pure = True
     sys.argv.remove('--pure')
+elif '--universal' in sys.argv:
+    pure = None
+elif '--abi' in sys.argv:
+    pure = False
+    sys.argv.remove('--abi')
+
 
 from setuptools import setup  # noqa
 import versioneer  # noqa
