@@ -27,8 +27,8 @@ PTVSD_ROOT = os.path.dirname(os.path.abspath(ptvsd.__file__))
 
 
 def get_platform():
-    if '-p' in  sys.args:
-        return sys.args[sys.args.index('-p') + 1]
+    if '-p' in sys.argv:
+        return sys.argv[sys.argv.index('-p') + 1]
     return None
 
 def cython_build():
