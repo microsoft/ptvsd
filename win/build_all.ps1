@@ -23,12 +23,6 @@ if (-not $pack) {
         & $_ setup_cython.py enable_msbuildcompiler build_ext -b "$bin" -t "$obj"
         Pop-Location
     }
-    Push-Location "$bin\.."
-    Get-ChildItem -Path .\ -Filter pydevd*win*.pyd -Recurse -File| ForEach-Object {
-        Write-Host "PYD: $_"
-    }
-    Pop-Location
-
 } else {
     Get-ChildItem $dist\*.whl, $dist\*.zip | Remove-Item -Force
 
