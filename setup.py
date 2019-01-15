@@ -60,8 +60,7 @@ try:
     class bdist_wheel(_bdist_wheel):
         def finalize_options(self):
             _bdist_wheel.finalize_options(self)
-            if pure:
-                self.root_is_pure = pure
+            self.root_is_pure = pure
 except ImportError:
     bdist_wheel = None
 
