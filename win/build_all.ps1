@@ -45,8 +45,12 @@ if (-not $pack) {
     }
 
     (Get-ChildItem $packages\python* -Directory) | ForEach-Object{ Get-Item $_\tools\python.exe } | Where-Object{ Test-Path $_ } | ForEach-Object{
-        Write-Host "Building  wheel with $_  for platform."
-        & $_ setup.py build -b "$bin" -t "$obj" bdist_wheel -d "$dist"
+        Write-Host "Building  wheel with $_ for platform."
+        $plat = 'win_amd64'
+        if ($_ -match 'x86'){
+            $plat = 'win32'
+        }
+        & $_ setup.py build -b "$bin" -t "$obj" bdist_wheel -d "$dist" -p "$plat"
         Get-ChildItem $dist\ptvsd-*.whl | ForEach-Object{
             Write-Host "Built wheel found at $_"
         }
