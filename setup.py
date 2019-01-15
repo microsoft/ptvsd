@@ -78,6 +78,11 @@ if __name__ == '__main__':
     cmds = versioneer.get_cmdclass()
     cmds['bdist_wheel'] = bdist_wheel
 
+    extras = {}
+    platforms = get_buildplatform()
+    if platforms is not None:
+        extras['platforms'] = platforms
+
     setup(
         name='ptvsd',
         version=versioneer.get_version(),
@@ -89,7 +94,6 @@ if __name__ == '__main__':
         author_email='ptvshelp@microsoft.com',
         url='https://aka.ms/ptvs',
         python_requires='>=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*',
-        platforms=get_buildplatform(),
         classifiers=[
             'Development Status :: 5 - Production/Stable',
             'Programming Language :: Python :: 2.7',
@@ -112,4 +116,5 @@ if __name__ == '__main__':
             'ptvsd._vendored': list(iter_vendored_files()),
         },
         cmdclass=cmds,
+        **extras,
     )
