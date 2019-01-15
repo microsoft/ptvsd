@@ -24,7 +24,7 @@ if (-not $pack) {
         Pop-Location
     }
     Push-Location "$bin\.."
-    Get-ChildItem -Path .\ -Filter *.pyd -Recurse -File| ForEach-Object {
+    Get-ChildItem -Path .\ -Filter pydevd*win*.pyd -Recurse -File| ForEach-Object {
         Write-Host "PYD: $_"
     }
     Pop-Location
