@@ -16,7 +16,8 @@ $env:SKIP_CYTHON_BUILD = "1"
 $filter = "*python.$pyver*"
 if ($platform -eq 'win32'){
     $filter = "*pythonx86.$pyver*"
-} 
+}
+Write-Host "Filter: $filter"
 
 if (-not $pack) {
     (Get-ChildItem $packages\python* -Directory -Filter $filter) | ForEach-Object{ Get-Item $_\tools\python.exe } | Where-Object{ Test-Path $_ } | ForEach-Object{
