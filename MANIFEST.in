@@ -1,6 +1,6 @@
 include LICENSE
 include DESCRIPTION.md
-global-exclude *.py[cdo]
+global-exclude *.py[co]
 include versioneer.py
 include src/ptvsd/_version.py
-recursive-include src/ptvsd/_vendored/pydevd pydevd*win*.pyd
+global-include pydevd*win*.pyd
