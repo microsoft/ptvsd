@@ -26,7 +26,7 @@ PYDEVD_ROOT = ptvsd._vendored.project_root('pydevd')
 PTVSD_ROOT = os.path.dirname(os.path.abspath(ptvsd.__file__))
 
 
-def get_platform():
+def get_buildplatform():
     if '-p' in sys.argv:
         return sys.argv[sys.argv.index('-p') + 1]
     return None
@@ -83,7 +83,7 @@ if __name__ == '__main__':
         author_email='ptvshelp@microsoft.com',
         url='https://aka.ms/ptvs',
         python_requires='>=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*',
-        platform=get_platform(),
+        platforms=[get_buildplatform()],
         classifiers=[
             'Development Status :: 5 - Production/Stable',
             'Programming Language :: Python :: 2.7',
