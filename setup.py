@@ -14,7 +14,7 @@ if '--pure' in sys.argv:
     pure = True
     sys.argv.remove('--pure')
 elif '--universal' in sys.argv:
-    pure = None
+    pure = True
 elif '--abi' in sys.argv:
     pure = False
     sys.argv.remove('--abi')
@@ -89,7 +89,7 @@ if __name__ == '__main__':
         author_email='ptvshelp@microsoft.com',
         url='https://aka.ms/ptvs',
         python_requires='>=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*',
-        platforms=[get_buildplatform()],
+        platforms=get_buildplatform(),
         classifiers=[
             'Development Status :: 5 - Production/Stable',
             'Programming Language :: Python :: 2.7',
