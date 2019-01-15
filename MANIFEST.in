@@ -3,3 +3,4 @@ include DESCRIPTION.md
 global-exclude *.py[cdo]
 include versioneer.py
 include src/ptvsd/_version.py
+recursive-include src/ptvsd/_vendored/pydevd *.*win*.pyd

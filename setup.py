@@ -10,6 +10,7 @@ import subprocess
 import sys
 
 pure = None
+abi = False
 if '--pure' in sys.argv:
     pure = True
     sys.argv.remove('--pure')
@@ -17,6 +18,7 @@ elif '--universal' in sys.argv:
     pure = True
 elif '--abi' in sys.argv:
     pure = False
+    abi = True
     sys.argv.remove('--abi')
 
 
@@ -68,6 +70,9 @@ try:
         def finalize_options(self):
             _bdist_wheel.finalize_options(self)
             self.root_is_pure = pure
+
+        def has_ext_modules(foo):
+            return abi
 except ImportError:
     bdist_wheel = None
 
