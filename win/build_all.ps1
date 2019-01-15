@@ -32,13 +32,13 @@ if (-not $pack) {
         & $_ setup.py sdist -d "$dist" --formats zip
 
         Write-Host "Building wheel with $_ pure python wheel"
-        & $_ setup.py build -b "$bin" -t "$obj" bdist_wheel -d "$dist" --pure
+        & $_ setup.py build -b "$bin" -t "$obj" bdist_wheel -d "$dist" --pure --keep-temp
         Get-ChildItem $dist\ptvsd-*.whl | ForEach-Object{
             Write-Host "Built wheel found at $_"
         }
 
         Write-Host "Building wheel with $_ universal"
-        & $_ setup.py build -b "$bin" -t "$obj" bdist_wheel -d "$dist" --universal
+        & $_ setup.py build -b "$bin" -t "$obj" bdist_wheel -d "$dist" --universal --keep-temp
         Get-ChildItem $dist\ptvsd-*.whl | ForEach-Object{
             Write-Host "Built wheel found at $_"
         }
@@ -50,7 +50,7 @@ if (-not $pack) {
         if ($_ -match 'x86'){
             $plat = 'win32'
         }
-        & $_ setup.py build -b "$bin" -t "$obj" bdist_wheel -d "$dist" -p "$plat"
+        & $_ setup.py build -b "$bin" -t "$obj" bdist_wheel -d "$dist" -p "$plat" --keep-temp
         Get-ChildItem $dist\ptvsd-*.whl | ForEach-Object{
             Write-Host "Built wheel found at $_"
         }
