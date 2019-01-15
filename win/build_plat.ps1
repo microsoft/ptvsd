@@ -29,7 +29,7 @@ if (-not $pack) {
         & $_ setup_cython.py enable_msbuildcompiler build_ext -b "$bin" -t "$obj"
         Pop-Location
     }
-    Push-Location "$root\..\src\ptvsd\_vendored\pydevd"
+    Push-Location "$bin\.."
     Get-ChildItem -Path .\ -Filter *.pyd -Recurse -File| ForEach-Object {
         Write-Host "PYD: $_"
     }
