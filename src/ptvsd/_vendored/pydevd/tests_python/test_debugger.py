@@ -863,6 +863,22 @@ def test_case_20(case_setup):
         writer.finished_ok = True
 
 
+@pytest.mark.skipif(not IS_PY37_OR_GREATER, reason='Py37 only test')
+def test_case_invalid_string_dataclasses(case_setup):
+    with case_setup.test_file('_debugger_case_dataclasses.py') as writer:
+        writer.write_make_initial_run()
+
+        writer.write_add_breakpoint(writer.get_line_index_with_content('break here'))
+        writer.write_make_initial_run()
+        hit = writer.wait_for_breakpoint_hit()
+
+        writer.write_step_in(hit.thread_id)
+        hit = writer.wait_for_breakpoint_hit(reason=REASON_STEP_INTO, file=writer.get_main_filename(), name='<module>')
+
+        writer.write_step_in(hit.thread_id)
+        writer.finished_ok = True
+
+
 @pytest.mark.skipif(not TEST_FLASK, reason='No flask available')
 def test_case_flask(case_setup_flask):
     with case_setup_flask.test_file(EXPECTED_RETURNCODE='any') as writer:

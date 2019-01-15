@@ -534,9 +534,10 @@ class PyDB(object):
                 If it's a regular user file which should be traced.
         '''
         basename = abs_real_path_and_basename[-1]
-        if basename.startswith('<frozen '):
+        if basename.startswith('<'):
             # In Python 3.7 "<frozen ..." appear multiple times during import and should be
-            # ignored for the user.
+            # ignored for the user and <string> is commonly used for dummy files, so, consider
+            # any file starting with '<' as invisible for the debugger.
             return self.PYDEV_FILE
         return self._dont_trace_get_file_type(basename)
 
