@@ -20,7 +20,7 @@ if ($platform -eq 'win32'){
 Write-Host "Filter: $filter"
 
 if (-not $pack) {
-    (Get-ChildItem $packages\python* -Directory -Filter $filter) | ForEach-Object{ Get-Item $_\tools\python.exe } | Where-Object{ Test-Path $_ } | ForEach-Object{
+    (Get-ChildItem $packages\python* -Directory -Filter $filter) | ForEach-Object{ Get-Item $_\tools\python.exe } | Where-Object{ Test-Path $_ } | Select-Object -last 1 | ForEach-Object{
         Write-Host "Building with $_"
         & $_ -m pip install -U pip
         & $_ -m pip install -U pyfindvs setuptools wheel cython
@@ -32,7 +32,7 @@ if (-not $pack) {
 } else {
     Get-ChildItem $dist\*.whl, $dist\*.zip | Remove-Item -Force
 
-    (Get-ChildItem $packages\python* -Directory) | ForEach-Object{ Get-Item $_\tools\python.exe } | Where-Object{ Test-Path $_ } | Select-Object -last 1 | ForEach-Object{
+    (Get-ChildItem $packages\python* -Directory -Filter $filter) | ForEach-Object{ Get-Item $_\tools\python.exe } | Where-Object{ Test-Path $_ } | Select-Object -last 1 | ForEach-Object{
         Write-Host "Building  wheel with $_ for platform."
         & $_ setup.py build -b "$bin" -t "$obj" bdist_wheel -d "$dist" -p "$platform"
         Get-ChildItem $dist\ptvsd-*.whl | ForEach-Object{
