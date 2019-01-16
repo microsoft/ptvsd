@@ -1582,6 +1582,9 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         for pathMapping in args.get('pathMappings', []):
             localRoot = pathMapping.get('localRoot', '')
             remoteRoot = pathMapping.get('remoteRoot', '')
+            if remoteRoot == '.':
+                remoteRoot = os.getcwd()
+                remoteRoot += (os.path.sep if localRoot.endswith('\\') or localRoot.endswith('/') else '')
             if (len(localRoot) > 0 and len(remoteRoot) > 0):
                 self._path_mappings.append((localRoot, remoteRoot))
 
