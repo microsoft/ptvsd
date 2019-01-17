@@ -117,5 +117,5 @@ if __name__ == '__main__':
             'ptvsd._vendored': list(iter_vendored_files()),
         },
         cmdclass=cmds,
-        **extras,
+        **extras
     )
