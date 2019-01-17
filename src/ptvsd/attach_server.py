@@ -2,8 +2,6 @@
 # Licensed under the MIT License. See LICENSE in the project root
 # for license information.
 
-import threading
-
 from ptvsd._remote import (
     attach as ptvsd_attach,
     enable_attach as ptvsd_enable_attach,

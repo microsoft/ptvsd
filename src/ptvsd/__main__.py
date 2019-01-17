@@ -138,6 +138,8 @@ switches = [
 
 
 def parse(args):
+    unseen_switches = list(switches)
+
     it = iter(args)
     while True:
         try:
@@ -146,11 +148,11 @@ def parse(args):
             raise ValueError('missing target: ' + TARGET)
 
         switch = arg if arg.startswith('-') else ''
-        for i, (sw, placeholder, action, _) in enumerate(switches):
+        for i, (sw, placeholder, action, _) in enumerate(unseen_switches):
             if isinstance(sw, str):
                 sw = (sw,)
             if switch in sw:
-                del switches[i]
+                del unseen_switches[i]
                 break
         else:
             raise ValueError('unrecognized switch ' + switch)
@@ -166,7 +168,7 @@ def parse(args):
         if ptvsd.options.target is not None:
             break
 
-    for sw, placeholder, _, required in switches:
+    for sw, placeholder, _, required in unseen_switches:
         if required:
             if not isinstance(sw, str):
                 sw = sw[0]
