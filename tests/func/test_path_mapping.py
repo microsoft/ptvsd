@@ -47,6 +47,8 @@ def test_with_dot_remote_root(pyfile, tmpdir, run_as, start_method):
         session.start_debugging()
         hit = session.wait_for_thread_stopped('breakpoint')
         frames = hit.stacktrace.body['stackFrames']
+        print('Local Path: ' + path_local)
+        print('Frames: ' + str(frames))
         assert frames[0]['source']['path'] == Path(path_local)
 
         remote_code_path = session.read_json()
