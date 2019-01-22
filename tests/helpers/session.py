@@ -31,6 +31,17 @@ PTVSD_HOST_KEY = 'PTVSD_TEST_HOST'
 PTVSD_PORT_KEY = 'PTVSD_TEST_PORT'
 
 
+def get_ptvsd_port():
+    # Different worker processes need to use different ptvsd ports,
+    # for those scenarios where one is specified explicitly.
+    try:
+        worker_id = os.environ['PYTEST_XDIST_WORKER']
+        n = int(worker_id[2:])  # e.g. 'gw123'
+    except KeyError:
+        n = 0
+    return 5678 + n
+
+
 class DebugSession(object):
     WAIT_FOR_EXIT_TIMEOUT = 5
     BACKCHANNEL_TIMEOUT = 15
@@ -45,7 +56,7 @@ class DebugSession(object):
 
         self.target = ('code', 'print("OK")')
         self.start_method = start_method
-        self.ptvsd_port = ptvsd_port or 5678
+        self.ptvsd_port = ptvsd_port or get_ptvsd_port()
         self.multiprocess = False
         self.multiprocess_port_range = None
         self.debug_options = ['RedirectOutput']
