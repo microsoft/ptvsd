@@ -4,6 +4,7 @@
 
 from __future__ import print_function, with_statement, absolute_import
 
+from collections import namedtuple
 import os
 import psutil
 import pytest
@@ -18,28 +19,18 @@ import ptvsd
 import ptvsd.__main__
 from ptvsd.messaging import JsonIOStream, JsonMessageChannel, MessageHandlers
 
+import tests.helpers
 from . import colors, debuggee, print, watchdog
 from .messaging import LoggingJsonStream
 from .pattern import ANY
 from .printer import wait_for_output
 from .timeline import Timeline, Event, Response
-from collections import namedtuple
 
 
+PTVSD_PORT = tests.helpers.get_unique_port(5678)
 PTVSD_ENABLE_KEY = 'PTVSD_ENABLE_ATTACH'
 PTVSD_HOST_KEY = 'PTVSD_TEST_HOST'
 PTVSD_PORT_KEY = 'PTVSD_TEST_PORT'
-
-
-def get_ptvsd_port():
-    # Different worker processes need to use different ptvsd ports,
-    # for those scenarios where one is specified explicitly.
-    try:
-        worker_id = os.environ['PYTEST_XDIST_WORKER']
-        n = int(worker_id[2:])  # e.g. 'gw123'
-    except KeyError:
-        n = 0
-    return 5678 + n
 
 
 class DebugSession(object):
@@ -56,7 +47,7 @@ class DebugSession(object):
 
         self.target = ('code', 'print("OK")')
         self.start_method = start_method
-        self.ptvsd_port = ptvsd_port or get_ptvsd_port()
+        self.ptvsd_port = ptvsd_port or PTVSD_PORT
         self.multiprocess = False
         self.multiprocess_port_range = None
         self.debug_options = ['RedirectOutput']
