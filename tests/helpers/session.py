@@ -34,8 +34,8 @@ PTVSD_PORT_KEY = 'PTVSD_TEST_PORT'
 
 
 class DebugSession(object):
-    WAIT_FOR_EXIT_TIMEOUT = 5
-    BACKCHANNEL_TIMEOUT = 15
+    WAIT_FOR_EXIT_TIMEOUT = 10
+    BACKCHANNEL_TIMEOUT = 20
 
     StopInfo = namedtuple('StopInfo', 'thread_stopped, stacktrace, thread_id, frame_id')
 
