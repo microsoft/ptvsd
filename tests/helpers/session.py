@@ -585,6 +585,7 @@ class DebugSession(object):
             child_session.handshake()
         except:
             child_session.close()
+            raise
         else:
             return child_session
 
