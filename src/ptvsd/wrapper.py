@@ -702,6 +702,7 @@ class ModulesManager(object):
                 try:
                     path = self._get_platform_file_path(value.__file__)
                 except AttributeError:
+                    print('no __file__ set')
                     path = None
 
                 if path and search_path == path:
@@ -727,6 +728,7 @@ class ModulesManager(object):
                     self.path_to_module_id[module_path] = module_id
                     self.module_id_to_details[module_id] = module
 
+                    print('"module" event sent')
                     self.proc.send_event('module', reason='new', module=module)
                     return module
 
@@ -1792,8 +1794,10 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
             norm_path = self.path_casing.un_normcase(unquote_xml_path(xframe['file']))  # noqa
             source_reference = self.get_source_reference(norm_path)
             if not self.internals_filter.is_internal_path(norm_path):
+                print('*************** adding module for', norm_path)
                 module = self.modules_mgr.add_or_get_from_path(norm_path)
             else:
+                print('!!!!!!!!!!!!!!! not adding module for', norm_path)
                 module = None
             line = int(xframe['line'])
             frame_name = self._format_frame_name(
