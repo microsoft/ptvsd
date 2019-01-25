@@ -268,7 +268,7 @@ class DebugSession(object):
         self.pid = self.process.pid
         self.psutil_process = psutil.Process(self.pid)
         self.is_running = True
-        watchdog.create(self.pid)
+        #watchdog.create(self.pid)
 
         self._capture_output(self.process.stdout, 'OUT')
         self._capture_output(self.process.stderr, 'ERR')
