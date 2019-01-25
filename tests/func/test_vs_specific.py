@@ -70,6 +70,8 @@ def test_module_events(pyfile, run_as, start_method):
     def test_code():
         from dbgimporter import import_and_enable_debugger
         import_and_enable_debugger()
+        import ptvsd.wrapper
+        ptvsd.wrapper.ModulesManager.DEBUG = True
         from module1 import do_something
         do_something()
 

@@ -682,6 +682,8 @@ class VariablesSorter(object):
 
 class ModulesManager(object):
 
+    DEBUG = False
+
     def __init__(self, proc):
         self.module_id_to_details = {}
         self.path_to_module_id = {}
@@ -693,16 +695,25 @@ class ModulesManager(object):
         with self._lock:
             try:
                 module_id = self.path_to_module_id[module_path]
-                return self.module_id_to_details[module_id]
+                if ModulesManager.DEBUG:
+                    print('cached module info', module_path, module_id)
+                details = self.module_id_to_details[module_id]
+                if ModulesManager.DEBUG:
+                    print('cached module info details', module_path, details)
+                return details
             except KeyError:
                 pass
 
             search_path = self._get_platform_file_path(module_path)
+            print('module', module_path, 'search path', search_path)
             for _, value in list(sys.modules.items()):
                 try:
                     path = self._get_platform_file_path(value.__file__)
                 except AttributeError:
                     path = None
+
+                # if ModulesManager.DEBUG:
+                #     print('module check', path, search_path)
 
                 if path and search_path == path:
                     module_id = self._next_id
@@ -731,6 +742,8 @@ class ModulesManager(object):
                     self.proc.send_event('module', reason='new', module=module)
                     return module
 
+        if ModulesManager.DEBUG:
+            print('no matching module for', module_path)
         return None
 
     def _get_platform_file_path(self, path):
@@ -1793,10 +1806,8 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
             norm_path = self.path_casing.un_normcase(unquote_xml_path(xframe['file']))  # noqa
             source_reference = self.get_source_reference(norm_path)
             if not self.internals_filter.is_internal_path(norm_path):
-                print('*************** adding module for', norm_path)
                 module = self.modules_mgr.add_or_get_from_path(norm_path)
             else:
-                print('!!!!!!!!!!!!!!! not adding module for', norm_path)
                 module = None
             line = int(xframe['line'])
             frame_name = self._format_frame_name(
