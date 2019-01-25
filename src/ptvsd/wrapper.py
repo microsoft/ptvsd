@@ -702,7 +702,6 @@ class ModulesManager(object):
                 try:
                     path = self._get_platform_file_path(value.__file__)
                 except AttributeError:
-                    print('no __file__ set')
                     path = None
 
                 if path and search_path == path:
