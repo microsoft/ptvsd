@@ -695,17 +695,12 @@ class ModulesManager(object):
         with self._lock:
             try:
                 module_id = self.path_to_module_id[module_path]
-                if ModulesManager.DEBUG:
-                    print('cached module info', module_path, module_id)
-                details = self.module_id_to_details[module_id]
-                if ModulesManager.DEBUG:
-                    print('cached module info details', module_path, details)
-                return details
+                return self.module_id_to_details[module_id]
             except KeyError:
                 pass
 
             search_path = self._get_platform_file_path(module_path)
-            print('module', module_path, 'search path', search_path)
+            print('module %r search path %r' % (module_path, search_path))
             for _, value in list(sys.modules.items()):
                 try:
                     path = self._get_platform_file_path(value.__file__)
@@ -738,12 +733,12 @@ class ModulesManager(object):
                     self.path_to_module_id[module_path] = module_id
                     self.module_id_to_details[module_id] = module
 
-                    print('"module" event sent')
+                    print('"module" event sent: %r' % (module,))
                     self.proc.send_event('module', reason='new', module=module)
                     return module
 
         if ModulesManager.DEBUG:
-            print('no matching module for', module_path)
+            print('no matching module for %r' % (module_path,))
         return None
 
     def _get_platform_file_path(self, path):
