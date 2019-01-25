@@ -701,6 +701,15 @@ class ModulesManager(object):
 
             search_path = self._get_platform_file_path(module_path)
             print('module %r search path %r' % (module_path, search_path))
+
+            paths = []
+            for _, value in list(sys.modules.items()):
+                try:
+                    paths += self._get_platform_file_path(value.__file__)
+                except AttributeError:
+                    paths += [None]
+            print('search path %r candidates: %r' % (search_path, paths))
+
             for _, value in list(sys.modules.items()):
                 try:
                     path = self._get_platform_file_path(value.__file__)
