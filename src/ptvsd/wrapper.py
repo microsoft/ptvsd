@@ -682,8 +682,6 @@ class VariablesSorter(object):
 
 class ModulesManager(object):
 
-    DEBUG = False
-
     def __init__(self, proc):
         self.module_id_to_details = {}
         self.path_to_module_id = {}
@@ -700,7 +698,6 @@ class ModulesManager(object):
                 pass
 
             search_path = self._get_platform_file_path(module_path)
-            print('module %r search path %r' % (module_path, search_path))
 
             paths = []
             for _, value in list(sys.modules.items()):
@@ -708,7 +705,6 @@ class ModulesManager(object):
                     paths += [self._get_platform_file_path(value.__file__)]
                 except AttributeError:
                     paths += [None]
-            print('search path %r candidates: %r' % (search_path, paths))
 
             for _, value in list(sys.modules.items()):
                 try:
@@ -716,38 +712,44 @@ class ModulesManager(object):
                 except AttributeError:
                     path = None
 
-                # if ModulesManager.DEBUG:
-                #     print('module check', path, search_path)
+                if not path:
+                    continue
 
-                if path and search_path == path:
-                    module_id = self._next_id
-                    self._next_id += 1
+                try:
+                    # This tries to open the files to obtain handles, which can be restricted
+                    # by file permissions, but ensures that long/short path mismatch, symlinks
+                    # etc are all accounted for. Fall back to comparing names in case of failure.
+                    if not os.path.samefile(path, search_path):
+                        continue
+                except Exception:
+                    if path != search_path:
+                        continue
 
-                    module = {
-                        'id': module_id,
-                        'package': value.__package__ if hasattr(value, '__package__') else None,
-                        'path': module_path,
-                    }
+                module_id = self._next_id
+                self._next_id += 1
 
-                    try:
-                        module['name'] = value.__qualname__
-                    except AttributeError:
-                        module['name'] = value.__name__
+                module = {
+                    'id': module_id,
+                    'package': value.__package__ if hasattr(value, '__package__') else None,
+                    'path': module_path,
+                }
 
-                    try:
-                        module['version'] = value.__version__
-                    except AttributeError:
-                        pass
+                try:
+                    module['name'] = value.__qualname__
+                except AttributeError:
+                    module['name'] = value.__name__
 
-                    self.path_to_module_id[module_path] = module_id
-                    self.module_id_to_details[module_id] = module
+                try:
+                    module['version'] = value.__version__
+                except AttributeError:
+                    pass
 
-                    print('"module" event sent: %r' % (module,))
-                    self.proc.send_event('module', reason='new', module=module)
-                    return module
+                self.path_to_module_id[module_path] = module_id
+                self.module_id_to_details[module_id] = module
 
-        if ModulesManager.DEBUG:
-            print('no matching module for %r' % (module_path,))
+                self.proc.send_event('module', reason='new', module=module)
+                return module
+
         return None
 
     def _get_platform_file_path(self, path):
