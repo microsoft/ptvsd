@@ -53,6 +53,9 @@ def _pydev_stop_at_break(line):
         except KeyError:
             pydev_log.debug("Couldn't find breakpoint in the file {} on line {}".format(frame.f_code.co_filename, line))
             return
+        except TypeError:
+            pydev_log.debug("Breakpoints not available for the file {}".format(frame.f_code.co_filename))
+            return
 
         if python_breakpoint:
             pydev_log.debug("Suspending at breakpoint in file: {} on line {}".format(frame.f_code.co_filename, line))
