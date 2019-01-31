@@ -1356,6 +1356,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         # adapter state
         self.path_casing = PathUnNormcase()
         self._detached = False
+        self._path_mappings_applied = threading.Event()
 
     def _start_event_loop(self):
         self.loop = futures.EventLoop()
@@ -1608,6 +1609,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
 
         if len(self._path_mappings) > 0:
             pydevd_file_utils.setup_client_server_paths(self._path_mappings)
+        self._path_mappings_applied.set()
 
     def _send_cmd_version_command(self):
         cmd = pydevd_comm.CMD_VERSION
@@ -2276,6 +2278,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
 
     @async_handler
     def on_setBreakpoints(self, request, args):
+        self._path_mappings_applied.wait()
         pydevd_request = copy.deepcopy(request)
         del pydevd_request['seq']  # A new seq should be created for pydevd.
         _, _, resp_args = yield self.pydevd_request(
