@@ -346,3 +346,36 @@ def test_package_launch():
 
         session.send_request('continue').wait_for_response(freeze=False)
         session.wait_for_exit()
+
+
+def test_add_and_remove_breakpoint(pyfile, run_as, start_method):
+    @pyfile
+    def code_to_debug():
+        from dbgimporter import import_and_enable_debugger
+        import_and_enable_debugger()
+        for i in range(0, 10):
+            print(i)
+
+    bp_line = 4
+    with DebugSession() as session:
+        session.initialize(
+            target=(run_as, code_to_debug),
+            start_method=start_method,
+            ignore_unobserved=[Event('continued')],
+        )
+        session.set_breakpoints(code_to_debug, [bp_line])
+        session.start_debugging()
+
+        hit = session.wait_for_thread_stopped()
+        frames = hit.stacktrace.body['stackFrames']
+        assert bp_line == frames[0]['line']
+
+        # remove breakpoints in file
+        session.set_breakpoints(code_to_debug, [])
+        session.send_request('continue').wait_for_response(freeze=False)
+        session.wait_for_exit()
+
+        # NOTE: Due to https://github.com/Microsoft/ptvsd/issues/1028 we may not get
+        # all output events. Once that is fixed we should check for the exact output
+        output = session.all_occurrences_of(Event('output', ANY.dict_with({'category': 'stdout'})))
+        assert len(output) > 2
