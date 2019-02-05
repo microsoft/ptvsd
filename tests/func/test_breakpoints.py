@@ -324,7 +324,6 @@ def test_condition_with_log_point(pyfile, run_as, start_method):
         assert 5 in values
 
 
-@pytest.mark.skip(reason='Bug #1010')
 def test_package_launch():
     bp_line = 2
     cwd = get_test_root('testpkgs')
