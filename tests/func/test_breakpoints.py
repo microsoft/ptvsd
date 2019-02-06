@@ -378,11 +378,11 @@ def test_add_and_remove_breakpoint(pyfile, run_as, start_method):
 
         out_event = session.wait_for_next(Event('output', ANY.dict_with({'category': 'stdout'})))
         for _ in range(10):
-            session.proceed()
             if out_event.body['output'].startswith('9'):
                 break
+            session.proceed()
             out_event = session.wait_for_next(Event('output', ANY.dict_with({'category': 'stdout'})))
-
+        session.proceed()
         session.write_json('done')
         session.wait_for_exit()
 
