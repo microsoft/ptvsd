@@ -354,6 +354,8 @@ def test_add_and_remove_breakpoint(pyfile, run_as, start_method):
         import_and_enable_debugger()
         for i in range(0, 10):
             print(i)
+        import backchannel
+        backchannel.read_json()
 
     bp_line = 4
     with DebugSession() as session:
@@ -361,6 +363,7 @@ def test_add_and_remove_breakpoint(pyfile, run_as, start_method):
             target=(run_as, code_to_debug),
             start_method=start_method,
             ignore_unobserved=[Event('continued')],
+            use_backchannel=True,
         )
         session.set_breakpoints(code_to_debug, [bp_line])
         session.start_debugging()
@@ -372,9 +375,17 @@ def test_add_and_remove_breakpoint(pyfile, run_as, start_method):
         # remove breakpoints in file
         session.set_breakpoints(code_to_debug, [])
         session.send_request('continue').wait_for_response(freeze=False)
+
+        out_event = session.wait_for_next(Event('output', ANY.dict_with({'category': 'stdout'})))
+        for _ in range(10):
+            session.proceed()
+            if out_event.body['output'].startswith('9'):
+                break
+            out_event = session.wait_for_next(Event('output', ANY.dict_with({'category': 'stdout'})))
+
+        session.write_json('done')
         session.wait_for_exit()
 
-        # NOTE: Due to https://github.com/Microsoft/ptvsd/issues/1028 we may not get
-        # all output events. Once that is fixed we should check for the exact output
         output = session.all_occurrences_of(Event('output', ANY.dict_with({'category': 'stdout'})))
-        assert len(output) > 2
+        output = sorted(int(o.body['output'].strip()) for o in output if len(o.body['output'].strip()) > 0)
+        assert list(range(0, 10)) == output
