@@ -534,12 +534,12 @@ class DebugSession(object):
         _, self.backchannel_port = self.backchannel_socket.getsockname()
         self.backchannel_socket.listen(0)
 
-        backchannel_thread = threading.Thread(target=self._backchannel_worker, name='bchan#%d listener' % self.backchannel_port)
+        backchannel_thread = threading.Thread(target=self._backchannel_worker, name='bchan#%d listener' % self.ptvsd_port)
         backchannel_thread.daemon = True
         backchannel_thread.start()
 
     def _backchannel_worker(self):
-        print('Listening for incoming backchannel connection for bchan#%d' % self.backchannel_port)
+        print('Listening for incoming backchannel connection for bchan#%d' % self.ptvsd_port)
         sock = None
 
         try:
