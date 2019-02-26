@@ -482,11 +482,15 @@ class ExceptionsManager(object):
         self.exceptions = {}
         self.lock = threading.Lock()
 
+    def remove_exception_break(self, ex_type=None, exception='BaseException'):
+        cmdargs = (ex_type or 'python', exception)
+        msg = '{}-{}'.format(*cmdargs)
+        self.proc.pydevd_notify(pydevd_comm.CMD_REMOVE_EXCEPTION_BREAK, msg)
+ 
     def remove_all_exception_breaks(self):
         with self.lock:
             for exception in self.exceptions.keys():
-                self.proc.pydevd_notify(pydevd_comm.CMD_REMOVE_EXCEPTION_BREAK,
-                                        'python-{}'.format(exception))
+                self.remove_exception_break(exception=exception)
             self.exceptions = {}
 
     def _find_exception(self, name):
@@ -511,25 +515,27 @@ class ExceptionsManager(object):
         return 'unhandled'
 
     def add_exception_break(self, exception, break_raised, break_uncaught,
-                            skip_stdlib=False):
+                            skip_stdlib=False, ex_type=None):
 
         notify_on_handled_exceptions = 1 if break_raised else 0
         notify_on_unhandled_exceptions = 1 if break_uncaught else 0
         ignore_libraries = 1 if skip_stdlib else 0
 
         cmdargs = (
+            ex_type or 'python',
             exception,
             notify_on_handled_exceptions,
             notify_on_unhandled_exceptions,
             ignore_libraries,
         )
+
         break_mode = 'never'
         if break_raised:
             break_mode = 'always'
         elif break_uncaught:
             break_mode = 'unhandled'
 
-        msg = 'python-{}\t{}\t{}\t{}'.format(*cmdargs)
+        msg = '{}-{}\t{}\t{}\t{}'.format(*cmdargs)
         with self.lock:
             self.proc.pydevd_notify(
                 pydevd_comm.CMD_ADD_EXCEPTION_BREAK, msg)
@@ -1796,6 +1802,13 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         breakpoints = resp_args['body']['breakpoints']
         self.send_response(request, breakpoints=breakpoints)
 
+    def _get_pydevex_type(self):
+        if self.debug_options.get('DJANGO_DEBUG', False):
+            return 'django'
+        elif self.debug_options.get('FLASK_DEBUG', False):
+            return 'jinja2'
+        return 'python'
+
     @async_handler
     def on_setExceptionBreakpoints(self, request, args):
         # TODO: docstring
@@ -1803,9 +1816,15 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         exception_options = args.get('exceptionOptions', [])
         jmc = self._is_just_my_code_stepping_enabled()
 
+        pydevex_type = self._get_pydevex_type()
         if exception_options:
             self.exceptions_mgr.apply_exception_options(
                 exception_options, jmc)
+            if pydevex_type != 'python':
+                self.exceptions_mgr.remove_exception_break(ex_type=pydevex_type)
+                self.exceptions_mgr.add_exception_break(
+                    'BaseException', True, True,
+                    skip_stdlib=jmc, ex_type=pydevex_type)
         else:
             self.exceptions_mgr.remove_all_exception_breaks()
             break_raised = 'raised' in filters
@@ -1814,6 +1833,12 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
                 self.exceptions_mgr.add_exception_break(
                     'BaseException', break_raised, break_uncaught,
                     skip_stdlib=jmc)
+                if pydevex_type != 'python':
+                    self.exceptions_mgr.remove_exception_break(ex_type=pydevex_type)
+                    self.exceptions_mgr.add_exception_break(
+                        'BaseException', break_raised, break_uncaught,
+                        skip_stdlib=jmc, ex_type=pydevex_type)
+
         if request is not None:
             self.send_response(request)
 

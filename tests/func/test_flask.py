@@ -124,7 +124,6 @@ def test_flask_breakpoint_no_multiproc(bp_target, start_method):
 
 
 @pytest.mark.parametrize('start_method', ['launch', 'attach_socket_cmdline'])
-@pytest.mark.skip(reason='Bug #694')
 @pytest.mark.timeout(60)
 def test_flask_template_exception_no_multiproc(start_method):
     with DebugSession() as session:
@@ -147,7 +146,7 @@ def test_flask_template_exception_no_multiproc(start_method):
         frames = hit.stacktrace.body['stackFrames']
         assert frames[0] == {
             'id': ANY.int,
-            'name': 'bad_template',
+            'name': 'template',
             'source': {
                 'sourceReference': ANY.int,
                 'path': Path(FLASK1_BAD_TEMPLATE),
@@ -161,17 +160,15 @@ def test_flask_template_exception_no_multiproc(start_method):
             arguments={'threadId': hit.thread_id, }
         ).wait_for_response()
         exception = resp_exception_info.body
-        assert exception == {
+        assert exception == ANY.dict_with({
             'exceptionId': ANY.such_that(lambda s: s.endswith('TemplateSyntaxError')),
             'breakMode': 'always',
             'description': ANY.such_that(lambda s: s.find('doesnotexist') > -1),
-            'details': {
+            'details': ANY.dict_with({
                 'message': ANY.such_that(lambda s: s.find('doesnotexist') > -1),
                 'typeName': ANY.such_that(lambda s: s.endswith('TemplateSyntaxError')),
-                'source': Path(FLASK1_BAD_TEMPLATE),
-                'stackTrace': ANY.such_that(lambda s: True)
-            }
-        }
+            })
+        })
 
         session.send_request('continue').wait_for_response(freeze=False)
 
