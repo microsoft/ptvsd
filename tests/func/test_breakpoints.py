@@ -518,9 +518,9 @@ def test_deep_stacks(pyfile, run_as, start_method):
         start = 0
         for _ in range(5):
             resp_stacktrace = session.send_request('stackTrace', arguments={
-            'threadId': hit.thread_id,
-            'startFrame': start,
-            'levels': 25
+                'threadId': hit.thread_id,
+                'startFrame': start,
+                'levels': 25
             }).wait_for_response()
             assert resp_stacktrace.body['totalFrames'] > 0
             frames += resp_stacktrace.body['stackFrames']
