@@ -1583,15 +1583,11 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
             is_json=True)
 
         levels = int(args.get('levels', 0))
-        if levels == 0:
-            stackFrames = resp_args['body']['stackFrames']
-        else:
-            try:
-                start = int(args.get('startFrame', 0))
-                end = start + levels
-                stackFrames = resp_args['body']['stackFrames'][start:end]
-            except:
-                stackFrames = []
+        stackFrames = resp_args['body']['stackFrames']
+        if levels > 0:
+            start = int(args.get('startFrame', 0))
+            end = min(start + levels, len(stackFrames))
+            stackFrames = resp_args['body']['stackFrames'][start:end]
         totalFrames = resp_args['body']['totalFrames']
         self.send_response(request, stackFrames=stackFrames, totalFrames=totalFrames)
 

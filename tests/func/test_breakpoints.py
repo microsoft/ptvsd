@@ -526,7 +526,6 @@ def test_deep_stacks(pyfile, run_as, start_method):
             frames += resp_stacktrace.body['stackFrames']
             start = len(frames)
 
-        assert len(full_frames) == len(frames)
         assert full_frames == frames
 
         session.send_request('continue').wait_for_response()
