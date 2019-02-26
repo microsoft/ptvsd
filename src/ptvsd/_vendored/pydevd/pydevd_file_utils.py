@@ -229,14 +229,15 @@ def _NormPaths(filename):
     try:
         return NORM_PATHS_CONTAINER[filename]
     except KeyError:
-        if filename.__class__ != str:
-            raise AssertionError('Paths passed to _NormPaths must be str. Found: %s (%s)' % (filename, type(filename)))
-        abs_path = _NormPath(filename, os.path.abspath)
-        real_path = _NormPath(filename, rPath)
+        if filename.__class__ == str or (sys.version_info < (3, 0) and filename.__class__ == unicode):
+            abs_path = _NormPath(filename, os.path.abspath)
+            real_path = _NormPath(filename, rPath)
 
-        # cache it for fast access later
-        NORM_PATHS_CONTAINER[filename] = abs_path, real_path
-        return abs_path, real_path
+            # cache it for fast access later
+            NORM_PATHS_CONTAINER[filename] = abs_path, real_path
+            return abs_path, real_path
+        else:
+            raise AssertionError('Paths passed to _NormPaths must be str. Found: %s (%s)' % (filename, type(filename)))
 
 
 def _NormPath(filename, normpath):
