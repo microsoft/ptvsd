@@ -105,6 +105,7 @@ def test_django_breakpoint_no_multiproc(bp_target, start_method):
 
 
 @pytest.mark.parametrize('start_method', ['launch', 'attach_socket_cmdline'])
+@pytest.mark.skipif(sys.version_info < (3, 0), reason='Bug #923')
 @pytest.mark.timeout(60)
 def test_django_template_exception_no_multiproc(start_method):
     with DebugSession() as session:
