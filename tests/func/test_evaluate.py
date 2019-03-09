@@ -244,7 +244,6 @@ def test_variable_sort(pyfile, run_as, start_method):
         session.wait_for_exit()
 
 
-@pytest.mark.skipif(sys.version_info >= (3, 7), reason='https://github.com/Microsoft/ptvsd/issues/1207')
 def test_return_values(pyfile, run_as, start_method):
 
     @pyfile
