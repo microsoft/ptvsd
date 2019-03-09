@@ -4,7 +4,6 @@
 
 from __future__ import print_function, with_statement, absolute_import
 
-import pytest
 import sys
 
 from tests.helpers import get_marked_line_numbers, print
@@ -384,7 +383,6 @@ def test_hex_numbers(pyfile, run_as, start_method):
         print((a, b, c, d)) #@bp
 
     line_numbers = get_marked_line_numbers(code_to_debug)
-    from tests.helpers import print
     print(line_numbers)
 
     with DebugSession() as session:
