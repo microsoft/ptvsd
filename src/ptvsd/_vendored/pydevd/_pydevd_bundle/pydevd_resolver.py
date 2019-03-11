@@ -357,7 +357,7 @@ class TupleResolver:  # to enumerate tuples and lists
 
         format_str = '%0' + str(int(len(str(l - 1)))) + 'd'
         if fmt is not None and fmt.get('hex', False):
-            format_str = '0x%0' + str(int(len(hex(l - 1).lstrip('0x')))) + 'x'
+            format_str = '0x%0' + str(int(len(hex(l).lstrip('0x')))) + 'x'
 
         for i, item in enumerate(lst):
             ret.append((format_str % i, item, '[%s]' % i))
@@ -373,13 +373,13 @@ class TupleResolver:  # to enumerate tuples and lists
             ret = from_default_resolver + ret
         return ret
 
-    def get_dictionary(self, var):
+    def get_dictionary(self, var, fmt={}):
         l = len(var)
         d = {}
 
         format_str = '%0' + str(int(len(str(l - 1)))) + 'd'
         if fmt is not None and fmt.get('hex', False):
-            format_str = '0x%0' + str(int(len(hex(l - 1).lstrip('0x')))) + 'x'
+            format_str = '0x%0' + str(int(len(hex(l).lstrip('0x')))) + 'x'
 
         for i, item in enumerate(var):
             d[format_str % i] = item
