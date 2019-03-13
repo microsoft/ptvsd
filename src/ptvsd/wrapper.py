@@ -1691,7 +1691,8 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         pydevd_request['arguments']['threadId'] = '*'
 
         # Always suspend all threads.
-        self.pydevd_notify(pydevd_comm.CMD_THREAD_SUSPEND,  pydevd_request, is_json=True)
+        yield self.pydevd_request(pydevd_comm.CMD_THREAD_SUSPEND,
+                                  pydevd_request, is_json=True)
         self.send_response(request)
 
     @async_handler
@@ -1702,7 +1703,8 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         pydevd_request['arguments']['threadId'] = '*'
 
         # Always continue all threads.
-        self.pydevd_notify(pydevd_comm.CMD_THREAD_RUN, pydevd_request, is_json=True)
+        yield self.pydevd_request(pydevd_comm.CMD_THREAD_RUN,
+                                  pydevd_request, is_json=True)
         self.send_response(request, allThreadsContinued=True)
 
     @async_handler
@@ -1712,12 +1714,15 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
 
         pydevd_request = copy.deepcopy(request)
         del pydevd_request['seq']  # A new seq should be created for pydevd.
-        pydevd_request['arguments']['threadId'] = pyd_tid
 
         if self._is_just_my_code_stepping_enabled():
-            self.pydevd_notify(pydevd_comm.CMD_STEP_OVER_MY_CODE, pydevd_request, is_json=True)
+            cmd_id = pydevd_comm.CMD_STEP_OVER_MY_CODE
+            pydevd_request['arguments']['threadId'] = '*' + pyd_tid
         else:
-            self.pydevd_notify(pydevd_comm.CMD_STEP_OVER, pydevd_request, is_json=True)
+            cmd_id = pydevd_comm.CMD_STEP_OVER
+            pydevd_request['arguments']['threadId'] = pyd_tid
+
+        yield self.pydevd_request(cmd_id, pydevd_request, is_json=True)
         self.send_response(request)
 
     @async_handler
@@ -1727,12 +1732,14 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
 
         pydevd_request = copy.deepcopy(request)
         del pydevd_request['seq']  # A new seq should be created for pydevd.
-        pydevd_request['arguments']['threadId'] = pyd_tid
 
         if self._is_just_my_code_stepping_enabled():
-            self.pydevd_notify(pydevd_comm.CMD_STEP_INTO_MY_CODE, pydevd_request, is_json=True)
+            cmd_id = pydevd_comm.CMD_STEP_INTO_MY_CODE
+            pydevd_request['arguments']['threadId'] = '*' + pyd_tid
         else:
-            self.pydevd_notify(pydevd_comm.CMD_STEP_INTO, pydevd_request, is_json=True)
+            cmd_id = pydevd_comm.CMD_STEP_INTO
+            pydevd_request['arguments']['threadId'] = pyd_tid
+        yield self.pydevd_request(cmd_id, pydevd_request, is_json=True)
         self.send_response(request)
 
     @async_handler
@@ -1742,12 +1749,14 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
 
         pydevd_request = copy.deepcopy(request)
         del pydevd_request['seq']  # A new seq should be created for pydevd.
-        pydevd_request['arguments']['threadId'] = pyd_tid
 
         if self._is_just_my_code_stepping_enabled():
-            self.pydevd_notify(pydevd_comm.CMD_STEP_RETURN_MY_CODE, pydevd_request, is_json=True)
+            cmd_id = pydevd_comm.CMD_STEP_RETURN_MY_CODE
+            pydevd_request['arguments']['threadId'] = '*' + pyd_tid
         else:
-            self.pydevd_notify(pydevd_comm.CMD_STEP_RETURN, pydevd_request, is_json=True)
+            cmd_id = pydevd_comm.CMD_STEP_RETURN
+            pydevd_request['arguments']['threadId'] = pyd_tid
+        yield self.pydevd_request(cmd_id, pydevd_request, is_json=True)
         self.send_response(request)
 
     @async_handler
