@@ -1688,7 +1688,10 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
 
         pydevd_request = copy.deepcopy(request)
         del pydevd_request['seq']  # A new seq should be created for pydevd.
-        pydevd_request['arguments']['threadId'] = '*'
+        try:
+            pydevd_request['arguments']['threadId'] = '*'
+        except KeyError:
+            pydevd_request['arguments'] = {'threadId': '*'}
 
         # Always suspend all threads.
         yield self.pydevd_request(pydevd_comm.CMD_THREAD_SUSPEND,
@@ -1700,7 +1703,10 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
 
         pydevd_request = copy.deepcopy(request)
         del pydevd_request['seq']  # A new seq should be created for pydevd.
-        pydevd_request['arguments']['threadId'] = '*'
+        try:
+            pydevd_request['arguments']['threadId'] = '*'
+        except KeyError:
+            pydevd_request['arguments'] = {'threadId': '*'}
 
         # Always continue all threads.
         yield self.pydevd_request(pydevd_comm.CMD_THREAD_RUN,
@@ -1739,6 +1745,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         else:
             cmd_id = pydevd_comm.CMD_STEP_INTO
             pydevd_request['arguments']['threadId'] = pyd_tid
+
         yield self.pydevd_request(cmd_id, pydevd_request, is_json=True)
         self.send_response(request)
 
@@ -1756,6 +1763,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         else:
             cmd_id = pydevd_comm.CMD_STEP_RETURN
             pydevd_request['arguments']['threadId'] = pyd_tid
+
         yield self.pydevd_request(cmd_id, pydevd_request, is_json=True)
         self.send_response(request)
 

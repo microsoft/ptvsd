@@ -192,7 +192,9 @@ class _PyDevJsonCommandProcessor(object):
         '''
         arguments = request.arguments  # : :type arguments: PauseArguments
         thread_id = arguments.threadId
+
         self.api.request_suspend_thread(py_db, thread_id=thread_id)
+
         response = pydevd_base_schema.build_response(request)
         return NetCommand(CMD_RETURN, 0, response.to_dict(), is_json=True)
 
@@ -202,8 +204,11 @@ class _PyDevJsonCommandProcessor(object):
         '''
         arguments = request.arguments  # : :type arguments: ContinueArguments
         thread_id = arguments.threadId
-        self.api.request_resume_thread(py_db, thread_id=thread_id)
-        response = pydevd_base_schema.build_response(request)
+
+        self.api.request_resume_thread(thread_id)
+
+        body = {'allThreadsContinued': True} if thread_id == '*' else {}
+        response = pydevd_base_schema.build_response(request, kwargs={'body': body})
         return NetCommand(CMD_RETURN, 0, response.to_dict(), is_json=True)
 
     def on_next_request(self, py_db, request):
@@ -212,12 +217,15 @@ class _PyDevJsonCommandProcessor(object):
         '''
         arguments = request.arguments  # : :type arguments: NextArguments
         thread_id = arguments.threadId
+
         if thread_id.startswith('*'):
             thread_id = thread_id[1:]
             step_cmd_id = CMD_STEP_OVER_MY_CODE
         else:
             step_cmd_id = CMD_STEP_OVER
+
         self.api.request_step(py_db, thread_id, step_cmd_id)
+
         response = pydevd_base_schema.build_response(request)
         return NetCommand(CMD_RETURN, 0, response.to_dict(), is_json=True)
 
@@ -227,12 +235,15 @@ class _PyDevJsonCommandProcessor(object):
         '''
         arguments = request.arguments  # : :type arguments: StepInArguments
         thread_id = arguments.threadId
+
         if thread_id.startswith('*'):
             thread_id = thread_id[1:]
             step_cmd_id = CMD_STEP_INTO_MY_CODE
         else:
             step_cmd_id = CMD_STEP_INTO
+
         self.api.request_step(py_db, thread_id, step_cmd_id)
+
         response = pydevd_base_schema.build_response(request)
         return NetCommand(CMD_RETURN, 0, response.to_dict(), is_json=True)
 
@@ -242,12 +253,15 @@ class _PyDevJsonCommandProcessor(object):
         '''
         arguments = request.arguments  # : :type arguments: StepOutArguments
         thread_id = arguments.threadId
+
         if thread_id.startswith('*'):
             thread_id = thread_id[1:]
             step_cmd_id = CMD_STEP_RETURN_MY_CODE
         else:
             step_cmd_id = CMD_STEP_RETURN
+
         self.api.request_step(py_db, thread_id, step_cmd_id)
+
         response = pydevd_base_schema.build_response(request)
         return NetCommand(CMD_RETURN, 0, response.to_dict(), is_json=True)
 
