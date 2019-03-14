@@ -207,7 +207,7 @@ class _PyDevJsonCommandProcessor(object):
 
         self.api.request_resume_thread(thread_id)
 
-        body = {'allThreadsContinued': True} if thread_id == '*' else {}
+        body = {'allThreadsContinued': thread_id == '*'}
         response = pydevd_base_schema.build_response(request, kwargs={'body': body})
         return NetCommand(CMD_RETURN, 0, response.to_dict(), is_json=True)
 
@@ -218,8 +218,7 @@ class _PyDevJsonCommandProcessor(object):
         arguments = request.arguments  # : :type arguments: NextArguments
         thread_id = arguments.threadId
 
-        if thread_id.startswith('*'):
-            thread_id = thread_id[1:]
+        if py_db.get_use_libraries_filter():
             step_cmd_id = CMD_STEP_OVER_MY_CODE
         else:
             step_cmd_id = CMD_STEP_OVER
@@ -236,8 +235,7 @@ class _PyDevJsonCommandProcessor(object):
         arguments = request.arguments  # : :type arguments: StepInArguments
         thread_id = arguments.threadId
 
-        if thread_id.startswith('*'):
-            thread_id = thread_id[1:]
+        if py_db.get_use_libraries_filter():
             step_cmd_id = CMD_STEP_INTO_MY_CODE
         else:
             step_cmd_id = CMD_STEP_INTO
@@ -254,8 +252,7 @@ class _PyDevJsonCommandProcessor(object):
         arguments = request.arguments  # : :type arguments: StepOutArguments
         thread_id = arguments.threadId
 
-        if thread_id.startswith('*'):
-            thread_id = thread_id[1:]
+        if py_db.get_use_libraries_filter():
             step_cmd_id = CMD_STEP_RETURN_MY_CODE
         else:
             step_cmd_id = CMD_STEP_RETURN

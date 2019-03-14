@@ -1720,13 +1720,8 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
 
         pydevd_request = copy.deepcopy(request)
         del pydevd_request['seq']  # A new seq should be created for pydevd.
-
-        if self._is_just_my_code_stepping_enabled():
-            cmd_id = pydevd_comm.CMD_STEP_OVER_MY_CODE
-            pydevd_request['arguments']['threadId'] = '*' + pyd_tid
-        else:
-            cmd_id = pydevd_comm.CMD_STEP_OVER
-            pydevd_request['arguments']['threadId'] = pyd_tid
+        pydevd_request['arguments']['threadId'] = pyd_tid
+        cmd_id = pydevd_comm.CMD_STEP_OVER
 
         yield self.pydevd_request(cmd_id, pydevd_request, is_json=True)
         self.send_response(request)
@@ -1738,13 +1733,8 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
 
         pydevd_request = copy.deepcopy(request)
         del pydevd_request['seq']  # A new seq should be created for pydevd.
-
-        if self._is_just_my_code_stepping_enabled():
-            cmd_id = pydevd_comm.CMD_STEP_INTO_MY_CODE
-            pydevd_request['arguments']['threadId'] = '*' + pyd_tid
-        else:
-            cmd_id = pydevd_comm.CMD_STEP_INTO
-            pydevd_request['arguments']['threadId'] = pyd_tid
+        pydevd_request['arguments']['threadId'] = pyd_tid
+        cmd_id = pydevd_comm.CMD_STEP_INTO
 
         yield self.pydevd_request(cmd_id, pydevd_request, is_json=True)
         self.send_response(request)
@@ -1756,13 +1746,8 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
 
         pydevd_request = copy.deepcopy(request)
         del pydevd_request['seq']  # A new seq should be created for pydevd.
-
-        if self._is_just_my_code_stepping_enabled():
-            cmd_id = pydevd_comm.CMD_STEP_RETURN_MY_CODE
-            pydevd_request['arguments']['threadId'] = '*' + pyd_tid
-        else:
-            cmd_id = pydevd_comm.CMD_STEP_RETURN
-            pydevd_request['arguments']['threadId'] = pyd_tid
+        pydevd_request['arguments']['threadId'] = pyd_tid
+        cmd_id = pydevd_comm.CMD_STEP_RETURN
 
         yield self.pydevd_request(cmd_id, pydevd_request, is_json=True)
         self.send_response(request)
