@@ -180,9 +180,7 @@ class NetCommandFactoryJson(NetCommandFactory):
                         py_db, topmost_frame, frame_id_to_lineno
                     ):
 
-                    module_name = frame.f_globals.get('__qualname__', '')
-                    if not module_name:
-                        module_name = frame.f_globals.get('__name__', '')
+                    module_name = frame.f_globals.get('__name__', '')
 
                     module_events.extend(self.modules_manager.track_module(filename_in_utf8, module_name, frame))
 

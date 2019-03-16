@@ -273,19 +273,16 @@ def can_skip(plugin, pydb, frame):
 
         if IS_PY2:
             if name == 'fail':
-                module_name = frame.f_globals.get('__qualname__', '')
-                if not module_name:
-                    module_name = frame.f_globals.get('__name__', '')
+                module_name = frame.f_globals.get('__name__', '')
                 if module_name == 'jinja2.parser':
                     return False
         else:
             # errors in compile time
             if name in ('template', 'top-level template code', '<module>') or name.startswith('block '):
                 f_back = frame.f_back
+                module_name = ''
                 if f_back is not None:
-                    module_name = f_back.f_globals.get('__qualname__', '')
-                    if not module_name:
-                        module_name = f_back.f_globals.get('__name__', '')
+                    module_name = f_back.f_globals.get('__name__', '')
                 if module_name.startswith('jinja2.'):
                     return False
 
@@ -431,9 +428,7 @@ def exception_break(plugin, pydb, pydb_frame, frame, args, arg):
 
             if IS_PY2:
                 if name == 'fail':
-                    module_name = frame.f_globals.get('__qualname__', '')
-                    if not module_name:
-                        module_name = frame.f_globals.get('__name__', '')
+                    module_name = frame.f_globals.get('__name__', '')
                     if module_name == 'jinja2.parser':
                         filename = value.filename
                         lineno = value.lineno
@@ -453,9 +448,7 @@ def exception_break(plugin, pydb, pydb_frame, frame, args, arg):
 
                     f_back = frame.f_back
                     if f_back is not None:
-                        module_name = f_back.f_globals.get('__qualname__', '')
-                        if not module_name:
-                            module_name = f_back.f_globals.get('__name__', '')
+                        module_name = f_back.f_globals.get('__name__', '')
 
                     if module_name.startswith('jinja2.'):
                         # Jinja2 translates exception info and creates fake frame on his own

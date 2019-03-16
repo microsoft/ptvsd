@@ -225,7 +225,7 @@ def _get_source_django_18_or_lower(frame):
 def _convert_to_str(s):
     if IS_PY2:
         if isinstance(s, unicode):
-            s = s.encode('utf-8', 'replace')
+            s = s.encode('utf-8')
     return s
 
 
@@ -362,9 +362,7 @@ def can_skip(plugin, main_debugger, frame):
             return False
 
     if main_debugger.django_exception_break:
-        module_name = frame.f_globals.get('__qualname__', '')
-        if not module_name:
-            module_name = frame.f_globals.get('__name__', '')
+        module_name = frame.f_globals.get('__name__', '')
 
         if module_name == 'django.template.base':
             # Exceptions raised at django.template.base must be checked.
