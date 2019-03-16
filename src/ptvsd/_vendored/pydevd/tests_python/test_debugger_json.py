@@ -923,16 +923,16 @@ def test_stepping(case_setup):
         stack_frame = next(iter(stack_trace_response.body.stackFrames))
         assert stack_frame['name'] == 'step_out'
 
-#         stepout_request = json_facade.write_request(
-#             pydevd_schema.StepBackRequest(pydevd_schema.StepBackArguments(hit.thread_id)))
-#         stepout_response = json_facade.wait_for_response(stepout_request)
-#         hit = writer.wait_for_breakpoint_hit(REASON_STEP_RETURN)
-#
-#         stack_trace_request = json_facade.write_request(
-#             pydevd_schema.StackTraceRequest(pydevd_schema.StackTraceArguments(threadId=hit.thread_id)))
-#         stack_trace_response = json_facade.wait_for_response(stack_trace_request)
-#         stack_frame = next(iter(stack_trace_response.body.stackFrames))
-#         assert stack_frame['name'] == 'Call'
+        stepout_request = json_facade.write_request(
+            pydevd_schema.StepOutRequest(pydevd_schema.StepOutArguments(hit.thread_id)))
+        stepout_response = json_facade.wait_for_response(stepout_request)
+        hit = writer.wait_for_breakpoint_hit(REASON_STEP_RETURN)
+
+        stack_trace_request = json_facade.write_request(
+            pydevd_schema.StackTraceRequest(pydevd_schema.StackTraceArguments(threadId=hit.thread_id)))
+        stack_trace_response = json_facade.wait_for_response(stack_trace_request)
+        stack_frame = next(iter(stack_trace_response.body.stackFrames))
+        assert stack_frame['name'] == 'Call'
 
         writer.write_run_thread(hit.thread_id)
 
