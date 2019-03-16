@@ -852,13 +852,14 @@ def test_pause_and_continue(case_setup):
         scope = pydevd_schema.Scope(**next(iter(scopes_response.body.scopes)))
         frame_variables_reference = scope.variablesReference
 
-        set_variable_request = json_facade.write_request(
-            pydevd_schema.SetVariableRequest(pydevd_schema.SetVariableArguments(
-                frame_variables_reference, 'loop', 'False'
-        )))
-        set_variable_response = json_facade.wait_for_response(set_variable_request)
-        set_variable_response_as_dict = set_variable_response.to_dict()['body']
-        assert set_variable_response_as_dict == {'value': "False", 'type': 'bool'}
+        if not IS_JYTHON:
+            set_variable_request = json_facade.write_request(
+                pydevd_schema.SetVariableRequest(pydevd_schema.SetVariableArguments(
+                    frame_variables_reference, 'loop', 'False'
+            )))
+            set_variable_response = json_facade.wait_for_response(set_variable_request)
+            set_variable_response_as_dict = set_variable_response.to_dict()['body']
+            assert set_variable_response_as_dict == {'value': "False", 'type': 'bool'}
 
         continue_request = json_facade.write_request(
         pydevd_schema.ContinueRequest(pydevd_schema.ContinueArguments('*')))
