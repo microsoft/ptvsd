@@ -1648,6 +1648,8 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
             is_json=True)
 
         body = resp_args['body']
+        if not resp_args['success']:
+            body['result'] = resp_args['message']
         self.send_response(request, **body)
 
     @async_handler
