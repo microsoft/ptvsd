@@ -64,6 +64,7 @@ each command has a format:
 '''
 
 import itertools
+import linecache
 import os
 
 from _pydev_bundle.pydev_imports import _queue
@@ -1076,13 +1077,6 @@ def internal_get_description(dbg, seq, thread_id, frame_id, expression):
         dbg.writer.add_command(cmd)
 
 
-def _get_line_for_traceback(file_path, line_no):
-    try:
-        with open(file_path, 'r') as f:
-            return f.readlines()[line_no - 1]
-    except Exception:
-        return None
-
 def internal_get_exception_details_json(dbg, request, thread_id, set_additional_thread_info=None, iter_visible_frames_info=None):
     ''' Fetch exception details
     '''
@@ -1119,7 +1113,7 @@ def internal_get_exception_details_json(dbg, request, thread_id, set_additional_
                             dbg, trace_obj.tb_frame, frame_id_to_lineno):
  
                         if sys.version_info < (3, 5,):
-                            line_text = self._get_line_for_traceback(filename_in_utf8, lineno)
+                            line_text = linecache.getline(filename_in_utf8, lineno)
                         else:
                             line_text = None
 
@@ -1132,17 +1126,21 @@ def internal_get_exception_details_json(dbg, request, thread_id, set_additional_
             finally:
                 topmost_frame = None
 
-        if exc_desc:
+        if exc_desc is not None:
             name = exc_desc.__class__.__name__
             description = '%s' % (exc_desc,)
         else:
             name = 'exception: type unknown'
             description = 'exception: no description'
+
         stack_str = ''.join(traceback.format_list(frames))
 
         # This is an extra bit of data used by Visual Studio 
-        exc_source = frames[0][0] if frames else ''
+        source_path = frames[0][0] if frames else ''
 
+        # TODO: breakMode is set to always. This should be retrieved from exception
+        # breakpoint settings for that exception, or its parent chain. Currently json
+        # support for setExceptionBreakpoint is not implemented.
         response = pydevd_schema.ExceptionInfoResponse(
             request_seq=request.seq,
             success=True,
@@ -1155,7 +1153,7 @@ def internal_get_exception_details_json(dbg, request, thread_id, set_additional_
                     message=description,
                     typeName=name,
                     stackTrace=stack_str,
-                    source=exc_source
+                    source=source_path
                 )
             )
         )

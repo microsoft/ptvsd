@@ -12,12 +12,10 @@ import json
 import os
 import platform
 import pydevd_file_utils
-import re
 import site
 import socket
 import sys
 import threading
-import traceback
 
 try:
     import urllib
