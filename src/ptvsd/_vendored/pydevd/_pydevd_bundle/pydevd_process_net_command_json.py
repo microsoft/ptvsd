@@ -378,7 +378,7 @@ class _PyDevJsonCommandProcessor(object):
         # : :type exception_into_arguments: ExceptionInfoArguments
         exception_into_arguments = request.arguments
         thread_id = exception_into_arguments.threadId
-        self.api.request_exception_info(py_db, request, thread_id)
+        self.api.request_exception_info_json(py_db, request, thread_id)
 
     def on_scopes_request(self, py_db, request):
         '''

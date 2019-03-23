@@ -126,7 +126,7 @@ class PyDevdAPI(object):
         else:
             py_db.post_internal_command(internal_get_thread_stack, '*')
 
-    def request_exception_info(self, py_db, request, thread_id):
+    def request_exception_info_json(self, py_db, request, thread_id):
         py_db.post_method_as_internal_command(
             thread_id,
             internal_get_exception_details_json,

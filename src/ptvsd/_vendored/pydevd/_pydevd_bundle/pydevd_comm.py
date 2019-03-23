@@ -1112,10 +1112,7 @@ def internal_get_exception_details_json(dbg, request, thread_id, set_additional_
                     for frame_id, frame, method_name, filename_in_utf8, lineno in iter_visible_frames_info(
                             dbg, trace_obj.tb_frame, frame_id_to_lineno):
  
-                        if sys.version_info < (3, 5,):
-                            line_text = linecache.getline(filename_in_utf8, lineno)
-                        else:
-                            line_text = None
+                        line_text = linecache.getline(filename_in_utf8, lineno)
 
                         # Never filter out plugin frames!
                         if not getattr(frame, 'IS_PLUGIN_FRAME', False):  

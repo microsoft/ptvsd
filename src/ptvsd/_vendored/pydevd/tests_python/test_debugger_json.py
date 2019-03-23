@@ -1013,9 +1013,9 @@ def test_exception_details(case_setup):
             pydevd_schema.ExceptionInfoRequest(pydevd_schema.ExceptionInfoArguments(hit.thread_id)))
         exc_info_response = json_facade.wait_for_response(exc_info_request)
         body = exc_info_response.body
-        assert body['exceptionId'].endswith('IndexError')
-        assert body['description'] == 'foo'
-        assert body['details']['source'] == writer.TEST_FILE
+        assert body.exceptionId.endswith('IndexError')
+        assert body.description == 'foo'
+        assert body.details.kwargs['source'] == writer.TEST_FILE
 
         writer.write_run_thread(hit.thread_id)
 
