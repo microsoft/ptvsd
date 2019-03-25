@@ -7,7 +7,6 @@ from __future__ import print_function, absolute_import, unicode_literals
 import bisect
 import copy
 import errno
-import io
 import json
 import os
 import platform
@@ -47,7 +46,6 @@ from ptvsd import options
 from ptvsd.compat import unicode
 import ptvsd.ipcjson as ipcjson  # noqa
 import ptvsd.futures as futures  # noqa
-import ptvsd.untangle as untangle  # noqa
 from ptvsd.pathutils import PathUnNormcase  # noqa
 from ptvsd.version import __version__  # noqa
 from ptvsd.socket import TimeoutError  # noqa
@@ -1351,10 +1349,6 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
             return f(self, seq, args)
         else:
             return None
-
-    @staticmethod
-    def parse_xml_response(args):
-        return untangle.parse(io.BytesIO(args.encode('utf8'))).xml
 
     def _wait_for_pydevd_ready(self):
         # TODO: Call self._ensure_pydevd_requests_handled?
