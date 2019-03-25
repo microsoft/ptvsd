@@ -1161,7 +1161,7 @@ def internal_get_exception_details_json(dbg, request, thread_id, set_additional_
             'message': exc,
             'body':{}
         })
-    dbg.writer.add_command(NetCommand(CMD_RETURN, 0, response.to_dict(), is_json=True))
+    dbg.writer.add_command(NetCommand(CMD_RETURN, 0, response, is_json=True))
 
 
 class InternalGetBreakpointException(InternalThreadCommand):
