@@ -21,13 +21,13 @@ try:
     urllib.unquote
 except Exception:
     import urllib.parse as urllib
+
 try:
     import queue
 except ImportError:
     import Queue as queue
-import warnings
-from xml.sax.saxutils import unescape as xml_unescape
 
+import warnings
 import pydevd  # noqa
 import _pydevd_bundle.pydevd_comm as pydevd_comm  # noqa
 import _pydevd_bundle.pydevd_comm_constants as pydevd_comm_constants  # noqa
@@ -154,15 +154,6 @@ else:
         if isinstance(s, bytes):
             s = s.decode('utf-8')
         return s
-
-
-def unquote_xml_path(s):
-    """XML unescape after url unquote. This reverses the escapes and quotes done
-    by pydevd.
-    """
-    if s is None:
-        return None
-    return xml_unescape(unquote(s))
 
 
 class IDMap(object):
