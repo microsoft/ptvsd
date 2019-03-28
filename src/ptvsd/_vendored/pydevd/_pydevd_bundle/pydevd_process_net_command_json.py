@@ -79,6 +79,25 @@ def _convert_rules_to_exclude_filters(rules, filename_to_server, on_error):
     return exclude_filters
 
 
+class IDMap(object):
+    def __init__(self):
+        self._value_to_key = {}
+        self._key_to_value = {}
+        self._next_id = partial(next, itertools.count(0))
+
+    def obtain_value(self, key):
+        return self._key_to_value[key]
+
+    def obtain_key(self, value):
+        try:
+            key = self._value_to_key[value]
+        except KeyError:
+            key = self._next_id()
+            self._key_to_value[key] = value
+            self._value_to_key[value] = key
+        return key
+
+
 class _PyDevJsonCommandProcessor(object):
 
     def __init__(self, from_json):
@@ -86,8 +105,7 @@ class _PyDevJsonCommandProcessor(object):
         self.api = PyDevdAPI()
         self._debug_options = {}
         self._next_breakpoint_id = partial(next, itertools.count(0))
-        self._next_goto_targets_id = partial(next, itertools.count(0))
-        self._goto_targets_map = {}
+        self._goto_targets_map = IDMap()
 
     def process_net_command_json(self, py_db, json_contents):
         '''
@@ -520,12 +538,12 @@ class _PyDevJsonCommandProcessor(object):
     def on_gototargets_request(self, py_db, request):
         path = request.arguments.source.path
         line = request.arguments.line
+        target_id = self._goto_targets_map.obtain_key((path, line))
         target = {
-            'id': self._next_goto_targets_id(),
+            'id': target_id,
             'label': '{}:{}'.format(path, line),
             'line': line
         }
-        self._goto_targets_map[target['id']] = target
         body = GotoTargetsResponseBody(targets=[target])
         response_args = {'body': body}
         response = pydevd_base_schema.build_response(request, kwargs=response_args)
@@ -535,7 +553,7 @@ class _PyDevJsonCommandProcessor(object):
         target_id = int(request.arguments.targetId)
         thread_id = request.arguments.threadId
         try:
-            line = self._goto_targets_map[target_id]['line']
+            _, line = self._goto_targets_map.obtain_value(target_id)
         except KeyError:
             response = pydevd_base_schema.build_response(request,
                 kwargs={
