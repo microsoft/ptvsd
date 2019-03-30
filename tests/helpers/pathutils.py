@@ -23,7 +23,7 @@ def compare_path(left, right, show=True):
         if not isinstance(right, unicode):
             right = right.decode(sys.getfilesystemencoding())
     elif isinstance(right, unicode):
-        right = right.decode(sys.getfilesystemencoding())
+        right = right.encode(sys.getfilesystemencoding())
 
     n_left = get_path_with_real_case(left)
     n_right = get_path_with_real_case(right)
