@@ -1880,7 +1880,6 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
             is_json=True)
 
         body = resp_args['body']
-        body['breakMode'] = self.exceptions_mgr.get_break_mode(body['exceptionId'])
         self.send_response(request, **body)
 
     @async_handler
