@@ -1153,9 +1153,10 @@ def test_exception_details(case_setup, max_frames):
             max_expected_lines = 1000
         elif max_frames == 'default':
             json_facade.write_launch()
-            # default is 5 frames max 10 lines
-            min_expected_lines = 5
-            max_expected_lines = 11
+            # default is all frames
+            # trace back compresses repeated text
+            min_expected_lines = 10
+            max_expected_lines = 1000
         else:
             json_facade.write_launch(maxExcpetionStackFrames=max_frames)
             min_expected_lines = 10

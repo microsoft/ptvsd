@@ -364,9 +364,8 @@ def test_exception_stack(pyfile, run_as, start_method, max_frames):
         max_expected_lines = 1000
         args = {'maxExcpetionStackFrames': 0}
     elif max_frames == 'default':
-        # default is 5 frames, 2 lines per frames
-        min_expected_lines = 5
-        max_expected_lines = 11
+        min_expected_lines = 10
+        max_expected_lines = 1000
         args = {}
     else:
         min_expected_lines = 10
