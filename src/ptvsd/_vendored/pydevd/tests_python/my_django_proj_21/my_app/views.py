@@ -72,3 +72,9 @@ def inherits(request):
     context = {}
     ret = render(request, 'my_app/inherits.html', context)
     return ret
+
+
+def no_var_error(request):
+    context = {}
+    ret = render(request, 'my_app/no_var_error.html', context)
+    return ret

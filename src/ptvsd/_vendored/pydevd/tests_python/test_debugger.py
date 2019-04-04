@@ -964,6 +964,26 @@ def test_case_django_template_inherits_no_exception(case_setup_django):
 
 
 @pytest.mark.skipif(not TEST_DJANGO, reason='No django available')
+def test_case_django_no_var_error(case_setup_django):
+    with case_setup_django.test_file(EXPECTED_RETURNCODE='any') as writer:
+
+        # Check that it doesn't have issues with inherits + django exception breakpoints.
+        writer.write_add_exception_breakpoint_django()
+
+        writer.write_make_initial_run()
+
+        t = writer.create_request_thread('my_app/no_var_error')
+        time.sleep(5)  # Give django some time to get to startup before requesting the page
+        t.start()
+        contents = t.wait_for_contents()
+
+        contents = contents.replace(' ', '').replace('\r', '').replace('\n', '')
+        assert contents == '''no_pat_name'''
+
+        writer.finished_ok = True
+
+
+@pytest.mark.skipif(not TEST_DJANGO, reason='No django available')
 @pytest.mark.parametrize("jmc", [False, True])
 def test_case_django_no_attribute_exception_breakpoint(case_setup_django, jmc):
     kwargs = {}

@@ -358,6 +358,17 @@ def _is_django_variable_does_not_exist_exception_break_context(frame):
         name = None
     return name in ('_resolve_lookup', 'find_template')
 
+
+def _is_ignoring_failures(frame):
+    while frame is not None:
+        if frame.f_code.co_name == 'resolve':
+            ignore_failures = frame.f_locals.get('ignore_failures')
+            if ignore_failures:
+                return True
+        frame = frame.f_back
+
+    return False
+
 #=======================================================================================================================
 # Django Step Commands
 #=======================================================================================================================
@@ -520,15 +531,16 @@ def exception_break(plugin, main_debugger, pydb_frame, frame, args, arg):
 
             elif exception.__name__ == 'VariableDoesNotExist':
                 if _is_django_variable_does_not_exist_exception_break_context(frame):
-                    render_frame = _find_django_render_frame(frame)
-                    if render_frame:
-                        suspend_frame = suspend_django(
-                            main_debugger, thread, DjangoTemplateFrame(render_frame), CMD_ADD_EXCEPTION_BREAK)
-                        if suspend_frame:
-                            add_exception_to_frame(suspend_frame, (exception, value, trace))
-                            thread.additional_info.pydev_message = 'VariableDoesNotExist'
-                            suspend_frame.f_back = frame
-                            frame = suspend_frame
-                            return True, frame
+                    if not getattr(exception, 'silent_variable_failure', False) and not _is_ignoring_failures(frame):
+                        render_frame = _find_django_render_frame(frame)
+                        if render_frame:
+                            suspend_frame = suspend_django(
+                                main_debugger, thread, DjangoTemplateFrame(render_frame), CMD_ADD_EXCEPTION_BREAK)
+                            if suspend_frame:
+                                add_exception_to_frame(suspend_frame, (exception, value, trace))
+                                thread.additional_info.pydev_message = 'VariableDoesNotExist'
+                                suspend_frame.f_back = frame
+                                frame = suspend_frame
+                                return True, frame
 
     return None
