@@ -344,3 +344,73 @@ def test_success_exitcodes(pyfile, run_as, start_method, exit_code):
             session.send_request('continue').wait_for_response(freeze=False)
 
         session.wait_for_exit()
+
+
+@pytest.mark.parametrize('max_frames', ['default', 'all', 10])
+def test_exception_stack(pyfile, run_as, start_method, max_frames):
+    @pyfile
+    def code_to_debug():
+        from dbgimporter import import_and_enable_debugger
+        import_and_enable_debugger()
+        def do_something(n):
+            if n <= 0:
+                raise ArithmeticError('bad code') # @unhandled
+            do_something(n - 1)
+        do_something(100)
+
+    if max_frames == 'all':
+        # trace back compresses repeated text
+        min_expected_lines = 10
+        max_expected_lines = 1000
+        args = {'maxExcpetionStackFrames': 0}
+    elif max_frames == 'default':
+        # default is 5 frames, 2 lines per frames
+        min_expected_lines = 5
+        max_expected_lines = 11
+        args = {}
+    else:
+        min_expected_lines = 10
+        max_expected_lines = 21
+        args = {'maxExcpetionStackFrames': 10}
+
+    line_numbers = get_marked_line_numbers(code_to_debug)
+    with DebugSession() as session:
+        session.initialize(
+            target=(run_as, code_to_debug),
+            start_method=start_method,
+            ignore_unobserved=[Event('continued')],
+            expected_returncode=ANY.int,
+            args=args,
+        )
+        session.send_request('setExceptionBreakpoints', {
+            'filters': ['uncaught']
+        }).wait_for_response()
+        session.start_debugging()
+
+        hit = session.wait_for_thread_stopped(reason='exception')
+        frames = hit.stacktrace.body['stackFrames']
+        assert frames[0]['line'] == line_numbers['unhandled']
+
+        resp_exc_info = session.send_request('exceptionInfo', {
+            'threadId': hit.thread_id
+        }).wait_for_response()
+
+        expected = ANY.dict_with({
+            'exceptionId': ANY.such_that(lambda s: s.endswith('ArithmeticError')),
+            'description': 'bad code',
+            'breakMode': 'unhandled',
+            'details': ANY.dict_with({
+                'typeName': ANY.such_that(lambda s: s.endswith('ArithmeticError')),
+                'message': 'bad code',
+                'source': Path(code_to_debug),
+            }),
+        })
+        assert resp_exc_info.body == expected
+        stack_str = resp_exc_info.body['details']['stackTrace']
+        stack_line_count = len(stack_str.split('\n'))
+        assert stack_line_count >= min_expected_lines
+        assert stack_line_count <= max_expected_lines
+
+        session.send_request('continue').wait_for_response(freeze=False)
+
+        session.wait_for_exit()
