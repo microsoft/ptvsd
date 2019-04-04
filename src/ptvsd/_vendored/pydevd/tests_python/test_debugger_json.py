@@ -1147,18 +1147,18 @@ def test_exception_details(case_setup, max_frames):
 
         writer.write_set_protocol('http_json')
         if max_frames == 'all':
-            json_facade.write_launch(maxExcpetionStackFrames=0)
+            json_facade.write_launch(maxExceptionStackFrames=0)
             # trace back compresses repeated text
-            min_expected_lines = 10
-            max_expected_lines = 1000
+            min_expected_lines = 100
+            max_expected_lines = 220
         elif max_frames == 'default':
             json_facade.write_launch()
             # default is all frames
             # trace back compresses repeated text
-            min_expected_lines = 10
-            max_expected_lines = 1000
+            min_expected_lines = 100
+            max_expected_lines = 220
         else:
-            json_facade.write_launch(maxExcpetionStackFrames=max_frames)
+            json_facade.write_launch(maxExceptionStackFrames=max_frames)
             min_expected_lines = 10
             max_expected_lines = 21
 
@@ -1175,8 +1175,7 @@ def test_exception_details(case_setup, max_frames):
         assert body.description == 'foo'
         assert body.details.kwargs['source'] == writer.TEST_FILE
         stack_line_count = len(body.details.stackTrace.split('\n'))
-        assert stack_line_count >= min_expected_lines
-        assert stack_line_count <= max_expected_lines
+        assert  min_expected_lines <= stack_line_count <= max_expected_lines
 
         json_facade.write_set_exception_breakpoints([])  # Don't stop on reraises.
         writer.write_run_thread(hit.thread_id)

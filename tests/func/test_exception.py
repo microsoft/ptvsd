@@ -9,7 +9,7 @@ import pytest
 from tests.helpers import print, get_marked_line_numbers
 from tests.helpers.session import DebugSession
 from tests.helpers.timeline import Event
-from tests.helpers.pattern import ANY, Path
+from tests.helpers.pattern import ANY, Path, Regex
 
 
 @pytest.mark.parametrize('raised', ['raisedOn', 'raisedOff'])
@@ -355,22 +355,27 @@ def test_exception_stack(pyfile, run_as, start_method, max_frames):
         def do_something(n):
             if n <= 0:
                 raise ArithmeticError('bad code') # @unhandled
-            do_something(n - 1)
+            do_something2(n - 1)
+
+        def do_something2(n):
+            do_something(n-1)
+
         do_something(100)
 
     if max_frames == 'all':
         # trace back compresses repeated text
-        min_expected_lines = 10
-        max_expected_lines = 1000
-        args = {'maxExcpetionStackFrames': 0}
+        min_expected_lines = 100
+        max_expected_lines = 220
+        args = {'maxExceptionStackFrames': 0}
     elif max_frames == 'default':
-        min_expected_lines = 10
-        max_expected_lines = 1000
+        # default is all frames
+        min_expected_lines = 100
+        max_expected_lines = 220
         args = {}
     else:
         min_expected_lines = 10
         max_expected_lines = 21
-        args = {'maxExcpetionStackFrames': 10}
+        args = {'maxExceptionStackFrames': 10}
 
     line_numbers = get_marked_line_numbers(code_to_debug)
     with DebugSession() as session:
@@ -395,11 +400,11 @@ def test_exception_stack(pyfile, run_as, start_method, max_frames):
         }).wait_for_response()
 
         expected = ANY.dict_with({
-            'exceptionId': ANY.such_that(lambda s: s.endswith('ArithmeticError')),
+            'exceptionId': Regex('ArithmeticError'),
             'description': 'bad code',
             'breakMode': 'unhandled',
             'details': ANY.dict_with({
-                'typeName': ANY.such_that(lambda s: s.endswith('ArithmeticError')),
+                'typeName': Regex('ArithmeticError'),
                 'message': 'bad code',
                 'source': Path(code_to_debug),
             }),
@@ -407,8 +412,7 @@ def test_exception_stack(pyfile, run_as, start_method, max_frames):
         assert resp_exc_info.body == expected
         stack_str = resp_exc_info.body['details']['stackTrace']
         stack_line_count = len(stack_str.split('\n'))
-        assert stack_line_count >= min_expected_lines
-        assert stack_line_count <= max_expected_lines
+        assert min_expected_lines <= stack_line_count <= max_expected_lines
 
         session.send_request('continue').wait_for_response(freeze=False)
 

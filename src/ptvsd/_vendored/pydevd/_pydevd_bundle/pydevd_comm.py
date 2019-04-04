@@ -1143,10 +1143,7 @@ def internal_get_exception_details_json(dbg, request, thread_id, max_frames, set
             except:
                 pass
 
-        if max_frames == 0:
-            stack_str = ''.join(traceback.format_list(frames))
-        else:
-            stack_str = ''.join(traceback.format_list(frames[-max_frames:]))
+        stack_str = ''.join(traceback.format_list(frames[-max_frames:]))
 
         # This is an extra bit of data used by Visual Studio
         source_path = frames[0][0] if frames else ''
