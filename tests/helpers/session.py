@@ -504,7 +504,7 @@ class DebugSession(object):
             'pathMappings': self.path_mappings,
             'rules': self.rules,
         })
-		if self.success_exitcodes is not None:
+        if self.success_exitcodes is not None:
             self.start_method_args['successExitCodes'] = self.success_exitcodes
         self.send_request(request, self.start_method_args).wait_for_response()
 
