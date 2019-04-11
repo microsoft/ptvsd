@@ -1726,16 +1726,13 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         self.send_response(request, **sys_info)
 
     # VS specific custom message handlers
-    @async_handler
+
     def on_setDebuggerProperty(self, request, args):
         if 'JustMyCodeStepping' in args:
             jmc = int(args.get('JustMyCodeStepping', 0)) > 0
             self.debug_options['DEBUG_STDLIB'] = not jmc
 
-        pydevd_request = copy.deepcopy(request)
-        del pydevd_request['seq']  # A new seq should be created for pydevd.
-        yield self.pydevd_request(-1, pydevd_request, is_json=True)
-
+        self._forward_request_to_pydevd(request, args)
         self.send_response(request)
 
     # PyDevd protocol event handlers

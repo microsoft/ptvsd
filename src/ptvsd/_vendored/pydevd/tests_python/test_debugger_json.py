@@ -1239,7 +1239,7 @@ def test_goto(case_setup):
 
         writer.finished_ok = True
 
-@pytest.mark.parametrize('dbg_property', ['dont_trace', 'trace'])
+@pytest.mark.parametrize('dbg_property', ['dont_trace', 'trace', 'change_pattern', 'dont_trace_after_start'])
 def test_set_debugger_property(case_setup, dbg_property):
     with case_setup.test_file('_debugger_case_dont_trace_test.py') as writer:
         json_facade = JsonFacade(writer)
@@ -1247,7 +1247,7 @@ def test_set_debugger_property(case_setup, dbg_property):
         writer.write_set_protocol('http_json')
         writer.write_add_breakpoint(writer.get_line_index_with_content('Break here'))
 
-        if dbg_property == 'dont_trace':
+        if dbg_property in ('dont_trace', 'change_pattern', 'dont_trace_after_start'):
             dbg_request = json_facade.write_request(
                 pydevd_schema.SetDebuggerPropertyRequest(pydevd_schema.SetDebuggerPropertyArguments(
                     dontTraceStartPatterns=[],
@@ -1255,16 +1255,38 @@ def test_set_debugger_property(case_setup, dbg_property):
             dbg_response = json_facade.wait_for_response(dbg_request)
             assert dbg_response.success
 
+        if dbg_property == 'change_pattern':
+            # Attempting to change pattern after it is set should fail
+            dbg_request = json_facade.write_request(
+                pydevd_schema.SetDebuggerPropertyRequest(pydevd_schema.SetDebuggerPropertyArguments(
+                    dontTraceStartPatterns=[],
+                    dontTraceEndPatterns=['something_else.py'])))
+            dbg_response = json_facade.wait_for_response(dbg_request)
+            assert not dbg_response.success
+
         json_facade.write_make_initial_run()
 
         hit = writer.wait_for_breakpoint_hit()
+
+        if dbg_property == 'dont_trace_after_start':
+            # Attempting to set don't trace after start with the same pattern should fail
+            # This has the same effect of not setting the trace.
+            dbg_request = json_facade.write_request(
+                pydevd_schema.SetDebuggerPropertyRequest(pydevd_schema.SetDebuggerPropertyArguments(
+                    dontTraceStartPatterns=[],
+                    dontTraceEndPatterns=['something_else.py'])))
+            dbg_response = json_facade.wait_for_response(dbg_request)
+            assert not dbg_response.success
 
         stack_trace_request = json_facade.write_request(
             pydevd_schema.StackTraceRequest(pydevd_schema.StackTraceArguments(threadId=hit.thread_id)))
         stack_trace_response = json_facade.wait_for_response(stack_trace_request)
         dont_trace_frames = list(frame for frame in stack_trace_response.body.stackFrames
                                  if frame['source']['path'].endswith('dont_trace.py'))
-        if dbg_property == 'dont_trace':
+
+        if dbg_property in ('dont_trace', 'change_pattern', 'dont_trace_after_start'):
+            # Since chagnge pattern or don't trace after start is expected to fail,
+            # the original pattern still holds.
             assert dont_trace_frames == []
         else:
             assert len(dont_trace_frames) == 1

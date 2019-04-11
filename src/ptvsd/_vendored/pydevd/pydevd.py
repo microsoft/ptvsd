@@ -137,6 +137,7 @@ forked = False
 
 file_system_encoding = getfilesystemencoding()
 
+_CACHE_FILE_TYPE = {}
 
 #=======================================================================================================================
 # PyDBCommandThread
@@ -570,7 +571,7 @@ class PyDB(object):
         # By default all external files are traced.
         return False
 
-    def get_file_type(self, abs_real_path_and_basename, _cache_file_type={}):
+    def get_file_type(self, abs_real_path_and_basename, _cache_file_type=_CACHE_FILE_TYPE):
         '''
         :param abs_real_path_and_basename:
             The result from get_abs_path_real_path_and_base_from_file or
@@ -587,10 +588,10 @@ class PyDB(object):
             None:
                 If it's a regular user file which should be traced.
         '''
-        abs_path = abs_real_path_and_basename[0]
         try:
-            return _cache_file_type[abs_path]
-        except KeyError:
+            return _cache_file_type[abs_real_path_and_basename[0]]
+        except:
+            abs_path = abs_real_path_and_basename[0]
             file_type = self._internal_get_file_type(abs_real_path_and_basename)
             if file_type is not None:
                 _cache_file_type[abs_path] = file_type
@@ -599,6 +600,9 @@ class PyDB(object):
             else:
                 _cache_file_type[abs_path] = None
             return _cache_file_type[abs_path]
+
+    def is_cache_file_type_empty(self):
+        return len(_CACHE_FILE_TYPE) == 0
 
     def get_thread_local_trace_func(self):
         try:
