@@ -1,7 +1,7 @@
 # coding: utf-8
 import pytest
 
-from _pydevd_bundle._debug_adapter import pydevd_schema, pydevd_base_schema
+from _pydevd_bundle._debug_adapter import pydevd_schema, pydevd_custom_schema, pydevd_base_schema
 from _pydevd_bundle._debug_adapter.pydevd_base_schema import from_json
 from tests_python.debugger_unittest import IS_JYTHON, REASON_STEP_INTO, REASON_STEP_OVER, \
     REASON_CAUGHT_EXCEPTION, REASON_THREAD_SUSPEND, REASON_STEP_RETURN, IS_APPVEYOR, overrides, \
@@ -1235,6 +1235,40 @@ def test_goto(case_setup):
 
         # we hit the breakpoint again. Since we moved back
         hit = writer.wait_for_breakpoint_hit()
+        writer.write_run_thread(hit.thread_id)
+
+        writer.finished_ok = True
+
+@pytest.mark.parametrize('dbg_property', ['dont_trace', 'trace'])
+def test_set_debugger_property(case_setup, dbg_property):
+    with case_setup.test_file('_debugger_case_dont_trace_test.py') as writer:
+        json_facade = JsonFacade(writer)
+
+        writer.write_set_protocol('http_json')
+        writer.write_add_breakpoint(writer.get_line_index_with_content('Break here'))
+
+        if dbg_property == 'dont_trace':
+            dbg_request = json_facade.write_request(
+                pydevd_custom_schema.SetDebuggerPropertyRequest(pydevd_custom_schema.SetDebuggerPropertyArguments(
+                    dontTraceStartPatterns=[],
+                    dontTraceEndPatterns=['dont_trace.py'])))
+            dbg_response = json_facade.wait_for_response(dbg_request)
+            assert dbg_response.success
+
+        json_facade.write_make_initial_run()
+
+        hit = writer.wait_for_breakpoint_hit()
+
+        stack_trace_request = json_facade.write_request(
+            pydevd_schema.StackTraceRequest(pydevd_schema.StackTraceArguments(threadId=hit.thread_id)))
+        stack_trace_response = json_facade.wait_for_response(stack_trace_request)
+        dont_trace_frames = list(frame for frame in stack_trace_response.body.stackFrames
+                                 if frame['source']['path'].endswith('dont_trace.py'))
+        if dbg_property == 'dont_trace':
+            assert dont_trace_frames == []
+        else:
+            assert len(dont_trace_frames) == 1
+
         writer.write_run_thread(hit.thread_id)
 
         writer.finished_ok = True
