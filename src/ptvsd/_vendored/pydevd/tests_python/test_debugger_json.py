@@ -1,7 +1,7 @@
 # coding: utf-8
 import pytest
 
-from _pydevd_bundle._debug_adapter import pydevd_schema, pydevd_custom_schema, pydevd_base_schema
+from _pydevd_bundle._debug_adapter import pydevd_schema, pydevd_base_schema
 from _pydevd_bundle._debug_adapter.pydevd_base_schema import from_json
 from tests_python.debugger_unittest import IS_JYTHON, REASON_STEP_INTO, REASON_STEP_OVER, \
     REASON_CAUGHT_EXCEPTION, REASON_THREAD_SUSPEND, REASON_STEP_RETURN, IS_APPVEYOR, overrides, \
@@ -1249,7 +1249,7 @@ def test_set_debugger_property(case_setup, dbg_property):
 
         if dbg_property == 'dont_trace':
             dbg_request = json_facade.write_request(
-                pydevd_custom_schema.SetDebuggerPropertyRequest(pydevd_custom_schema.SetDebuggerPropertyArguments(
+                pydevd_schema.SetDebuggerPropertyRequest(pydevd_schema.SetDebuggerPropertyArguments(
                     dontTraceStartPatterns=[],
                     dontTraceEndPatterns=['dont_trace.py'])))
             dbg_response = json_facade.wait_for_response(dbg_request)

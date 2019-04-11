@@ -5,7 +5,6 @@ import linecache
 import os
 
 from _pydevd_bundle._debug_adapter import pydevd_base_schema
-from _pydevd_bundle._debug_adapter import pydevd_custom_schema
 from _pydevd_bundle._debug_adapter.pydevd_schema import (SourceBreakpoint, ScopesResponseBody, Scope,
     VariablesResponseBody, SetVariableResponseBody, ModulesResponseBody, SourceResponseBody,
     GotoTargetsResponseBody, ExceptionOptions)
