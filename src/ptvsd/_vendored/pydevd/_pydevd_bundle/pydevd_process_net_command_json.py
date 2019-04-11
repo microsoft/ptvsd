@@ -5,6 +5,7 @@ import linecache
 import os
 
 from _pydevd_bundle._debug_adapter import pydevd_base_schema
+from _pydevd_bundle._debug_adapter import pydevd_custom_schema
 from _pydevd_bundle._debug_adapter.pydevd_schema import (SourceBreakpoint, ScopesResponseBody, Scope,
     VariablesResponseBody, SetVariableResponseBody, ModulesResponseBody, SourceResponseBody,
     GotoTargetsResponseBody, ExceptionOptions)
@@ -663,5 +664,28 @@ class _PyDevJsonCommandProcessor(object):
         response = pydevd_base_schema.build_response(request, kwargs={'body': {}})
         return NetCommand(CMD_RETURN, 0, response, is_json=True)
 
+    def on_setdebuggerproperty_request(self, py_db, request):
+        args = request.arguments.kwargs
+        if 'dontTraceStartPatterns' in args and 'dontTraceEndPatterns' in args:
+            start_patterns = tuple(args['dontTraceStartPatterns'])
+            end_patterns = tuple(args['dontTraceEndPatterns'])
+
+            def dont_trace_files(abs_path):
+                result = abs_path.startswith(start_patterns) or \
+                         abs_path.endswith(end_patterns)
+                return result
+            py_db.dont_trace_external_files = dont_trace_files
+
+        # TODO: Support other common settings. Note that not all of these might be relevant to python.
+        # JustMyCodeStepping: 0 or 1
+        # AllowOutOfProcessSymbols: 0 or 1
+        # DisableJITOptimization: 0 or 1
+        # InterpreterOptions: 0 or 1
+        # StopOnExceptionCrossingManagedBoundary: 0 or 1
+        # WarnIfNoUserCodeOnLaunch: 0 or 1
+        # EnableStepFiltering: true of false
+
+        response = pydevd_base_schema.build_response(request, kwargs={'body': {}})
+        return NetCommand(CMD_RETURN, 0, response, is_json=True)
 
 process_net_command_json = _PyDevJsonCommandProcessor(pydevd_base_schema.from_json).process_net_command_json

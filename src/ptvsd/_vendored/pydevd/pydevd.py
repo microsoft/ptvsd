@@ -485,6 +485,7 @@ class PyDB(object):
         self.collect_try_except_info = collect_try_except_info
         self.get_exception_breakpoint = get_exception_breakpoint
         self._dont_trace_get_file_type = DONT_TRACE.get
+        self.dont_trace_external_files = lambda abs_path: False
         self.PYDEV_FILE = PYDEV_FILE
 
         self._in_project_scope_cache = {}
@@ -546,7 +547,31 @@ class PyDB(object):
             if val is not None:
                 info.pydev_message = str(val)
 
-    def get_file_type(self, abs_real_path_and_basename):
+    def _internal_get_file_type(self, abs_real_path_and_basename):
+        basename = abs_real_path_and_basename[-1]
+        if basename.startswith('<frozen '):
+            # In Python 3.7 "<frozen ..." appear multiple times during import and should be
+            # ignored for the user.
+            return self.PYDEV_FILE
+        return self._dont_trace_get_file_type(basename)
+
+    def dont_trace_external_files(self, abs_path):
+        '''
+        :param abs_path:
+            The result from get_abs_path_real_path_and_base_from_file or
+            get_abs_path_real_path_and_base_from_frame.
+
+        :return
+            True :
+                If files should NOT be traced.
+
+            False:
+                If files should be traced.
+        '''
+        # By default all external files are traced.
+        return False
+
+    def get_file_type(self, abs_real_path_and_basename, _cache_file_type={}):
         '''
         :param abs_real_path_and_basename:
             The result from get_abs_path_real_path_and_base_from_file or
@@ -563,12 +588,18 @@ class PyDB(object):
             None:
                 If it's a regular user file which should be traced.
         '''
-        basename = abs_real_path_and_basename[-1]
-        if basename.startswith('<frozen '):
-            # In Python 3.7 "<frozen ..." appear multiple times during import and should be
-            # ignored for the user.
-            return self.PYDEV_FILE
-        return self._dont_trace_get_file_type(basename)
+        abs_path = abs_real_path_and_basename[0]
+        try:
+            return _cache_file_type[abs_path]
+        except KeyError:
+            file_type = self._internal_get_file_type(abs_real_path_and_basename)
+            if file_type is not None:
+                _cache_file_type[abs_path] = file_type
+            elif self.dont_trace_external_files(abs_path):
+                _cache_file_type[abs_path] = PYDEV_FILE
+            else:
+                _cache_file_type[abs_path] = None
+            return _cache_file_type[abs_path]
 
     def get_thread_local_trace_func(self):
         try:
