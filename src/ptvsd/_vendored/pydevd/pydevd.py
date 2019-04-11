@@ -485,7 +485,6 @@ class PyDB(object):
         self.collect_try_except_info = collect_try_except_info
         self.get_exception_breakpoint = get_exception_breakpoint
         self._dont_trace_get_file_type = DONT_TRACE.get
-        self.dont_trace_external_files = lambda abs_path: False
         self.PYDEV_FILE = PYDEV_FILE
 
         self._in_project_scope_cache = {}
