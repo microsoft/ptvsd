@@ -17,7 +17,6 @@ from _pydevd_bundle.pydevd_json_debug_options import _extract_debug_options
 from _pydevd_bundle.pydevd_net_command import NetCommand
 from _pydevd_bundle.pydevd_utils import convert_dap_log_message_to_expression
 import pydevd_file_utils
-import pydevd
 
 
 def _convert_rules_to_exclude_filters(rules, filename_to_server, on_error):
@@ -666,12 +665,12 @@ class _PyDevJsonCommandProcessor(object):
 
     def _can_set_dont_trace_pattern(self, py_db, start_patterns, end_patterns):
         if py_db.is_cache_file_type_empty():
-            if py_db.dont_trace_external_files.__name__ == 'dont_trace_files':
-                return py_db.dont_trace_external_files.start_patterns == start_patterns and \
-                    py_db.dont_trace_external_files.end_patterns == end_patterns
-            else:
-                # File type cache is empty and don't trace is not set.
-                return True
+            return True
+
+        if py_db.dont_trace_external_files.__name__ == 'dont_trace_files_property_request':
+            return py_db.dont_trace_external_files.start_patterns == start_patterns and \
+                py_db.dont_trace_external_files.end_patterns == end_patterns
+
         return False
 
     def on_setdebuggerproperty_request(self, py_db, request):
@@ -680,13 +679,13 @@ class _PyDevJsonCommandProcessor(object):
             start_patterns = tuple(args['dontTraceStartPatterns'])
             end_patterns = tuple(args['dontTraceEndPatterns'])
             if self._can_set_dont_trace_pattern(py_db, start_patterns, end_patterns):
-                def dont_trace_files(abs_path):
+                def dont_trace_files_property_request(abs_path):
                     result = abs_path.startswith(start_patterns) or \
                             abs_path.endswith(end_patterns)
                     return result
-                dont_trace_files.start_patterns = start_patterns
-                dont_trace_files.end_patterns = end_patterns
-                py_db.dont_trace_external_files = dont_trace_files
+                dont_trace_files_property_request.start_patterns = start_patterns
+                dont_trace_files_property_request.end_patterns = end_patterns
+                py_db.dont_trace_external_files = dont_trace_files_property_request
             else:
                 # don't trace pattern cannot be changed after it is set once. there are caches
                 # throughout the debugger which rely on having always the same file type,

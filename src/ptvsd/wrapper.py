@@ -1351,19 +1351,19 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         del pydevd_request['seq']  # A new seq should be created for pydevd.
         yield self.pydevd_request(-1, pydevd_request, is_json=True)
 
-        # Don't trace files under ptvsd, and ptvsd_launcher.py files
-        dont_trace_request = self._get_new_setDebuggerProperty_request(
-            dontTraceStartPatterns=[PTVSD_DIR_PATH],
-            dontTraceEndPatterns=['ptvsd_launcher.py']
-        )
-        yield self.pydevd_request(-1, dont_trace_request, is_json=True)
-
         self._initialize_path_maps(args)
 
         default_success_exitcodes = [0]
         if self.debug_options.get('DJANGO_DEBUG', False):
             default_success_exitcodes += [3]
         self._success_exitcodes = args.get('successExitCodes', default_success_exitcodes)
+
+        # Don't trace files under ptvsd, and ptvsd_launcher.py files
+        dont_trace_request = self._get_new_setDebuggerProperty_request(
+            dontTraceStartPatterns=[PTVSD_DIR_PATH],
+            dontTraceEndPatterns=['ptvsd_launcher.py']
+        )
+        yield self.pydevd_request(-1, dont_trace_request, is_json=True)
 
     def _handle_detach(self):
         ptvsd.log.info('Detaching ...')
@@ -1733,7 +1733,6 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
             self.debug_options['DEBUG_STDLIB'] = not jmc
 
         self._forward_request_to_pydevd(request, args)
-        self.send_response(request)
 
     # PyDevd protocol event handlers
 
