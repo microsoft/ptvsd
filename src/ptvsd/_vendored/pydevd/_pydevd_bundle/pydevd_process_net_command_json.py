@@ -671,7 +671,7 @@ class _PyDevJsonCommandProcessor(object):
             return py_db.dont_trace_external_files.start_patterns == start_patterns and \
                 py_db.dont_trace_external_files.end_patterns == end_patterns
 
-        return False
+        return True
 
     def on_setdebuggerproperty_request(self, py_db, request):
         args = request.arguments.kwargs
