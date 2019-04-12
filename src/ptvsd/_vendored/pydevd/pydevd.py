@@ -591,18 +591,14 @@ class PyDB(object):
         try:
             return _cache_file_type[abs_real_path_and_basename[0]]
         except:
-            abs_path = abs_real_path_and_basename[0]
             file_type = self._internal_get_file_type(abs_real_path_and_basename)
-            if file_type is not None:
-                _cache_file_type[abs_path] = file_type
-            elif self.dont_trace_external_files(abs_path):
-                _cache_file_type[abs_path] = PYDEV_FILE
-            else:
-                _cache_file_type[abs_path] = None
-            return _cache_file_type[abs_path]
+            if file_type is None:
+                file_type = PYDEV_FILE if self.dont_trace_external_files(abs_real_path_and_basename[0]) else None
+            _cache_file_type[abs_real_path_and_basename[0]] = file_type
+            return file_type
 
     def is_cache_file_type_empty(self):
-        return len(_CACHE_FILE_TYPE) == 0
+        return _CACHE_FILE_TYPE == {}
 
     def get_thread_local_trace_func(self):
         try:
