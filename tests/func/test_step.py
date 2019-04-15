@@ -33,6 +33,7 @@ def test_set_next_statement(pyfile, run_as, start_method):
         session.initialize(
             target=(run_as, code_to_debug),
             start_method=start_method,
+            env={'PTVSD_USE_CONTINUED': '1'},
             ignore_unobserved=[Event('continued')],
         )
         session.set_breakpoints(code_to_debug, [line_numbers['inner1']])
