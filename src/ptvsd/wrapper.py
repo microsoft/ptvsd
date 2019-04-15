@@ -80,6 +80,14 @@ def path_to_unicode(s):
 PTVSD_DIR_PATH = os.path.dirname(os.path.abspath(get_abs_path_real_path_and_base_from_file(__file__)[0])) + os.path.sep
 NORM_PTVSD_DIR_PATH = os.path.normcase(PTVSD_DIR_PATH)
 
+def dont_trace_ptvsd_files(py_db, file_path):
+    """
+    Returns true if the file should not be traced.
+    """
+    return file_path.startswith(PTVSD_DIR_PATH) or file_path.endswith('ptvsd_launcher.py')
+
+pydevd.PyDB.dont_trace_external_files = dont_trace_ptvsd_files
+
 # NOTE: Previously this included sys.prefix, sys.base_prefix and sys.real_prefix
 # On some systems those resolve to '/usr'. That means any user code will
 # also be treated as library code.
@@ -1359,11 +1367,12 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         self._success_exitcodes = args.get('successExitCodes', default_success_exitcodes)
 
         # Don't trace files under ptvsd, and ptvsd_launcher.py files
-        dont_trace_request = self._get_new_setDebuggerProperty_request(
-            dontTraceStartPatterns=[PTVSD_DIR_PATH],
-            dontTraceEndPatterns=['ptvsd_launcher.py']
-        )
-        yield self.pydevd_request(-1, dont_trace_request, is_json=True)
+        # TODO: un-comment this code after fixing https://github.com/Microsoft/ptvsd/issues/1355
+        #dont_trace_request = self._get_new_setDebuggerProperty_request(
+        #    dontTraceStartPatterns=[PTVSD_DIR_PATH],
+        #    dontTraceEndPatterns=['ptvsd_launcher.py']
+        #)
+        #yield self.pydevd_request(-1, dont_trace_request, is_json=True)
 
     def _handle_detach(self):
         ptvsd.log.info('Detaching ...')
@@ -1732,7 +1741,9 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
             jmc = int(args.get('JustMyCodeStepping', 0)) > 0
             self.debug_options['DEBUG_STDLIB'] = not jmc
 
-        self._forward_request_to_pydevd(request, args)
+        # TODO: Replace the line below with _forward_request_to_pydevd
+        # after fixing https://github.com/Microsoft/ptvsd/issues/1355
+        self.send_response(request)
 
     # PyDevd protocol event handlers
 
