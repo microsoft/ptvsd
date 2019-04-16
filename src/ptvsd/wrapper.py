@@ -12,7 +12,6 @@ import os
 import re
 import platform
 import pydevd_file_utils
-import site
 import socket
 import sys
 import threading
@@ -107,26 +106,6 @@ def _get_file_type(py_db, abs_real_path_and_basename, _cache_file_type={}):
 
 
 pydevd.PyDB.get_file_type = _get_file_type
-
-# NOTE: Previously this included sys.prefix, sys.base_prefix and sys.real_prefix
-# On some systems those resolve to '/usr'. That means any user code will
-# also be treated as library code.
-STDLIB_PATH_PREFIXES = []
-if hasattr(site, 'getusersitepackages'):
-    site_paths = site.getusersitepackages()
-    if isinstance(site_paths, list):
-        for site_path in site_paths:
-            STDLIB_PATH_PREFIXES.append(os.path.normcase(site_path))
-    else:
-        STDLIB_PATH_PREFIXES.append(os.path.normcase(site_paths))
-
-if hasattr(site, 'getsitepackages'):
-    site_paths = site.getsitepackages()
-    if isinstance(site_paths, list):
-        for site_path in site_paths:
-            STDLIB_PATH_PREFIXES.append(os.path.normcase(site_path))
-    else:
-        STDLIB_PATH_PREFIXES.append(os.path.normcase(site_paths))
 
 
 class UnsupportedPyDevdCommandError(Exception):
@@ -1297,19 +1276,6 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         """
         dbg_stdlib = self.debug_options.get('DEBUG_STDLIB', False)
         return not dbg_stdlib
-
-    def _is_stdlib(self, filepath):
-        filepath = os.path.normcase(os.path.normpath(filepath))
-        for prefix in STDLIB_PATH_PREFIXES:
-            if prefix != '' and filepath.startswith(prefix):
-                return True
-        return filepath.startswith(NORM_PTVSD_DIR_PATH)
-
-    def _should_debug(self, filepath):
-        if self._is_just_my_code_stepping_enabled() and \
-           self._is_stdlib(filepath):
-            return False
-        return True
 
     def _resolve_remote_root(self, local_root, remote_root):
         if remote_root == '.':
