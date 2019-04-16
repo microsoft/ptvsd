@@ -9,6 +9,7 @@ from _pydevd_bundle._debug_adapter.pydevd_schema import (SourceBreakpoint, Scope
     VariablesResponseBody, SetVariableResponseBody, ModulesResponseBody, SourceResponseBody,
     GotoTargetsResponseBody, ExceptionOptions)
 from _pydevd_bundle.pydevd_api import PyDevdAPI
+from _pydevd_bundle.pydevd_comm import pydevd_log
 from _pydevd_bundle.pydevd_comm_constants import (
     CMD_RETURN, CMD_STEP_OVER_MY_CODE, CMD_STEP_OVER, CMD_STEP_INTO_MY_CODE,
     CMD_STEP_INTO, CMD_STEP_RETURN_MY_CODE, CMD_STEP_RETURN, CMD_SET_NEXT_STATEMENT)
@@ -687,10 +688,11 @@ class _PyDevJsonCommandProcessor(object):
                 dont_trace_files_property_request.end_patterns = end_patterns
                 py_db.dont_trace_external_files = dont_trace_files_property_request
             else:
-                # don't trace pattern cannot be changed after it is set once. there are caches
-                # throughout the debugger which rely on having always the same file type,
+                # Don't trace pattern cannot be changed after it is set once. There are caches
+                # throughout the debugger which rely on always having the same file type.
                 message = ("Calls to set or change don't trace patterns (via setDebuggerProperty) are not "
                            "allowed since debugging has already started or don't trace patterns are already set.")
+                pydevd_log(0, message)
                 response_args = {'success':False, 'body': {}, 'message': message}
                 response = pydevd_base_schema.build_response(request, kwargs=response_args)
                 return NetCommand(CMD_RETURN, 0, response, is_json=True)

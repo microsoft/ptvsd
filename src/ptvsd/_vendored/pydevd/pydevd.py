@@ -598,7 +598,7 @@ class PyDB(object):
             return file_type
 
     def is_cache_file_type_empty(self):
-        return _CACHE_FILE_TYPE == {}
+        return bool(_CACHE_FILE_TYPE)
 
     def get_thread_local_trace_func(self):
         try:
