@@ -19,3 +19,4 @@ When filing an issue, make sure you do the following:
 - Python Extension [Version](https://code.visualstudio.com/docs/editor/extension-gallery#_extensions-view-commands).
 - Debugger Version (You can find this by clicking on the launch.json file within your folder. The debugger version number will be located at the top of this file.)
 - The code that you are working on as well as any additional files (i.e. requirements.txt file if you're working with a virtual environment or an environment.yml file for Conda environments).
+- Any debugger logs that you may have. See [here](https://github.com/Microsoft/ptvsd#debugger-logging) for instructions on how to enable logging.
