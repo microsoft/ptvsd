@@ -6,6 +6,7 @@ import ptvsd.log
 from .socket import is_socket, close_socket
 from .wrapper import VSCodeMessageProcessor
 from ._util import TimeoutError, ClosedError, Closeable, Startable
+import traceback
 
 
 class DebugSession(Startable, Closeable):
@@ -24,7 +25,7 @@ class DebugSession(Startable, Closeable):
             return raw
         if not is_socket(raw):
             # TODO: Create a new client socket from a remote address?
-            #addr = Address.from_raw(raw)
+            # addr = Address.from_raw(raw)
             raise NotImplementedError
         client = raw
         return cls(client, **kwargs)
@@ -42,9 +43,11 @@ class DebugSession(Startable, Closeable):
         super(DebugSession, self).__init__()
 
         if notify_closing is not None:
+
             def handle_closing(before):
                 if before:
                     notify_closing(self)
+
             self.add_close_handler(handle_closing)
 
         if notify_disconnecting is None:
@@ -54,6 +57,7 @@ class DebugSession(Startable, Closeable):
         self._sock = sock
         self._pre_socket_close = None
         if ownsock:
+
             # Close the socket *after* calling sys.exit() (via notify_closing).
             def handle_closing(before):
                 if before:
@@ -68,6 +72,7 @@ class DebugSession(Startable, Closeable):
                     except TimeoutError:
                         ptvsd.log.exception('timed out waiting for disconnect', category='D')
                 close_socket(self._sock)
+
             self.add_close_handler(handle_closing)
 
         self._msgprocessor = None
@@ -171,6 +176,7 @@ class PyDevdDebugSession(DebugSession):
             self._notified_debugger_ready = True
             if _notify is not None:
                 _notify(session)
+
         self._notified_debugger_ready = False
         self._notify_debugger_ready = notify_debugger_ready
 
@@ -178,7 +184,11 @@ class PyDevdDebugSession(DebugSession):
         if self._msgprocessor is None:
             # TODO: Do more than ignore?
             return
-        return self._msgprocessor.on_pydevd_event(cmdid, seq, text)
+        try:
+            return self._msgprocessor.on_pydevd_event(cmdid, seq, text)
+        except:
+            traceback.print_exc()
+            raise
 
     # internal methods
 
