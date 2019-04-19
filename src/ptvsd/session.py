@@ -6,7 +6,6 @@ import ptvsd.log
 from .socket import is_socket, close_socket
 from .wrapper import VSCodeMessageProcessor
 from ._util import TimeoutError, ClosedError, Closeable, Startable
-import traceback
 
 
 class DebugSession(Startable, Closeable):
@@ -187,7 +186,7 @@ class PyDevdDebugSession(DebugSession):
         try:
             return self._msgprocessor.on_pydevd_event(cmdid, seq, text)
         except:
-            traceback.print_exc()
+            ptvsd.log.exception('Error handling pydevd message: {0}', text)
             raise
 
     # internal methods
