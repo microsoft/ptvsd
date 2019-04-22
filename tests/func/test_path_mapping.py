@@ -162,10 +162,15 @@ def test_with_path_mappings(pyfile, tmpdir, run_as, start_method):
         source_reference = frames[1]['source']['sourceReference']
         assert source_reference > 0  # Unmapped file should have a source reference.
 
-        resp_variables = session.send_request('source', arguments={
+        resp_source = session.send_request('source', arguments={
+            'sourceReference': 0
+        }).wait_for_response(raise_if_failed=False)
+        assert not resp_source.success
+
+        resp_source = session.send_request('source', arguments={
             'sourceReference': source_reference
         }).wait_for_response()
-        assert "def call_me_back(callback):" in (resp_variables.body['content'])
+        assert "def call_me_back(callback):" in (resp_source.body['content'])
 
         remote_code_path = session.read_json()
         assert path_remote == Path(remote_code_path)
