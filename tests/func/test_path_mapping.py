@@ -5,6 +5,7 @@
 from __future__ import print_function, with_statement, absolute_import
 
 import os
+import traceback
 from shutil import copyfile
 from tests.helpers.pattern import Path
 from tests.helpers.session import DebugSession
@@ -166,6 +167,8 @@ def test_with_path_mappings(pyfile, tmpdir, run_as, start_method):
             'sourceReference': 0
         }).wait_for_response(raise_if_failed=False)
         assert not resp_source.success
+        text = ''.join(traceback.format_exception_only(type(resp_source.body), resp_source.body))
+        assert 'Source unavailable' in text
 
         resp_source = session.send_request('source', arguments={
             'sourceReference': source_reference
