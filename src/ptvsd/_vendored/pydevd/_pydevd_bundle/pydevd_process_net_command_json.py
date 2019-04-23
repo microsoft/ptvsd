@@ -767,8 +767,8 @@ class _PyDevJsonCommandProcessor(object):
             return NetCommand(CMD_RETURN, 0, response, is_json=True)
 
         self.api.request_set_next(py_db, thread_id, CMD_SET_NEXT_STATEMENT, line, '*')
-        response = pydevd_base_schema.build_response(request, kwargs={'body': {}})
-        return NetCommand(CMD_RETURN, 0, response, is_json=True)
+        # See 'NetCommandFactoryJson.make_set_next_stmnt_status_message' for response
+        return None
 
     def _can_set_dont_trace_pattern(self, py_db, start_patterns, end_patterns):
         if py_db.is_cache_file_type_empty():

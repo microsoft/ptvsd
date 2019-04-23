@@ -296,3 +296,13 @@ class NetCommandFactoryJson(NetCommandFactory):
         body = ContinuedEventBody(threadId=thread_id, allThreadsContinued=True)
         event = pydevd_schema.ContinuedEvent(body)
         return NetCommand(CMD_THREAD_RESUME_SINGLE_NOTIFICATION, 0, event, is_json=True)
+
+    @overrides(NetCommandFactory.make_set_next_stmnt_status_message)
+    def make_set_next_stmnt_status_message(self, seq, is_success, exception_msg):
+        response = response = pydevd_schema.GotoResponse(
+            request_seq=seq,
+            success=is_success == 'True',
+            command='goto',
+            body={},
+            message=(None if is_success == 'True' else exception_msg))
+        return NetCommand(CMD_SET_NEXT_STATEMENT, 0, response, is_json=True)
