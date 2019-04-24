@@ -766,7 +766,7 @@ class _PyDevJsonCommandProcessor(object):
                 })
             return NetCommand(CMD_RETURN, 0, response, is_json=True)
 
-        self.api.request_set_next(py_db, thread_id, CMD_SET_NEXT_STATEMENT, line, '*')
+        self.api.request_set_next(py_db, request.seq, thread_id, CMD_SET_NEXT_STATEMENT, line, '*')
         # See 'NetCommandFactoryJson.make_set_next_stmnt_status_message' for response
         return None
 
