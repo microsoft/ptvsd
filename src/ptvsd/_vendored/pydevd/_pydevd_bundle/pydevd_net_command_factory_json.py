@@ -299,7 +299,7 @@ class NetCommandFactoryJson(NetCommandFactory):
 
     @overrides(NetCommandFactory.make_set_next_stmnt_status_message)
     def make_set_next_stmnt_status_message(self, seq, is_success, exception_msg):
-        response = response = pydevd_schema.GotoResponse(
+        response = pydevd_schema.GotoResponse(
             request_seq=int(seq),
             success=is_success,
             command='goto',

@@ -1684,7 +1684,3 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
     @pydevd_events.handler(pydevd_comm.CMD_PROCESS_CREATED)
     def on_pydevd_process_create(self, seq, args):
         pass
-
-    @pydevd_events.handler(pydevd_comm.CMD_SET_NEXT_STATEMENT)
-    def on_pydevd_set_next_statement(self, seq, args):
-        pass
