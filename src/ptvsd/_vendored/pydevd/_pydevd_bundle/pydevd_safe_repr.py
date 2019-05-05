@@ -304,6 +304,7 @@ class SafeRepr(object):
         # you are using the wrong class.
         left_count, right_count = max(1, int(2 * limit / 3)), max(1, int(limit / 3))  # noqa
 
-        yield obj_repr[:left_count]
+        obj_repr = obj_repr.decode('utf-8')
+        yield obj_repr[:left_count].encode('utf-8')
         yield '...'
-        yield obj_repr[-right_count:]
+        yield obj_repr[-right_count:].encode('utf-8')
