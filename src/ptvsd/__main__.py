@@ -107,6 +107,11 @@ def set_true(varname):
         setattr(ptvsd.options, varname, True)
     return do
 
+def set_false(varname):
+    def do(arg, it):
+        setattr(ptvsd.options, varname, False)
+    return do
+
 def set_target(kind, parser=None):
     def do(arg, it):
         ptvsd.options.target_kind = kind
@@ -131,6 +136,7 @@ switches = [
     ('--wait',                  None,               set_true('wait'),                       False),
     ('--multiprocess',          None,               set_true('multiprocess'),               False),
     ('--log-dir',               '<path>',           set_arg('log_dir', string),             False),
+    ('--no-warn',               None,               set_false('show_deprecation_warning'), False),
 
     # Switches that are used internally by the IDE or ptvsd itself.
     ('--nodebug',               None,               set_nodebug,                            False),
