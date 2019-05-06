@@ -1858,6 +1858,7 @@ def settrace(
     overwrite_prev_trace=False,
     patch_multiprocessing=False,
     stop_at_frame=None,
+    wait_for_ready_to_run=True,
     ):
     '''Sets the tracing function with the pydev debug function and initializes needed facilities.
 
@@ -1884,6 +1885,13 @@ def settrace(
 
     @param stop_at_frame: if passed it'll stop at the given frame, otherwise it'll stop in the function which
         called this method.
+
+    @param wait_for_ready_to_run: if True settrace will block until the ready_to_run flag is set to True,
+        otherwise, it'll set ready_to_run to True and this function won't block.
+
+        Note that if wait_for_ready_to_run == False, there are no guarantees that the debugger is synchronized
+        with what's configured in the client (IDE), the only guarantee is that when leaving this function
+        the debugger will be already connected.
     '''
     _set_trace_lock.acquire()
     try:
@@ -1896,6 +1904,7 @@ def settrace(
             trace_only_current_thread,
             patch_multiprocessing,
             stop_at_frame,
+            wait_for_ready_to_run,
         )
     finally:
         _set_trace_lock.release()
@@ -1913,6 +1922,7 @@ def _locked_settrace(
     trace_only_current_thread,
     patch_multiprocessing,
     stop_at_frame,
+    wait_for_ready_to_run,
     ):
     if patch_multiprocessing:
         try:
@@ -1962,6 +1972,9 @@ def _locked_settrace(
 
         t = threadingCurrentThread()
         additional_info = set_additional_thread_info(t)
+
+        if not wait_for_ready_to_run:
+            debugger.ready_to_run = True
 
         while not debugger.ready_to_run:
             time.sleep(0.1)  # busy wait until we receive run command
