@@ -304,7 +304,7 @@ class SafeRepr(object):
         # you are using the wrong class.
         left_count, right_count = max(1, int(2 * limit / 3)), max(1, int(limit / 3))  # noqa
 
-        if isintance(obj_repr, bytes):
+        if isinstance(obj_repr, bytes):
             # convert to unicode before slicing strings
             obj_repr = unicode(obj_repr, 'utf-8', errors='replace')
             yield obj_repr[:left_count].encode('utf-8')
