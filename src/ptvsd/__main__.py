@@ -107,11 +107,6 @@ def set_true(varname):
         setattr(ptvsd.options, varname, True)
     return do
 
-def set_false(varname):
-    def do(arg, it):
-        setattr(ptvsd.options, varname, False)
-    return do
-
 def set_target(kind, parser=None):
     def do(arg, it):
         ptvsd.options.target_kind = kind
