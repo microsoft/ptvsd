@@ -3,6 +3,7 @@
 # for license information.
 
 import sys
+import warnings
 
 import ptvsd.log
 from ptvsd._remote import (
@@ -22,10 +23,10 @@ DEFAULT_PORT = 5678
 
 _pending_threads = set()
 
-_redirect_output_deprecation_msg = """'redirect_output' setting via enable_attach will be deprecated in the future versions of the debugger.
- This can be set using redirectOutput in Launch config in VS Code, using Tee output option in Visual Stiudio,
- or debugOptions configuration.
-"""
+_redirect_output_deprecation_msg = (
+    "'redirect_output' setting via enable_attach will be deprecated in the future versions of the debugger. "
+    "This can be set using redirectOutput in Launch config in VS Code, using Tee output option in Visual Studio, "
+    "or debugOptions configuration for any client.")
 
 def wait_for_attach(timeout=None):
     """If a remote debugger is attached, returns immediately. Otherwise,
@@ -79,10 +80,8 @@ def enable_attach(address=(DEFAULT_HOST, DEFAULT_PORT), redirect_output=None, lo
     ptvsd.log.info('enable_attach{0!r}', (address, redirect_output))
 
     if redirect_output is not None:
-        if ptvsd.options.show_deprecation_warning:
-            ptvsd.log.warn(_redirect_output_deprecation_msg)
-        else:
-            ptvsd.log.info(_redirect_output_deprecation_msg)
+        ptvsd.log.info('redirect_output deprecation warning.')
+        warnings.warn(_redirect_output_deprecation_msg, DeprecationWarning, stacklevel=2)
 
     if is_attached():
         ptvsd.log.info('enable_attach() ignored - already attached.')
@@ -121,10 +120,8 @@ def attach(address, redirect_output=None, log_dir=None):
     ptvsd.log.info('attach{0!r}', (address, redirect_output))
 
     if redirect_output is not None:
-        if ptvsd.options.show_deprecation_warning:
-            ptvsd.log.warn(_redirect_output_deprecation_msg)
-        else:
-            ptvsd.log.info(_redirect_output_deprecation_msg)
+        ptvsd.log.info('redirect_output deprecation warning.')
+        warnings.warn(_redirect_output_deprecation_msg, DeprecationWarning)
 
     if is_attached():
         ptvsd.log.info('attach() ignored - already attached.')

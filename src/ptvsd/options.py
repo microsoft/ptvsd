@@ -74,8 +74,3 @@ subprocess_notify = None
 notification must be sent to that port once this ptvsd is initialized and ready to
 accept a connection from the client.
 """
-
-show_deprecation_warning = os.getenv('PTVSD_DEPRECATION_WARN', '1') == '1'
-"""If True (default), shows message about debugger feature deprecation. If False, these
-messages are only logged.
-"""

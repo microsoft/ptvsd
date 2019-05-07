@@ -136,7 +136,6 @@ switches = [
     ('--wait',                  None,               set_true('wait'),                       False),
     ('--multiprocess',          None,               set_true('multiprocess'),               False),
     ('--log-dir',               '<path>',           set_arg('log_dir', string),             False),
-    ('--no-warn',               None,               set_false('show_deprecation_warning'), False),
 
     # Switches that are used internally by the IDE or ptvsd itself.
     ('--nodebug',               None,               set_nodebug,                            False),
