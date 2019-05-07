@@ -306,7 +306,7 @@ class SafeRepr(object):
 
         if isinstance(obj_repr, bytes):
             # convert to unicode before slicing strings
-            obj_repr = obj_repr.decode(sys.stdout.encoding or 'utf-8', errors='replace')
+            obj_repr = obj_repr.decode(getattr(sys.stdout, 'encoding', None) or 'utf-8', errors='replace')
             yield obj_repr[:left_count].encode('utf-8')
             yield '...'
             yield obj_repr[-right_count:].encode('utf-8')
