@@ -1811,7 +1811,7 @@ static const char __pyx_k_NoSuchFieldException[] = "NoSuchFieldException";
 static const char __pyx_k_frame_trace_dispatch[] = "frame_trace_dispatch";
 static const char __pyx_k_get_clsname_for_code[] = "get_clsname_for_code";
 static const char __pyx_k_is_line_in_try_block[] = "is_line_in_try_block";
-static const char __pyx_k_pydevd_stop_on_entry[] = "pydevd_stop_on_entry";
+static const char __pyx_k_pydev_stop_on_entry[] = "pydev_stop_on_entry";
 static const char __pyx_k_remove_return_values[] = "remove_return_values";
 static const char __pyx_k_CMD_STEP_INTO_MY_CODE[] = "CMD_STEP_INTO_MY_CODE";
 static const char __pyx_k_CMD_STEP_OVER_MY_CODE[] = "CMD_STEP_OVER_MY_CODE";
@@ -2128,7 +2128,7 @@ static PyObject *__pyx_n_s_pydevd_bundle_pydevd_utils;
 static PyObject *__pyx_n_s_pydevd_dont_trace;
 static PyObject *__pyx_n_s_pydevd_file_utils;
 static PyObject *__pyx_kp_s_pydevd_py;
-static PyObject *__pyx_n_s_pydevd_stop_on_entry;
+static PyObject *__pyx_n_s_pydev_stop_on_entry;
 static PyObject *__pyx_kp_s_pydevd_traceproperty_py;
 static PyObject *__pyx_n_s_pydevd_vars;
 static PyObject *__pyx_n_s_pyx_PickleError;
@@ -2939,7 +2939,7 @@ static int __pyx_pf_14_pydevd_bundle_13pydevd_cython_24PyDBAdditionalThreadInfo_
  *         self.pydev_django_resolve_frame = False
  *         self.pydev_call_from_jinja2 = None             # <<<<<<<<<<<<<<
  *         self.pydev_call_inside_jinja2 = None
- *         self.pydevd_stop_on_entry = False
+ *         self.pydev_stop_on_entry = False
  */
   __Pyx_INCREF(Py_None);
   __Pyx_GIVEREF(Py_None);
@@ -2951,7 +2951,7 @@ static int __pyx_pf_14_pydevd_bundle_13pydevd_cython_24PyDBAdditionalThreadInfo_
  *         self.pydev_django_resolve_frame = False
  *         self.pydev_call_from_jinja2 = None
  *         self.pydev_call_inside_jinja2 = None             # <<<<<<<<<<<<<<
- *         self.pydevd_stop_on_entry = False
+ *         self.pydev_stop_on_entry = False
  *         self.is_tracing = False
  */
   __Pyx_INCREF(Py_None);
@@ -2963,15 +2963,15 @@ static int __pyx_pf_14_pydevd_bundle_13pydevd_cython_24PyDBAdditionalThreadInfo_
   /* "_pydevd_bundle/pydevd_cython.pyx":107
  *         self.pydev_call_from_jinja2 = None
  *         self.pydev_call_inside_jinja2 = None
- *         self.pydevd_stop_on_entry = False             # <<<<<<<<<<<<<<
+ *         self.pydev_stop_on_entry = False             # <<<<<<<<<<<<<<
  *         self.is_tracing = False
  *         self.conditional_breakpoint_exception = None
  */
-  if (__Pyx_PyObject_SetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_pydevd_stop_on_entry, Py_False) < 0) __PYX_ERR(0, 107, __pyx_L1_error)
+  if (__Pyx_PyObject_SetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_pydev_stop_on_entry, Py_False) < 0) __PYX_ERR(0, 107, __pyx_L1_error)
 
   /* "_pydevd_bundle/pydevd_cython.pyx":108
  *         self.pydev_call_inside_jinja2 = None
- *         self.pydevd_stop_on_entry = False
+ *         self.pydev_stop_on_entry = False
  *         self.is_tracing = False             # <<<<<<<<<<<<<<
  *         self.conditional_breakpoint_exception = None
  *         self.pydev_message = ''
@@ -2979,7 +2979,7 @@ static int __pyx_pf_14_pydevd_bundle_13pydevd_cython_24PyDBAdditionalThreadInfo_
   __pyx_v_self->is_tracing = 0;
 
   /* "_pydevd_bundle/pydevd_cython.pyx":109
- *         self.pydevd_stop_on_entry = False
+ *         self.pydev_stop_on_entry = False
  *         self.is_tracing = False
  *         self.conditional_breakpoint_exception = None             # <<<<<<<<<<<<<<
  *         self.pydev_message = ''
@@ -31329,7 +31329,7 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_pydevd_dont_trace, __pyx_k_pydevd_dont_trace, sizeof(__pyx_k_pydevd_dont_trace), 0, 0, 1, 1},
   {&__pyx_n_s_pydevd_file_utils, __pyx_k_pydevd_file_utils, sizeof(__pyx_k_pydevd_file_utils), 0, 0, 1, 1},
   {&__pyx_kp_s_pydevd_py, __pyx_k_pydevd_py, sizeof(__pyx_k_pydevd_py), 0, 0, 1, 0},
-  {&__pyx_n_s_pydevd_stop_on_entry, __pyx_k_pydevd_stop_on_entry, sizeof(__pyx_k_pydevd_stop_on_entry), 0, 0, 1, 1},
+  {&__pyx_n_s_pydev_stop_on_entry, __pyx_k_pydev_stop_on_entry, sizeof(__pyx_k_pydev_stop_on_entry), 0, 0, 1, 1},
   {&__pyx_kp_s_pydevd_traceproperty_py, __pyx_k_pydevd_traceproperty_py, sizeof(__pyx_k_pydevd_traceproperty_py), 0, 0, 1, 0},
   {&__pyx_n_s_pydevd_vars, __pyx_k_pydevd_vars, sizeof(__pyx_k_pydevd_vars), 0, 0, 1, 1},
   {&__pyx_n_s_pyx_PickleError, __pyx_k_pyx_PickleError, sizeof(__pyx_k_pyx_PickleError), 0, 0, 1, 1},

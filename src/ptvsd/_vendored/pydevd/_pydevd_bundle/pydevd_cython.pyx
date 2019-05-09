@@ -80,7 +80,7 @@ cdef class PyDBAdditionalThreadInfo:
 #         'pydev_django_resolve_frame',
 #         'pydev_call_from_jinja2',
 #         'pydev_call_inside_jinja2',
-#         'pydevd_stop_on_entry',
+#         'pydev_stop_on_entry',
 #         'is_tracing',
 #         'conditional_breakpoint_exception',
 #         'pydev_message',
@@ -104,7 +104,7 @@ cdef class PyDBAdditionalThreadInfo:
         self.pydev_django_resolve_frame = False
         self.pydev_call_from_jinja2 = None
         self.pydev_call_inside_jinja2 = None
-        self.pydevd_stop_on_entry = False
+        self.pydev_stop_on_entry = False
         self.is_tracing = False
         self.conditional_breakpoint_exception = None
         self.pydev_message = ''

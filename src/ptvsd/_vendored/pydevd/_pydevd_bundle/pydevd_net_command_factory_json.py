@@ -264,9 +264,9 @@ class NetCommandFactoryJson(NetCommandFactory):
         if stop_reason in self._STEP_REASONS:
             thread = pydevd_find_thread_by_id(thread_id)
             info = set_additional_thread_info(thread)
-            if info.pydevd_stop_on_entry:
+            if info.pydev_stop_on_entry:
                 stop_reason = 'entry'
-                info.pydevd_stop_on_entry = False
+                info.pydev_stop_on_entry = False
             else:
                 stop_reason = 'step'
         elif stop_reason in self._EXCEPTION_REASONS:
