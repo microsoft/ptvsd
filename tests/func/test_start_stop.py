@@ -31,7 +31,7 @@ def test_break_on_entry(pyfile, run_as, start_method):
         )
         session.start_debugging()
 
-        thread_stopped, resp_stacktrace, tid, _ = session.wait_for_thread_stopped()
+        thread_stopped, resp_stacktrace, tid, _ = session.wait_for_thread_stopped(reason='entry')
         frames = resp_stacktrace.body['stackFrames']
         assert frames[0]['line'] == 1
         assert frames[0]['source']['path'] == Path(code_to_debug)
