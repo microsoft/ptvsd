@@ -844,6 +844,7 @@ struct __pyx_obj_14_pydevd_bundle_13pydevd_cython_PyDBAdditionalThreadInfo {
   int pydev_django_resolve_frame;
   PyObject *pydev_call_from_jinja2;
   PyObject *pydev_call_inside_jinja2;
+  int pydev_stop_on_entry;
   int is_tracing;
   PyObject *conditional_breakpoint_exception;
   PyObject *pydev_message;
