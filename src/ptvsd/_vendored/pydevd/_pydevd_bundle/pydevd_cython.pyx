@@ -80,7 +80,6 @@ cdef class PyDBAdditionalThreadInfo:
 #         'pydev_django_resolve_frame',
 #         'pydev_call_from_jinja2',
 #         'pydev_call_inside_jinja2',
-#         'pydevd_stop_on_entry',
 #         'is_tracing',
 #         'conditional_breakpoint_exception',
 #         'pydev_message',
@@ -104,7 +103,6 @@ cdef class PyDBAdditionalThreadInfo:
         self.pydev_django_resolve_frame = False
         self.pydev_call_from_jinja2 = None
         self.pydev_call_inside_jinja2 = None
-        self.pydevd_stop_on_entry = False
         self.is_tracing = False
         self.conditional_breakpoint_exception = None
         self.pydev_message = ''
@@ -898,13 +896,15 @@ cdef class PyDBFrame:
             info.is_tracing = False
 
         # end trace_dispatch
+import traceback
+
 from _pydev_bundle.pydev_is_thread_alive import is_thread_alive
 from _pydev_imps._pydev_saved_modules import threading
 from _pydevd_bundle.pydevd_constants import get_current_thread_id, IS_IRONPYTHON, NO_FTRACE
 from _pydevd_bundle.pydevd_kill_all_pydevd_threads import kill_all_pydev_threads
 from pydevd_file_utils import get_abs_path_real_path_and_base_from_frame, NORM_PATHS_AND_BASE_CONTAINER
-from _pydevd_bundle.pydevd_comm_constants import CMD_STEP_INTO, CMD_STEP_INTO_MY_CODE, CMD_STEP_RETURN, CMD_STEP_RETURN_MY_CODE
-from _pydev_bundle.pydev_log import exception as pydev_log_exception
+from _pydevd_bundle.pydevd_comm_constants import CMD_STEP_INTO, CMD_STEP_INTO_MY_CODE, CMD_STEP_OVER, \
+    CMD_STEP_OVER_MY_CODE, CMD_STEP_RETURN, CMD_STEP_RETURN_MY_CODE
 # IFDEF CYTHON -- DONT EDIT THIS FILE (it is automatically generated)
 from cpython.object cimport PyObject
 from cpython.ref cimport Py_INCREF, Py_XDECREF
@@ -1267,7 +1267,7 @@ cdef class ThreadTracer:
                         if py_db.output_checker_thread is None:
                             kill_all_pydev_threads()
                     except:
-                        pydev_log_exception()
+                        pydev_log.exception()
                     py_db._termination_event_set = True
                 return None if event == 'call' else NO_FTRACE
 
@@ -1369,9 +1369,9 @@ cdef class ThreadTracer:
                 return None if event == 'call' else NO_FTRACE  # Don't log errors when we're shutting down.
             # Log it
             try:
-                if pydev_log_exception is not None:
+                if traceback is not None:
                     # This can actually happen during the interpreter shutdown in Python 2.7
-                    pydev_log_exception()
+                    pydev_log.exception()
             except:
                 # Error logging? We're really in the interpreter shutdown...
                 # (https://github.com/fabioz/PyDev.Debugger/issues/8)
