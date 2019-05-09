@@ -1198,6 +1198,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         if opts.get('STOP_ON_ENTRY', False) and self.start_reason == 'launch':
             info = pydevd_additional_thread_info.set_additional_thread_info(ptvsd.main_thread)
             info.pydev_step_cmd = pydevd_comm.CMD_STEP_INTO_MY_CODE
+            info.pydevd_stop_on_entry = True
 
         if opts.get('MULTIPROCESS', False):
             if not options.multiprocess:
