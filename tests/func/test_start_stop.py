@@ -45,6 +45,43 @@ def test_break_on_entry(pyfile, run_as, start_method):
 
 
 @pytest.mark.parametrize('start_method', ['launch'])
+@pytest.mark.parametrize('counter', list(range(1000)))
+def test_break_on_entry_unhandled_exceptions(pyfile, run_as, start_method, counter):
+
+    @pyfile
+    def code_to_debug():
+        import backchannel
+        from dbgimporter import import_and_enable_debugger
+        import_and_enable_debugger()
+        backchannel.write_json('done')
+
+    with DebugSession() as session:
+        session.initialize(
+            target=(run_as, code_to_debug),
+            start_method=start_method,
+            debug_options=['StopOnEntry'],
+            use_backchannel=True,
+        )
+        filters = ['raised', 'uncaught']
+        session.send_request('setExceptionBreakpoints', {
+            'filters': filters
+        }).wait_for_response()
+        session.start_debugging()
+
+        thread_stopped, resp_stacktrace, tid, _ = session.wait_for_thread_stopped(reason='entry')
+        frames = resp_stacktrace.body['stackFrames']
+        assert frames[0]['line'] == 1
+        assert frames[0]['source']['path'] == Path(code_to_debug)
+
+        session.send_request('continue').wait_for_response(freeze=False)
+        session.wait_for_termination()
+
+        assert session.read_json() == 'done'
+
+        session.wait_for_exit()
+
+
+@pytest.mark.parametrize('start_method', ['launch'])
 @pytest.mark.skipif(sys.version_info < (3, 0) and platform.system() == 'Windows',
                     reason="On Win32 Python2.7, unable to send key strokes to test.")
 def test_wait_on_normal_exit_enabled(pyfile, run_as, start_method):
