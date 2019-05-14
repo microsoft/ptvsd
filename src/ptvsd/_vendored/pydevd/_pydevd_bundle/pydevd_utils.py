@@ -50,6 +50,7 @@ def get_main_thread():
         for t in threading.enumerate():
             if isinstance(t, threading._MainThread):
                 return t
+    return None
 
 
 def to_number(x):

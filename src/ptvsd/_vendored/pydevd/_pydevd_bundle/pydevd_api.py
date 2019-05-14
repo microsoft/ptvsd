@@ -557,6 +557,9 @@ class PyDevdAPI(object):
 
     def stop_on_entry(self):
         main_thread = pydevd_utils.get_main_thread()
-        info = set_additional_thread_info(main_thread)
-        info.pydev_step_cmd = CMD_STEP_INTO_MY_CODE
-        info.pydev_stop_on_entry = True
+        if main_thread is None:
+            pydev_log.critical('Could not find main thread while setting Stop on Entry.')
+        else:
+            info = set_additional_thread_info(main_thread)
+            info.pydev_step_cmd = CMD_STEP_INTO_MY_CODE
+            info.pydev_stop_on_entry = True
