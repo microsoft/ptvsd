@@ -1156,7 +1156,6 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
             return None
 
     def _wait_for_pydevd_ready(self):
-        # TODO: Call self._ensure_pydevd_requests_handled?
         pass
 
     def _ensure_pydevd_requests_handled(self):
@@ -1166,15 +1165,13 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         #
         # This is particularly useful for those requests that do not
         # have responses (e.g. CMD_SET_BREAK).
-        return self._send_cmd_version_command()
+        pass
 
     # VSC protocol handlers
 
     @async_handler
     def on_configurationDone(self, request, args):
         self._process_debug_options(self.debug_options)
-        yield self._ensure_pydevd_requests_handled()
-
         debugger_attached.set()
 
         self.pydevd_request(pydevd_comm.CMD_RUN, '')
@@ -1198,16 +1195,6 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
                 options.multiprocess = True
                 multiproc.listen_for_subprocesses()
                 self.start_subprocess_notifier()
-
-        # Print on all but NameError, don't suspend on any.
-        msg = json.dumps(dict(
-            skip_suspend_on_breakpoint_exception=('BaseException',),
-            skip_print_breakpoint_exception=('NameError',),
-            multi_threads_single_notification=True,
-        ))
-        if isinstance(msg, bytes):
-            msg = msg.decode('utf-8')
-        self.pydevd_request(pydevd_comm.CMD_PYDEVD_JSON_CONFIG, msg)
 
     def _send_cmd_version_command(self):
         cmd = pydevd_comm.CMD_VERSION
@@ -1250,7 +1237,15 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         self._client_os_type = client_os_type
 
         self.pydevd_request(pydevd_comm.CMD_SET_PROTOCOL, 'json')
-        yield self._send_cmd_version_command()
+        dont_trace_request = self._get_new_setDebuggerProperty_request(
+            dontTraceStartPatterns=[PTVSD_DIR_PATH],
+            dontTraceEndPatterns=['ptvsd_launcher.py'],
+            skip_suspend_on_breakpoint_exception=('BaseException',),
+            skip_print_breakpoint_exception=('NameError',),
+            multi_threads_single_notification=True,
+            cmd_version={"ide_os": self._client_os_type, "breakpoint_group_by": 'ID'},
+        )
+        yield self.pydevd_request(-1, dont_trace_request, is_json=True)
 
         pydevd_request = copy.deepcopy(request)
         del pydevd_request['seq']  # A new seq should be created for pydevd.
@@ -1263,18 +1258,10 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
             default_success_exitcodes += [3]
         self._success_exitcodes = args.get('successExitCodes', default_success_exitcodes)
 
-        dont_trace_request = self._get_new_setDebuggerProperty_request(
-           dontTraceStartPatterns=[PTVSD_DIR_PATH],
-           dontTraceEndPatterns=['ptvsd_launcher.py']
-        )
-        yield self.pydevd_request(-1, dont_trace_request, is_json=True)
-
     def _handle_detach(self):
         ptvsd.log.info('Detaching ...')
         # TODO: Skip if already detached?
         self._detached = True
-
-        self._clear_output_redirection()
 
         # No related pydevd command id (removes all breaks and resumes threads).
         self.pydevd_request(
@@ -1283,11 +1270,14 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
             is_json=True
         )
 
-    def _clear_output_redirection(self):
-        self.pydevd_request(pydevd_comm.CMD_REDIRECT_OUTPUT, '')
-
+    @async_handler
     def _resume_all_threads(self):
-        self.pydevd_notify(pydevd_comm.CMD_THREAD_RUN, '*')
+        request = {
+            "command": "continue",
+            "arguments": {"threadId": "*"},
+            "type": "request"
+        }
+        yield self.pydevd_request(-1, request, is_json=True)
 
     @async_handler
     def _forward_request_to_pydevd(self, request, args, send_response=True):
