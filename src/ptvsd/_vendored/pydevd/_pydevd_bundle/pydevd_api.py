@@ -56,8 +56,6 @@ class PyDevdAPI(object):
 
         pydevd_file_utils.set_ide_os(ide_os)
 
-        if seq == 0:
-            return None
         return py_db.cmd_factory.make_version_message(seq)
 
     def send_error_message(self, py_db, msg):

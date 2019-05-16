@@ -1156,12 +1156,6 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         pass
 
     def _ensure_pydevd_requests_handled(self):
-        # PyDevd guarantees that a response means all previous requests
-        # have been handled.  (PyDevd handles messages sequentially.)
-        # See GH-448.
-        #
-        # This is particularly useful for those requests that do not
-        # have responses (e.g. CMD_SET_BREAK).
         pass
 
     # VSC protocol handlers
@@ -1170,9 +1164,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
     def on_configurationDone(self, request, args):
         self._process_debug_options(self.debug_options)
 
-        pydevd_request = copy.deepcopy(request)
-        del pydevd_request['seq']  # A new seq should be created for pydevd.
-        yield self.pydevd_request(-1, pydevd_request, is_json=True)
+        self._forward_request_to_pydevd(request, args, send_response=False)
         debugger_attached.set()
 
         self._notify_debugger_ready()

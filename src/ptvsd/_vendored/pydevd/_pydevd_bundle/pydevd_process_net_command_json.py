@@ -843,7 +843,7 @@ class _PyDevJsonCommandProcessor(object):
             ide_os = args['cmd_version'].get('ide_os', ide_os)
 
             # Breakpoints can be grouped by 'LINE' or by 'ID'.
-            breakpoints_by = args['cmd_version'].get("breakpoint_group_by", 'LINE')
+            breakpoints_by = args['cmd_version'].get("breakpoint_group_by", 'ID')
             self.api.set_ide_os_and_breakpoints_by(py_db, 0, ide_os, breakpoints_by)
 
         if 'dontTraceStartPatterns' in args and 'dontTraceEndPatterns' in args:
