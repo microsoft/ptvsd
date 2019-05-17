@@ -834,33 +834,24 @@ class _PyDevJsonCommandProcessor(object):
 
     def on_setdebuggerproperty_request(self, py_db, request):
         args = request.arguments.kwargs
-        if 'cmd_version' in args:
-            # Default based on server process (although ideally the IDE should provide it).
-            if IS_WINDOWS:
-                ide_os = 'WINDOWS'
-            else:
-                ide_os = 'UNIX'
-            ide_os = args['cmd_version'].get('ide_os', ide_os)
-
-            # Breakpoints can be grouped by 'LINE' or by 'ID'.
-            breakpoints_by = args['cmd_version'].get("breakpoint_group_by", 'ID')
-            self.api.set_ide_os_and_breakpoints_by(py_db, 0, ide_os, breakpoints_by)
+        if 'ideOS' in args:
+            self.api.set_ide_os(args['ideOS'])
 
         if 'dontTraceStartPatterns' in args and 'dontTraceEndPatterns' in args:
             start_patterns = tuple(args['dontTraceStartPatterns'])
             end_patterns = tuple(args['dontTraceEndPatterns'])
             self.api.set_dont_trace_start_end_patterns(py_db, start_patterns, end_patterns)
 
-        if 'skip_suspend_on_breakpoint_exception' in args:
+        if 'skipSuspendOnBreakpointException' in args:
             py_db.skip_suspend_on_breakpoint_exception = tuple(
-                get_exception_class(x) for x in args['skip_suspend_on_breakpoint_exception'])
+                get_exception_class(x) for x in args['skipSuspendOnBreakpointException'])
 
-        if 'skip_print_breakpoint_exception' in args:
+        if 'skipPrintBreakpointException' in args:
             py_db.skip_print_breakpoint_exception = tuple(
-                get_exception_class(x) for x in args['skip_print_breakpoint_exception'])
+                get_exception_class(x) for x in args['skipPrintBreakpointException'])
 
-        if 'multi_threads_single_notification' in args:
-            py_db.multi_threads_single_notification = args['multi_threads_single_notification']
+        if 'multiThreadsSingleNotification' in args:
+            py_db.multi_threads_single_notification = args['multiThreadsSingleNotification']
 
         # TODO: Support other common settings. Note that not all of these might be relevant to python.
         # JustMyCodeStepping: 0 or 1

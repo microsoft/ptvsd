@@ -1224,10 +1224,10 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
         dont_trace_request = self._get_new_setDebuggerProperty_request(
             dontTraceStartPatterns=[PTVSD_DIR_PATH],
             dontTraceEndPatterns=['ptvsd_launcher.py'],
-            skip_suspend_on_breakpoint_exception=('BaseException',),
-            skip_print_breakpoint_exception=('NameError',),
-            multi_threads_single_notification=True,
-            cmd_version={"ide_os": self._client_os_type, "breakpoint_group_by": 'ID'},
+            skipSuspendOnBreakpointException=('BaseException',),
+            skipPrintBreakpointException=('NameError',),
+            multiThreadsSingleNotification=True,
+            ideOS=self._client_os_type,
         )
         yield self.pydevd_request(-1, dont_trace_request, is_json=True)
 
