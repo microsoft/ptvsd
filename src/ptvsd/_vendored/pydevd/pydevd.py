@@ -43,6 +43,7 @@ from _pydevd_bundle.pydevd_extension_api import DebuggerEventHandler
 from _pydevd_bundle.pydevd_frame_utils import add_exception_to_frame, remove_exception_from_frame
 from _pydevd_bundle.pydevd_kill_all_pydevd_threads import kill_all_pydev_threads
 from _pydevd_bundle.pydevd_net_command_factory_xml import NetCommandFactory
+from _pydevd_bundle.pydevd_net_command_factory_json import NetCommandFactoryJson
 from _pydevd_bundle.pydevd_trace_dispatch import (
     trace_dispatch as _trace_dispatch, global_cache_skips, global_cache_frame_skips, fix_top_level_trace_and_get_trace_func)
 from _pydevd_bundle.pydevd_utils import save_main_module, is_current_thread_main_thread
@@ -390,7 +391,10 @@ class PyDB(object):
         self.output_checker_thread = None
         self.py_db_command_thread = None
         self.quitting = None
-        self.cmd_factory = NetCommandFactory()
+        if os.getenv('PYDEVD_JSON_PROTOCOL') == 'True':
+            self.cmd_factory = NetCommandFactoryJson()
+        else:
+            self.cmd_factory = NetCommandFactory()
         self._cmd_queue = defaultdict(_queue.Queue)  # Key is thread id or '*', value is Queue
         self.suspended_frames_manager = SuspendedFramesManager()
         self._files_filtering = FilesFiltering()
@@ -2436,6 +2440,10 @@ def main():
 
     is_module = setup['module']
     patch_stdin(debugger)
+
+    if setup['json-dap']:
+        if not isinstance(debugger.cmd_factory, NetCommandFactoryJson):
+            debugger.cmd_factory = NetCommandFactoryJson()
 
     if fix_app_engine_debug:
         sys.stderr.write("pydev debugger: google app engine integration enabled\n")
