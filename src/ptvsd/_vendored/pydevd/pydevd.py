@@ -807,12 +807,10 @@ class PyDB(object):
         try:
             return self._apply_filter_cache[cache_key]
         except KeyError:
-            debug_trace_level = DebugInfoHolder.DEBUG_TRACE_LEVEL
             if self.plugin is not None and (self.has_plugin_line_breaks or self.has_plugin_exception_breaks):
                 # If it's explicitly needed by some plugin, we can't skip it.
                 if not self.plugin.can_skip(self, frame):
-                    if debug_trace_level >= 3:
-                        pydev_log.error_once('File traced (included by plugins): %s', filename)
+                    pydev_log.debug_once('File traced (included by plugins): %s', filename)
                     self._apply_filter_cache[cache_key] = False
                     return False
 
@@ -821,15 +819,13 @@ class PyDB(object):
                 if exclude_by_filter is not None:
                     if exclude_by_filter:
                         # ignore files matching stepping filters
-                        if debug_trace_level >= 3:
-                            pydev_log.error_once('File not traced (excluded by filters): %s', filename)
+                        pydev_log.debug_once('File not traced (excluded by filters): %s', filename)
 
                         self._apply_filter_cache[cache_key] = True
                         return True
                     else:
                         # print('include (explicitly included): %s' % filename)
-                        if debug_trace_level >= 3:
-                            pydev_log.error_once('File traced (explicitly included by filters): %s', filename)
+                        pydev_log.debug_once('File traced (explicitly included by filters): %s', filename)
 
                         self._apply_filter_cache[cache_key] = False
                         return False
@@ -838,19 +834,17 @@ class PyDB(object):
                 # print('exclude (not on project): %s' % filename)
                 # ignore library files while stepping
                 self._apply_filter_cache[cache_key] = True
-                if debug_trace_level >= 3:
-                    if force_check_project_scope:
-                        pydev_log.error_once('File not traced (not in project): %s', filename)
-                    else:
-                        pydev_log.error_once('File not traced (not in project - force_check_project_scope): %s', filename)
+                if force_check_project_scope:
+                    pydev_log.debug_once('File not traced (not in project): %s', filename)
+                else:
+                    pydev_log.debug_once('File not traced (not in project - force_check_project_scope): %s', filename)
 
                 return True
 
-            if debug_trace_level >= 3:
-                if force_check_project_scope:
-                    pydev_log.error_once('File traced: %s (force_check_project_scope)', filename)
-                else:
-                    pydev_log.error_once('File traced: %s', filename)
+            if force_check_project_scope:
+                pydev_log.debug_once('File traced: %s (force_check_project_scope)', filename)
+            else:
+                pydev_log.debug_once('File traced: %s', filename)
             self._apply_filter_cache[cache_key] = False
             return False
 

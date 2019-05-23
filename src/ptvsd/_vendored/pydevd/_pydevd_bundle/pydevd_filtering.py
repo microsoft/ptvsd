@@ -128,7 +128,7 @@ class FilesFiltering(object):
         # Stepping filters.
         pydevd_filters = os.getenv('PYDEVD_FILTERS', '')
         if pydevd_filters:
-            pydev_log.debug("PYDEVD_FILTERS %s\n" % (pydevd_filters,))
+            pydev_log.debug("PYDEVD_FILTERS %s", (pydevd_filters,))
             if pydevd_filters.startswith('{'):
                 # dict(glob_pattern (str) -> exclude(True or False))
                 exclude_filters = []
