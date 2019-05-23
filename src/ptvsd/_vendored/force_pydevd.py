@@ -52,5 +52,6 @@ def ptvsd_breakpointhook():
 pydevd.install_breakpointhook(ptvsd_breakpointhook)
 
 # Ensure that pydevd uses JSON protocol
-import os
-os.environ['PYDEVD_JSON_PROTOCOL'] = 'True'
+from _pydevd_bundle.pydevd_constants import JSON_PROTOCOL
+from _pydevd_bundle.pydevd_defaults import PydevdCustomization
+PydevdCustomization.DEFAULT_PROTOCOL = JSON_PROTOCOL

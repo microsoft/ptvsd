@@ -36,7 +36,8 @@ from _pydevd_bundle.pydevd_comm_constants import (CMD_THREAD_SUSPEND, CMD_STEP_I
 from _pydevd_bundle.pydevd_constants import (IS_JYTH_LESS25, get_thread_id, get_current_thread_id,
     dict_keys, dict_iter_items, DebugInfoHolder, PYTHON_SUSPEND, STATE_SUSPEND, STATE_RUN, get_frame,
     clear_cached_thread_id, INTERACTIVE_MODE_AVAILABLE, SHOW_DEBUG_INFO_ENV, IS_PY34_OR_GREATER, IS_PY2, NULL,
-    NO_FTRACE, IS_IRONPYTHON)
+    NO_FTRACE, IS_IRONPYTHON, JSON_PROTOCOL)
+from _pydevd_bundle.pydevd_defaults import PydevdCustomization
 from _pydevd_bundle.pydevd_custom_frames import CustomFramesContainer, custom_frames_container_init
 from _pydevd_bundle.pydevd_dont_trace_files import DONT_TRACE, PYDEV_FILE
 from _pydevd_bundle.pydevd_extension_api import DebuggerEventHandler
@@ -391,15 +392,15 @@ class PyDB(object):
         self.output_checker_thread = None
         self.py_db_command_thread = None
         self.quitting = None
-        if os.getenv('PYDEVD_JSON_PROTOCOL') == 'True':
-            self.cmd_factory = NetCommandFactoryJson()
-        else:
-            self.cmd_factory = NetCommandFactory()
+        self.cmd_factory = NetCommandFactory()
         self._cmd_queue = defaultdict(_queue.Queue)  # Key is thread id or '*', value is Queue
         self.suspended_frames_manager = SuspendedFramesManager()
         self._files_filtering = FilesFiltering()
 
         self.breakpoints = {}
+
+        # Set communication protocol
+        PyDevdAPI().set_protocol(self, 0, PydevdCustomization.DEFAULT_PROTOCOL)
 
         # mtime to be raised when breakpoints change
         self.mtime = 0
@@ -2442,8 +2443,7 @@ def main():
     patch_stdin(debugger)
 
     if setup['json-dap']:
-        if not isinstance(debugger.cmd_factory, NetCommandFactoryJson):
-            debugger.cmd_factory = NetCommandFactoryJson()
+        PyDevdAPI().set_protocol(debugger, 0, JSON_PROTOCOL)
 
     if fix_app_engine_debug:
         sys.stderr.write("pydev debugger: google app engine integration enabled\n")
