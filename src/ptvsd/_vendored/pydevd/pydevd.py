@@ -200,12 +200,12 @@ class CheckOutputThread(PyDBDaemonThread):
                     pydev_log.debug("No threads alive, finishing debug session")
                     self.py_db.finish_debugging_session()
                     kill_all_pydev_threads()
+                    self.wait_pydb_threads_to_finish()
                 except:
                     pydev_log.exception()
 
                 self.killReceived = True
-
-            self.wait_pydb_threads_to_finish()
+                return
 
             self.py_db.check_output_redirect()
 
@@ -216,7 +216,7 @@ class CheckOutputThread(PyDBDaemonThread):
         while time.time() < started_at + timeout:
             if len(pydb_daemon_threads) == 1 and pydb_daemon_threads.get(self, None):
                 return
-            time.sleep(0.01)
+            time.sleep(1 / 30.)
         pydev_log.debug("The following pydb threads may not have finished correctly: %s",
                         ', '.join([t.getName() for t in pydb_daemon_threads if t is not self]))
 
@@ -770,22 +770,23 @@ class PyDB(object):
         :return: True if it should be excluded, False if it should be included and None
             if no rule matched the given file.
         '''
+        cache_key = (filename, frame.f_code.co_name)
         try:
-            return self._exclude_by_filter_cache[filename]
+            return self._exclude_by_filter_cache[cache_key]
         except KeyError:
             cache = self._exclude_by_filter_cache
 
             abs_real_path_and_basename = get_abs_path_real_path_and_base_from_file(filename)
             # pydevd files are always filtered out
             if self.get_file_type(abs_real_path_and_basename) == self.PYDEV_FILE:
-                cache[filename] = True
+                cache[cache_key] = True
             else:
                 module_name = None
                 if self._files_filtering.require_module:
-                    module_name = frame.f_globals.get('__name__')
-                cache[filename] = self._files_filtering.exclude_by_filter(filename, module_name)
+                    module_name = frame.f_globals.get('__name__', '')
+                cache[cache_key] = self._files_filtering.exclude_by_filter(filename, module_name)
 
-            return cache[filename]
+            return cache[cache_key]
 
     def apply_files_filter(self, frame, filename, force_check_project_scope):
         '''
@@ -806,10 +807,12 @@ class PyDB(object):
         try:
             return self._apply_filter_cache[cache_key]
         except KeyError:
+            debug_trace_level = DebugInfoHolder.DEBUG_TRACE_LEVEL
             if self.plugin is not None and (self.has_plugin_line_breaks or self.has_plugin_exception_breaks):
                 # If it's explicitly needed by some plugin, we can't skip it.
                 if not self.plugin.can_skip(self, frame):
-                    # print('include (include by plugins): %s' % filename)
+                    if debug_trace_level >= 3:
+                        pydev_log.error_once('File traced (included by plugins): %s', filename)
                     self._apply_filter_cache[cache_key] = False
                     return False
 
@@ -818,11 +821,16 @@ class PyDB(object):
                 if exclude_by_filter is not None:
                     if exclude_by_filter:
                         # ignore files matching stepping filters
-                        # print('exclude (filtered out): %s' % filename)
+                        if debug_trace_level >= 3:
+                            pydev_log.error_once('File not traced (excluded by filters): %s', filename)
+
                         self._apply_filter_cache[cache_key] = True
                         return True
                     else:
                         # print('include (explicitly included): %s' % filename)
+                        if debug_trace_level >= 3:
+                            pydev_log.error_once('File traced (explicitly included by filters): %s', filename)
+
                         self._apply_filter_cache[cache_key] = False
                         return False
 
@@ -830,9 +838,19 @@ class PyDB(object):
                 # print('exclude (not on project): %s' % filename)
                 # ignore library files while stepping
                 self._apply_filter_cache[cache_key] = True
+                if debug_trace_level >= 3:
+                    if force_check_project_scope:
+                        pydev_log.error_once('File not traced (not in project): %s', filename)
+                    else:
+                        pydev_log.error_once('File not traced (not in project - force_check_project_scope): %s', filename)
+
                 return True
 
-            # print('include (on project): %s' % filename)
+            if debug_trace_level >= 3:
+                if force_check_project_scope:
+                    pydev_log.error_once('File traced: %s (force_check_project_scope)', filename)
+                else:
+                    pydev_log.error_once('File traced: %s', filename)
             self._apply_filter_cache[cache_key] = False
             return False
 
@@ -874,6 +892,9 @@ class PyDB(object):
 
     def get_use_libraries_filter(self):
         return self._files_filtering.use_libraries_filter()
+
+    def get_require_module_for_filters(self):
+        return self._files_filtering.require_module
 
     def has_threads_alive(self):
         for t in pydevd_utils.get_non_pydevd_threads():
