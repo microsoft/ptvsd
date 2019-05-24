@@ -824,14 +824,12 @@ class PyDB(object):
                         self._apply_filter_cache[cache_key] = True
                         return True
                     else:
-                        # print('include (explicitly included): %s' % filename)
                         pydev_log.debug_once('File traced (explicitly included by filters): %s', filename)
 
                         self._apply_filter_cache[cache_key] = False
                         return False
 
             if (self._is_libraries_filter_enabled or force_check_project_scope) and not self.in_project_scope(filename):
-                # print('exclude (not on project): %s' % filename)
                 # ignore library files while stepping
                 self._apply_filter_cache[cache_key] = True
                 if force_check_project_scope:
