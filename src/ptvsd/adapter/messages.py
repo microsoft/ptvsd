@@ -4,7 +4,11 @@
 
 from __future__ import absolute_import, print_function, unicode_literals
 
+import os
+import platform
+import sys
 
+import ptvsd
 from ptvsd.common import log, messaging, singleton
 from ptvsd.adapter import channels, debuggee, state
 
@@ -246,6 +250,87 @@ class IDEMessages(Messages):
                 # then force-kill. Since the IDE is gone already, and nobody is waiting
                 # for us to respond, there's no rush.
                 debuggee.terminate(after=60)
+
+    @_only_allowed_while("running")
+    def setVariable_request(self, request):
+        # TODO: this should be moved to pydevd
+        if request.arguments['name'].startswith('(return) '):
+            messaging.raise_failure('Cannot change return value')
+        return self._server.delegate()
+
+
+    @_only_allowed_while("running")
+    def pause_request(self, request):
+        try:
+            request.arguments['threadId'] = '*'
+        except KeyError:
+            request.arguments = {'threadId': '*'}
+        self._server.propagate(request)
+        return {}
+
+    @_only_allowed_while("running")
+    def continue_request(self, request):
+        try:
+            request.arguments['threadId'] = '*'
+        except KeyError:
+            request.arguments = {'threadId': '*'}
+        self._server.propagate(request)
+        return {'allThreadsContinued': True}
+
+    def on_ptvsd_systemInfo(self, request, args):
+        try:
+            pid = os.getpid()
+        except AttributeError:
+            pid = None
+
+        try:
+            impl_desc = platform.python_implementation()
+        except AttributeError:
+            try:
+                impl_desc = sys.implementation.name
+            except AttributeError:
+                impl_desc = None
+
+        def version_str(v):
+            return '{}.{}.{}{}{}'.format(
+                v.major,
+                v.minor,
+                v.micro,
+                v.releaselevel,
+                v.serial)
+
+        try:
+            impl_name = sys.implementation.name
+        except AttributeError:
+            impl_name = None
+
+        try:
+            impl_version = version_str(sys.implementation.version)
+        except AttributeError:
+            impl_version = None
+
+        sys_info = {
+            'ptvsd': {
+                'version': ptvsd.__version__,
+            },
+            'python': {
+                'version': version_str(sys.version_info),
+                'implementation': {
+                    'name': impl_name,
+                    'version': impl_version,
+                    'description': impl_desc,
+                },
+            },
+            'platform': {
+                'name': sys.platform,
+            },
+            'process': {
+                'pid': pid,
+                'executable': sys.executable,
+                'bitness': 64 if sys.maxsize > 2 ** 32 else 32,
+            },
+        }
+        return sys_info
 
 
 class ServerMessages(Messages):
