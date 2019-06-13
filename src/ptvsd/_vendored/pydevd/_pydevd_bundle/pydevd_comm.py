@@ -939,7 +939,7 @@ def internal_evaluate_expression_json(py_db, request, thread_id):
     frame_tracker = py_db.suspended_frames_manager.get_frame_tracker(thread_id)
     if frame_tracker is None:
         # This is not really expected.
-        _evaluate_response(py_db, request, result, error_message='Thread id: %s is not current thread id.' % (thread_id,))
+        _evaluate_response(py_db, request, result='', error_message='Thread id: %s is not current thread id.' % (thread_id,))
         return
 
     variable = frame_tracker.obtain_as_variable(expression, result, frame=frame)
