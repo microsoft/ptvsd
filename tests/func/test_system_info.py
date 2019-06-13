@@ -13,7 +13,7 @@ from tests.helpers.pattern import ANY
 
 def _generate_system_info():
     def version_str(v):
-        return '{}.{}.{}{}{}'.format(
+        return '%d.%d.%d%s%d' % (
             v.major,
             v.minor,
             v.micro,

@@ -115,7 +115,7 @@ except AttributeError:
     pass  # Not all versions have sys.version_info
 
 def version_str(v):
-    return '{}.{}.{}{}{}'.format(
+    return '%d.%d.%d%s%d' % (
         v.major,
         v.minor,
         v.micro,
