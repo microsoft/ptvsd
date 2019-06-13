@@ -252,14 +252,6 @@ class IDEMessages(Messages):
                 debuggee.terminate(after=60)
 
     @_only_allowed_while("running")
-    def setVariable_request(self, request):
-        # TODO: this should be moved to pydevd
-        if request.arguments['name'].startswith('(return) '):
-            messaging.raise_failure('Cannot change return value')
-        return self._server.delegate(request)
-
-
-    @_only_allowed_while("running")
     def pause_request(self, request):
         request.arguments['threadId'] = '*'
         self._server.propagate(request)
