@@ -256,80 +256,30 @@ class IDEMessages(Messages):
         # TODO: this should be moved to pydevd
         if request.arguments['name'].startswith('(return) '):
             messaging.raise_failure('Cannot change return value')
-        return self._server.delegate()
+        return self._server.delegate(request)
 
 
     @_only_allowed_while("running")
     def pause_request(self, request):
-        try:
-            request.arguments['threadId'] = '*'
-        except KeyError:
-            request.arguments = {'threadId': '*'}
+        request.arguments['threadId'] = '*'
         self._server.propagate(request)
         return {}
 
     @_only_allowed_while("running")
     def continue_request(self, request):
-        try:
-            request.arguments['threadId'] = '*'
-        except KeyError:
-            request.arguments = {'threadId': '*'}
+        request.arguments['threadId'] = '*'
         self._server.propagate(request)
         return {'allThreadsContinued': True}
 
-    def on_ptvsd_systemInfo(self, request, args):
-        try:
-            pid = os.getpid()
-        except AttributeError:
-            pid = None
-
-        try:
-            impl_desc = platform.python_implementation()
-        except AttributeError:
-            try:
-                impl_desc = sys.implementation.name
-            except AttributeError:
-                impl_desc = None
-
-        def version_str(v):
-            return '{}.{}.{}{}{}'.format(
-                v.major,
-                v.minor,
-                v.micro,
-                v.releaselevel,
-                v.serial)
-
-        try:
-            impl_name = sys.implementation.name
-        except AttributeError:
-            impl_name = None
-
-        try:
-            impl_version = version_str(sys.implementation.version)
-        except AttributeError:
-            impl_version = None
-
+    def on_ptvsd_systemInfo(self, request):
         sys_info = {
             'ptvsd': {
                 'version': ptvsd.__version__,
             },
-            'python': {
-                'version': version_str(sys.version_info),
-                'implementation': {
-                    'name': impl_name,
-                    'version': impl_version,
-                    'description': impl_desc,
-                },
-            },
-            'platform': {
-                'name': sys.platform,
-            },
-            'process': {
-                'pid': pid,
-                'executable': sys.executable,
-                'bitness': 64 if sys.maxsize > 2 ** 32 else 32,
-            },
         }
+        result = self._server.send_request('pydevdSystemInfo').wait_for_response()
+        sys_info.update(result)
+
         return sys_info
 
 
