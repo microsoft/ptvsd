@@ -126,12 +126,12 @@ PY_VERSION_STR = version_str(sys.version_info)
 try:
     PY_IMPL_VERSION_STR = version_str(sys.implementation.version)
 except AttributeError:
-    PY_IMPL_VERSION_STR = None
+    PY_IMPL_VERSION_STR = ''
 
 try:
     PY_IMPL_NAME = sys.implementation.name
 except AttributeError:
-    PY_IMPL_NAME = None
+    PY_IMPL_NAME = ''
 
 try:
     SUPPORT_GEVENT = os.getenv('GEVENT_SUPPORT', 'False') == 'True'

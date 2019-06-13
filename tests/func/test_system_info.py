@@ -23,12 +23,12 @@ def _generate_system_info():
     try:
         impl_name = sys.implementation.name
     except AttributeError:
-        impl_name = None
+        impl_name = ''
 
     try:
         impl_version = version_str(sys.implementation.version)
     except AttributeError:
-        impl_version = None
+        impl_version = ''
 
     return ANY.dict_with({
         'ptvsd': {
