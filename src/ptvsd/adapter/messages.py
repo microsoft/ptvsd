@@ -249,28 +249,26 @@ class IDEMessages(Messages):
 
     @_only_allowed_while("running")
     def pause_request(self, request):
-        request.arguments['threadId'] = '*'
+        request.arguments["threadId"] = "*"
         self._server.delegate(request)
         return {}
 
     @_only_allowed_while("running")
     def continue_request(self, request):
-        request.arguments['threadId'] = '*'
+        request.arguments["threadId"] = "*"
         self._server.delegate(request)
-        return {'allThreadsContinued': True}
+        return {"allThreadsContinued": True}
 
     def on_ptvsd_systemInfo(self, request):
-        sys_info = {
-            'ptvsd': {
-                'version': ptvsd.__version__,
-            },
-        }
+        sys_info = {"ptvsd": {"version": ptvsd.__version__}}
 
         try:
-            result = self._server.send_request('pydevdSystemInfo').wait_for_response()
+            result = self._server.send_request("pydevdSystemInfo").wait_for_response()
             sys_info.update(result)
         except messaging.MessageHandlingError as exc:
-            request.cant_handle('System info request to server failed with: ' + str(exc))
+            request.cant_handle(
+                "System info request to server failed with: " + str(exc)
+            )
 
         return sys_info
 
