@@ -61,6 +61,11 @@ def enable_attach(address=(DEFAULT_HOST, DEFAULT_PORT), redirect_output=None, lo
         Name of the directory that debugger will create its log files in.
         If not specified, logging is disabled.
 
+    Return
+    ------
+    Returns tuple (host, port) as used to by the debugging server. If `enable_attach` was
+    called with port '0'. The return value will contain the actual ephemeral port number.
+
     Notes
     -----
     This function returns immediately after setting up the debugging server,
