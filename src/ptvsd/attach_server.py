@@ -94,6 +94,7 @@ def enable_attach(address=(DEFAULT_HOST, DEFAULT_PORT), redirect_output=None, lo
     address = (address[0], port if type(port) is int else int(port))
 
     ptvsd_enable_attach(address)
+    return (address[0], ptvsd.options.port)
 
 
 def attach(address, redirect_output=None, log_dir=None):
