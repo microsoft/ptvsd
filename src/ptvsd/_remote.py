@@ -21,7 +21,6 @@ global_next_session = lambda: None
 def enable_attach(address, on_attach=lambda: None, **kwargs):
 
     host, port = address
-    print(port)
 
     def wait_for_connection(daemon, host, port, next_session=None):
         ptvsd.log.debug('Waiting for pydevd ...')
