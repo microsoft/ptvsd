@@ -7,7 +7,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 import ptvsd
 import platform
 import re
-from ptvsd.common import log, messaging, singleton, dbg_options
+from ptvsd.common import log, messaging, singleton
 from ptvsd.adapter import channels, debuggee, state
 
 
@@ -137,34 +137,6 @@ class IDEMessages(Messages):
     # Handles various attributes common to both "launch" and "attach".
     def _debug_config(self, request):
         assert request.command in ("launch", "attach")
-        args = request.arguments
-        self.debug_options = dbg_options.extract_debug_options(
-            args.get("options"), args.get("debugOptions")
-        )
-
-        client_os_type = self.debug_options.get("CLIENT_OS_TYPE", "").upper().strip()
-        if bool(client_os_type) and client_os_type not in ("WINDOWS", "UNIX"):
-            ptvsd.log.warn(
-                'Invalid CLIENT_OS_TYPE passed: %s (must be either "WINDOWS" or "UNIX").'
-                % (client_os_type,)
-            )
-            client_os_type = ""
-
-        if not bool(client_os_type):
-            for pathMapping in args.get("pathMappings", []):
-                localRoot = pathMapping.get("localRoot", "")
-                if localRoot:
-                    if localRoot.startswith("/"):
-                        client_os_type = "UNIX"
-                        break
-
-                    if re.match("^([a-zA-Z]):", localRoot):  # Match drive letter
-                        client_os_type = "WINDOWS"
-                        break
-
-        if not bool(client_os_type):
-            client_os_type = "WINDOWS" if platform.system() == "Windows" else "UNIX"
-
         try:
             self._server.send_request(
                 "setDebuggerProperty",
@@ -175,13 +147,11 @@ class IDEMessages(Messages):
                     "skipSuspendOnBreakpointException": ("BaseException",),
                     "skipPrintBreakpointException": ("NameError",),
                     "multiThreadsSingleNotification": True,
-                    "ideOS": client_os_type,
+                    "ideOS": "WINDOWS" if platform.system() == "Windows" else "UNIX",
                 },
             ).wait_for_response()
         except messaging.MessageHandlingError as exc:
-            request.cant_handle(
-                "System info request to server failed with: " + str(exc)
-            )
+            request.cant_handle("Error when setting debugger property: " + str(exc))
 
     @_replay_to_server
     @_only_allowed_while("initializing")
