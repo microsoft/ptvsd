@@ -6,7 +6,6 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 import ptvsd
 import platform
-import re
 from ptvsd.common import log, messaging, singleton
 from ptvsd.adapter import channels, debuggee, state
 
@@ -141,9 +140,6 @@ class IDEMessages(Messages):
             self._server.send_request(
                 "setDebuggerProperty",
                 {
-                    # TODO: dontTraceStartPatterns, dontTraceEndPatterns will have to set in the server
-                    # dontTraceStartPatterns=[PTVSD_DIR_PATH],
-                    # dontTraceEndPatterns=['ptvsd_launcher.py'],
                     "skipSuspendOnBreakpointException": ("BaseException",),
                     "skipPrintBreakpointException": ("NameError",),
                     "multiThreadsSingleNotification": True,
@@ -151,7 +147,7 @@ class IDEMessages(Messages):
                 },
             ).wait_for_response()
         except messaging.MessageHandlingError as exc:
-            request.cant_handle("Error when setting debugger property: " + str(exc))
+            request.cant_handle("Error when setting debugger property: {0}", exc)
 
     @_replay_to_server
     @_only_allowed_while("initializing")
@@ -183,8 +179,6 @@ class IDEMessages(Messages):
         for msg in self.initial_messages:
             # TODO: validate server response to ensure it matches our own earlier.
             self._server.propagate(msg)
-
-        self._server.send_request("setDebuggerProperty", arguments={})
 
         log.debug("Finished replaying messages to server.")
         self.initial_messages = None

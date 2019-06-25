@@ -4,6 +4,7 @@
 
 import pydevd
 import time
+import os
 
 from _pydevd_bundle.pydevd_comm import get_global_debugger
 
@@ -13,9 +14,15 @@ import ptvsd.server.options
 from ptvsd.server._util import new_hidden_thread
 from ptvsd.server.pydevd_hooks import install
 from ptvsd.server.daemon import session_not_bound, DaemonClosedError
+from pydevd_file_utils import get_abs_path_real_path_and_base_from_file
 
 
 global_next_session = lambda: None
+
+
+def _get_debugger_root():
+    ptvsd_abspath = os.path.abspath(get_abs_path_real_path_and_base_from_file(ptvsd.__file__)[0])
+    return os.path.dirname(ptvsd_abspath) + os.path.sep
 
 
 def enable_attach(address, on_attach=lambda: None, **kwargs):
@@ -73,6 +80,10 @@ def enable_attach(address, on_attach=lambda: None, **kwargs):
                         port=port,
                         suspend=False,
                         patch_multiprocessing=ptvsd.server.options.multiprocess)
+        pydevd.set_dont_trace_start_end_patterns(
+            start_patterns=[_get_debugger_root()],
+            end_patterns=['ptvsd_launcher.py'],
+        )
 
     return daemon
 
@@ -89,6 +100,10 @@ def attach(address, **kwargs):
                         port=port,
                         suspend=False,
                         patch_multiprocessing=ptvsd.server.options.multiprocess)
+        pydevd.set_dont_trace_start_end_patterns(
+            start_patterns=[_get_debugger_root()],
+            end_patterns=['ptvsd_launcher.py'],
+        )
 
     return daemon
 

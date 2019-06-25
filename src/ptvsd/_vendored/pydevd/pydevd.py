@@ -639,6 +639,10 @@ class PyDB(object):
     def is_cache_file_type_empty(self):
         return not _CACHE_FILE_TYPE
 
+    def set_dont_trace_start_end_patterns(self, start_patterns, end_patterns):
+        api = PyDevdAPI()
+        api.set_dont_trace_start_end_patterns(self, start_patterns, end_patterns)
+
     def get_thread_local_trace_func(self):
         try:
             thread_trace_func = self._local_thread_trace_func.thread_trace_func
@@ -2291,6 +2295,13 @@ def apply_debugger_options(setup_options):
 
     if setup_options['qt-support']:
         enable_qt_support(setup_options['qt-support'])
+
+
+def set_dont_trace_start_end_patterns(start_patterns, end_patterns):
+    debugger = get_global_debugger()
+    if debugger is None:
+        raise AssertionError('Debugger still not created.')
+    debugger.set_dont_trace_start_end_patterns(start_patterns, end_patterns)
 
 
 def patch_stdin(debugger):
