@@ -112,7 +112,7 @@ def test_attaching_by_pid(pyfile, run_as, start_method):
 
     @pyfile
     def code_to_debug():
-        import debug_me
+        import debug_me # noqa
         import time
 
         def do_something(i):

@@ -15,7 +15,7 @@ def test_set_next_statement(pyfile, start_method, run_as):
 
     @pyfile
     def code_to_debug():
-        import debug_me
+        import debug_me # noqa
 
         def func():
             print(1)  # @inner1

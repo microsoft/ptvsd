@@ -13,7 +13,7 @@ from tests import debug
 def test_args(pyfile, start_method, run_as):
     @pyfile
     def code_to_debug():
-        import debug_me  # noqa
+        import debug_me # noqa
         import sys
 
         print(sys.argv)

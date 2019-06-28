@@ -15,7 +15,7 @@ def test_with_no_output(pyfile, start_method, run_as):
 
     @pyfile
     def code_to_debug():
-        import debug_me
+        import debug_me # noqa
         # Do nothing, and check if there is any output
 
     with debug.Session() as session:
@@ -30,7 +30,7 @@ def test_with_tab_in_output(pyfile, start_method, run_as):
 
     @pyfile
     def code_to_debug():
-        import debug_me
+        import debug_me # noqa
         a = '\t'.join(('Hello', 'World'))
         print(a)
         # Break here so we are sure to get the output event.
@@ -59,7 +59,7 @@ def test_with_tab_in_output(pyfile, start_method, run_as):
 def test_redirect_output(pyfile, start_method, run_as, redirect):
     @pyfile
     def code_to_debug():
-        import debug_me
+        import debug_me # noqa
 
         for i in [111, 222, 333, 444]:
             print(i)

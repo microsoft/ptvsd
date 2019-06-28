@@ -18,7 +18,7 @@ def test_thread_count(pyfile, start_method, run_as, count):
         import threading
         import time
         import sys
-        import debug_me
+        import debug_me # noqa
         stop = False
 
         def worker(tid, offset):
@@ -61,7 +61,7 @@ def test_debug_this_thread(pyfile, start_method, run_as):
 
     @pyfile
     def code_to_debug():
-        import debug_me
+        import debug_me # noqa
         import platform
         import ptvsd
         import threading

@@ -64,7 +64,7 @@ def test_module_events(pyfile, start_method, run_as):
 
     @pyfile
     def test_code():
-        import debug_me
+        import debug_me # noqa
         from module1 import do_something
         do_something()
 

@@ -17,7 +17,7 @@ def test_vsc_exception_options_raise_with_except(pyfile, start_method, run_as, r
 
     @pyfile
     def code_to_debug():
-        import debug_me
+        import debug_me # noqa
 
         def raise_with_except():
             try:
@@ -79,7 +79,7 @@ def test_vsc_exception_options_raise_without_except(pyfile, start_method, run_as
 
     @pyfile
     def code_to_debug():
-        import debug_me
+        import debug_me # noqa
 
         def raise_without_except():
             raise ArithmeticError('bad code')  # @exception_line
@@ -166,7 +166,7 @@ def test_systemexit(pyfile, start_method, run_as, raised, uncaught, zero, exit_c
 
     @pyfile
     def code_to_debug():
-        import debug_me
+        import debug_me # noqa
         import sys
         exit_code = eval(sys.argv[1])
         print('sys.exit(%r)' % (exit_code,))

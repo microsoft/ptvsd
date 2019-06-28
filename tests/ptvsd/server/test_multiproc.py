@@ -23,7 +23,7 @@ def test_multiprocessing(pyfile, start_method, run_as):
         import multiprocessing
         import platform
         import sys
-        import debug_me
+        import debug_me # noqa
 
         def child_of_child(q):
             print('entering child of child')
@@ -130,7 +130,7 @@ def test_subprocess(pyfile, start_method, run_as):
     def child():
         import sys
         import backchannel
-        import debug_me
+        import debug_me # noqa
         backchannel.write_json(sys.argv)
 
     @pyfile
@@ -138,7 +138,7 @@ def test_subprocess(pyfile, start_method, run_as):
         import os
         import subprocess
         import sys
-        import debug_me
+        import debug_me # noqa
         argv = [sys.executable, sys.argv[1], '--arg1', '--arg2', '--arg3']
         env = os.environ.copy()
         process = subprocess.Popen(argv, env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -185,7 +185,7 @@ def test_subprocess(pyfile, start_method, run_as):
 def test_autokill(pyfile, start_method, run_as):
     @pyfile
     def child():
-        import debug_me
+        import debug_me # noqa
         while True:
             pass
 
@@ -195,7 +195,7 @@ def test_autokill(pyfile, start_method, run_as):
         import os
         import subprocess
         import sys
-        import debug_me
+        import debug_me # noqa
         argv = [sys.executable, sys.argv[1]]
         env = os.environ.copy()
         subprocess.Popen(argv, env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -211,7 +211,7 @@ def test_autokill(pyfile, start_method, run_as):
 
             if parent_session.start_method == 'launch':
                 # In launch scenario, terminate the parent process by disconnecting from it.
-                parent_session.expected_returncode = ANY
+                parent_session.expected_returncode = some.int
                 parent_session.send_request('disconnect')
                 parent_session.wait_for_disconnect()
             else:
@@ -228,7 +228,7 @@ def test_autokill(pyfile, start_method, run_as):
 def test_argv_quoting(pyfile, start_method, run_as):
     @pyfile
     def args():
-        import debug_me
+        import debug_me # noqa
         args = [ # noqa
             r'regular',
             r'',
@@ -245,7 +245,7 @@ def test_argv_quoting(pyfile, start_method, run_as):
 
     @pyfile
     def parent():
-        import debug_me
+        import debug_me # noqa
 
         import sys
         import subprocess
@@ -255,7 +255,7 @@ def test_argv_quoting(pyfile, start_method, run_as):
 
     @pyfile
     def child():
-        import debug_me
+        import debug_me # noqa
         import backchannel
         import sys
 
