@@ -24,9 +24,7 @@ def test_client_ide_from_path_mapping_linux_backend(pyfile, tmpdir, start_method
 
     @pyfile
     def code_to_debug():
-        from dbgimporter import import_and_enable_debugger
-        import_and_enable_debugger()
-        import backchannel
+        from debug_me import backchannel
         import pydevd_file_utils
         backchannel.write_json({'ide_os': pydevd_file_utils._ide_os})
         print('done')  # @break_here

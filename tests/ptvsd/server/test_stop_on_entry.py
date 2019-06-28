@@ -16,8 +16,7 @@ def test_stop_on_entry(pyfile, start_method, run_as, with_bp):
 
     @pyfile
     def code_to_debug():
-        import backchannel # @bp
-        # import_and_enable_debugger()
+        from debug_me import backchannel # @bp
         backchannel.write_json('done')
 
     with debug.Session() as session:

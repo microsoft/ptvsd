@@ -15,8 +15,7 @@ def test_set_next_statement(pyfile, start_method, run_as):
 
     @pyfile
     def code_to_debug():
-        from dbgimporter import import_and_enable_debugger
-        import_and_enable_debugger()
+        import debug_me
 
         def func():
             print(1)  # @inner1

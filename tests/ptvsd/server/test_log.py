@@ -26,8 +26,7 @@ def test_log_cli(pyfile, tmpdir, start_method, run_as, cli):
 
     @pyfile
     def code_to_debug():
-        from dbgimporter import import_and_enable_debugger
-        import_and_enable_debugger()
+        import debug_me
 
     with debug.Session() as session:
         with check_logs(tmpdir, session):
@@ -44,8 +43,8 @@ def test_log_api(pyfile, tmpdir, run_as):
     @pyfile
     def code_to_debug():
         import sys
-        from dbgimporter import import_and_enable_debugger
-        import_and_enable_debugger(log_dir=str(sys.argv[1]))
+        import debug_me
+        #import_and_enable_debugger(log_dir=str(sys.argv[1]))
 
     with debug.Session() as session:
         with check_logs(tmpdir, session):

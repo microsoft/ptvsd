@@ -15,8 +15,7 @@ def test_with_no_output(pyfile, start_method, run_as):
 
     @pyfile
     def code_to_debug():
-        from dbgimporter import import_and_enable_debugger
-        import_and_enable_debugger()
+        import debug_me
         # Do nothing, and check if there is any output
 
     with debug.Session() as session:
@@ -31,8 +30,7 @@ def test_with_tab_in_output(pyfile, start_method, run_as):
 
     @pyfile
     def code_to_debug():
-        from dbgimporter import import_and_enable_debugger
-        import_and_enable_debugger()
+        import debug_me
         a = '\t'.join(('Hello', 'World'))
         print(a)
         # Break here so we are sure to get the output event.
@@ -61,8 +59,7 @@ def test_with_tab_in_output(pyfile, start_method, run_as):
 def test_redirect_output(pyfile, start_method, run_as, redirect):
     @pyfile
     def code_to_debug():
-        from dbgimporter import import_and_enable_debugger
-        import_and_enable_debugger()
+        import debug_me
 
         for i in [111, 222, 333, 444]:
             print(i)

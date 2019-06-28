@@ -14,8 +14,7 @@ from tests.patterns import some
 def test_justmycode_frames(pyfile, start_method, run_as, jmc):
     @pyfile
     def code_to_debug():
-        from dbgimporter import import_and_enable_debugger
-        import_and_enable_debugger()
+        import debug_me
         print('break here')  #@bp
 
     with debug.Session() as session:

@@ -23,8 +23,7 @@ def test_multiprocessing(pyfile, start_method, run_as):
         import multiprocessing
         import platform
         import sys
-        from dbgimporter import import_and_enable_debugger
-        import_and_enable_debugger()
+        import debug_me
 
         def child_of_child(q):
             print('entering child of child')
@@ -131,8 +130,7 @@ def test_subprocess(pyfile, start_method, run_as):
     def child():
         import sys
         import backchannel
-        from dbgimporter import import_and_enable_debugger
-        import_and_enable_debugger()
+        import debug_me
         backchannel.write_json(sys.argv)
 
     @pyfile
@@ -140,8 +138,7 @@ def test_subprocess(pyfile, start_method, run_as):
         import os
         import subprocess
         import sys
-        from dbgimporter import import_and_enable_debugger
-        import_and_enable_debugger()
+        import debug_me
         argv = [sys.executable, sys.argv[1], '--arg1', '--arg2', '--arg3']
         env = os.environ.copy()
         process = subprocess.Popen(argv, env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -188,8 +185,7 @@ def test_subprocess(pyfile, start_method, run_as):
 def test_autokill(pyfile, start_method, run_as):
     @pyfile
     def child():
-        from dbgimporter import import_and_enable_debugger
-        import_and_enable_debugger()
+        import debug_me
         while True:
             pass
 
@@ -199,8 +195,7 @@ def test_autokill(pyfile, start_method, run_as):
         import os
         import subprocess
         import sys
-        from dbgimporter import import_and_enable_debugger
-        import_and_enable_debugger()
+        import debug_me
         argv = [sys.executable, sys.argv[1]]
         env = os.environ.copy()
         subprocess.Popen(argv, env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -233,7 +228,7 @@ def test_autokill(pyfile, start_method, run_as):
 def test_argv_quoting(pyfile, start_method, run_as):
     @pyfile
     def args():
-        # import_and_enable_debugger
+        import debug_me
         args = [ # noqa
             r'regular',
             r'',
@@ -250,8 +245,7 @@ def test_argv_quoting(pyfile, start_method, run_as):
 
     @pyfile
     def parent():
-        from dbgimporter import import_and_enable_debugger
-        import_and_enable_debugger()
+        import debug_me
 
         import sys
         import subprocess
@@ -261,7 +255,7 @@ def test_argv_quoting(pyfile, start_method, run_as):
 
     @pyfile
     def child():
-        # import_and_enable_debugger
+        import debug_me
         import backchannel
         import sys
 

@@ -16,14 +16,12 @@ from tests.timeline import Event
 def test_stack_format(pyfile, start_method, run_as, module, line):
     @pyfile
     def code_to_debug():
-        from dbgimporter import import_and_enable_debugger
-        import_and_enable_debugger()
+        import debug_me # noqa
         from test_module import do_something
         do_something()
 
     @pyfile
     def test_module():
-        import debug_me # noqa
         def do_something():
             print('break here') # @bp
 

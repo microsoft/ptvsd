@@ -12,9 +12,7 @@ def test_set_expression(pyfile, start_method, run_as):
 
     @pyfile
     def code_to_debug():
-        import backchannel
-        from dbgimporter import import_and_enable_debugger
-        import_and_enable_debugger()
+        from debug_me import backchannel
         import ptvsd
         a = 1
         ptvsd.break_into_debugger()

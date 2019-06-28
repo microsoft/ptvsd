@@ -18,8 +18,7 @@ def test_thread_count(pyfile, start_method, run_as, count):
         import threading
         import time
         import sys
-        from dbgimporter import import_and_enable_debugger
-        import_and_enable_debugger()
+        import debug_me
         stop = False
 
         def worker(tid, offset):
@@ -62,9 +61,7 @@ def test_debug_this_thread(pyfile, start_method, run_as):
 
     @pyfile
     def code_to_debug():
-        from dbgimporter import import_and_enable_debugger
-        import_and_enable_debugger()
-
+        import debug_me
         import platform
         import ptvsd
         import threading
