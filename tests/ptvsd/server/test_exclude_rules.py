@@ -56,7 +56,7 @@ def test_exceptions_and_exclude_rules(pyfile, start_method, run_as, scenario, ex
         )
         # TODO: The process returncode doesn't match the one returned from the DAP.
         # See: https://github.com/Microsoft/ptvsd/issues/1278
-        session.expected_returncode = ANY.int
+        session.expected_returncode = some.int
         filters = ['raised', 'uncaught']
 
         session.send_request('setExceptionBreakpoints', {
@@ -116,7 +116,7 @@ def test_exceptions_and_partial_exclude_rules(pyfile, start_method, run_as, scen
         )
         # TODO: The process returncode doesn't match the one returned from the DAP.
         # See: https://github.com/Microsoft/ptvsd/issues/1278
-        session.expected_returncode = ANY.int
+        session.expected_returncode = some.int
         filters = ['raised', 'uncaught']
 
         session.send_request('setExceptionBreakpoints', {
@@ -132,15 +132,15 @@ def test_exceptions_and_partial_exclude_rules(pyfile, start_method, run_as, scen
             # We don't stop at the raise line but rather at the callback module which is
             # not excluded.
             assert len(frames) == 1
-            assert frames[0] == ANY.dict_with({
+            assert frames[0] == some.dict.containing({
                 'line': 2,
-                'source': ANY.dict_with({
+                'source': some.dict.containing({
                     'path': Path(os.path.join(call_me_back_dir, 'call_me_back.py'))
                 })
             })
-            # assert frames[1] == ANY.dict_with({ -- filtered out
+            # assert frames[1] == some.dict.containing({ -- filtered out
             #     'line': line_numbers['call_me_back_line'],
-            #     'source': ANY.dict_with({
+            #     'source': some.dict.containing({
             #         'path': Path(code_to_debug)
             #     })
             # })
@@ -158,9 +158,9 @@ def test_exceptions_and_partial_exclude_rules(pyfile, start_method, run_as, scen
                 # ('call_me_back', 'call_me_back.py'), -- filtered out
                 ('<module>', 'code_to_debug.py'),
             ]
-            assert frames[0] == ANY.dict_with({
+            assert frames[0] == some.dict.containing({
                 'line': line_numbers['raise_line'],
-                'source': ANY.dict_with({
+                'source': some.dict.containing({
                     'path': Path(code_to_debug)
                 })
             })
@@ -172,9 +172,9 @@ def test_exceptions_and_partial_exclude_rules(pyfile, start_method, run_as, scen
             assert [(frame['name'], path.basename(frame['source']['path'])) for frame in frames] == [
                 ('<module>', 'code_to_debug.py'),
             ]
-            assert frames[0] == ANY.dict_with({
+            assert frames[0] == some.dict.containing({
                 'line': line_numbers['call_me_back_line'],
-                'source': ANY.dict_with({
+                'source': some.dict.containing({
                     'path': Path(code_to_debug)
                 })
             })
@@ -189,9 +189,9 @@ def test_exceptions_and_partial_exclude_rules(pyfile, start_method, run_as, scen
                 ('<module>', 'code_to_debug.py'),
             ]
 
-            assert frames[0] == ANY.dict_with({
+            assert frames[0] == some.dict.containing({
                 'line': line_numbers['raise_line'],
-                'source': ANY.dict_with({
+                'source': some.dict.containing({
                     'path': Path(code_to_debug)
                 })
             })

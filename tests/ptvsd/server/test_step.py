@@ -49,8 +49,8 @@ def test_set_next_statement(pyfile, start_method, run_as):
         }).wait_for_response().body['targets']
 
         assert targets == [{
-            'id': ANY.num,
-            'label': ANY.str,
+            'id': some.number,
+            'label': some.str,
             'line': line_numbers['outer3']
         }]
         outer3_target = targets[0]['id']
@@ -67,8 +67,8 @@ def test_set_next_statement(pyfile, start_method, run_as):
         }).wait_for_response().body['targets']
 
         assert targets == [{
-            'id': ANY.num,
-            'label': ANY.str,
+            'id': some.number,
+            'label': some.str,
             'line': line_numbers['inner2'],
         }]
         inner2_target = targets[0]['id']

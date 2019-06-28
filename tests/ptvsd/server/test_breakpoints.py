@@ -29,7 +29,7 @@ def test_path_with_ampersand(start_method, run_as):
         session.start_debugging()
 
         session.wait_for_stop('breakpoint', expected_frames=[
-            ANY.dict_with({"source": ANY.source(test_py)}),
+            some.dict.containing({"source": some.source(test_py)}),
         ])
 
         session.request_continue()
@@ -53,7 +53,7 @@ def test_path_with_unicode(start_method, run_as):
         session.start_debugging()
         hit = session.wait_for_thread_stopped('breakpoint')
         frames = hit.stacktrace.body['stackFrames']
-        assert frames[0]['source']['path'] == Path(testfile)
+        assert frames[0]['source']['path'] == some.path(testfile)
         assert u'ಏನಾದರೂ_ಮಾಡು' == frames[0]['name']
 
         session.send_request('continue').wait_for_response(freeze=False)
@@ -116,7 +116,7 @@ def test_conditional_breakpoint(pyfile, start_method, run_as, condition_key):
         variables = list(v for v in resp_variables.body['variables']
                          if v['name'] == 'i')
         assert variables == [
-            ANY.dict_with({'name': 'i', 'type': 'int', 'value': value, 'evaluateName': 'i'})
+            some.dict.containing({'name': 'i', 'type': 'int', 'value': value, 'evaluateName': 'i'})
         ]
 
         session.send_request('continue').wait_for_response(freeze=False)
@@ -154,13 +154,13 @@ def test_crossfile_breakpoint(pyfile, start_method, run_as):
         hit = session.wait_for_thread_stopped()
         frames = hit.stacktrace.body['stackFrames']
         assert bp_script2_line == frames[0]['line']
-        assert frames[0]['source']['path'] == Path(script2)
+        assert frames[0]['source']['path'] == some.path(script2)
 
         session.send_request('continue').wait_for_response(freeze=False)
         hit = session.wait_for_thread_stopped()
         frames = hit.stacktrace.body['stackFrames']
         assert bp_script1_line == frames[0]['line']
-        assert frames[0]['source']['path'] == Path(script1)
+        assert frames[0]['source']['path'] == some.path(script1)
 
         session.send_request('continue').wait_for_response(freeze=False)
         session.wait_for_exit()
@@ -247,7 +247,7 @@ def test_log_point(pyfile, start_method, run_as):
         session.wait_for_exit()
         assert session.get_stderr_as_string() == b''
 
-        output = session.all_occurrences_of(Event('output', ANY.dict_with({'category': 'stdout'})))
+        output = session.all_occurrences_of(Event('output', some.dict.containing({'category': 'stdout'})))
         output_str = ''.join(o.body['output'] for o in output)
         logged = sorted(int(i) for i in re.findall(r"log:\s([0-9]*)", output_str))
         values = sorted(int(i) for i in re.findall(r"value:\s([0-9]*)", output_str))
@@ -301,7 +301,7 @@ def test_condition_with_log_point(pyfile, start_method, run_as):
             if v['name'] == 'i'
         )
         assert variables == [
-            ANY.dict_with({'name': 'i', 'type': 'int', 'value': '5', 'evaluateName': 'i'})
+            some.dict.containing({'name': 'i', 'type': 'int', 'value': '5', 'evaluateName': 'i'})
         ]
 
         session.send_request('continue').wait_for_response(freeze=False)
@@ -315,7 +315,7 @@ def test_condition_with_log_point(pyfile, start_method, run_as):
         session.wait_for_exit()
         assert session.get_stderr_as_string() == b''
 
-        output = session.all_occurrences_of(Event('output', ANY.dict_with({'category': 'stdout'})))
+        output = session.all_occurrences_of(Event('output', some.dict.containing({'category': 'stdout'})))
         output_str = ''.join(o.body['output'] for o in output)
         logged = sorted(int(i) for i in re.findall(r"log:\s([0-9]*)", output_str))
         values = sorted(int(i) for i in re.findall(r"value:\s([0-9]*)", output_str))
@@ -326,7 +326,7 @@ def test_condition_with_log_point(pyfile, start_method, run_as):
 
 def test_package_launch():
     bp_line = 2
-    cwd = get_test_root('testpkgs')
+    cwd = test_data / 'testpkgs'
     testfile = os.path.join(cwd, 'pkg1', '__main__.py')
 
     with debug.Session() as session:
@@ -372,11 +372,11 @@ def test_add_and_remove_breakpoint(pyfile, start_method, run_as):
         session.set_breakpoints(code_to_debug, [])
         session.send_request('continue').wait_for_response(freeze=False)
 
-        session.wait_for_next(Event('output', ANY.dict_with({'category': 'stdout', 'output': '9'})))
+        session.wait_for_next(Event('output', some.dict.containing({'category': 'stdout', 'output': '9'})))
         session.write_json('done')
         session.wait_for_exit()
 
-        output = session.all_occurrences_of(Event('output', ANY.dict_with({'category': 'stdout'})))
+        output = session.all_occurrences_of(Event('output', some.dict.containing({'category': 'stdout'})))
         output = sorted(int(o.body['output'].strip()) for o in output if len(o.body['output'].strip()) > 0)
         assert list(range(0, 10)) == output
 

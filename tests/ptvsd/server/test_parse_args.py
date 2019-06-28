@@ -55,7 +55,7 @@ def test_targets(target_kind, client, wait, nodebug, multiproc, extra):
     reload(options)
     rest = __main__.parse(args)
     assert list(rest) == extra
-    assert vars(options) == ANY.dict_with({
+    assert vars(options) == some.dict.containing({
         'target_kind': target_kind,
         'target': target,
         'host': 'localhost',

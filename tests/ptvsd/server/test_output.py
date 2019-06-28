@@ -53,7 +53,7 @@ def test_with_tab_in_output(pyfile, start_method, run_as):
         session.send_request('continue').wait_for_response(freeze=False)
         session.wait_for_exit()
 
-        output = session.all_occurrences_of(Event('output', ANY.dict_with({'category': 'stdout'})))
+        output = session.all_occurrences_of(Event('output', some.dict.containing({'category': 'stdout'})))
         output_str = ''.join(o.body['output'] for o in output)
         assert output_str.startswith('Hello\tWorld')
 
@@ -88,6 +88,6 @@ def test_redirect_output(pyfile, start_method, run_as, redirect):
         session.send_request('continue').wait_for_response(freeze=False)
         session.wait_for_exit()
 
-        output = session.all_occurrences_of(Event('output', ANY.dict_with({'category': 'stdout'})))
+        output = session.all_occurrences_of(Event('output', some.dict.containing({'category': 'stdout'})))
         expected = ['111', '222', '333', '444'] if bool(redirect) else []
         assert expected == list(o.body['output'] for o in output if len(o.body['output']) == 3)

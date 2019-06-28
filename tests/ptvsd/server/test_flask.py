@@ -43,7 +43,7 @@ def _initialize_flask_session_no_multiproc(session, start_method):
         debug_options=['Jinja'],
         cwd=FLASK1_ROOT,
         env=env,
-        expected_returncode=ANY.int,  # No clean way to kill Flask server
+        expected_returncode=some.int,  # No clean way to kill Flask server
     )
 
 
@@ -68,7 +68,7 @@ def test_flask_breakpoint_no_multiproc(bp_target, start_method):
         link = FLASK_LINK
         web_request = get_web_content(link, {})
 
-        thread_stopped = session.wait_for_next(Event('stopped'), ANY.dict_with({'reason': 'breakpoint'}))
+        thread_stopped = session.wait_for_next(Event('stopped'), some.dict.containing({'reason': 'breakpoint'}))
         assert thread_stopped.body['threadId'] is not None
 
         tid = thread_stopped.body['threadId']
@@ -79,11 +79,11 @@ def test_flask_breakpoint_no_multiproc(bp_target, start_method):
         assert resp_stacktrace.body['totalFrames'] > 0
         frames = resp_stacktrace.body['stackFrames']
         assert frames[0] == {
-            'id': ANY.dap_id,
+            'id': some.dap_id,
             'name': bp_name,
             'source': {
-                'sourceReference': ANY.dap_id,
-                'path': Path(bp_file),
+                'sourceReference': some.dap_id,
+                'path': some.path(bp_file),
             },
             'line': bp_line,
             'column': 1,
@@ -142,12 +142,12 @@ def test_flask_template_exception_no_multiproc(start_method):
 
         hit = session.wait_for_thread_stopped()
         frames = hit.stacktrace.body['stackFrames']
-        assert frames[0] == ANY.dict_with({
-            'id': ANY.dap_id,
+        assert frames[0] == some.dict.containing({
+            'id': some.dap_id,
             'name': 'template' if sys.version_info[0] >= 3 else 'Jinja2 TemplateSyntaxError',
-            'source': ANY.dict_with({
-                'sourceReference': ANY.dap_id,
-                'path': Path(FLASK1_BAD_TEMPLATE),
+            'source': some.dict.containing({
+                'sourceReference': some.dap_id,
+                'path': some.path(FLASK1_BAD_TEMPLATE),
             }),
             'line': 8,
             'column': 1,
@@ -158,13 +158,13 @@ def test_flask_template_exception_no_multiproc(start_method):
             arguments={'threadId': hit.thread_id, }
         ).wait_for_response()
         exception = resp_exception_info.body
-        assert exception == ANY.dict_with({
-            'exceptionId': ANY.such_that(lambda s: s.endswith('TemplateSyntaxError')),
+        assert exception == some.dict.containing({
+            'exceptionId': some.such_that(lambda s: s.endswith('TemplateSyntaxError')),
             'breakMode': 'always',
-            'description': ANY.such_that(lambda s: s.find('doesnotexist') > -1),
-            'details': ANY.dict_with({
-                'message': ANY.such_that(lambda s: s.find('doesnotexist') > -1),
-                'typeName': ANY.such_that(lambda s: s.endswith('TemplateSyntaxError')),
+            'description': some.such_that(lambda s: s.find('doesnotexist') > -1),
+            'details': some.dict.containing({
+                'message': some.such_that(lambda s: s.find('doesnotexist') > -1),
+                'typeName': some.such_that(lambda s: s.endswith('TemplateSyntaxError')),
             })
         })
 
@@ -204,10 +204,10 @@ def test_flask_exception_no_multiproc(ex_type, start_method):
         link = base_link + ex_type if base_link.endswith('/') else ('/' + ex_type)
         web_request = get_web_content(link, {})
 
-        thread_stopped = session.wait_for_next(Event('stopped', ANY.dict_with({'reason': 'exception'})))
-        assert thread_stopped == Event('stopped', ANY.dict_with({
+        thread_stopped = session.wait_for_next(Event('stopped', some.dict.containing({'reason': 'exception'})))
+        assert thread_stopped == Event('stopped', some.dict.containing({
             'reason': 'exception',
-            'text': ANY.such_that(lambda s: s.endswith('ArithmeticError')),
+            'text': some.such_that(lambda s: s.endswith('ArithmeticError')),
             'description': 'Hello'
         }))
 
@@ -218,14 +218,14 @@ def test_flask_exception_no_multiproc(ex_type, start_method):
         ).wait_for_response()
         exception = resp_exception_info.body
         assert exception == {
-            'exceptionId': ANY.such_that(lambda s: s.endswith('ArithmeticError')),
+            'exceptionId': some.such_that(lambda s: s.endswith('ArithmeticError')),
             'breakMode': 'always',
             'description': 'Hello',
             'details': {
                 'message': 'Hello',
-                'typeName': ANY.such_that(lambda s: s.endswith('ArithmeticError')),
-                'source': Path(FLASK1_APP),
-                'stackTrace': ANY.such_that(lambda s: True)
+                'typeName': some.such_that(lambda s: s.endswith('ArithmeticError')),
+                'source': some.path(FLASK1_APP),
+                'stackTrace': some.such_that(lambda s: True)
             }
         }
 
@@ -235,11 +235,11 @@ def test_flask_exception_no_multiproc(ex_type, start_method):
         assert resp_stacktrace.body['totalFrames'] > 0
         frames = resp_stacktrace.body['stackFrames']
         assert frames[0] == {
-            'id': ANY.dap_id,
+            'id': some.dap_id,
             'name': 'bad_route_' + ex_type,
             'source': {
-                'sourceReference': ANY.dap_id,
-                'path': Path(FLASK1_APP),
+                'sourceReference': some.dap_id,
+                'path': some.path(FLASK1_APP),
             },
             'line': ex_line,
             'column': 1,
@@ -283,7 +283,7 @@ def test_flask_breakpoint_multiproc(start_method):
             debug_options=['Jinja'],
             cwd=FLASK1_ROOT,
             env=env,
-            expected_returncode=ANY.int,  # No clean way to kill Flask server
+            expected_returncode=some.int,  # No clean way to kill Flask server
         )
 
         bp_line = 11
@@ -302,7 +302,7 @@ def test_flask_breakpoint_multiproc(start_method):
             wait_for_connection(FLASK_PORT)
             web_request = get_web_content(FLASK_LINK, {})
 
-            thread_stopped = child_session.wait_for_next(Event('stopped', ANY.dict_with({'reason': 'breakpoint'})))
+            thread_stopped = child_session.wait_for_next(Event('stopped', some.dict.containing({'reason': 'breakpoint'})))
             assert thread_stopped.body['threadId'] is not None
 
             tid = thread_stopped.body['threadId']
@@ -313,11 +313,11 @@ def test_flask_breakpoint_multiproc(start_method):
             assert resp_stacktrace.body['totalFrames'] > 0
             frames = resp_stacktrace.body['stackFrames']
             assert frames[0] == {
-                'id': ANY.dap_id,
+                'id': some.dap_id,
                 'name': 'home',
                 'source': {
-                    'sourceReference': ANY.dap_id,
-                    'path': Path(FLASK1_APP),
+                    'sourceReference': some.dap_id,
+                    'path': some.path(FLASK1_APP),
                 },
                 'line': bp_line,
                 'column': 1,

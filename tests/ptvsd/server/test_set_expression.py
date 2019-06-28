@@ -52,7 +52,7 @@ def test_set_expression(pyfile, start_method, run_as):
             'expression': 'a',
             'value': '1000'
         }).wait_for_response()
-        assert resp_set_variable.body == ANY.dict_with({
+        assert resp_set_variable.body == some.dict.containing({
             'type': 'int',
             'value': '1000'
         })

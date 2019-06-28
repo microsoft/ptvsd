@@ -66,7 +66,7 @@ def test_completions_scope(pyfile, bp_line, start_method, run_as):
         session.set_breakpoints(code_to_debug, [line_numbers[bp_line]])
         session.start_debugging()
 
-        thread_stopped = session.wait_for_next(Event('stopped', ANY.dict_with({'reason': 'breakpoint'})))
+        thread_stopped = session.wait_for_next(Event('stopped', some.dict.containing({'reason': 'breakpoint'})))
         assert thread_stopped.body['threadId'] is not None
         tid = thread_stopped.body['threadId']
 

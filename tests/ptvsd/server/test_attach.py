@@ -133,5 +133,5 @@ def test_attaching_by_pid(pyfile, run_as):
         # remove breakpoint and continue
         session.set_breakpoints(code_to_debug, [])
         session.send_request('continue').wait_for_response(freeze=False)
-        session.wait_for_next(Event('output', ANY.dict_with({'category': 'stdout'})))
+        session.wait_for_next(Event('output', some.dict.containing({'category': 'stdout'})))
         session.wait_for_exit()

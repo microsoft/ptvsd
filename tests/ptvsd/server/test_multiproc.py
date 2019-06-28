@@ -82,9 +82,9 @@ def test_multiprocessing(pyfile, start_method, run_as):
             'rootProcessId': root_pid,
             'parentProcessId': root_pid,
             'processId': child_pid,
-            'port': ANY.int,
+            'port': some.int,
             'rootStartRequest': {
-                'seq': ANY.int,
+                'seq': some.int,
                 'type': 'request',
                 'command': root_start_request.command,
                 'arguments': root_start_request.arguments,
@@ -99,10 +99,10 @@ def test_multiprocessing(pyfile, start_method, run_as):
             assert grandchild_subprocess == Event('ptvsd_subprocess', {
                 'rootProcessId': root_pid,
                 'parentProcessId': child_pid,
-                'processId': ANY.int,
-                'port': ANY.int,
+                'processId': some.int,
+                'port': some.int,
                 'rootStartRequest': {
-                    'seq': ANY.int,
+                    'seq': some.int,
                     'type': 'request',
                     'command': root_start_request.command,
                     'arguments': root_start_request.arguments,
@@ -160,10 +160,10 @@ def test_subprocess(pyfile, start_method, run_as):
         assert child_subprocess == Event('ptvsd_subprocess', {
             'rootProcessId': root_pid,
             'parentProcessId': root_pid,
-            'processId': ANY.int,
-            'port': ANY.int,
+            'processId': some.int,
+            'port': some.int,
             'rootStartRequest': {
-                'seq': ANY.int,
+                'seq': some.int,
                 'type': 'request',
                 'command': root_start_request.command,
                 'arguments': root_start_request.arguments,

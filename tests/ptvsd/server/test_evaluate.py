@@ -55,14 +55,14 @@ def test_variables_and_evaluate(pyfile, start_method, run_as):
         assert b_variables[0] == {
             'type': 'int',
             'value': '1',
-            'name': ANY.such_that(lambda x: x.find('one') > 0),
+            'name': some.such_that(lambda x: x.find('one') > 0),
             'evaluateName': "b['one']",
             'variablesReference': 0,
         }
         assert b_variables[1] == {
             'type': 'int',
             'value': '2',
-            'name': ANY.such_that(lambda x: x.find('two') > 0),
+            'name': some.such_that(lambda x: x.find('two') > 0),
             'evaluateName': "b['two']",
             'variablesReference': 0,
         }
@@ -79,7 +79,7 @@ def test_variables_and_evaluate(pyfile, start_method, run_as):
         resp_evaluate1 = session.send_request('evaluate', arguments={
             'expression': 'a', 'frameId': hit.frame_id,
         }).wait_for_response()
-        assert resp_evaluate1.body == ANY.dict_with({
+        assert resp_evaluate1.body == some.dict.containing({
             'type': 'int',
             'result': '1'
         })
@@ -88,7 +88,7 @@ def test_variables_and_evaluate(pyfile, start_method, run_as):
         resp_evaluate2 = session.send_request('evaluate', arguments={
             'expression': 'b["one"]', 'frameId': hit.frame_id,
         }).wait_for_response()
-        assert resp_evaluate2.body == ANY.dict_with({
+        assert resp_evaluate2.body == some.dict.containing({
             'type': 'int',
             'result': '1'
         })
@@ -97,7 +97,7 @@ def test_variables_and_evaluate(pyfile, start_method, run_as):
         resp_evaluate3 = session.send_request('evaluate', arguments={
             'expression': 'a + b["one"]', 'frameId': hit.frame_id,
         }).wait_for_response()
-        assert resp_evaluate3.body == ANY.dict_with({
+        assert resp_evaluate3.body == some.dict.containing({
             'type': 'int',
             'result': '2'
         })
@@ -147,7 +147,7 @@ def test_set_variable(pyfile, start_method, run_as):
             'name': 'a',
             'value': '1000'
         }).wait_for_response()
-        assert resp_set_variable.body == ANY.dict_with({
+        assert resp_set_variable.body == some.dict.containing({
             'type': 'int',
             'value': '1000'
         })
@@ -256,21 +256,21 @@ def test_return_values(pyfile, start_method, run_as):
     line_numbers = get_marked_line_numbers(code_to_debug)
     print(line_numbers)
 
-    expected1 = ANY.dict_with({
+    expected1 = some.dict.containing({
         'name': '(return) MyClass.do_something',
         'value': "'did something'",
         'type': 'str',
-        'presentationHint': ANY.dict_with({
-            'attributes': ANY.such_that(lambda x: 'readOnly' in x)
+        'presentationHint': some.dict.containing({
+            'attributes': some.such_that(lambda x: 'readOnly' in x)
         }),
     })
 
-    expected2 = ANY.dict_with({
+    expected2 = some.dict.containing({
         'name': '(return) my_func',
         'value': "'did more things'",
         'type': 'str',
-        'presentationHint': ANY.dict_with({
-            'attributes': ANY.such_that(lambda x: 'readOnly' in x)
+        'presentationHint': some.dict.containing({
+            'attributes': some.such_that(lambda x: 'readOnly' in x)
         }),
     })
 
@@ -347,12 +347,12 @@ def test_unicode(pyfile, start_method, run_as):
         }).wait_for_response()
 
         if sys.version_info >= (3,):
-            assert resp_eval.body == ANY.dict_with({
+            assert resp_eval.body == some.dict.containing({
                 'type': 'int',
                 'result': '123'
             })
         else:
-            assert resp_eval.body == ANY.dict_with({
+            assert resp_eval.body == some.dict.containing({
                 'type': 'SyntaxError'
             })
 
@@ -395,7 +395,7 @@ def test_hex_numbers(pyfile, start_method, run_as):
         variables = list(v for v in resp_variables.body['variables']
                          if v['name'] in ('a', 'b', 'c', 'd'))
         a, b, c, d = sorted(variables, key=lambda v: v['name'])
-        assert a == ANY.dict_with({
+        assert a == some.dict.containing({
             'name': 'a',
             'value': "0x64",
             'type': 'int',
@@ -403,12 +403,12 @@ def test_hex_numbers(pyfile, start_method, run_as):
             'variablesReference': 0,
         })
 
-        assert b == ANY.dict_with({
+        assert b == some.dict.containing({
             'name': 'b',
             'value': "[0x1, 0xa, 0x64]",
             'type': 'list',
             'evaluateName': 'b',
-            'variablesReference': ANY.dap_id,
+            'variablesReference': some.dap_id,
         })
 
         resp_variables = session.send_request('variables', arguments={
@@ -423,12 +423,12 @@ def test_hex_numbers(pyfile, start_method, run_as):
             {'name': '__len__', 'value': '0x3', 'type': 'int', 'evaluateName': 'len(b)', 'variablesReference': 0, 'presentationHint': {'attributes': ['readOnly']}, },
         ]
 
-        assert c == ANY.dict_with({
+        assert c == some.dict.containing({
             'name': 'c',
             'value': '{0xa: 0xa, 0x64: 0x64, 0x3e8: 0x3e8}',
             'type': 'dict',
             'evaluateName': 'c',
-            'variablesReference': ANY.dap_id,
+            'variablesReference': some.dap_id,
         })
 
         resp_variables = session.send_request('variables', arguments={
@@ -443,12 +443,12 @@ def test_hex_numbers(pyfile, start_method, run_as):
             {'name': '__len__', 'value': '0x3', 'type': 'int', 'evaluateName': 'len(c)', 'variablesReference': 0, 'presentationHint': {'attributes': ['readOnly']}, }
         ]
 
-        assert d == ANY.dict_with({
+        assert d == some.dict.containing({
             'name': 'd',
             'value': '{(0x1, 0xa, 0x64): (0x2710, 0x186a0, 0x186a0)}',
             'type': 'dict',
             'evaluateName': 'd',
-            'variablesReference': ANY.dap_id,
+            'variablesReference': some.dap_id,
         })
         resp_variables = session.send_request('variables', arguments={
             'variablesReference': d['variablesReference'],
@@ -456,7 +456,7 @@ def test_hex_numbers(pyfile, start_method, run_as):
         }).wait_for_response()
         d_children = resp_variables.body['variables']
         assert d_children == [
-            {'name': '(0x1, 0xa, 0x64)', 'value': '(0x2710, 0x186a0, 0x186a0)', 'type': 'tuple', 'evaluateName': 'd[(1, 10, 100)]', 'variablesReference': ANY.dap_id},
+            {'name': '(0x1, 0xa, 0x64)', 'value': '(0x2710, 0x186a0, 0x186a0)', 'type': 'tuple', 'evaluateName': 'd[(1, 10, 100)]', 'variablesReference': some.dap_id},
             {'name': '__len__', 'value': '0x1', 'type': 'int', 'evaluateName': 'len(d)', 'variablesReference': 0, 'presentationHint': {'attributes': ['readOnly']}, }
         ]
 

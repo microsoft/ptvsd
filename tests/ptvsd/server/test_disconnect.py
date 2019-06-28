@@ -56,7 +56,7 @@ def test_exit_on_disconnect_for_launch(pyfile, start_method, run_as):
                 target=(run_as, code_to_debug),
                 start_method=start_method,
                 use_backchannel=True,
-                expected_returncode=ANY.int,
+                expected_returncode=some.int,
             )
         session.set_breakpoints(code_to_debug, [bp_line])
         session.start_debugging()

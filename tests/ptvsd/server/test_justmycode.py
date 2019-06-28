@@ -34,9 +34,9 @@ def test_justmycode_frames(pyfile, start_method, run_as, jmc):
 
         hit = session.wait_for_thread_stopped()
         frames = hit.stacktrace.body['stackFrames']
-        assert frames[0] == ANY.dict_with({
+        assert frames[0] == some.dict.containing({
             'line': bp_line,
-            'source': ANY.dict_with({
+            'source': some.dict.containing({
                 'path': Path(code_to_debug)
             })
         })

@@ -43,21 +43,21 @@ def test_vsc_exception_options_raise_with_except(pyfile, start_method, run_as, r
         }).wait_for_response()
         session.start_debugging()
 
-        expected = ANY.dict_with({
-            'exceptionId': ANY.such_that(lambda s: s.endswith('ArithmeticError')),
+        expected = some.dict.containing({
+            'exceptionId': some.such_that(lambda s: s.endswith('ArithmeticError')),
             'description': 'bad code',
             'breakMode': 'always' if raised == 'raisedOn' else 'unhandled',
-            'details': ANY.dict_with({
-                'typeName': ANY.such_that(lambda s: s.endswith('ArithmeticError')),
+            'details': some.dict.containing({
+                'typeName': some.such_that(lambda s: s.endswith('ArithmeticError')),
                 'message': 'bad code',
-                'source': Path(code_to_debug),
+                'source': some.path(code_to_debug),
             }),
         })
 
         if raised == 'raisedOn':
             hit = session.wait_for_thread_stopped(
                 reason='exception',
-                text=ANY.such_that(lambda s: s.endswith('ArithmeticError')),
+                text=some.such_that(lambda s: s.endswith('ArithmeticError')),
                 description='bad code',
             )
             frames = hit.stacktrace.body['stackFrames']
@@ -99,21 +99,21 @@ def test_vsc_exception_options_raise_without_except(pyfile, start_method, run_as
             target=(run_as, code_to_debug),
             start_method=start_method,
             ignore_unobserved=[Event('stopped')],
-            expected_returncode=ANY.int,
+            expected_returncode=some.int,
         )
         session.send_request('setExceptionBreakpoints', {
             'filters': filters
         }).wait_for_response()
         session.start_debugging()
 
-        expected = ANY.dict_with({
-            'exceptionId': ANY.such_that(lambda s: s.endswith('ArithmeticError')),
+        expected = some.dict.containing({
+            'exceptionId': some.such_that(lambda s: s.endswith('ArithmeticError')),
             'description': 'bad code',
             'breakMode': 'always' if raised == 'raisedOn' else 'unhandled',
-            'details': ANY.dict_with({
-                'typeName': ANY.such_that(lambda s: s.endswith('ArithmeticError')),
+            'details': some.dict.containing({
+                'typeName': some.such_that(lambda s: s.endswith('ArithmeticError')),
                 'message': 'bad code',
-                'source': Path(code_to_debug),
+                'source': some.path(code_to_debug),
             }),
         })
 
@@ -145,14 +145,14 @@ def test_vsc_exception_options_raise_without_except(pyfile, start_method, run_as
                 'threadId': hit.thread_id
             }).wait_for_response()
 
-            expected = ANY.dict_with({
-                'exceptionId': ANY.such_that(lambda s: s.endswith('ArithmeticError')),
+            expected = some.dict.containing({
+                'exceptionId': some.such_that(lambda s: s.endswith('ArithmeticError')),
                 'description': 'bad code',
                 'breakMode': 'unhandled',  # Only difference from previous expected is breakMode.
-                'details': ANY.dict_with({
-                    'typeName': ANY.such_that(lambda s: s.endswith('ArithmeticError')),
+                'details': some.dict.containing({
+                    'typeName': some.such_that(lambda s: s.endswith('ArithmeticError')),
                     'message': 'bad code',
-                    'source': Path(code_to_debug),
+                    'source': some.path(code_to_debug),
                 }),
             })
 
@@ -196,7 +196,7 @@ def test_systemexit(pyfile, start_method, run_as, raised, uncaught, zero, exit_c
         session.initialize(
             target=(run_as, code_to_debug),
             start_method=start_method,
-            expected_returncode=ANY.int,
+            expected_returncode=some.int,
         )
         session.send_request('setExceptionBreakpoints', {
             'filters': filters
@@ -288,7 +288,7 @@ def test_raise_exception_options(pyfile, start_method, run_as, exceptions, break
             target=(run_as, code_to_debug),
             start_method=start_method,
             ignore_unobserved=[Event('stopped')],
-            expected_returncode=ANY.int,
+            expected_returncode=some.int,
         )
         path = [
             {'names': ['Python Exceptions']},
@@ -384,7 +384,7 @@ def test_exception_stack(pyfile, start_method, run_as, max_frames):
         session.initialize(
             target=(run_as, code_to_debug),
             start_method=start_method,
-            expected_returncode=ANY.int,
+            expected_returncode=some.int,
             args=args,
         )
         session.send_request('setExceptionBreakpoints', {
@@ -400,14 +400,14 @@ def test_exception_stack(pyfile, start_method, run_as, max_frames):
             'threadId': hit.thread_id
         }).wait_for_response()
 
-        expected = ANY.dict_with({
-            'exceptionId': Regex('ArithmeticError'),
+        expected = some.dict.containing({
+            'exceptionId': some.matching('ArithmeticError'),
             'description': 'bad code',
             'breakMode': 'unhandled',
-            'details': ANY.dict_with({
-                'typeName': Regex('ArithmeticError'),
+            'details': some.dict.containing({
+                'typeName': some.matching('ArithmeticError'),
                 'message': 'bad code',
-                'source': Path(code_to_debug),
+                'source': some.path(code_to_debug),
             }),
         })
         assert resp_exc_info.body == expected
