@@ -42,11 +42,11 @@ def test_vsc_exception_options_raise_with_except(pyfile, start_method, run_as, r
         session.start_debugging()
 
         expected = some.dict.containing({
-            'exceptionId': some.such_that(lambda s: s.endswith('ArithmeticError')),
+            'exceptionId': some.str.such_that(lambda s: s.endswith('ArithmeticError')),
             'description': 'bad code',
             'breakMode': 'always' if raised == 'raisedOn' else 'unhandled',
             'details': some.dict.containing({
-                'typeName': some.such_that(lambda s: s.endswith('ArithmeticError')),
+                'typeName': some.str.such_that(lambda s: s.endswith('ArithmeticError')),
                 'message': 'bad code',
                 'source': some.path(code_to_debug),
             }),
@@ -55,7 +55,7 @@ def test_vsc_exception_options_raise_with_except(pyfile, start_method, run_as, r
         if raised == 'raisedOn':
             hit = session.wait_for_thread_stopped(
                 reason='exception',
-                text=some.such_that(lambda s: s.endswith('ArithmeticError')),
+                text=some.str.such_that(lambda s: s.endswith('ArithmeticError')),
                 description='bad code',
             )
             frames = hit.stacktrace.body['stackFrames']
@@ -103,11 +103,11 @@ def test_vsc_exception_options_raise_without_except(pyfile, start_method, run_as
         session.start_debugging()
 
         expected = some.dict.containing({
-            'exceptionId': some.such_that(lambda s: s.endswith('ArithmeticError')),
+            'exceptionId': some.str.such_that(lambda s: s.endswith('ArithmeticError')),
             'description': 'bad code',
             'breakMode': 'always' if raised == 'raisedOn' else 'unhandled',
             'details': some.dict.containing({
-                'typeName': some.such_that(lambda s: s.endswith('ArithmeticError')),
+                'typeName': some.str.such_that(lambda s: s.endswith('ArithmeticError')),
                 'message': 'bad code',
                 'source': some.path(code_to_debug),
             }),
@@ -142,11 +142,11 @@ def test_vsc_exception_options_raise_without_except(pyfile, start_method, run_as
             }).wait_for_response()
 
             expected = some.dict.containing({
-                'exceptionId': some.such_that(lambda s: s.endswith('ArithmeticError')),
+                'exceptionId': some.str.such_that(lambda s: s.endswith('ArithmeticError')),
                 'description': 'bad code',
                 'breakMode': 'unhandled',  # Only difference from previous expected is breakMode.
                 'details': some.dict.containing({
-                    'typeName': some.such_that(lambda s: s.endswith('ArithmeticError')),
+                    'typeName': some.str.such_that(lambda s: s.endswith('ArithmeticError')),
                     'message': 'bad code',
                     'source': some.path(code_to_debug),
                 }),

@@ -119,12 +119,12 @@ def test_django_template_exception_no_multiproc(start_method):
             ).wait_for_response()
             exception = resp_exception_info.body
             assert exception == some.dict.containing({
-                'exceptionId': some.such_that(lambda s: s.endswith('TemplateSyntaxError')),
+                'exceptionId': some.str.such_that(lambda s: s.endswith('TemplateSyntaxError')),
                 'breakMode': 'always',
-                'description': some.such_that(lambda s: s.find('doesnotexist') > -1),
+                'description': some.str.such_that(lambda s: s.find('doesnotexist') > -1),
                 'details': some.dict_with({
-                    'message': some.such_that(lambda s: s.endswith('doesnotexist') > -1),
-                    'typeName': some.such_that(lambda s: s.endswith('TemplateSyntaxError')),
+                    'message': some.str.such_that(lambda s: s.endswith('doesnotexist') > -1),
+                    'typeName': some.str.such_that(lambda s: s.endswith('TemplateSyntaxError')),
                 })
             })
 
@@ -171,7 +171,7 @@ def test_django_exception_no_multiproc(ex_type, start_method):
             thread_stopped = session.wait_for_next(Event('stopped', some.dict.containing({'reason': 'exception'})))
             assert thread_stopped == Event('stopped', some.dict.containing({
                 'reason': 'exception',
-                'text': some.such_that(lambda s: s.endswith('ArithmeticError')),
+                'text': some.str.such_that(lambda s: s.endswith('ArithmeticError')),
                 'description': 'Hello'
             }))
 
@@ -182,14 +182,14 @@ def test_django_exception_no_multiproc(ex_type, start_method):
             ).wait_for_response()
             exception = resp_exception_info.body
             assert exception == {
-                'exceptionId': some.such_that(lambda s: s.endswith('ArithmeticError')),
+                'exceptionId': some.str.such_that(lambda s: s.endswith('ArithmeticError')),
                 'breakMode': 'always',
                 'description': 'Hello',
                 'details': {
                     'message': 'Hello',
-                    'typeName': some.such_that(lambda s: s.endswith('ArithmeticError')),
+                    'typeName': some.str.such_that(lambda s: s.endswith('ArithmeticError')),
                     'source': some.path(DJANGO1_MANAGE),
-                    'stackTrace': some.such_that(lambda s: True),
+                    'stackTrace': some.str.such_that(lambda s: True),
                 }
             }
 

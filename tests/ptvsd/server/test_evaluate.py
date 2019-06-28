@@ -52,14 +52,14 @@ def test_variables_and_evaluate(pyfile, start_method, run_as):
         assert b_variables[0] == {
             'type': 'int',
             'value': '1',
-            'name': some.such_that(lambda x: x.find('one') > 0),
+            'name': some.str.such_that(lambda x: x.find('one') > 0),
             'evaluateName': "b['one']",
             'variablesReference': 0,
         }
         assert b_variables[1] == {
             'type': 'int',
             'value': '2',
-            'name': some.such_that(lambda x: x.find('two') > 0),
+            'name': some.str.such_that(lambda x: x.find('two') > 0),
             'evaluateName': "b['two']",
             'variablesReference': 0,
         }
@@ -252,7 +252,7 @@ def test_return_values(pyfile, start_method, run_as):
         'value': "'did something'",
         'type': 'str',
         'presentationHint': some.dict.containing({
-            'attributes': some.such_that(lambda x: 'readOnly' in x)
+            'attributes': some.str.such_that(lambda x: 'readOnly' in x)
         }),
     })
 
@@ -261,7 +261,7 @@ def test_return_values(pyfile, start_method, run_as):
         'value': "'did more things'",
         'type': 'str',
         'presentationHint': some.dict.containing({
-            'attributes': some.such_that(lambda x: 'readOnly' in x)
+            'attributes': some.str.such_that(lambda x: 'readOnly' in x)
         }),
     })
 
