@@ -17,17 +17,14 @@ def test_variables_and_evaluate(pyfile, start_method, run_as):
         a = 1
         b = {"one": 1, "two": 2}
         c = 3
-        print([a, b, c])
-
-    bp_line = 6
-    bp_file = code_to_debug
+        print([a, b, c]) # @bp
 
     with debug.Session() as session:
         session.initialize(
-            target=(run_as, bp_file),
+            target=(run_as, code_to_debug),
             start_method=start_method,
         )
-        session.set_breakpoints(bp_file, [bp_line])
+        session.set_breakpoints(code_to_debug, [code_to_debug.lines["bp"]])
         session.start_debugging()
         hit = session.wait_for_thread_stopped()
 
@@ -177,17 +174,14 @@ def test_variable_sort(pyfile, start_method, run_as):
         __c_test = 23  # noqa
         __c_test__ = 24  # noqa
         d = 3  # noqa
-        print('done')
-
-    bp_line = 15
-    bp_file = code_to_debug
+        print('done') # @bp
 
     with debug.Session() as session:
         session.initialize(
-            target=(run_as, bp_file),
+            target=(run_as, code_to_debug),
             start_method=start_method,
         )
-        session.set_breakpoints(bp_file, [bp_line])
+        session.set_breakpoints(code_to_debug, [code_to_debug.lines["bp"]])
         session.start_debugging()
         hit = session.wait_for_thread_stopped()
 
@@ -253,9 +247,6 @@ def test_return_values(pyfile, start_method, run_as):
         my_func()
         print('done')
 
-    line_numbers = get_marked_line_numbers(code_to_debug)
-    print(line_numbers)
-
     expected1 = some.dict.containing({
         'name': '(return) MyClass.do_something',
         'value': "'did something'",
@@ -280,7 +271,7 @@ def test_return_values(pyfile, start_method, run_as):
             start_method=start_method,
             debug_options=['ShowReturnValue'],
         )
-        session.set_breakpoints(code_to_debug, [line_numbers['bp']])
+        session.set_breakpoints(code_to_debug, [code_to_debug.lines['bp']])
         session.start_debugging()
         hit = session.wait_for_thread_stopped()
 
@@ -370,15 +361,12 @@ def test_hex_numbers(pyfile, start_method, run_as):
         d = {(1, 10, 100): (10000, 100000, 100000)}
         print((a, b, c, d))  # @bp
 
-    line_numbers = get_marked_line_numbers(code_to_debug)
-    print(line_numbers)
-
     with debug.Session() as session:
         session.initialize(
             target=(run_as, code_to_debug),
             start_method=start_method,
         )
-        session.set_breakpoints(code_to_debug, [line_numbers['bp']])
+        session.set_breakpoints(code_to_debug, [code_to_debug.lines['bp']])
         session.start_debugging()
         hit = session.wait_for_thread_stopped()
 

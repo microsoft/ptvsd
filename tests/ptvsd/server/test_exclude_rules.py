@@ -4,10 +4,10 @@
 
 from __future__ import absolute_import, print_function, unicode_literals
 
-from os import path
+import os.path
 import pytest
 
-from tests import debug
+from tests import debug, test_data
 from tests.patterns import some
 
 
@@ -25,24 +25,22 @@ def test_exceptions_and_exclude_rules(pyfile, start_method, run_as, scenario, ex
 
         @pyfile
         def code_to_debug():
-            from dbgimporter import import_and_enable_debugger
-            import_and_enable_debugger()
+            import debug_me # noqa
             raise RuntimeError('unhandled error')  # @raise_line
 
     elif exception_type == 'SysExit':
 
         @pyfile
         def code_to_debug():
-            from dbgimporter import import_and_enable_debugger
+            import debug_me # noqa
             import sys
-            import_and_enable_debugger()
             sys.exit(1)  # @raise_line
 
     else:
         raise AssertionError('Unexpected exception_type: %s' % (exception_type,))
 
     if scenario == 'exclude_by_name':
-        rules = [{'path': '**/' + path.basename(code_to_debug), 'include': False}]
+        rules = [{'path': '**/' + os.path.basename(code_to_debug), 'include': False}]
     elif scenario == 'exclude_by_dir':
         rules = [{'path': os.path.dirname(code_to_debug), 'include': False}]
     else:
@@ -76,10 +74,8 @@ def test_exceptions_and_partial_exclude_rules(pyfile, start_method, run_as, scen
 
     @pyfile
     def code_to_debug():
-        from dbgimporter import import_and_enable_debugger
-        import_and_enable_debugger()
-
-        import backchannel
+        import debug_me # noqa
+        from debug_me import backchannel
         import sys
         json = backchannel.read_json()
         call_me_back_dir = json['call_me_back_dir']
@@ -93,12 +89,12 @@ def test_exceptions_and_partial_exclude_rules(pyfile, start_method, run_as, scen
         call_me_back.call_me_back(call_func)  # @call_me_back_line
         print('done')
 
-    line_numbers = get_marked_line_numbers(code_to_debug)
-    call_me_back_dir = get_test_root('call_me_back')
+    line_numbers = code_to_debug.lines
+    call_me_back_dir = test_data / 'call_me_back'
 
     if scenario == 'exclude_code_to_debug':
         rules = [
-            {'path': '**/' + path.basename(code_to_debug), 'include': False}
+            {'path': '**/' + os.path.basename(code_to_debug), 'include': False}
         ]
     elif scenario == 'exclude_callback_dir':
         rules = [
@@ -135,13 +131,13 @@ def test_exceptions_and_partial_exclude_rules(pyfile, start_method, run_as, scen
             assert frames[0] == some.dict.containing({
                 'line': 2,
                 'source': some.dict.containing({
-                    'path': Path(os.path.join(call_me_back_dir, 'call_me_back.py'))
+                    'path': some.path(os.path.join(call_me_back_dir, 'call_me_back.py'))
                 })
             })
             # assert frames[1] == some.dict.containing({ -- filtered out
             #     'line': line_numbers['call_me_back_line'],
             #     'source': some.dict.containing({
-            #         'path': Path(code_to_debug)
+            #         'path': some.path(code_to_debug)
             #     })
             # })
             # 'continue' should terminate the debuggee
@@ -153,7 +149,7 @@ def test_exceptions_and_partial_exclude_rules(pyfile, start_method, run_as, scen
             # Stop at handled raise_line
             hit = session.wait_for_thread_stopped(reason='exception')
             frames = hit.stacktrace.body['stackFrames']
-            assert [(frame['name'], path.basename(frame['source']['path'])) for frame in frames] == [
+            assert [(frame['name'], os.path.basename(frame['source']['path'])) for frame in frames] == [
                 ('call_func', 'code_to_debug.py'),
                 # ('call_me_back', 'call_me_back.py'), -- filtered out
                 ('<module>', 'code_to_debug.py'),
@@ -161,7 +157,7 @@ def test_exceptions_and_partial_exclude_rules(pyfile, start_method, run_as, scen
             assert frames[0] == some.dict.containing({
                 'line': line_numbers['raise_line'],
                 'source': some.dict.containing({
-                    'path': Path(code_to_debug)
+                    'path': some.path(code_to_debug)
                 })
             })
             session.send_request('continue').wait_for_response()
@@ -169,13 +165,13 @@ def test_exceptions_and_partial_exclude_rules(pyfile, start_method, run_as, scen
             # Stop at handled call_me_back_line
             hit = session.wait_for_thread_stopped(reason='exception')
             frames = hit.stacktrace.body['stackFrames']
-            assert [(frame['name'], path.basename(frame['source']['path'])) for frame in frames] == [
+            assert [(frame['name'], os.path.basename(frame['source']['path'])) for frame in frames] == [
                 ('<module>', 'code_to_debug.py'),
             ]
             assert frames[0] == some.dict.containing({
                 'line': line_numbers['call_me_back_line'],
                 'source': some.dict.containing({
-                    'path': Path(code_to_debug)
+                    'path': some.path(code_to_debug)
                 })
             })
             session.send_request('continue').wait_for_response()
@@ -183,7 +179,7 @@ def test_exceptions_and_partial_exclude_rules(pyfile, start_method, run_as, scen
             # Stop at unhandled
             hit = session.wait_for_thread_stopped(reason='exception')
             frames = hit.stacktrace.body['stackFrames']
-            assert [(frame['name'], path.basename(frame['source']['path'])) for frame in frames] == [
+            assert [(frame['name'], os.path.basename(frame['source']['path'])) for frame in frames] == [
                 ('call_func', 'code_to_debug.py'),
                 # ('call_me_back', 'call_me_back.py'), -- filtered out
                 ('<module>', 'code_to_debug.py'),
@@ -192,7 +188,7 @@ def test_exceptions_and_partial_exclude_rules(pyfile, start_method, run_as, scen
             assert frames[0] == some.dict.containing({
                 'line': line_numbers['raise_line'],
                 'source': some.dict.containing({
-                    'path': Path(code_to_debug)
+                    'path': some.path(code_to_debug)
                 })
             })
             session.send_request('continue').wait_for_response(freeze=False)

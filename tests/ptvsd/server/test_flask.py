@@ -8,7 +8,7 @@ import platform
 import pytest
 import sys
 
-from tests import debug, net, test_data
+from tests import code, debug, net, test_data
 from tests.patterns import some
 from tests.timeline import Event
 
@@ -20,6 +20,7 @@ FLASK1_BAD_TEMPLATE = FLASK1_ROOT / 'templates' / 'bad.html'
 FLASK_PORT = net.get_test_server_port(7000, 7100)
 
 flask_server = net.WebServer(FLASK_PORT)
+app_py_lines = code.get_marked_line_numbers(FLASK1_APP)
 
 
 def _initialize_flask_session_no_multiproc(session, start_method):
@@ -52,7 +53,7 @@ def _initialize_flask_session_no_multiproc(session, start_method):
 @pytest.mark.timeout(60)
 def test_flask_breakpoint_no_multiproc(bp_target, start_method):
     bp_file, bp_line, bp_name = {
-        'code': (FLASK1_APP, 11, 'home'),
+        'code': (FLASK1_APP, app_py_lines["bphome"], 'home'),
         'template': (FLASK1_TEMPLATE, 8, 'template')
     }[bp_target]
 
@@ -286,7 +287,7 @@ def test_flask_breakpoint_multiproc(start_method):
             expected_returncode=some.int,  # No clean way to kill Flask server
         )
 
-        bp_line = 11
+        bp_line = app_py_lines["bphome"]
         bp_var_content = 'Flask-Jinja-Test'
         parent_session.set_breakpoints(FLASK1_APP, [bp_line])
         parent_session.start_debugging()

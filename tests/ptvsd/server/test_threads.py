@@ -38,14 +38,13 @@ def test_thread_count(pyfile, start_method, run_as, count):
         print('check here')  # @bp
         stop = True
 
-    line_numbers = get_marked_line_numbers(code_to_debug)
     with debug.Session() as session:
         session.initialize(
             target=(run_as, code_to_debug),
             start_method=start_method,
             program_args=[str(count)],
         )
-        session.set_breakpoints(code_to_debug, [line_numbers['bp']])
+        session.set_breakpoints(code_to_debug, [code_to_debug.lines['bp']])
         session.start_debugging()
         session.wait_for_thread_stopped()
         resp_threads = session.send_request('threads').wait_for_response()
@@ -94,14 +93,12 @@ def test_debug_this_thread(pyfile, start_method, run_as):
 
         event.wait()
 
-    line_numbers = get_marked_line_numbers(code_to_debug)
-
     with debug.Session() as session:
         session.initialize(
             target=(run_as, code_to_debug),
             start_method=start_method,
         )
-        session.set_breakpoints(code_to_debug, [line_numbers['bp']])
+        session.set_breakpoints(code_to_debug, [code_to_debug.lines['bp']])
         session.start_debugging()
 
         session.wait_for_thread_stopped()

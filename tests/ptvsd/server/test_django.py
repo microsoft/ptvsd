@@ -5,7 +5,7 @@
 from __future__ import absolute_import, print_function, unicode_literals
 
 import pytest
-from tests import debug, net, test_data
+from tests import code, debug, net, test_data
 from tests.patterns import some
 from tests.timeline import Event
 from tests.net import find_http_url
@@ -18,6 +18,7 @@ DJANGO1_BAD_TEMPLATE = DJANGO1_ROOT / 'templates' / 'bad.html'
 DJANGO_PORT = net.get_test_server_port(8000, 8100)
 
 django = net.WebServer(DJANGO_PORT)
+app_py_lines = code.get_marked_line_numbers(DJANGO1_MANAGE)
 
 
 @pytest.mark.parametrize('bp_target', ['code', 'template'])
@@ -25,7 +26,7 @@ django = net.WebServer(DJANGO_PORT)
 @pytest.mark.timeout(60)
 def test_django_breakpoint_no_multiproc(start_method, bp_target):
     bp_file, bp_line, bp_name = {
-        'code': (DJANGO1_MANAGE, 40, 'home'),
+        'code': (DJANGO1_MANAGE, app_py_lines["bphome"], 'home'),
         'template': (DJANGO1_TEMPLATE, 8, 'Django Template'),
     }[bp_target]
 
@@ -232,7 +233,7 @@ def test_django_breakpoint_multiproc(start_method):
             expected_returncode=some.int,  # No clean way to kill Django server
         )
 
-        bp_line = 40
+        bp_line = app_py_lines["bphome"]
         bp_var_content = 'Django-Django-Test'
         parent_session.set_breakpoints(DJANGO1_MANAGE, [bp_line])
         parent_session.start_debugging()

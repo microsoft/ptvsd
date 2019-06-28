@@ -31,8 +31,8 @@ expected_at_line = {
 }
 
 
-@pytest.mark.parametrize('bp_line', sorted(expected_at_line.keys()))
-def test_completions_scope(pyfile, bp_line, start_method, run_as):
+@pytest.mark.parametrize('bp_label', sorted(expected_at_line.keys()))
+def test_completions_scope(pyfile, bp_label, start_method, run_as):
     @pyfile
     def code_to_debug():
         import debug_me  # noqa
@@ -53,7 +53,7 @@ def test_completions_scope(pyfile, bp_line, start_method, run_as):
         someFunction('value')
         print('done')  # @done
 
-    expected = expected_at_line[bp_line]
+    expected = expected_at_line[bp_label]
 
     with debug.Session() as session:
         session.initialize(
@@ -62,8 +62,7 @@ def test_completions_scope(pyfile, bp_line, start_method, run_as):
             ignore_unobserved=[Event('stopped')],
         )
 
-        line_numbers = get_marked_line_numbers(code_to_debug)
-        session.set_breakpoints(code_to_debug, [line_numbers[bp_line]])
+        session.set_breakpoints(code_to_debug, [code_to_debug.lines[bp_label]])
         session.start_debugging()
 
         thread_stopped = session.wait_for_next(Event('stopped', some.dict.containing({'reason': 'breakpoint'})))
@@ -103,16 +102,12 @@ def test_completions_cases(pyfile, start_method, run_as):
         c = 3
         print([a, b, c])  # @break
 
-    line_numbers = get_marked_line_numbers(code_to_debug)
-    bp_line = line_numbers['break']
-    bp_file = code_to_debug
-
     with debug.Session() as session:
         session.initialize(
-            target=(run_as, bp_file),
+            target=(run_as, code_to_debug),
             start_method=start_method,
         )
-        session.set_breakpoints(bp_file, [bp_line])
+        session.set_breakpoints(code_to_debug, [code_to_debug.lines["break"]])
         session.start_debugging()
         hit = session.wait_for_thread_stopped()
 

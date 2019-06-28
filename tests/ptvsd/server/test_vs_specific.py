@@ -23,18 +23,17 @@ def test_stack_format(pyfile, start_method, run_as, module, line):
 
     @pyfile
     def test_module():
-        # import_and_enable_debugger()
+        import debug_me # noqa
         def do_something():
-            print('break here')
+            print('break here') # @bp
 
-    bp_line = 3
     with debug.Session() as session:
         session.initialize(
             target=(run_as, code_to_debug),
             start_method=start_method,
             ignore_unobserved=[Event('stopped')],
         )
-        session.set_breakpoints(test_module, [bp_line])
+        session.set_breakpoints(test_module, [code_to_debug.lines["bp"]])
         session.start_debugging()
 
         hit = session.wait_for_thread_stopped()
@@ -45,7 +44,7 @@ def test_stack_format(pyfile, start_method, run_as, module, line):
         assert resp_stacktrace.body['totalFrames'] > 0
         frames = resp_stacktrace.body['stackFrames']
 
-        assert line == (frames[0]['name'].find(': ' + str(bp_line)) > -1)
+        assert line == (frames[0]['name'].find(': ' + str(code_to_debug.lines["bp"])) > -1)
 
         assert module == (frames[0]['name'].find('test_module') > -1)
 
@@ -56,41 +55,37 @@ def test_stack_format(pyfile, start_method, run_as, module, line):
 def test_module_events(pyfile, start_method, run_as):
     @pyfile
     def module2():
-        # import_and_enable_debugger()
         def do_more_things():
-            print('done')
+            print('done') # @bp
 
     @pyfile
     def module1():
-        # import_and_enable_debugger()
         import module2
         def do_something():
             module2.do_more_things()
 
     @pyfile
     def test_code():
-        from dbgimporter import import_and_enable_debugger
-        import_and_enable_debugger()
+        import debug_me
         from module1 import do_something
         do_something()
 
-    bp_line = 3
     with debug.Session() as session:
         session.initialize(
             target=(run_as, test_code),
             start_method=start_method,
             ignore_unobserved=[Event('stopped')],
         )
-        session.set_breakpoints(module2, [bp_line])
+        session.set_breakpoints(module2, [module2.lines["bp"]])
         session.start_debugging()
 
         session.wait_for_thread_stopped()
         modules = session.all_occurrences_of(Event('module'))
         modules = [(m.body['module']['name'], m.body['module']['path']) for m in modules]
         assert modules[:3] == [
-            ('module2', Path(module2)),
-            ('module1', Path(module1)),
-            ('__main__', Path(test_code)),
+            ('module2', some.path(module2)),
+            ('module1', some.path(module1)),
+            ('__main__', some.path(test_code)),
         ]
 
         session.send_request('continue').wait_for_response(freeze=False)

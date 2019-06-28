@@ -28,9 +28,7 @@ def test_stop_on_entry(pyfile, start_method, run_as, with_bp):
             use_backchannel=True,
         )
         if bool(with_bp):
-            line_numbers = get_marked_line_numbers(code_to_debug)
-            bp_line = line_numbers['bp']
-            session.set_breakpoints(code_to_debug, [bp_line])
+            session.set_breakpoints(code_to_debug, [code_to_debug.lines["bp"]])
 
         session.start_debugging()
 
@@ -38,18 +36,18 @@ def test_stop_on_entry(pyfile, start_method, run_as, with_bp):
             thread_stopped, resp_stacktrace, thread_id, _ = session.wait_for_thread_stopped(reason='breakpoint')
             frames = resp_stacktrace.body['stackFrames']
             assert frames[0]['line'] == 1
-            assert frames[0]['source']['path'] == Path(code_to_debug)
+            assert frames[0]['source']['path'] == some.path(code_to_debug)
 
             session.send_request('next', {'threadId': thread_id}).wait_for_response()
             thread_stopped, resp_stacktrace, thread_id, _ = session.wait_for_thread_stopped(reason='step')
             frames = resp_stacktrace.body['stackFrames']
             assert frames[0]['line'] == 3
-            assert frames[0]['source']['path'] == Path(code_to_debug)
+            assert frames[0]['source']['path'] == some.path(code_to_debug)
         else:
             thread_stopped, resp_stacktrace, tid, _ = session.wait_for_thread_stopped(reason='entry')
             frames = resp_stacktrace.body['stackFrames']
             assert frames[0]['line'] == 1
-            assert frames[0]['source']['path'] == Path(code_to_debug)
+            assert frames[0]['source']['path'] == some.path(code_to_debug)
 
         session.send_request('continue').wait_for_response(freeze=False)
         session.wait_for_termination()

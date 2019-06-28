@@ -10,7 +10,7 @@ import shutil
 import sys
 import traceback
 
-from tests import debug
+from tests import debug, test_data
 from tests.patterns import some
 
 
@@ -43,8 +43,10 @@ def test_client_ide_from_path_mapping_linux_backend(pyfile, tmpdir, start_method
         )
         if invalid_os_type:
             session.debug_options.append('CLIENT_OS_TYPE=INVALID')
-        bp_line = get_marked_line_numbers(code_to_debug)['break_here']
-        session.set_breakpoints('c:\\temp\\src\\' + os.path.basename(code_to_debug), [bp_line])
+        session.set_breakpoints(
+            'c:\\temp\\src\\' + os.path.basename(code_to_debug),
+            [code_to_debug.lines['break_here']]
+        )
         session.start_debugging()
         hit = session.wait_for_thread_stopped('breakpoint')
         frames = hit.stacktrace.body['stackFrames']
@@ -61,14 +63,11 @@ def test_with_dot_remote_root(pyfile, tmpdir, start_method, run_as):
 
     @pyfile
     def code_to_debug():
-        from dbgimporter import import_and_enable_debugger
-        import_and_enable_debugger()
+        from debug_me import backchannel
         import os
-        import backchannel
         backchannel.write_json(os.path.abspath(__file__))
-        print('done')
+        print('done') # @bp
 
-    bp_line = 6
     path_local = tmpdir.mkdir('local').join('code_to_debug.py').strpath
     path_remote = tmpdir.mkdir('remote').join('code_to_debug.py').strpath
 
@@ -89,16 +88,16 @@ def test_with_dot_remote_root(pyfile, tmpdir, start_method, run_as):
             }],
             cwd=dir_remote,
         )
-        session.set_breakpoints(path_remote, [bp_line])
+        session.set_breakpoints(path_remote, [code_to_debug["bp"]])
         session.start_debugging()
         hit = session.wait_for_thread_stopped('breakpoint')
         frames = hit.stacktrace.body['stackFrames']
         print('Local Path: ' + path_local)
         print('Frames: ' + str(frames))
-        assert frames[0]['source']['path'] == Path(path_local)
+        assert frames[0]['source']['path'] == some.path(path_local)
 
         remote_code_path = session.read_json()
-        assert path_remote == Path(remote_code_path)
+        assert path_remote == some.path(remote_code_path)
 
         session.send_request('continue').wait_for_response(freeze=False)
         session.wait_for_exit()
@@ -108,11 +107,10 @@ def test_with_path_mappings(pyfile, tmpdir, start_method, run_as):
 
     @pyfile
     def code_to_debug():
-        from dbgimporter import import_and_enable_debugger
-        import_and_enable_debugger()
+        from debug_me import backchannel
         import os
         import sys
-        import backchannel
+        
         json = backchannel.read_json()
         call_me_back_dir = json['call_me_back_dir']
         sys.path.append(call_me_back_dir)
@@ -120,13 +118,12 @@ def test_with_path_mappings(pyfile, tmpdir, start_method, run_as):
         import call_me_back
 
         def call_func():
-            print('break here')
+            print('break here') # @bp
 
         backchannel.write_json(os.path.abspath(__file__))
         call_me_back.call_me_back(call_func)
         print('done')
 
-    bp_line = 13
     path_local = tmpdir.mkdir('local').join('code_to_debug.py').strpath
     path_remote = tmpdir.mkdir('remote').join('code_to_debug.py').strpath
 
@@ -136,7 +133,7 @@ def test_with_path_mappings(pyfile, tmpdir, start_method, run_as):
     shutil.copyfile(code_to_debug, path_local)
     shutil.copyfile(code_to_debug, path_remote)
 
-    call_me_back_dir = get_test_root('call_me_back')
+    call_me_back_dir = test_data / 'call_me_back'
 
     with debug.Session() as session:
         session.initialize(
@@ -148,13 +145,13 @@ def test_with_path_mappings(pyfile, tmpdir, start_method, run_as):
                 'remoteRoot': dir_remote,
             }],
         )
-        session.set_breakpoints(path_remote, [bp_line])
+        session.set_breakpoints(path_remote, [code_to_debug.lines["bp"]])
         session.start_debugging()
         session.write_json({'call_me_back_dir': call_me_back_dir})
         hit = session.wait_for_thread_stopped('breakpoint')
 
         frames = hit.stacktrace.body['stackFrames']
-        assert frames[0]['source']['path'] == Path(path_local)
+        assert frames[0]['source']['path'] == some.path(path_local)
         source_reference = frames[0]['source']['sourceReference']
         assert source_reference == 0  # Mapped files should be found locally.
 
@@ -175,7 +172,7 @@ def test_with_path_mappings(pyfile, tmpdir, start_method, run_as):
         assert "def call_me_back(callback):" in (resp_source.body['content'])
 
         remote_code_path = session.read_json()
-        assert path_remote == Path(remote_code_path)
+        assert path_remote == some.path(remote_code_path)
 
         session.send_request('continue').wait_for_response(freeze=False)
         session.wait_for_exit()

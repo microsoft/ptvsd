@@ -28,8 +28,7 @@ def test_vsc_exception_options_raise_with_except(pyfile, start_method, run_as, r
 
         raise_with_except()
 
-    line_numbers = get_marked_line_numbers(code_to_debug)
-    ex_line = line_numbers['exception_line']
+    ex_line = code_to_debug.lines['exception_line']
     filters = []
     filters += ['raised'] if raised == 'raisedOn' else []
     filters += ['uncaught'] if uncaught == 'uncaughtOn' else []
@@ -89,8 +88,7 @@ def test_vsc_exception_options_raise_without_except(pyfile, start_method, run_as
 
         raise_without_except()
 
-    line_numbers = get_marked_line_numbers(code_to_debug)
-    ex_line = line_numbers['exception_line']
+    ex_line = code_to_debug.lines['exception_line']
     filters = []
     filters += ['raised'] if raised == 'raisedOn' else []
     filters += ['uncaught'] if uncaught == 'uncaughtOn' else []
@@ -181,7 +179,7 @@ def test_systemexit(pyfile, start_method, run_as, raised, uncaught, zero, exit_c
             pass
         sys.exit(exit_code)  # @unhandled
 
-    line_numbers = get_marked_line_numbers(code_to_debug)
+    line_numbers = code_to_debug.lines
 
     filters = []
     if raised:
@@ -244,8 +242,7 @@ def test_raise_exception_options(pyfile, start_method, run_as, exceptions, break
 
         @pyfile
         def code_to_debug():
-            from dbgimporter import import_and_enable_debugger
-            import_and_enable_debugger()
+            import debug_me # noqa
             raise AssertionError()  # @AssertionError
 
         if break_mode == 'never':
@@ -266,8 +263,7 @@ def test_raise_exception_options(pyfile, start_method, run_as, exceptions, break
 
         @pyfile
         def code_to_debug():
-            from dbgimporter import import_and_enable_debugger
-            import_and_enable_debugger()
+            import debug_me # noqa
             try:
                 raise RuntimeError()  # @RuntimeError
             except RuntimeError:
@@ -280,8 +276,6 @@ def test_raise_exception_options(pyfile, start_method, run_as, exceptions, break
                 raise IndexError()  # @IndexError
             except IndexError:
                 pass
-
-    line_numbers = get_marked_line_numbers(code_to_debug)
 
     with debug.Session() as session:
         session.initialize(
@@ -308,7 +302,7 @@ def test_raise_exception_options(pyfile, start_method, run_as, exceptions, break
             hit = session.wait_for_thread_stopped(reason='exception')
             frames = hit.stacktrace.body['stackFrames']
             assert frames[0]['source']['path'].endswith('code_to_debug.py')
-            assert frames[0]['line'] == line_numbers[expected_exception]
+            assert frames[0]['line'] == code_to_debug.lines[expected_exception]
             session.send_request('continue').wait_for_response(freeze=False)
 
         session.wait_for_exit()
@@ -319,8 +313,7 @@ def test_success_exitcodes(pyfile, start_method, run_as, exit_code):
 
     @pyfile
     def code_to_debug():
-        from dbgimporter import import_and_enable_debugger
-        import_and_enable_debugger()
+        import debug_me # noqa
         import sys
         exit_code = eval(sys.argv[1])
         print('sys.exit(%r)' % (exit_code,))
@@ -351,8 +344,7 @@ def test_exception_stack(pyfile, start_method, run_as, max_frames):
 
     @pyfile
     def code_to_debug():
-        from dbgimporter import import_and_enable_debugger
-        import_and_enable_debugger()
+        import debug_me # noqa
 
         def do_something(n):
             if n <= 0:
@@ -379,7 +371,6 @@ def test_exception_stack(pyfile, start_method, run_as, max_frames):
         max_expected_lines = 21
         args = {'maxExceptionStackFrames': 10}
 
-    line_numbers = get_marked_line_numbers(code_to_debug)
     with debug.Session() as session:
         session.initialize(
             target=(run_as, code_to_debug),
@@ -394,7 +385,7 @@ def test_exception_stack(pyfile, start_method, run_as, max_frames):
 
         hit = session.wait_for_thread_stopped(reason='exception')
         frames = hit.stacktrace.body['stackFrames']
-        assert frames[0]['line'] == line_numbers['unhandled']
+        assert frames[0]['line'] == code_to_debug.lines['unhandled']
 
         resp_exc_info = session.send_request('exceptionInfo', {
             'threadId': hit.thread_id

@@ -105,30 +105,33 @@ def test_reattach(pyfile, start_method, run_as):
         session2.wait_for_disconnect()
 
 
+@pytest.mark.parametrize('start_method', ['attach_pid'])
 @pytest.mark.parametrize('run_as', ['file', 'module', 'code'])
 @pytest.mark.skip(reason='Enable after #846, #863 and #1144 are fixed')
-def test_attaching_by_pid(pyfile, run_as):
+def test_attaching_by_pid(pyfile, run_as, start_method):
+
     @pyfile
     def code_to_debug():
-        import debug_me  # noqa
+        # import_and_enable_debugger()
         import time
+
         def do_something(i):
             time.sleep(0.1)
-            print(i)
+            print(i)  # @break
+
         for i in range(100):
             do_something(i)
 
-    bp_line = 5
     with debug.Session() as session:
         session.initialize(
             target=(run_as, code_to_debug),
-            start_method='attach_pid',
+            start_method=start_method,
         )
-        session.set_breakpoints(code_to_debug, [bp_line])
+        session.set_breakpoints(code_to_debug, [code_to_debug.lines['break']])
         session.start_debugging()
         hit = session.wait_for_thread_stopped()
         frames = hit.stacktrace.body['stackFrames']
-        assert bp_line == frames[0]['line']
+        assert code_to_debug.lines['break'] == frames[0]['line']
 
         # remove breakpoint and continue
         session.set_breakpoints(code_to_debug, [])

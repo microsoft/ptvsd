@@ -17,9 +17,8 @@ def test_continue_on_disconnect_for_attach(pyfile, start_method, run_as):
     @pyfile
     def code_to_debug():
         from debug_me import backchannel
-        backchannel.write_json('continued')
+        backchannel.write_json('continued') # @bp
 
-    bp_line = 4
     with debug.Session() as session:
         session.initialize(
                 target=(run_as, code_to_debug),
@@ -27,11 +26,11 @@ def test_continue_on_disconnect_for_attach(pyfile, start_method, run_as):
                 ignore_unobserved=[Event('exited'), Event('terminated')],
                 use_backchannel=True,
             )
-        session.set_breakpoints(code_to_debug, [bp_line])
+        session.set_breakpoints(code_to_debug, [code_to_debug.lines["bp"]])
         session.start_debugging()
         hit = session.wait_for_thread_stopped('breakpoint')
         frames = hit.stacktrace.body['stackFrames']
-        assert frames[0]['line'] == bp_line
+        assert frames[0]['line'] == code_to_debug.lines["bp"]
         session.send_request('disconnect').wait_for_response()
         session.wait_for_disconnect()
         assert 'continued' == session.read_json()
@@ -45,12 +44,11 @@ def test_exit_on_disconnect_for_launch(pyfile, start_method, run_as):
         import debug_me  # noqa
         import os.path
 
-        fp = os.join(os.path.dirname(os.path.abspath(__file__)), 'here.txt')
+        fp = os.join(os.path.dirname(os.path.abspath(__file__)), 'here.txt') # @bp
         # should not execute this
         with open(fp, 'w') as f:
             print('Should not continue after disconnect on launch', file=f)
 
-    bp_line = 4
     with debug.Session() as session:
         session.initialize(
                 target=(run_as, code_to_debug),
@@ -58,11 +56,11 @@ def test_exit_on_disconnect_for_launch(pyfile, start_method, run_as):
                 use_backchannel=True,
                 expected_returncode=some.int,
             )
-        session.set_breakpoints(code_to_debug, [bp_line])
+        session.set_breakpoints(code_to_debug, code_to_debug.lines["bp"])
         session.start_debugging()
         hit = session.wait_for_thread_stopped('breakpoint')
         frames = hit.stacktrace.body['stackFrames']
-        assert frames[0]['line'] == bp_line
+        assert frames[0]['line'] == code_to_debug.lines["bp"]
         session.send_request('disconnect').wait_for_response()
         session.wait_for_exit()
         fp = os.join(os.path.dirname(os.path.abspath(code_to_debug)), 'here.txt')

@@ -25,7 +25,7 @@ def test_set_next_statement(pyfile, start_method, run_as):
         print(3)  # @outer3
         func()
 
-    line_numbers = get_marked_line_numbers(code_to_debug)
+    line_numbers = code_to_debug.lines
     print(line_numbers)
 
     with debug.Session() as session:

@@ -38,14 +38,13 @@ def test_with_tab_in_output(pyfile, start_method, run_as):
         # Break here so we are sure to get the output event.
         a = 1  # @bp1
 
-    line_numbers = get_marked_line_numbers(code_to_debug)
     with debug.Session() as session:
         session.initialize(
             target=(run_as, code_to_debug),
             start_method=start_method,
         )
 
-        session.set_breakpoints(code_to_debug, [line_numbers['bp1']])
+        session.set_breakpoints(code_to_debug, [code_to_debug.lines['bp1']])
         session.start_debugging()
 
         # Breakpoint at the end just to make sure we get all output events.
@@ -70,7 +69,6 @@ def test_redirect_output(pyfile, start_method, run_as, redirect):
 
         print() # @bp1
 
-    line_numbers = get_marked_line_numbers(code_to_debug)
     with debug.Session() as session:
         # By default 'RedirectOutput' is always set. So using this way
         #  to override the default in session.
@@ -80,7 +78,7 @@ def test_redirect_output(pyfile, start_method, run_as, redirect):
             start_method=start_method,
         )
 
-        session.set_breakpoints(code_to_debug, [line_numbers['bp1']])
+        session.set_breakpoints(code_to_debug, [code_to_debug.lines['bp1']])
         session.start_debugging()
 
         # Breakpoint at the end just to make sure we get all output events.
