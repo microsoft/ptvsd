@@ -395,6 +395,7 @@ def test_invalid_breakpoints(pyfile, start_method, run_as):
     def code_to_debug():
         import debug_me  # noqa
 
+        # fmt: off
         b = True
         while b:         # @bp1-expected
             pass         # @bp1-requested
@@ -410,6 +411,7 @@ def test_invalid_breakpoints(pyfile, start_method, run_as):
         print(1,        # @bp4-requested-1
               2, 3,     # @bp4-requested-2
               4, 5, 6)
+        # fmt: on
 
     line_numbers = code_to_debug.lines
     print(line_numbers)
