@@ -6,7 +6,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 import pytest
 
-from tests import debug, test_data
+from tests import code, debug, test_data
 from tests.patterns import some
 from tests.timeline import Event
 
@@ -16,6 +16,7 @@ from tests.timeline import Event
 @pytest.mark.parametrize("break_into", ["break", "pause"])
 def test_attach(run_as, wait_for_attach, is_attached, break_into):
     attach1_py = str(test_data / "attach" / "attach1.py")
+    lines = code.get_marked_line_numbers(attach1_py)
     with debug.Session() as session:
         env = {
             "PTVSD_TEST_HOST": "localhost",
@@ -45,7 +46,7 @@ def test_attach(run_as, wait_for_attach, is_attached, break_into):
         if break_into == "break":
             assert session.read_json() == "break_into_debugger"
             hit = session.wait_for_stop()
-            assert 32 == hit.frames[0]["line"]
+            assert lines["bp"] == hit.frames[0]["line"]
         else:
             # pause test
             session.write_json("pause_test")
