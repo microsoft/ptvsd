@@ -64,23 +64,11 @@ def test_flask_breakpoint_no_multiproc(bp_target, start_method):
         session.set_breakpoints(bp_file, [bp_line])
         session.start_debugging()
 
-        # wait for Flask web server to start
         with flask_server:
             home_request = flask_server.get("/")
 
-            thread_stopped = session.wait_for_next(
-                Event("stopped"), some.dict.containing({"reason": "breakpoint"})
-            )
-            assert thread_stopped.body["threadId"] is not None
-
-            tid = thread_stopped.body["threadId"]
-
-            resp_stacktrace = session.send_request(
-                "stackTrace", arguments={"threadId": tid}
-            ).wait_for_response()
-            assert resp_stacktrace.body["totalFrames"] > 0
-            frames = resp_stacktrace.body["stackFrames"]
-            assert frames[0] == {
+            hit = session.wait_for_stop(reason="breakpoint")
+            assert hit.frames[0] == {
                 "id": some.dap_id,
                 "name": bp_name,
                 "source": {"sourceReference": some.dap_id, "path": some.path(bp_file)},
@@ -88,9 +76,8 @@ def test_flask_breakpoint_no_multiproc(bp_target, start_method):
                 "column": 1,
             }
 
-            fid = frames[0]["id"]
             resp_scopes = session.send_request(
-                "scopes", arguments={"frameId": fid}
+                "scopes", arguments={"frameId": hit.frame_id}
             ).wait_for_response()
             scopes = resp_scopes.body["scopes"]
             assert len(scopes) > 0
@@ -99,9 +86,7 @@ def test_flask_breakpoint_no_multiproc(bp_target, start_method):
                 "variables",
                 arguments={"variablesReference": scopes[0]["variablesReference"]},
             ).wait_for_response()
-            variables = list(
-                v for v in resp_variables.body["variables"] if v["name"] == "content"
-            )
+            variables = [v for v in resp_variables.body["variables"] if v["name"] == "content"]
             assert variables == [
                 {
                     "name": "content",
@@ -202,7 +187,6 @@ def test_flask_exception_no_multiproc(ex_type, start_method):
 
         session.start_debugging()
 
-        # wait for Flask web server to start
         with flask_server:
             web_request = flask_server.get(ex_type)
 
@@ -297,23 +281,11 @@ def test_flask_breakpoint_multiproc(start_method):
             ).wait_for_response()
             child_session.start_debugging()
 
-            # wait for Flask server to start
             with flask_server:
                 web_request = flask_server.get("/")
 
-                thread_stopped = child_session.wait_for_next(
-                    Event("stopped", some.dict.containing({"reason": "breakpoint"}))
-                )
-                assert thread_stopped.body["threadId"] is not None
-
-                tid = thread_stopped.body["threadId"]
-
-                resp_stacktrace = child_session.send_request(
-                    "stackTrace", arguments={"threadId": tid}
-                ).wait_for_response()
-                assert resp_stacktrace.body["totalFrames"] > 0
-                frames = resp_stacktrace.body["stackFrames"]
-                assert frames[0] == {
+                hit = child_session.wait_for_stop(reason="breakpoint")
+                assert hit.frames[0] == {
                     "id": some.dap_id,
                     "name": "home",
                     "source": {
@@ -324,9 +296,8 @@ def test_flask_breakpoint_multiproc(start_method):
                     "column": 1,
                 }
 
-                fid = frames[0]["id"]
                 resp_scopes = child_session.send_request(
-                    "scopes", arguments={"frameId": fid}
+                    "scopes", arguments={"frameId": hit.frames_id}
                 ).wait_for_response()
                 scopes = resp_scopes.body["scopes"]
                 assert len(scopes) > 0
