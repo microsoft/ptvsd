@@ -54,7 +54,7 @@ def test_path_with_unicode(start_method, run_as):
         session.start_debugging()
         hit = session.wait_for_stop("breakpoint")
         assert hit.frames[0]["source"]["path"] == some.path(test_py)
-        assert "ಏನಾದರೂ_ಮಾಡು" == frames[0]["name"]
+        assert "ಏನಾದರೂ_ಮಾಡು" == hit.frames[0]["name"]
 
         session.send_request("continue").wait_for_response(freeze=False)
         session.wait_for_exit()

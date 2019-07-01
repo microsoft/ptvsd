@@ -147,11 +147,11 @@ def test_with_path_mappings(pyfile, tmpdir, start_method, run_as):
         hit = session.wait_for_stop("breakpoint")
 
         assert hit.frames[0]["source"]["path"] == some.path(path_local)
-        source_reference = frames[0]["source"]["sourceReference"]
+        source_reference = hit.frames[0]["source"]["sourceReference"]
         assert source_reference == 0  # Mapped files should be found locally.
 
         assert hit.frames[1]["source"]["path"].endswith("call_me_back.py")
-        source_reference = frames[1]["source"]["sourceReference"]
+        source_reference = hit.frames[1]["source"]["sourceReference"]
         assert source_reference > 0  # Unmapped file should have a source reference.
 
         resp_source = session.send_request(

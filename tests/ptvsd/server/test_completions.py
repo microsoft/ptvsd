@@ -8,7 +8,6 @@ import pytest
 
 from ptvsd.common import messaging
 from tests import debug
-from tests.patterns import some
 from tests.timeline import Event
 
 
