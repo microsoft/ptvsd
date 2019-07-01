@@ -45,7 +45,7 @@ def test_stop_on_entry(pyfile, start_method, run_as, with_bp):
             assert hit.frames[0]["line"] == 1
             assert hit.frames[0]["source"]["path"] == some.path(code_to_debug)
 
-        session.send_request("continue").wait_for_response(freeze=False)
+        session.send_continue()
         session.wait_for_termination()
 
         assert session.read_json() == "done"

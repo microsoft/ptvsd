@@ -135,7 +135,7 @@ def test_exceptions_and_partial_exclude_rules(pyfile, start_method, run_as, scen
             #     })
             # })
             # 'continue' should terminate the debuggee
-            session.send_request("continue").wait_for_response(freeze=False)
+            session.send_continue()
 
             # Note: does not stop at unhandled exception because raise was in excluded file.
 
@@ -189,7 +189,7 @@ def test_exceptions_and_partial_exclude_rules(pyfile, start_method, run_as, scen
                     "source": some.dict.containing({"path": some.path(code_to_debug)}),
                 }
             )
-            session.send_request("continue").wait_for_response(freeze=False)
+            session.send_continue()
         else:
             raise AssertionError("Unexpected scenario: %s" % (scenario,))
 

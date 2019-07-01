@@ -56,7 +56,7 @@ def test_path_with_unicode(start_method, run_as):
         assert hit.frames[0]["source"]["path"] == some.path(test_py)
         assert "ಏನಾದರೂ_ಮಾಡು" == hit.frames[0]["name"]
 
-        session.send_request("continue").wait_for_response(freeze=False)
+        session.send_continue()
         session.wait_for_exit()
 
 
@@ -126,10 +126,10 @@ def test_conditional_breakpoint(pyfile, start_method, run_as, condition_key):
             )
         ]
 
-        session.send_request("continue").wait_for_response(freeze=False)
+        session.send_continue()
         for i in range(1, hits):
             session.wait_for_stop()
-            session.send_request("continue").wait_for_response(freeze=False)
+            session.send_continue()
         session.wait_for_exit()
 
 
@@ -159,12 +159,12 @@ def test_crossfile_breakpoint(pyfile, start_method, run_as):
         assert script2.lines["bp"] == hit.frames[0]["line"]
         assert hit.frames[0]["source"]["path"] == some.path(script2)
 
-        session.send_request("continue").wait_for_response(freeze=False)
+        session.send_continue()
         hit = session.wait_for_stop()
         assert script1.lines["bp"] == hit.frames[0]["line"]
         assert hit.frames[0]["source"]["path"] == some.path(script1)
 
-        session.send_request("continue").wait_for_response(freeze=False)
+        session.send_continue()
         session.wait_for_exit()
 
 
@@ -241,7 +241,7 @@ def test_log_point(pyfile, start_method, run_as):
         hit = session.wait_for_stop()
         assert lines["end"] == hit.frames[0]["line"]
 
-        session.send_request("continue").wait_for_response(freeze=False)
+        session.send_continue()
 
         session.wait_for_exit()
         assert session.get_stderr_as_string() == b""
@@ -309,12 +309,12 @@ def test_condition_with_log_point(pyfile, start_method, run_as):
             )
         ]
 
-        session.send_request("continue").wait_for_response(freeze=False)
+        session.send_continue()
 
         # Breakpoint at the end just to make sure we get all output events.
         hit = session.wait_for_stop()
         assert lines["end"] == hit.frames[0]["line"]
-        session.send_request("continue").wait_for_response(freeze=False)
+        session.send_continue()
 
         session.wait_for_exit()
         assert session.get_stderr_as_string() == b""
@@ -343,7 +343,7 @@ def test_package_launch():
         hit = session.wait_for_stop()
         assert lines["two"] == hit.frames[0]["line"]
 
-        session.send_request("continue").wait_for_response(freeze=False)
+        session.send_continue()
         session.wait_for_exit()
 
 
@@ -371,7 +371,7 @@ def test_add_and_remove_breakpoint(pyfile, start_method, run_as):
 
         # remove breakpoints in file
         session.set_breakpoints(code_to_debug, [])
-        session.send_request("continue").wait_for_response(freeze=False)
+        session.send_continue()
 
         session.wait_for_next(
             Event("output", some.dict.containing({"category": "stdout", "output": "9"}))

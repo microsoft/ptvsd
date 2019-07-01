@@ -59,7 +59,7 @@ def test_client_ide_from_path_mapping_linux_backend(
         json_read = session.read_json()
         assert json_read == {"ide_os": "WINDOWS"}
 
-        session.send_request("continue").wait_for_response(freeze=False)
+        session.send_continue()
         session.wait_for_exit()
 
 
@@ -99,7 +99,7 @@ def test_with_dot_remote_root(pyfile, tmpdir, start_method, run_as):
         remote_code_path = session.read_json()
         assert path_remote == some.path(remote_code_path)
 
-        session.send_request("continue").wait_for_response(freeze=False)
+        session.send_continue()
         session.wait_for_exit()
 
 
@@ -171,5 +171,5 @@ def test_with_path_mappings(pyfile, tmpdir, start_method, run_as):
         remote_code_path = session.read_json()
         assert path_remote == some.path(remote_code_path)
 
-        session.send_request("continue").wait_for_response(freeze=False)
+        session.send_continue()
         session.wait_for_exit()

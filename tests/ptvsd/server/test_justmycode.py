@@ -56,6 +56,6 @@ def test_justmycode_frames(pyfile, start_method, run_as, jmc):
             assert hit2.frames[0]["source"]["path"] != some.path(code_to_debug)
 
             # 'continue' should terminate the debuggee
-            session.send_request("continue").wait_for_response(freeze=False)
+            session.send_continue()
 
         session.wait_for_exit()

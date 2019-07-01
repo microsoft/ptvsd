@@ -99,7 +99,7 @@ def test_variables_and_evaluate(pyfile, start_method, run_as):
             {"type": "int", "result": "2"}
         )
 
-        session.send_request("continue").wait_for_response(freeze=False)
+        session.send_continue()
         session.wait_for_exit()
 
 
@@ -155,7 +155,7 @@ def test_set_variable(pyfile, start_method, run_as):
             {"type": "int", "value": "1000"}
         )
 
-        session.send_request("continue").wait_for_response(freeze=False)
+        session.send_continue()
 
         assert session.read_json() == 1000
 
@@ -247,7 +247,7 @@ def test_variable_sort(pyfile, start_method, run_as):
         # NOTE: this is commented out due to sorting bug #213
         # assert variable_names[:3] == ['1', '2', '10']
 
-        session.send_request("continue").wait_for_response(freeze=False)
+        session.send_continue()
         session.wait_for_exit()
 
 
@@ -370,7 +370,7 @@ def test_unicode(pyfile, start_method, run_as):
         else:
             assert resp_eval.body == some.dict.containing({"type": "SyntaxError"})
 
-        session.send_request("continue").wait_for_response(freeze=False)
+        session.send_continue()
         session.wait_for_exit()
 
 
@@ -595,5 +595,5 @@ def test_hex_numbers(pyfile, start_method, run_as):
             },
         ]
 
-        session.send_request("continue").wait_for_response(freeze=False)
+        session.send_continue()
         session.wait_for_exit()

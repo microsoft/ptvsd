@@ -56,7 +56,7 @@ def test_attach(run_as, wait_for_attach, is_attached, break_into):
             # (such as as backchannel.py).
             # assert hit.frames[0]['line'] in [27, 28, 29]
 
-        session.send_request("continue").wait_for_response(freeze=False)
+        session.send_continue()
         session.wait_for_exit()
 
 
@@ -127,7 +127,7 @@ def test_attaching_by_pid(pyfile, run_as, start_method):
 
         # remove breakpoint and continue
         session.set_breakpoints(code_to_debug, [])
-        session.send_request("continue").wait_for_response(freeze=False)
+        session.send_continue()
         session.wait_for_next(
             Event("output", some.dict.containing({"category": "stdout"}))
         )

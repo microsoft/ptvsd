@@ -58,7 +58,7 @@ def test_set_expression(pyfile, start_method, run_as):
             {"type": "int", "value": "1000"}
         )
 
-        session.send_request("continue").wait_for_response(freeze=False)
+        session.send_continue()
 
         assert session.read_json() == 1000
 
