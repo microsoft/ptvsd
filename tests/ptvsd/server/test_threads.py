@@ -45,7 +45,7 @@ def test_thread_count(pyfile, start_method, run_as, count):
         )
         session.set_breakpoints(code_to_debug, [code_to_debug.lines["bp"]])
         session.start_debugging()
-        session.wait_for_thread_stopped()
+        session.wait_for_stop()
         resp_threads = session.send_request("threads").wait_for_response()
 
         assert len(resp_threads.body["threads"]) == count
@@ -110,6 +110,6 @@ def test_debug_this_thread(pyfile, start_method, run_as):
         session.set_breakpoints(code_to_debug, [code_to_debug.lines["bp"]])
         session.start_debugging()
 
-        session.wait_for_thread_stopped()
+        session.wait_for_stop()
         session.send_request("continue").wait_for_response(freeze=False)
         session.wait_for_exit()

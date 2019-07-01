@@ -43,7 +43,7 @@ def test_with_tab_in_output(pyfile, start_method, run_as):
         session.start_debugging()
 
         # Breakpoint at the end just to make sure we get all output events.
-        session.wait_for_thread_stopped()
+        session.wait_for_stop()
         session.send_request("continue").wait_for_response(freeze=False)
         session.wait_for_exit()
 
@@ -75,7 +75,7 @@ def test_redirect_output(pyfile, start_method, run_as, redirect):
         session.start_debugging()
 
         # Breakpoint at the end just to make sure we get all output events.
-        session.wait_for_thread_stopped()
+        session.wait_for_stop()
         session.send_request("continue").wait_for_response(freeze=False)
         session.wait_for_exit()
 

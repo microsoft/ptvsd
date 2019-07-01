@@ -107,9 +107,8 @@ def test_django_template_exception_no_multiproc(start_method):
         with django:
             web_request = django.get("badtemplate")
 
-            hit = session.wait_for_thread_stopped(reason="exception")
-            frames = hit.stacktrace.body["stackFrames"]
-            assert frames[0] == some.dict.containing(
+            hit = session.wait_for_stop(reason="exception")
+            assert hit.frames[0] == some.dict.containing(
                 {
                     "id": some.dap_id,
                     "name": "Django TemplateSyntaxError",
@@ -154,7 +153,7 @@ def test_django_template_exception_no_multiproc(start_method):
             session.send_request("continue").wait_for_response(freeze=False)
 
             # And a second time when the exception reaches the user code.
-            hit = session.wait_for_thread_stopped(reason="exception")
+            hit = session.wait_for_stop(reason="exception")
             session.send_request("continue").wait_for_response(freeze=False)
 
             # ignore response for exception tests

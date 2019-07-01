@@ -145,9 +145,8 @@ def test_flask_template_exception_no_multiproc(start_method):
         link = base_link + part if base_link.endswith("/") else ("/" + part)
         web_request = get_web_content(link, {})
 
-        hit = session.wait_for_thread_stopped()
-        frames = hit.stacktrace.body["stackFrames"]
-        assert frames[0] == some.dict.containing(
+        hit = session.wait_for_stop()
+        assert hit.frames[0] == some.dict.containing(
             {
                 "id": some.dap_id,
                 "name": "template"

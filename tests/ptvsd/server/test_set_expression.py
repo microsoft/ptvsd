@@ -25,7 +25,7 @@ def test_set_expression(pyfile, start_method, run_as):
             use_backchannel=True,
         )
         session.start_debugging()
-        hit = session.wait_for_thread_stopped()
+        hit = session.wait_for_stop()
 
         resp_scopes = session.send_request(
             "scopes", arguments={"frameId": hit.frame_id}

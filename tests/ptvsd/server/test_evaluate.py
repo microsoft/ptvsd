@@ -24,7 +24,7 @@ def test_variables_and_evaluate(pyfile, start_method, run_as):
         session.initialize(target=(run_as, code_to_debug), start_method=start_method)
         session.set_breakpoints(code_to_debug, [code_to_debug.lines["bp"]])
         session.start_debugging()
-        hit = session.wait_for_thread_stopped()
+        hit = session.wait_for_stop()
 
         resp_scopes = session.send_request(
             "scopes", arguments={"frameId": hit.frame_id}
@@ -119,7 +119,7 @@ def test_set_variable(pyfile, start_method, run_as):
             use_backchannel=True,
         )
         session.start_debugging()
-        hit = session.wait_for_thread_stopped()
+        hit = session.wait_for_stop()
 
         resp_scopes = session.send_request(
             "scopes", arguments={"frameId": hit.frame_id}
@@ -186,7 +186,7 @@ def test_variable_sort(pyfile, start_method, run_as):
         session.initialize(target=(run_as, code_to_debug), start_method=start_method)
         session.set_breakpoints(code_to_debug, [code_to_debug.lines["bp"]])
         session.start_debugging()
-        hit = session.wait_for_thread_stopped()
+        hit = session.wait_for_stop()
 
         resp_scopes = session.send_request(
             "scopes", arguments={"frameId": hit.frame_id}
@@ -297,10 +297,10 @@ def test_return_values(pyfile, start_method, run_as):
         )
         session.set_breakpoints(code_to_debug, [code_to_debug.lines["bp"]])
         session.start_debugging()
-        hit = session.wait_for_thread_stopped()
+        hit = session.wait_for_stop()
 
         session.send_request("next", {"threadId": hit.thread_id}).wait_for_response()
-        hit = session.wait_for_thread_stopped(reason="step")
+        hit = session.wait_for_stop(reason="step")
 
         resp_scopes = session.send_request(
             "scopes", arguments={"frameId": hit.frame_id}
@@ -321,7 +321,7 @@ def test_return_values(pyfile, start_method, run_as):
         assert variables == [expected1]
 
         session.send_request("next", {"threadId": hit.thread_id}).wait_for_response()
-        hit = session.wait_for_thread_stopped(reason="step")
+        hit = session.wait_for_stop(reason="step")
 
         # Scope should not have changed so use the same scope
         resp_variables = session.send_request(
@@ -357,7 +357,7 @@ def test_unicode(pyfile, start_method, run_as):
     with debug.Session() as session:
         session.initialize(target=(run_as, code_to_debug), start_method=start_method)
         session.start_debugging()
-        hit = session.wait_for_thread_stopped()
+        hit = session.wait_for_stop()
 
         resp_eval = session.send_request(
             "evaluate", arguments={"expression": "\u16A0", "frameId": hit.frame_id}
@@ -389,7 +389,7 @@ def test_hex_numbers(pyfile, start_method, run_as):
         session.initialize(target=(run_as, code_to_debug), start_method=start_method)
         session.set_breakpoints(code_to_debug, [code_to_debug.lines["bp"]])
         session.start_debugging()
-        hit = session.wait_for_thread_stopped()
+        hit = session.wait_for_stop()
 
         resp_scopes = session.send_request(
             "scopes", arguments={"frameId": hit.frame_id}
