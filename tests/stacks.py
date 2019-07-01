@@ -12,7 +12,7 @@ import sys
 import time
 import threading
 import traceback
-import pytest_timeout.dump_stacks
+import pytest_timeout
 
 from ptvsd.common import log
 
