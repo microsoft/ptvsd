@@ -737,5 +737,6 @@ class DebugSession(object):
             ns.handshake()
         except:
             ns.close()
+            raise
         else:
             return ns
