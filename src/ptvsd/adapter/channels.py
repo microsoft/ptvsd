@@ -29,17 +29,17 @@ class Channels(singleton.ThreadSafeSingleton):
     """
 
     @singleton.autolocked_method
-    def connect_to_ide(self, address=("localhost", None)):
+    def connect_to_ide(self, address=None):
         assert self.ide is None
 
         # Import message handlers lazily to avoid circular imports.
         from ptvsd.adapter import messages
 
-        host, port = address
-        if port is None:
+        if address is None:
             ide_channel = messaging.JsonIOStream.from_stdio("IDE")
         else:
-            sock = create_server("localhost", port).accept()
+            host, port = address
+            sock = create_server(host, port).accept()
             ide_channel = messaging.JsonIOStream.from_socket(sock, "IDE")
 
         self.ide = messaging.JsonMessageChannel(

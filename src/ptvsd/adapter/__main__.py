@@ -12,7 +12,7 @@ import argparse
 
 
 def _get_parsed_args():
-    parser = argparse.ArgumentParser(prog="ptvsd.adapter")
+    parser = argparse.ArgumentParser()
     parser.add_argument("--debug-port", nargs="?", default=None, const=6789)
     return parser.parse_args(sys.argv[1:])
 
