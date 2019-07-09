@@ -203,11 +203,11 @@ def test_error_in_condition(pyfile, start_method, run_as, error_name):
         session.start_debugging()
 
         session.wait_for_exit()
-        assert session.get_stdout_as_string() == b""
+        assert session.stdout() == b""
         if error_name == "NameError":
-            assert session.get_stderr_as_string().find(b"NameError") == -1
+            assert session.stderr().find(b"NameError") == -1
         else:
-            assert session.get_stderr_as_string().find(b"ArithmeticError") > 0
+            assert session.stderr().find(b"ArithmeticError") > 0
 
 
 def test_log_point(pyfile, start_method, run_as):
@@ -239,7 +239,7 @@ def test_log_point(pyfile, start_method, run_as):
 
         # Breakpoint at the end just to make sure we get all output events.
         hit = session.wait_for_stop()
-        assert lines["end"] == hit.frames[0]["line"]
+        assert lines["bp"] == hit.frames[0]["line"]
 
         session.request_continue()
 
@@ -288,7 +288,7 @@ def test_condition_with_log_point(pyfile, start_method, run_as):
         ).wait_for_response()
         session.start_debugging()
         hit = session.wait_for_stop()
-        assert lines["end"] == hit.frames[0]["line"]
+        assert lines["bp"] == hit.frames[0]["line"]
 
         resp_scopes = session.send_request(
             "scopes", arguments={"frameId": hit.frame_id}

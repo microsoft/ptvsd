@@ -22,8 +22,8 @@ def test_with_no_output(pyfile, start_method, run_as):
         session.initialize(target=(run_as, code_to_debug), start_method=start_method)
         session.start_debugging()
         session.wait_for_exit()
-        assert b"" == session.get_stdout_as_string()
-        assert b"" == session.get_stderr_as_string()
+        assert b"" == session.stdout()
+        assert b"" == session.stderr()
 
 
 def test_with_tab_in_output(pyfile, start_method, run_as):
