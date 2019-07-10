@@ -37,7 +37,7 @@ def test_run(pyfile, start_method, run_as):
         expected_name = (
             "-c"
             if run_as == "code"
-            else some.str.matching(re.escape(code_to_debug.strpath) + r"(c|o)?$")
+            else some.str.matching(re.escape(code_to_debug.strpath) + r"(c|o)?")
         )
         assert process_event == Event(
             "process", some.dict.containing({"name": expected_name})
@@ -47,7 +47,7 @@ def test_run(pyfile, start_method, run_as):
 
         expected_ptvsd_path = path.abspath(ptvsd.__file__)
         backchannel.expect(some.str.matching(
-            re.escape(expected_ptvsd_path) + r"(c|o)?$"
+            re.escape(expected_ptvsd_path) + r"(c|o)?"
         ))
 
         session.wait_for_exit()

@@ -105,7 +105,7 @@ def test_multiprocessing(pyfile, start_method, run_as):
         )
         parent_session.proceed()
 
-        with parent_session.connect_to_child_session(child_subprocess) as child_session:
+        with parent_session.attach_to_subprocess(child_subprocess) as child_session:
             child_session.start_debugging()
 
             grandchild_subprocess = parent_session.wait_for_next(
@@ -128,7 +128,7 @@ def test_multiprocessing(pyfile, start_method, run_as):
             )
             parent_session.proceed()
 
-            with parent_session.connect_to_child_session(
+            with parent_session.attach_to_subprocess(
                 grandchild_subprocess
             ) as grandchild_session:
                 grandchild_session.start_debugging()
@@ -208,7 +208,7 @@ def test_subprocess(pyfile, start_method, run_as):
         )
         parent_session.proceed()
 
-        with parent_session.connect_to_child_session(child_subprocess) as child_session:
+        with parent_session.attach_to_subprocess(child_subprocess) as child_session:
             child_session.start_debugging()
 
             child_argv = parent_backchannel.receive()
@@ -260,7 +260,7 @@ def test_autokill(pyfile, start_method, run_as):
         )
         parent_session.start_debugging()
 
-        with parent_session.connect_to_next_child_session() as child_session:
+        with parent_session.attach_to_next_subprocess() as child_session:
             child_session.start_debugging()
 
             if parent_session.start_method == "launch":

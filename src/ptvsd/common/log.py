@@ -21,6 +21,8 @@ LEVELS = ("debug", "info", "warning", "error")
 """Logging levels, lowest to highest importance.
 """
 
+stderr = sys.__stderr__
+
 stderr_levels = {"warning", "error"}
 """What should be logged to stderr.
 """
@@ -62,7 +64,7 @@ def write(level, text):
     with _lock:
         if level in stderr_levels:
             try:
-                sys.__stderr__.write(output)
+                stderr.write(output)
             except Exception:
                 pass
 

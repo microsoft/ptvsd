@@ -131,6 +131,54 @@ def test_matching():
     assert pattern != b"abbbc"
 
 
+def test_starting_with():
+    pattern = some.str.starting_with("aa")
+    log_repr(pattern)
+    assert pattern == "aabbbb"
+    assert pattern != "bbbbaa"
+    assert pattern != "bbaabb"
+    assert pattern != "ababab"
+
+    pattern = some.bytes.starting_with(b"aa")
+    log_repr(pattern)
+    assert pattern == b"aabbbb"
+    assert pattern != b"bbbbaa"
+    assert pattern != b"bbaabb"
+    assert pattern != b"ababab"
+
+
+def test_ending_with():
+    pattern = some.str.ending_with("aa")
+    log_repr(pattern)
+    assert pattern == "bbbbaa"
+    assert pattern != "aabbbb"
+    assert pattern != "bbaabb"
+    assert pattern != "ababab"
+
+    pattern = some.bytes.ending_with(b"aa")
+    log_repr(pattern)
+    assert pattern == b"bbbbaa"
+    assert pattern != b"aabbbb"
+    assert pattern != b"bbaabb"
+    assert pattern != b"ababab"
+
+
+def test_containing():
+    pattern = some.str.containing("aa")
+    log_repr(pattern)
+    assert pattern == "aabbbb"
+    assert pattern == "bbbbaa"
+    assert pattern == "bbaabb"
+    assert pattern != "ababab"
+
+    pattern = some.bytes.containing(b"aa")
+    log_repr(pattern)
+    assert pattern == b"aabbbb"
+    assert pattern == b"bbbbaa"
+    assert pattern == b"bbaabb"
+    assert pattern != b"ababab"
+
+
 def test_list():
     assert [1, 2, 3] == [1, some.thing, 3]
     assert [1, 2, 3, 4] != [1, some.thing, 4]

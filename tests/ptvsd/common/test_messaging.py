@@ -592,7 +592,7 @@ class TestJsonMessageChannel(object):
         input_exhausted.wait()
 
         def missing_property(name):
-            return some.str.matching("Invalid message:.*" + re.escape(name))
+            return some.str.matching("Invalid message:.*" + re.escape(name) + ".*")
 
         assert output == [
             {

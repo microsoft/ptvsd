@@ -5,80 +5,75 @@
 from __future__ import absolute_import, print_function, unicode_literals
 
 import pytest
+
+from ptvsd.common import compat
 from tests import code, debug, net, test_data
 from tests.patterns import some
-from tests.timeline import Event
-from tests.net import find_http_url
+
+pytestmark = pytest.mark.timeout(60)
+
+django = net.WebServer(net.get_test_server_port(8000, 8100))
 
 
-DJANGO1_ROOT = test_data / "django1"
-DJANGO1_MANAGE = DJANGO1_ROOT / "app.py"
-DJANGO1_TEMPLATE = DJANGO1_ROOT / "templates" / "hello.html"
-DJANGO1_BAD_TEMPLATE = DJANGO1_ROOT / "templates" / "bad.html"
-DJANGO_PORT = net.get_test_server_port(8000, 8100)
+class paths:
+    django1 = test_data / "django1"
+    app_py = django1 / "app.py"
+    hello_html = django1 / "templates" / "hello.html"
+    bad_html = django1 / "templates" / "bad.html"
 
-django = net.WebServer(DJANGO_PORT)
-app_py_lines = code.get_marked_line_numbers(DJANGO1_MANAGE)
+
+class lines:
+    app_py = code.get_marked_line_numbers(paths.app_py)
 
 
 @pytest.mark.parametrize("bp_target", ["code", "template"])
 @pytest.mark.parametrize("start_method", ["launch", "attach_socket_cmdline"])
-@pytest.mark.timeout(60)
 def test_django_breakpoint_no_multiproc(start_method, bp_target):
     bp_file, bp_line, bp_name = {
-        "code": (DJANGO1_MANAGE, app_py_lines["bphome"], "home"),
-        "template": (DJANGO1_TEMPLATE, 8, "Django Template"),
+        "code": (paths.app_py, lines.app_py["bphome"], "home"),
+        "template": (paths.hello_html, 8, "Django Template"),
     }[bp_target]
+    bp_var_content = compat.force_str("Django-Django-Test")
 
     with debug.Session() as session:
         session.initialize(
             start_method=start_method,
-            target=("file", DJANGO1_MANAGE),
-            program_args=["runserver", "--noreload", "--", str(DJANGO_PORT)],
+            target=("file", paths.app_py),
+            program_args=["runserver", "--noreload", "--", str(django.port)],
             debug_options=["Django"],
-            cwd=DJANGO1_ROOT,
+            cwd=paths.django1,
             expected_returncode=some.int,  # No clean way to kill Django server
         )
 
-        bp_var_content = "Django-Django-Test"
         session.set_breakpoints(bp_file, [bp_line])
         session.start_debugging()
+
         with django:
-            home_request = django.get("home")
-            stop = session.wait_for_stop(
+            home_request = django.get("/home")
+            session.wait_for_stop(
                 "breakpoint",
                 [
                     {
-                        "id": some.dap_id,
+                        "id": some.dap.id,
                         "name": bp_name,
-                        "source": {
-                            "sourceReference": some.str,
-                            "path": some.path(bp_file),
-                        },
+                        "source": some.dap.source(bp_file),
                         "line": bp_line,
                         "column": 1,
                     }
                 ],
             )
 
-            scopes = session.request("scopes", arguments={"frameId": stop.frame_id})
-            assert len(scopes) > 0
-
-            variables = session.request(
-                "variables",
-                arguments={"variablesReference": scopes[0]["variablesReference"]},
-            )
-            variables = [v for v in variables["variables"] if v["name"] == "content"]
-            assert variables == [
+            var_content = session.get_variable("content")
+            assert var_content == some.dict.containing(
                 {
                     "name": "content",
                     "type": "str",
-                    "value": repr(bp_var_content),
+                    "value": compat.unicode_repr(bp_var_content),
                     "presentationHint": {"attributes": ["rawString"]},
                     "evaluateName": "content",
                     "variablesReference": 0,
                 }
-            ]
+            )
 
             session.request_continue()
             assert bp_var_content in home_request.response_text()
@@ -87,64 +82,45 @@ def test_django_breakpoint_no_multiproc(start_method, bp_target):
 
 
 @pytest.mark.parametrize("start_method", ["launch", "attach_socket_cmdline"])
-@pytest.mark.timeout(60)
 def test_django_template_exception_no_multiproc(start_method):
     with debug.Session() as session:
         session.initialize(
             start_method=start_method,
-            target=("file", DJANGO1_MANAGE),
-            program_args=["runserver", "--noreload", "--nothreading", str(DJANGO_PORT)],
+            target=("file", paths.app_py),
+            program_args=["runserver", "--noreload", "--nothreading", str(django.port)],
             debug_options=["Django"],
-            cwd=DJANGO1_ROOT,
+            cwd=paths.django1,
             expected_returncode=some.int,  # No clean way to kill Django server
         )
-
-        session.send_request(
-            "setExceptionBreakpoints", arguments={"filters": ["raised", "uncaught"]}
-        ).wait_for_response()
-
+        session.request("setExceptionBreakpoints", {"filters": ["raised", "uncaught"]})
         session.start_debugging()
-        with django:
-            web_request = django.get("badtemplate")
 
-            hit = session.wait_for_stop(reason="exception")
-            assert hit.frames[0] == some.dict.containing(
-                {
-                    "id": some.dap_id,
-                    "name": "Django TemplateSyntaxError",
-                    "source": some.dict.containing(
-                        {
-                            "sourceReference": some.dap_id,
-                            "path": some.path(DJANGO1_BAD_TEMPLATE),
-                        }
-                    ),
-                    "line": 8,
-                    "column": 1,
-                }
+        with django:
+            django.get("/badtemplate", log_errors=False)
+            stop = session.wait_for_stop(
+                "exception",
+                expected_frames=[
+                    some.dap.frame(
+                        some.dap.source(paths.bad_html),
+                        line=8,
+                        name="Django TemplateSyntaxError",
+                    )
+                ],
             )
 
             # Will stop once in the plugin
-            resp_exception_info = session.send_request(
-                "exceptionInfo", arguments={"threadId": hit.thread_id}
-            ).wait_for_response()
-            exception = resp_exception_info.body
-            assert exception == some.dict.containing(
+            exception_info = session.request(
+                "exceptionInfo", {"threadId": stop.thread_id}
+            )
+            assert exception_info == some.dict.containing(
                 {
-                    "exceptionId": some.str.such_that(
-                        lambda s: s.endswith("TemplateSyntaxError")
-                    ),
+                    "exceptionId": some.str.ending_with("TemplateSyntaxError"),
                     "breakMode": "always",
-                    "description": some.str.such_that(
-                        lambda s: s.find("doesnotexist") > -1
-                    ),
-                    "details": some.dict_with(
+                    "description": some.str.containing("doesnotexist"),
+                    "details": some.dict.containing(
                         {
-                            "message": some.str.such_that(
-                                lambda s: s.endswith("doesnotexist") > -1
-                            ),
-                            "typeName": some.str.such_that(
-                                lambda s: s.endswith("TemplateSyntaxError")
-                            ),
+                            "message": some.str.containing("doesnotexist"),
+                            "typeName": some.str.ending_with("TemplateSyntaxError"),
                         }
                     ),
                 }
@@ -153,194 +129,121 @@ def test_django_template_exception_no_multiproc(start_method):
             session.request_continue()
 
             # And a second time when the exception reaches the user code.
-            hit = session.wait_for_stop(reason="exception")
+            session.wait_for_stop("exception")
             session.request_continue()
-
-            # ignore response for exception tests
-            web_request.wait_for_response()
 
         session.wait_for_exit()
 
 
-@pytest.mark.parametrize("ex_type", ["handled", "unhandled"])
+@pytest.mark.parametrize("exc_type", ["handled", "unhandled"])
 @pytest.mark.parametrize("start_method", ["launch", "attach_socket_cmdline"])
-@pytest.mark.timeout(60)
-def test_django_exception_no_multiproc(ex_type, start_method):
-    ex_line = {"handled": 50, "unhandled": 64}[ex_type]
+def test_django_exception_no_multiproc(exc_type, start_method):
+    exc_line = lines.app_py["exc_" + exc_type]
 
     with debug.Session() as session:
         session.initialize(
             start_method=start_method,
-            target=("file", DJANGO1_MANAGE),
-            program_args=["runserver", "--noreload", "--nothreading", str(DJANGO_PORT)],
+            target=("file", paths.app_py),
+            program_args=["runserver", "--noreload", "--nothreading", str(django.port)],
             debug_options=["Django"],
-            cwd=DJANGO1_ROOT,
+            cwd=paths.django1,
             expected_returncode=some.int,  # No clean way to kill Django server
         )
-
-        session.send_request(
-            "setExceptionBreakpoints", arguments={"filters": ["raised", "uncaught"]}
-        ).wait_for_response()
-
+        session.request("setExceptionBreakpoints", {"filters": ["raised", "uncaught"]})
         session.start_debugging()
+
         with django:
-            web_request = django.get(ex_type)
+            django.get("/" + exc_type)
+            stopped = session.wait_for_stop(
+                "exception",
+                expected_frames=[
+                    some.dap.frame(
+                        some.dap.source(paths.app_py),
+                        line=exc_line,
+                        name="bad_route_" + exc_type,
+                    )
+                ],
+            ).body
 
-            thread_stopped = session.wait_for_next(
-                Event("stopped", some.dict.containing({"reason": "exception"}))
-            )
-            assert thread_stopped == Event(
-                "stopped",
-                some.dict.containing(
-                    {
-                        "reason": "exception",
-                        "text": some.str.such_that(
-                            lambda s: s.endswith("ArithmeticError")
-                        ),
-                        "description": "Hello",
-                    }
-                ),
+            assert stopped == some.dict.containing(
+                {
+                    "reason": "exception",
+                    "text": some.str.ending_with("ArithmeticError"),
+                    "description": "Hello",
+                }
             )
 
-            tid = thread_stopped.body["threadId"]
-            resp_exception_info = session.send_request(
-                "exceptionInfo", arguments={"threadId": tid}
-            ).wait_for_response()
-            exception = resp_exception_info.body
-            assert exception == {
-                "exceptionId": some.str.such_that(
-                    lambda s: s.endswith("ArithmeticError")
-                ),
+            exception_info = session.request(
+                "exceptionInfo", {"threadId": stopped["threadId"]}
+            )
+
+            assert exception_info == {
+                "exceptionId": some.str.ending_with("ArithmeticError"),
                 "breakMode": "always",
                 "description": "Hello",
                 "details": {
                     "message": "Hello",
-                    "typeName": some.str.such_that(
-                        lambda s: s.endswith("ArithmeticError")
-                    ),
-                    "source": some.path(DJANGO1_MANAGE),
-                    "stackTrace": some.str.such_that(lambda s: True),
+                    "typeName": some.str.ending_with("ArithmeticError"),
+                    "source": some.path(paths.app_py),
+                    "stackTrace": some.str,
                 },
-            }
-
-            resp_stacktrace = session.send_request(
-                "stackTrace", arguments={"threadId": tid}
-            ).wait_for_response()
-            assert resp_stacktrace.body["totalFrames"] > 1
-            frames = resp_stacktrace.body["stackFrames"]
-            assert frames[0] == {
-                "id": some.dap_id,
-                "name": "bad_route_" + ex_type,
-                "source": {
-                    "sourceReference": some.dap_id,
-                    "path": some.path(DJANGO1_MANAGE),
-                },
-                "line": ex_line,
-                "column": 1,
             }
 
             session.request_continue()
 
-            # ignore response for exception tests
-            web_request.wait_for_response()
-
         session.wait_for_exit()
 
 
-@pytest.mark.skip()
-@pytest.mark.timeout(120)
 @pytest.mark.parametrize("start_method", ["launch"])
 def test_django_breakpoint_multiproc(start_method):
+    bp_line = lines.app_py["bphome"]
+    bp_var_content = compat.force_str("Django-Django-Test")
+
     with debug.Session() as parent_session:
         parent_session.initialize(
             start_method=start_method,
-            target=("file", DJANGO1_MANAGE),
+            target=("file", paths.app_py),
             multiprocess=True,
             program_args=["runserver"],
             debug_options=["Django"],
-            cwd=DJANGO1_ROOT,
-            ignore_unobserved=[Event("stopped")],
+            cwd=paths.django1,
             expected_returncode=some.int,  # No clean way to kill Django server
         )
 
-        bp_line = app_py_lines["bphome"]
-        bp_var_content = "Django-Django-Test"
-        parent_session.set_breakpoints(DJANGO1_MANAGE, [bp_line])
+        parent_session.set_breakpoints(paths.app_py, [bp_line])
         parent_session.start_debugging()
 
-        with parent_session.connect_to_next_child_session() as child_session:
-            child_session.send_request(
+        with parent_session.attach_to_next_subprocess() as child_session:
+            child_session.request(
                 "setBreakpoints",
-                arguments={
-                    "source": {"path": DJANGO1_MANAGE},
-                    "breakpoints": [{"line": bp_line}],
-                },
-            ).wait_for_response()
+                {"source": {"path": paths.app_py}, "breakpoints": [{"line": bp_line}]},
+            )
             child_session.start_debugging()
 
-            # wait for Django server to start
-            while True:
-                child_session.proceed()
-                o = child_session.wait_for_next(Event("output"))
-                if find_http_url(o.body["output"]) is not None:
-                    break
-
             with django:
-                web_request = django.get("home")
-
-                thread_stopped = child_session.wait_for_next(
-                    Event("stopped", some.dict.containing({"reason": "breakpoint"}))
+                web_request = django.get("/home")
+                child_session.wait_for_stop(
+                    "breakpoint",
+                    expected_frames=[
+                        some.dap.frame(
+                            some.dap.source(paths.app_py), line=bp_line, name="home"
+                        )
+                    ],
                 )
-                assert thread_stopped.body["threadId"] is not None
 
-                tid = thread_stopped.body["threadId"]
-
-                resp_stacktrace = child_session.send_request(
-                    "stackTrace", arguments={"threadId": tid}
-                ).wait_for_response()
-                assert resp_stacktrace.body["totalFrames"] > 0
-                frames = resp_stacktrace.body["stackFrames"]
-                assert frames[0] == {
-                    "id": some.dap_id,
-                    "name": "home",
-                    "source": {
-                        "sourceReference": some.dap_id,
-                        "path": some.path(DJANGO1_MANAGE),
-                    },
-                    "line": bp_line,
-                    "column": 1,
-                }
-
-                fid = frames[0]["id"]
-                resp_scopes = child_session.send_request(
-                    "scopes", arguments={"frameId": fid}
-                ).wait_for_response()
-                scopes = resp_scopes.body["scopes"]
-                assert len(scopes) > 0
-
-                resp_variables = child_session.send_request(
-                    "variables",
-                    arguments={"variablesReference": scopes[0]["variablesReference"]},
-                ).wait_for_response()
-                variables = list(
-                    v
-                    for v in resp_variables.body["variables"]
-                    if v["name"] == "content"
-                )
-                assert variables == [
+                var_content = child_session.get_variable("content")
+                assert var_content == some.dict.containing(
                     {
                         "name": "content",
                         "type": "str",
-                        "value": repr(bp_var_content),
+                        "value": compat.unicode_repr(bp_var_content),
                         "presentationHint": {"attributes": ["rawString"]},
                         "evaluateName": "content",
                     }
-                ]
+                )
 
                 child_session.request_continue()
-
-                web_content = web_request.wait_for_response()
-                assert web_content.find(bp_var_content) != -1
+                assert bp_var_content in web_request.response_text()
 
             child_session.wait_for_termination()
             parent_session.wait_for_exit()

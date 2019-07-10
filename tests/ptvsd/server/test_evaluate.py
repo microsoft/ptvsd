@@ -54,14 +54,14 @@ def test_variables_and_evaluate(pyfile, start_method, run_as):
         assert b_variables[0] == {
             "type": "int",
             "value": "1",
-            "name": some.str.matching(r".*one.*"),
+            "name": some.str.containing("one"),
             "evaluateName": "b['one']",
             "variablesReference": 0,
         }
         assert b_variables[1] == {
             "type": "int",
             "value": "2",
-            "name": some.str.matching(r".*two.*"),
+            "name": some.str.containing("two"),
             "evaluateName": "b['two']",
             "variablesReference": 0,
         }
@@ -427,7 +427,7 @@ def test_hex_numbers(pyfile, start_method, run_as):
                 "value": "[0x1, 0xa, 0x64]",
                 "type": "list",
                 "evaluateName": "b",
-                "variablesReference": some.dap_id,
+                "variablesReference": some.dap.id,
             }
         )
 
@@ -477,7 +477,7 @@ def test_hex_numbers(pyfile, start_method, run_as):
                 "value": "{0xa: 0xa, 0x64: 0x64, 0x3e8: 0x3e8}",
                 "type": "dict",
                 "evaluateName": "c",
-                "variablesReference": some.dap_id,
+                "variablesReference": some.dap.id,
             }
         )
 
@@ -527,7 +527,7 @@ def test_hex_numbers(pyfile, start_method, run_as):
                 "value": "{(0x1, 0xa, 0x64): (0x2710, 0x186a0, 0x186a0)}",
                 "type": "dict",
                 "evaluateName": "d",
-                "variablesReference": some.dap_id,
+                "variablesReference": some.dap.id,
             }
         )
         resp_variables = session.send_request(
@@ -544,7 +544,7 @@ def test_hex_numbers(pyfile, start_method, run_as):
                 "value": "(0x2710, 0x186a0, 0x186a0)",
                 "type": "tuple",
                 "evaluateName": "d[(1, 10, 100)]",
-                "variablesReference": some.dap_id,
+                "variablesReference": some.dap.id,
             },
             {
                 "name": "__len__",

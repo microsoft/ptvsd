@@ -69,9 +69,9 @@ def test_flask_breakpoint_no_multiproc(bp_target, start_method):
 
             hit = session.wait_for_stop(reason="breakpoint")
             assert hit.frames[0] == {
-                "id": some.dap_id,
+                "id": some.dap.id,
                 "name": bp_name,
-                "source": {"sourceReference": some.dap_id, "path": some.path(bp_file)},
+                "source": {"sourceReference": some.dap.id, "path": some.path(bp_file)},
                 "line": bp_line,
                 "column": 1,
             }
@@ -118,18 +118,18 @@ def test_flask_template_exception_no_multiproc(start_method):
 
         # wait for Flask web server to start
         with flask_server:
-            web_request = flask_server.get("badtemplate")
+            web_request = flask_server.get("/badtemplate")
 
             hit = session.wait_for_stop()
             assert hit.frames[0] == some.dict.containing(
                 {
-                    "id": some.dap_id,
+                    "id": some.dap.id,
                     "name": "template"
                     if sys.version_info[0] >= 3
                     else "Jinja2 TemplateSyntaxError",
                     "source": some.dict.containing(
                         {
-                            "sourceReference": some.dap_id,
+                            "sourceReference": some.dap.id,
                             "path": some.path(FLASK1_BAD_TEMPLATE),
                         }
                     ),
@@ -188,7 +188,7 @@ def test_flask_exception_no_multiproc(ex_type, start_method):
         session.start_debugging()
 
         with flask_server:
-            web_request = flask_server.get(ex_type)
+            web_request = flask_server.get("/" + ex_type)
 
             thread_stopped = session.wait_for_next(
                 Event("stopped", some.dict.containing({"reason": "exception"}))
@@ -227,9 +227,9 @@ def test_flask_exception_no_multiproc(ex_type, start_method):
             assert resp_stacktrace.body["totalFrames"] > 0
             frames = resp_stacktrace.body["stackFrames"]
             assert frames[0] == {
-                "id": some.dap_id,
+                "id": some.dap.id,
                 "name": "bad_route_" + ex_type,
-                "source": {"sourceReference": some.dap_id, "path": some.path(FLASK1_APP)},
+                "source": {"sourceReference": some.dap.id, "path": some.path(FLASK1_APP)},
                 "line": ex_line,
                 "column": 1,
             }
@@ -271,7 +271,7 @@ def test_flask_breakpoint_multiproc(start_method):
         parent_session.set_breakpoints(FLASK1_APP, [bp_line])
         parent_session.start_debugging()
 
-        with parent_session.connect_to_next_child_session() as child_session:
+        with parent_session.attach_to_next_subprocess() as child_session:
             child_session.send_request(
                 "setBreakpoints",
                 arguments={
@@ -286,10 +286,10 @@ def test_flask_breakpoint_multiproc(start_method):
 
                 hit = child_session.wait_for_stop(reason="breakpoint")
                 assert hit.frames[0] == {
-                    "id": some.dap_id,
+                    "id": some.dap.id,
                     "name": "home",
                     "source": {
-                        "sourceReference": some.dap_id,
+                        "sourceReference": some.dap.id,
                         "path": some.path(FLASK1_APP),
                     },
                     "line": bp_line,

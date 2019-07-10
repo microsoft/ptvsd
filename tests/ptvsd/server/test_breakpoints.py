@@ -29,7 +29,7 @@ def test_path_with_ampersand(start_method, run_as):
 
         session.wait_for_stop(
             "breakpoint",
-            expected_frames=[some.dict.containing({"source": some.source(test_py)})],
+            expected_frames=[some.dict.containing({"source": some.dap.source(test_py)})],
         )
 
         session.request_continue()
@@ -54,7 +54,7 @@ def test_path_with_unicode(start_method, run_as):
 
         session.wait_for_stop("breakpoint", expected_frames=[
             some.dict.containing({
-                "source": some.source(test_py),
+                "source": some.dap.source(test_py),
                 "name": "ಏನಾದರೂ_ಮಾಡು",
             }),
         ])
@@ -66,14 +66,14 @@ def test_path_with_unicode(start_method, run_as):
 @pytest.mark.parametrize(
     "condition_kind",
     [
-        ("condition",),
-        ("hitCondition",),
-        ("hitCondition", "eq"),
-        ("hitCondition", "gt"),
-        ("hitCondition", "ge"),
-        ("hitCondition", "lt"),
-        ("hitCondition", "le"),
-        ("hitCondition", "mod"),
+        "condition",
+        "hitCondition",
+        "hitCondition-eq",
+        "hitCondition-gt",
+        "hitCondition-ge",
+        "hitCondition-lt",
+        "hitCondition-le",
+        "hitCondition-mod",
     ],
 )
 def test_conditional_breakpoint(pyfile, start_method, run_as, condition_kind):
@@ -84,16 +84,16 @@ def test_conditional_breakpoint(pyfile, start_method, run_as, condition_kind):
         for i in range(0, 10):
             print(i)  # @bp
 
-    condition_property = condition_kind[0]
+    condition_property = condition_kind.partition("-")[0]
     condition, value, hits = {
-        ("condition",): ("i==5", "5", 1),
-        ("hitCondition",): ("5", "4", 1),
-        ("hitCondition", "eq"): ("==5", "4", 1),
-        ("hitCondition", "gt"): (">5", "5", 5),
-        ("hitCondition", "ge"): (">=5", "4", 6),
-        ("hitCondition", "lt"): ("<5", "0", 4),
-        ("hitCondition", "le"): ("<=5", "0", 5),
-        ("hitCondition", "mod"): ("%3", "2", 3),
+        "condition": ("i==5", "5", 1),
+        "hitCondition": ("5", "4", 1),
+        "hitCondition-eq": ("==5", "4", 1),
+        "hitCondition-gt": (">5", "5", 5),
+        "hitCondition-ge": (">=5", "4", 6),
+        "hitCondition-lt": ("<5", "0", 4),
+        "hitCondition-le": ("<=5", "0", 5),
+        "hitCondition-mod": ("%3", "2", 3),
     }[condition_kind]
 
     lines = code_to_debug.lines
@@ -108,27 +108,16 @@ def test_conditional_breakpoint(pyfile, start_method, run_as, condition_kind):
         )
         session.start_debugging()
 
-        frame_id = session.wait_for_stop(expected_frames=[
+        session.wait_for_stop(expected_frames=[
             some.dict.containing({"line": lines["bp"]})
-        ]).frame_id
+        ])
 
-        scopes = session.request(
-            "scopes", arguments={"frameId": frame_id}
-        )["scopes"]
+        session.get_variables()
 
-        assert len(scopes) > 0
-
-        variables = session.request(
-            "variables",
-            arguments={"variablesReference": scopes[0]["variablesReference"]},
-        )["variables"]
-
-        variables = [v for v in variables if v["name"] == "i"]
-        assert variables == [
-            some.dict.containing(
-                {"name": "i", "type": "int", "value": value, "evaluateName": "i"}
-            )
-        ]
+        var_i = session.get_variable("i")
+        assert var_i == some.dict.containing(
+            {"name": "i", "type": "int", "value": value, "evaluateName": "i"}
+        )
 
         session.request_continue()
         for i in range(1, hits):
@@ -161,7 +150,7 @@ def test_crossfile_breakpoint(pyfile, start_method, run_as):
 
         session.wait_for_stop(expected_frames=[
             some.dict.containing({
-                "source": some.source(script2),
+                "source": some.dap.source(script2),
                 "line": script2.lines["bp"],
             })
         ])
@@ -170,7 +159,7 @@ def test_crossfile_breakpoint(pyfile, start_method, run_as):
 
         session.wait_for_stop(expected_frames=[
             some.dict.containing({
-                "source": some.source(script1),
+                "source": some.dap.source(script1),
                 "line": script1.lines["bp"],
             })
         ])

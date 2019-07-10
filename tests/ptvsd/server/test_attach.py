@@ -94,8 +94,7 @@ def test_reattach(pyfile, start_method, run_as):
         session.wait_for_disconnect()
         assert backchannel.receive() == "continued"
 
-    # re-attach
-    with session.connect_with_new_session(target=(run_as, code_to_debug)) as session2:
+    with session.reattach(target=(run_as, code_to_debug)) as session2:
         session2.start_debugging()
         hit = session2.wait_for_stop()
         assert code_to_debug.lines["second"] == hit.frames[0]["line"]

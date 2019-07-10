@@ -22,7 +22,7 @@ name = fmt("backchannel-{0}", debug_me.session_id)
 port = os.getenv("PTVSD_BACKCHANNEL_PORT")
 if port is not None:
     port = int(port)
-    # Remove it, so that child processes don't try to use the same backchannel.
+    # Remove it, so that subprocesses don't try to use the same backchannel.
     del os.environ["PTVSD_BACKCHANNEL_PORT"]
 
 

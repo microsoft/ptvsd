@@ -12,7 +12,7 @@ from tests.timeline import Event
 
 pytestmark = pytest.mark.skip("Exception tests are broken")
 
-str_matching_ArithmeticError = some.str.matching(r"($|.*\.)ArithmeticError")
+str_matching_ArithmeticError = some.str.matching(r".+?\.ArithmeticError")
 
 
 @pytest.mark.parametrize("raised", ["raisedOn", "raisedOff"])
