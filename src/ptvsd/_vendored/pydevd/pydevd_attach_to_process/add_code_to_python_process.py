@@ -495,7 +495,7 @@ def run_python_code_linux(pid, python_code, connect_debugger_tracing=False, show
 
 
 def find_helper_script(filedir, script_name):
-    target_filename = os.path.join(filedir, 'linux', script_name)
+    target_filename = os.path.join(filedir, 'linux_and_mac', script_name)
     target_filename = os.path.normpath(target_filename)
     if not os.path.exists(target_filename):
         raise RuntimeError('Could not find helper script: %s' % target_filename)
