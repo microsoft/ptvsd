@@ -130,7 +130,7 @@ def get_main_thread_id(unlikely_thread_id=None):
     return None, 'Unable to discover main thread id.'
 
 
-def fix_main_thread_id(on_warn=None, on_exception=None, on_critical=None):
+def fix_main_thread_id(on_warn=lambda msg:None, on_exception=lambda msg:None, on_critical=lambda msg:None):
     # This means that we weren't able to import threading in the main thread (which most
     # likely means that the main thread is paused or in some very long operation).
     # In this case we'll import threading here and hotfix what may be wrong in the threading
