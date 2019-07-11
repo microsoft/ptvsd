@@ -24,7 +24,7 @@ typedef void* (PyThread_get_key_value)(int);
 typedef int (PyThread_set_key_value)(int, void*);
 typedef void (PyThread_delete_key_value)(int);
 typedef int (PyObject_Not) (PyObject *o);
-
+typedef PyObject* (PyDict_New)();
 
 // holder to ensure we release the GIL even in error conditions
 class GilHolder {
