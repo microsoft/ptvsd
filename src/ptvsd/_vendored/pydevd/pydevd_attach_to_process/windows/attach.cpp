@@ -115,7 +115,7 @@ int AttachCallback(void *voidInitializeThreadingInfo) {
     // initialize us for threading, this will acquire the GIL if not already created, and is a nop if the GIL is created.
     // This leaves us in the proper state when we return back to the runtime whether the GIL was created or not before
     // we were called.
-    InitializeThreadingInfo* initializeThreadingInfo = (InitializeThreadingInfo*)voidInitializeThreadingInfo;
+    InitializeThreadingInfo* initializeThreadingInfo = reinterpret_cast<InitializeThreadingInfo*>(voidInitializeThreadingInfo);
     initializeThreadingInfo->initThreads(); // Note: calling multiple times is ok.
     initializeThreadingInfo->pyImportMod("threading");
     
@@ -229,11 +229,11 @@ void SuspendThreads(ThreadMap &suspendedThreads, Py_AddPendingCall* addPendingCa
                                 GetThreadContext(hThread, &context);
 
 #if defined(_X86_)
-                                if (context.Eip >= *((DWORD*)addPendingCall) && context.Eip <= (*((DWORD*)addPendingCall)) + 0x100) {
+                                if (context.Eip >= *(reinterpret_cast<DWORD*>(addPendingCall)) && context.Eip <= (*(reinterpret_cast<DWORD*>(addPendingCall))) + 0x100) {
                                     addingPendingCall = true;
                                 }
 #elif defined(_AMD64_)
-                                if (context.Rip >= *((DWORD64*)addPendingCall) && context.Rip <= *((DWORD64*)addPendingCall + 0x100)) {
+                                if (context.Rip >= *(reinterpret_cast<DWORD64*>(addPendingCall)) && context.Rip <= *(reinterpret_cast<DWORD64*>(addPendingCall) + 0x100)) {
                                     addingPendingCall = true;
                                 }
 #endif
@@ -303,7 +303,7 @@ extern "C"
      **/
 	int DoAttach(HMODULE module, bool isDebug, const char *command, bool showDebugInfo )
 	{
-        auto isInit = (Py_IsInitialized*)GetProcAddress(module, "Py_IsInitialized");
+        auto isInit = reinterpret_cast<Py_IsInitialized*>(GetProcAddress(module, "Py_IsInitialized"));
 
         if (isInit == nullptr) {
             if (showDebugInfo) {
@@ -681,8 +681,8 @@ extern "C"
             std::cout << "Setting sys trace for existing threads." << std::endl << std::flush;
         }
         int attached = 0;
-        PyObjectHolder traceFunc(moduleInfo.isDebug, (PyObject*) pTraceFunc, true);
-        PyObjectHolder setTraceFunc(moduleInfo.isDebug, (PyObject*) pSetTraceFunc, true);
+        PyObjectHolder traceFunc(moduleInfo.isDebug, reinterpret_cast<PyObject*>(pTraceFunc), true);
+        PyObjectHolder setTraceFunc(moduleInfo.isDebug, reinterpret_cast<PyObject*>(pSetTraceFunc), true);
         int temp = InternalSetSysTraceFunc(module, moduleInfo.isDebug, showDebugInfo, &traceFunc, &setTraceFunc, threadId);
         if (temp == 0) {
             // we've successfully attached the debugger

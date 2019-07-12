@@ -46,7 +46,7 @@ public:
 #define PRINT(msg) {std::cout << msg << std::endl << std::flush;}
 
 #define DEFINE_PROC_NO_CHECK(func, funcType, funcNameStr, errorCode) \
-                    funcType func=(funcType)GetProcAddress(module, funcNameStr);
+                    funcType func=reinterpret_cast<funcType>(GetProcAddress(module, funcNameStr));
 
 #define DEFINE_PROC(func, funcType, funcNameStr, errorCode) \
                     DEFINE_PROC_NO_CHECK(func, funcType, funcNameStr, errorCode); \
