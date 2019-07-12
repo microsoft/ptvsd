@@ -247,19 +247,20 @@ class GenShellCodeHelper(object):
 
 
 def resolve_label(process, label):
-    for i in range(3):
+    max_attempts = 10
+    for i in range(max_attempts):
         try:
             address = process.resolve_label(label)
-            assert address
             return address
         except:
             try:
                 process.scan_modules()
             except:
                 pass
-            if i == 2:
+            if i == max_attempts - 1:
                 raise
-            time.sleep(2)
+            # At most 4 seconds to resolve it.
+            time.sleep(4. / max_attempts)
 
 
 def is_python_64bit():
