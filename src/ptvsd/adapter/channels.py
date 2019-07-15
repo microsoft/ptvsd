@@ -71,7 +71,7 @@ class Channels(singleton.ThreadSafeSingleton):
         from ptvsd.adapter import messages
 
         host, port = address
-        sock = socket.create_client(host, port)
+        sock = socket.create_client()
         sock.connect(address)
 
         server_stream = messaging.JsonIOStream.from_socket(sock, "server")

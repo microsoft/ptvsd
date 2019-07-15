@@ -161,7 +161,7 @@ class IDEMessages(Messages):
         options.host = request.arguments.get("host", options.host)
         options.port = int(request.arguments.get("port", options.port))
 
-        channels.connect_to_server(address=(options.host, options.port))
+        self._channels.connect_to_server(address=(options.host, options.port))
 
         return self._configure()
 
@@ -171,7 +171,7 @@ class IDEMessages(Messages):
     def _configure(self):
         log.debug("Replaying previously received messages to server.")
 
-        for msg in self.initial_messages:
+        for msg in self._initial_messages:
             # TODO: validate server response to ensure it matches our own earlier.
             self._server.propagate(msg)
 
