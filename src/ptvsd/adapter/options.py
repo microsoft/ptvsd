@@ -3,5 +3,8 @@
 # for license information.
 
 
-DEFAULT_DEBUG_SERVER_HOST = "localhost"
-DEFAULT_DEBUG_SERVER_PORT = 5678
+host = "127.0.0.1"
+"""Default host name for the debug server"""
+
+port = 5678
+"""Default port for the debug server"""
