@@ -5,7 +5,7 @@
 from __future__ import absolute_import, print_function, unicode_literals
 
 import ptvsd
-from ptvsd.common import log, messaging, singleton
+from ptvsd.common import log, messaging, singleton, constants
 from ptvsd.adapter import channels, debuggee, state
 
 
@@ -155,8 +155,12 @@ class IDEMessages(Messages):
         self.terminate_on_disconnect = False
         self._debug_config(request)
 
-        # TODO: get address and port
-        channels.connect_to_server()
+        host = request.arguments.get("host", constants.DEFAULT_DEBUG_SERVER_HOST)
+        port = request.arguments.get("port", constants.DEFAULT_DEBUG_SERVER_PORT)
+        if not isinstance(port, int):
+            port = int(port)
+
+        channels.connect_to_server(address=(host, port))
 
         return self._configure()
 
