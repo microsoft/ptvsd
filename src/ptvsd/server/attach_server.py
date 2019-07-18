@@ -39,7 +39,13 @@ def wait_for_attach(timeout=None):
         The timeout for the operation in seconds (or fractions thereof).
     """
     ptvsd.server.log.info('wait_for_attach{0!r}', (timeout,))
-    debugger_attached.wait(timeout)
+    dbg = get_global_debugger()
+    if bool(dbg):
+        dbg.dap_debugger_attached.wait(timeout)
+    else:
+        msg = 'wait_for_attach() called before enable_attach().'
+        ptvsd.server.log.info(msg)
+        raise AssertionError(msg)
 
 
 def enable_attach(address=(DEFAULT_HOST, DEFAULT_PORT), redirect_output=None, log_dir=None):
@@ -77,7 +83,7 @@ def enable_attach(address=(DEFAULT_HOST, DEFAULT_PORT), redirect_output=None, lo
     if log_dir:
         ptvsd.common.options.log_dir = log_dir
     ptvsd.server.log.to_file()
-    ptvsd.server.log.info('enable_attach{0!r}', (address, redirect_output))
+    ptvsd.server.log.info('enable_attach{0!r}', (address,))
 
     if redirect_output is not None:
         ptvsd.server.log.info('redirect_output deprecation warning.')
@@ -87,7 +93,9 @@ def enable_attach(address=(DEFAULT_HOST, DEFAULT_PORT), redirect_output=None, lo
         ptvsd.server.log.info('enable_attach() ignored - already attached.')
         return
 
-    debugger_attached.clear()
+    dbg = get_global_debugger()
+    if bool(dbg):
+        dbg.dap_debugger_attached.clear()
 
     # Ensure port is int
     port = address[1]
@@ -127,7 +135,9 @@ def attach(address, redirect_output=None, log_dir=None):
         ptvsd.server.log.info('attach() ignored - already attached.')
         return
 
-    debugger_attached.clear()
+    dbg = get_global_debugger()
+    if bool(dbg):
+        dbg.dap_debugger_attached.clear()
 
     # Ensure port is int
     port = address[1]
@@ -138,7 +148,8 @@ def attach(address, redirect_output=None, log_dir=None):
 
 def is_attached():
     """Returns ``True`` if debugger is attached, ``False`` otherwise."""
-    return debugger_attached.isSet()
+    dbg = get_global_debugger()
+    return bool(dbg) and dbg.dap_debugger_attached.is_set()
 
 
 def break_into_debugger():
