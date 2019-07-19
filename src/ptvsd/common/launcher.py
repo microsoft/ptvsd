@@ -1,23 +1,30 @@
-import sys
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License. See LICENSE in the project root
+# for license information.
+
+from __future__ import absolute_import, print_function, unicode_literals
+
+
 import subprocess
+import sys
 
 
 _wait_on_normal_exit = False
 _wait_on_abnormal_exit = False
 
 
-HELP = ('''Usage: launcher [--wait-on-normal] [--wait-on-abnormal] <args>
+HELP = """Usage: launcher [--wait-on-normal] [--wait-on-abnormal] <args>
 python launcher.py --wait-on-normal --wait-on-abnormal myscript.py -a 123      # script with args
 python launcher.py --wait-on-normal --wait-on-abnormal -m mymodule -a 123      # module with args
 python launcher.py --wait-on-normal --wait-on-abnormal -c "<code>"             # run code
-''')
+"""
 
 
 def main(argv=sys.argv):
     try:
         process_args = list(parse(argv))
     except Exception as ex:
-        print(HELP + '\nError: ' + str(ex), file=sys.stderr)
+        print(HELP + "\nError: " + str(ex), file=sys.stderr)
         sys.exit(2)
 
     p = subprocess.Popen(args=process_args, executable=sys.executable)
@@ -32,15 +39,15 @@ def main(argv=sys.argv):
 
 
 def _wait_for_user():
-    if bool(sys.__stdout__) and bool(sys.__stdin__):
+    if sys.__stdout__ and sys.__stdin__:
         try:
             import msvcrt
         except ImportError:
-            sys.__stdout__.write('Press Enter to continue . . . ')
+            sys.__stdout__.write("Press Enter to continue . . . ")
             sys.__stdout__.flush()
             sys.__stdin__.read(1)
         else:
-            sys.__stdout__.write('Press any key to continue . . . ')
+            sys.__stdout__.write("Press any key to continue . . . ")
             sys.__stdout__.flush()
             msvcrt.getch()
 
