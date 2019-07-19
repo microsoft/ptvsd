@@ -1285,7 +1285,7 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
     @async_handler
     def on_pause(self, request, args):
         # Pause requests cannot be serviced until pydevd is fully initialized.
-        if ptvsd.is_attached():
+        if not ptvsd.is_attached():
             self.send_response(
                 request,
                 success=False,
