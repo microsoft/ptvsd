@@ -10,8 +10,6 @@ from ptvsd.server._remote import (
     attach as ptvsd_attach,
     enable_attach as ptvsd_enable_attach,
 )
-from ptvsd.server.wrapper import debugger_attached
-
 import pydevd
 from _pydevd_bundle.pydevd_constants import get_global_debugger
 from pydevd_file_utils import get_abs_path_real_path_and_base_from_frame
