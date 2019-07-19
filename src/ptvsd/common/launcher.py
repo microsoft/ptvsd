@@ -9,25 +9,27 @@ import subprocess
 import sys
 
 
+WAIT_ON_NORMAL_SWITCH = "--wait-on-normal"
+WAIT_ON_ABNORMAL_SWITCH = "--wait-on-abnormal"
+
+
 _wait_on_normal_exit = False
 _wait_on_abnormal_exit = False
 
 
-HELP = """Usage: launcher [--wait-on-normal] [--wait-on-abnormal] <args>
-python launcher.py --wait-on-normal --wait-on-abnormal myscript.py -a 123      # script with args
-python launcher.py --wait-on-normal --wait-on-abnormal -m mymodule -a 123      # module with args
-python launcher.py --wait-on-normal --wait-on-abnormal -c "<code>"             # run code
-"""
+HELP = """Usage: launcher [{normal}] [{abnormal}] <args>
+python launcher.py {normal} {abnormal} -- <python args go here>
+""".format(normal=WAIT_ON_NORMAL_SWITCH, abnormal=WAIT_ON_ABNORMAL_SWITCH)
 
 
 def main(argv=sys.argv):
     try:
-        process_args = list(parse(argv))
+        process_args = [sys.executable] + list(parse(argv[1:]))
     except Exception as ex:
         print(HELP + "\nError: " + str(ex), file=sys.stderr)
         sys.exit(2)
 
-    p = subprocess.Popen(args=process_args, executable=sys.executable)
+    p = subprocess.Popen(args=process_args)
     exit_code = p.wait()
 
     if _wait_on_normal_exit and exit_code == 0:
@@ -53,23 +55,22 @@ def _wait_for_user():
 
 
 def parse_arg(arg):
-    if arg == "--wait-on-normal":
+    if arg == WAIT_ON_NORMAL_SWITCH:
         global _wait_on_normal_exit
         _wait_on_normal_exit = True
-    elif arg == "--wait-on-abnormal":
+    elif arg == WAIT_ON_ABNORMAL_SWITCH:
         global _wait_on_abnormal_exit
         _wait_on_abnormal_exit = True
     else:
-        return False
-    return True
-
+        raise AssertionError("Invalid argument passed to launcher.")
 
 def parse(argv):
-    ret_argv = []
-    for arg in argv:
-        if not parse_arg(arg):
-            ret_argv += [arg]
-    return ret_argv
+    it = iter(argv)
+    arg = next(it)
+    while arg != "--":
+        parse_arg(arg)
+        arg = next(it)
+    return it
 
 
 if __name__ == "__main__":
