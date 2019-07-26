@@ -62,7 +62,19 @@ class NetCommand:
                 as_dict = text
             as_dict['pydevd_cmd_id'] = cmd_id
             as_dict['seq'] = seq
-            text = json.dumps(as_dict)
+            try:
+                text = json.dumps(as_dict)
+            except UnicodeDecodeError: # Try to decode the error message, and fall back to ASCII
+                import sys
+                for _coding in (sys.getfilesystemencoding(), sys.stdin.encoding):
+                    try:
+                        as_dict['body']['output'] = as_dict['body']['output'].decode(_coding)
+                        break
+                    except LookupError:
+                        continue
+                else:
+                    as_dict['body']['ouput'] = as_dict['body']['output'].decode('ascii', 'replace')
+                text = json.dumps(as_dict)
 
         if IS_PY2:
             if isinstance(text, unicode):
