@@ -417,20 +417,17 @@ def create_server_socket(host, port):
     if IS_WINDOWS:
         try:
             from socket import SIO_LOOPBACK_FAST_PATH
-            server.ioctl(SIO_LOOPBACK_FAST_PATH, True)
         except ImportError:
-            pass
-        except AttributeError:
-            pass  # Not supported in python 2.* or <3.6
-        except OSError as ose:
-            if ose.winerror == 10045:  # Not supported by OS
-                pass
-            else:
-                raise
+            pass # Not supported in python 2.* or <3.6
+        else:
+            try:
+                server.ioctl(SIO_LOOPBACK_FAST_PATH, True)
+            except OSError as ose:
+                if ose.winerror != 10045:  # Not supported by OS
+                    raise
         from socket import SO_EXCLUSIVEADDRUSE
         server.setsockopt(SOL_SOCKET, SO_EXCLUSIVEADDRUSE, 1)
     else:
-        from socket import SO_REUSEADDR
         server.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
 
     try:

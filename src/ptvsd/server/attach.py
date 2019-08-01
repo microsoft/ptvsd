@@ -3,8 +3,6 @@
 # for license information.
 
 import sys
-import warnings
-
 import ptvsd.server.log
 import ptvsd.server.multiproc
 import ptvsd.server.options
@@ -75,7 +73,7 @@ def enable_attach(
 
     # Ensure port is int
     host, port = address
-    address = (host, port if type(port) is int else int(port))
+    address = (host, int(port))
 
     ptvsd.server.options.host, ptvsd.server.options.port = pydevd._enable_attach(address)
 
@@ -111,7 +109,7 @@ def attach(address, log_dir=None):
 
     # Ensure port is int
     host, port = address
-    address = (host, port if type(port) is int else int(port))
+    address = (host, int(port))
 
     ptvsd.server.log.debug('pydevd.settrace()')
     pydevd.settrace(
@@ -144,17 +142,6 @@ def break_into_debugger():
             get_abs_path_real_path_and_base_from_frame(stop_at_frame)) == global_debugger.PYDEV_FILE:
         stop_at_frame = stop_at_frame.f_back
 
-
-    # pydevd.settrace() only enables debugging of the current
-    # thread and all future threads.  PyDevd is not enabled for
-    # existing threads (other than the current one).  Consequently,
-    # pydevd.settrace() must be called ASAP in the current thread.
-    # See issue #509.
-    #
-    # This is tricky, however, because settrace() will block until
-    # it receives a CMD_RUN message.  You can't just call it in a
-    # thread to avoid blocking; doing so would prevent the current
-    # thread from being debugged.
     pydevd.settrace(
         suspend=True,
         trace_only_current_thread=True,

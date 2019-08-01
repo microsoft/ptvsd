@@ -1987,7 +1987,7 @@ def _is_attached():
     the ConfigurationDone request.
     '''
     py_db = get_global_debugger()
-    return bool(py_db) and py_db.is_attached()
+    return (py_db is not None) and py_db.is_attached()
 
 #=======================================================================================================================
 # settrace

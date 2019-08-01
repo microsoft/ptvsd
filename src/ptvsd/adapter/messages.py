@@ -154,7 +154,6 @@ class IDEMessages(Messages):
     def _debug_config(self, request):
         assert request.command in ("launch", "attach")
         self._shared.start_method = request.command
-        self._shared.arguments = request.arguments
         _Shared.readonly_attrs.add("start_method")
 
         # We're about to connect to the server and start the message loop for its
@@ -172,7 +171,7 @@ class IDEMessages(Messages):
         # TODO: nodebug
         debuggee.spawn_and_connect(request)
 
-        return self._configure()
+        return self._configure(request)
 
     @_replay_to_server
     @_only_allowed_while("initializing")
@@ -185,7 +184,7 @@ class IDEMessages(Messages):
         options.port = int(request.arguments.get("port", options.port))
         _channels.connect_to_server(address=(options.host, options.port))
 
-        return self._configure()
+        return self._configure(request)
 
     def _set_debugger_properties(self, args):
         client_os_type = None
@@ -208,7 +207,7 @@ class IDEMessages(Messages):
     # Handles the configuration request sequence for "launch" or "attach", from when
     # the "initialized" event is sent, to when "configurationDone" is received; see
     # https://github.com/microsoft/vscode/issues/4902#issuecomment-368583522
-    def _configure(self):
+    def _configure(self, request):
         log.debug("Replaying previously received messages to server.")
 
         assert len(self._initial_messages)
@@ -231,9 +230,10 @@ class IDEMessages(Messages):
         log.debug("Finished replaying messages to server.")
         self.initial_messages = None
 
+        self._set_debugger_properties(request.arguments)
+
         # Let the IDE know that it can begin configuring the adapter.
         state.change("configuring")
-        self._set_debugger_properties(self._shared.arguments)
         self._ide.send_event("initialized")
 
         # Process further incoming messages, until we get "configurationDone".

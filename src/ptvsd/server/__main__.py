@@ -4,7 +4,6 @@
 
 from __future__ import absolute_import, print_function, with_statement
 
-import numbers
 import os.path
 import runpy
 import site

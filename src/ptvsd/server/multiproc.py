@@ -25,6 +25,7 @@ from ptvsd.server.socket import create_server, create_client
 from ptvsd.server.messaging import JsonIOStream, JsonMessageChannel
 from ptvsd.server._util import new_hidden_thread
 from _pydev_bundle import pydev_monkey
+from _pydevd_bundle.pydevd_comm import get_global_debugger
 
 
 subprocess_lock = threading.Lock()
@@ -207,8 +208,15 @@ def notify_root(port):
 
     if not response['incomingConnection']:
         ptvsd.server.log.debug('No IDE connection is expected for this subprocess; unpausing.')
-        while not ptvsd.is_attached():
+
+        # TODO: The code here exists to cancel any wait for attach in an indirect way. We need a cleaner
+        # way to cancel wait_for_attach. Ideally, a cancellable wait_for_attach, which ensures that it
+        # does not mess up the pydevd internal debugger states.
+        debugger = get_global_debugger()
+        while debugger is None:
             time.sleep(0.1)
+            debugger = get_global_debugger()
+        debugger.ready_to_run = True
 
 
 def patch_args(args):
