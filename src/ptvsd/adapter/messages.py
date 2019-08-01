@@ -9,6 +9,7 @@ import platform
 
 import ptvsd
 from ptvsd.common import json, log, messaging, singleton
+from ptvsd.common.compat import unicode
 from ptvsd.adapter import channels, debuggee, contract, options, state
 
 
@@ -186,23 +187,27 @@ class IDEMessages(Messages):
 
         return self._configure(request)
 
-    def _set_debugger_properties(self, args):
+    def _set_debugger_properties(self, request):
+        debug_options = set(request("debugOptions", json.array(unicode)))
         client_os_type = None
-        if 'WindowsClient' in args.get('debugOptions', []):
+        if 'WindowsClient' in debug_options or 'WINDOWS' in debug_options:
             client_os_type = 'WINDOWS'
-        elif 'UnixClient' in args.get('debugOptions', []):
+        elif 'UnixClient' in debug_options or 'UNIX' in debug_options:
             client_os_type = 'UNIX'
         else:
             client_os_type = 'WINDOWS' if platform.system() == 'Windows' else 'UNIX'
 
-        self._server.send_request("setDebuggerProperty", arguments={
-            "dontTraceStartPatterns": ["\\ptvsd\\", "/ptvsd/"],
-            "dontTraceEndPatterns": ["ptvsd_launcher.py"],
-            "skipSuspendOnBreakpointException": ("BaseException",),
-            "skipPrintBreakpointException": ("NameError",),
-            "multiThreadsSingleNotification": True,
-            "ideOS": client_os_type,
-        }).wait_for_response()
+        try:
+            self._server.request("setDebuggerProperty", arguments={
+                "dontTraceStartPatterns": ["\\ptvsd\\", "/ptvsd/"],
+                "dontTraceEndPatterns": ["ptvsd_launcher.py"],
+                "skipSuspendOnBreakpointException": ("BaseException",),
+                "skipPrintBreakpointException": ("NameError",),
+                "multiThreadsSingleNotification": True,
+                "ideOS": client_os_type,
+            })
+        except messaging.MessageHandlingError as exc:
+            exc.propagate(request)
 
     # Handles the configuration request sequence for "launch" or "attach", from when
     # the "initialized" event is sent, to when "configurationDone" is received; see
@@ -230,7 +235,7 @@ class IDEMessages(Messages):
         log.debug("Finished replaying messages to server.")
         self.initial_messages = None
 
-        self._set_debugger_properties(request.arguments)
+        self._set_debugger_properties(request)
 
         # Let the IDE know that it can begin configuring the adapter.
         state.change("configuring")

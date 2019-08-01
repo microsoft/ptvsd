@@ -2,7 +2,7 @@
 # Licensed under the MIT License. See LICENSE in the project root
 # for license information.
 
-from __future__ import absolute_import, print_function, with_statement
+from __future__ import absolute_import, print_function, unicode_literals
 
 import os.path
 import runpy

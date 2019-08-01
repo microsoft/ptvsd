@@ -2,11 +2,13 @@
 # Licensed under the MIT License. See LICENSE in the project root
 # for license information.
 
+from __future__ import absolute_import, print_function, unicode_literals
+
 import sys
-import ptvsd.server.log
-import ptvsd.server.multiproc
-import ptvsd.server.options
 import pydevd
+
+from ptvsd.common import log, options as common_opts
+from ptvsd.server import multiproc, options as server_opts
 from _pydevd_bundle.pydevd_constants import get_global_debugger
 from pydevd_file_utils import get_abs_path_real_path_and_base_from_frame
 
@@ -21,18 +23,18 @@ def wait_for_attach(timeout=None):
     timeout : float, optional
         The timeout for the operation in seconds (or fractions thereof).
     """
-    ptvsd.server.log.info('wait_for_attach()')
+    log.info('wait_for_attach()')
     dbg = get_global_debugger()
     if not bool(dbg):
         msg = 'wait_for_attach() called before enable_attach().'
-        ptvsd.server.log.info(msg)
+        log.info(msg)
         raise AssertionError(msg)
 
     pydevd._wait_for_attach()
 
 
 def enable_attach(
-    address=(ptvsd.server.options.host, ptvsd.server.options.port),
+    address=(server_opts.host, server_opts.port),
     log_dir=None):
     """Enables a client to attach to this process remotely to debug Python code.
 
@@ -63,24 +65,24 @@ def enable_attach(
     """
 
     if log_dir:
-        ptvsd.common.options.log_dir = log_dir
-    ptvsd.server.log.to_file()
-    ptvsd.server.log.info('enable_attach{0!r}', (address,))
+        common_opts.log_dir = log_dir
+    log.to_file()
+    log.info('enable_attach{0!r}', (address,))
 
     if is_attached():
-        ptvsd.server.log.info('enable_attach() ignored - already attached.')
+        log.info('enable_attach() ignored - already attached.')
         return None, None
 
     # Ensure port is int
     host, port = address
     address = (host, int(port))
 
-    ptvsd.server.options.host, ptvsd.server.options.port = pydevd._enable_attach(address)
+    server_opts.host, server_opts.port = pydevd._enable_attach(address)
 
-    if ptvsd.server.options.subprocess_notify:
-        ptvsd.server.multiproc.notify_root(ptvsd.options.port)
+    if server_opts.subprocess_notify:
+        multiproc.notify_root(server_opts.port)
 
-    return (ptvsd.server.options.host, ptvsd.server.options.port)
+    return (server_opts.host, server_opts.port)
 
 
 def attach(address, log_dir=None):
@@ -99,24 +101,25 @@ def attach(address, log_dir=None):
     """
 
     if log_dir:
-        ptvsd.common.options.log_dir = log_dir
-    ptvsd.server.log.to_file()
-    ptvsd.server.log.info('attach{0!r}', (address,))
+        common_opts.log_dir = log_dir
+    log.to_file()
+    log.info('attach{0!r}', (address,))
 
     if is_attached():
-        ptvsd.server.log.info('attach() ignored - already attached.')
+        log.info('attach() ignored - already attached.')
         return None, None
 
     # Ensure port is int
     host, port = address
     address = (host, int(port))
+    server_opts.host, server_opts.port = address
 
-    ptvsd.server.log.debug('pydevd.settrace()')
+    log.debug('pydevd.settrace()')
     pydevd.settrace(
         host=host,
         port=port,
         suspend=False,
-        patch_multiprocessing=ptvsd.server.options.multiprocess)
+        patch_multiprocessing=server_opts.multiprocess)
 
 
 def is_attached():
@@ -129,10 +132,10 @@ def break_into_debugger():
     and breaks into the debugger with current thread as active.
     """
 
-    ptvsd.server.log.info('break_into_debugger()')
+    log.info('break_into_debugger()')
 
     if not is_attached():
-        ptvsd.server.log.info('break_into_debugger() ignored - debugger not attached')
+        log.info('break_into_debugger() ignored - debugger not attached')
         return
 
     # Get the first frame in the stack that's not an internal frame.
