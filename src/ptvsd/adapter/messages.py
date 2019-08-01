@@ -5,6 +5,7 @@
 from __future__ import absolute_import, print_function, unicode_literals
 
 import functools
+import platform
 
 import ptvsd
 from ptvsd.common import json, log, messaging, singleton
@@ -153,6 +154,7 @@ class IDEMessages(Messages):
     def _debug_config(self, request):
         assert request.command in ("launch", "attach")
         self._shared.start_method = request.command
+        self._shared.arguments = request.arguments
         _Shared.readonly_attrs.add("start_method")
 
         # We're about to connect to the server and start the message loop for its
@@ -185,6 +187,24 @@ class IDEMessages(Messages):
 
         return self._configure()
 
+    def _set_debugger_properties(self, args):
+        client_os_type = None
+        if 'WindowsClient' in args.get('debugOptions', []):
+            client_os_type = 'WINDOWS'
+        elif 'UnixClient' in args.get('debugOptions', []):
+            client_os_type = 'UNIX'
+        else:
+            client_os_type = 'WINDOWS' if platform.system() == 'Windows' else 'UNIX'
+
+        self._server.send_request("setDebuggerProperty", arguments={
+            "dontTraceStartPatterns": ["\\ptvsd\\", "/ptvsd/"],
+            "dontTraceEndPatterns": ["ptvsd_launcher.py"],
+            "skipSuspendOnBreakpointException": ("BaseException",),
+            "skipPrintBreakpointException": ("NameError",),
+            "multiThreadsSingleNotification": True,
+            "ideOS": client_os_type,
+        }).wait_for_response()
+
     # Handles the configuration request sequence for "launch" or "attach", from when
     # the "initialized" event is sent, to when "configurationDone" is received; see
     # https://github.com/microsoft/vscode/issues/4902#issuecomment-368583522
@@ -213,6 +233,7 @@ class IDEMessages(Messages):
 
         # Let the IDE know that it can begin configuring the adapter.
         state.change("configuring")
+        self._set_debugger_properties(self._shared.arguments)
         self._ide.send_event("initialized")
 
         # Process further incoming messages, until we get "configurationDone".

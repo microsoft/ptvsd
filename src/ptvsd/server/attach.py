@@ -6,25 +6,12 @@ import sys
 import warnings
 
 import ptvsd.server.log
-from ptvsd.server._remote import (
-    attach as ptvsd_attach,
-    enable_attach as ptvsd_enable_attach,
-)
+import ptvsd.server.multiproc
+import ptvsd.server.options
 import pydevd
 from _pydevd_bundle.pydevd_constants import get_global_debugger
 from pydevd_file_utils import get_abs_path_real_path_and_base_from_frame
 
-WAIT_TIMEOUT = 1.0
-
-DEFAULT_HOST = '0.0.0.0'
-DEFAULT_PORT = 5678
-
-_pending_threads = set()
-
-_redirect_output_deprecation_msg = (
-    "'redirect_output' setting via enable_attach will be deprecated in the future versions of the debugger. "
-    "This can be set using redirectOutput in Launch config in VS Code, using Tee output option in Visual Studio, "
-    "or debugOptions configuration for any client.")
 
 def wait_for_attach(timeout=None):
     """If a remote debugger is attached, returns immediately. Otherwise,
@@ -36,17 +23,19 @@ def wait_for_attach(timeout=None):
     timeout : float, optional
         The timeout for the operation in seconds (or fractions thereof).
     """
-    ptvsd.server.log.info('wait_for_attach{0!r}', (timeout,))
+    ptvsd.server.log.info('wait_for_attach()')
     dbg = get_global_debugger()
-    if bool(dbg):
-        dbg.dap_debugger_attached.wait(timeout)
-    else:
+    if not bool(dbg):
         msg = 'wait_for_attach() called before enable_attach().'
         ptvsd.server.log.info(msg)
         raise AssertionError(msg)
 
+    pydevd._wait_for_attach()
 
-def enable_attach(address=(DEFAULT_HOST, DEFAULT_PORT), redirect_output=None, log_dir=None):
+
+def enable_attach(
+    address=(ptvsd.server.options.host, ptvsd.server.options.port),
+    log_dir=None):
     """Enables a client to attach to this process remotely to debug Python code.
 
     Parameters
@@ -58,9 +47,6 @@ def enable_attach(address=(DEFAULT_HOST, DEFAULT_PORT), redirect_output=None, lo
         ``(hostname, port)``. On client side, the server is identified by the
         Qualifier string in the usual ``'hostname:port'`` format, e.g.:
         ``'myhost.cloudapp.net:5678'``. Default is ``('0.0.0.0', 5678)``.
-    redirect_output : bool, optional 
-        (Deprecated) Specifies whether any output (on both `stdout` and `stderr`) produced
-        by this program should be sent to the debugger. Default is ``True``.
     log_dir : str, optional
         Name of the directory that debugger will create its log files in.
         If not specified, logging is disabled.
@@ -83,23 +69,20 @@ def enable_attach(address=(DEFAULT_HOST, DEFAULT_PORT), redirect_output=None, lo
     ptvsd.server.log.to_file()
     ptvsd.server.log.info('enable_attach{0!r}', (address,))
 
-    if redirect_output is not None:
-        ptvsd.server.log.info('redirect_output deprecation warning.')
-        warnings.warn(_redirect_output_deprecation_msg, DeprecationWarning, stacklevel=2)
-
     if is_attached():
         ptvsd.server.log.info('enable_attach() ignored - already attached.')
-        return
-
-    dbg = get_global_debugger()
-    if bool(dbg):
-        dbg.dap_debugger_attached.clear()
+        return None, None
 
     # Ensure port is int
-    port = address[1]
-    address = (address[0], port if type(port) is int else int(port))
+    host, port = address
+    address = (host, port if type(port) is int else int(port))
 
-    ptvsd_enable_attach(address)
+    ptvsd.server.options.host, ptvsd.server.options.port = pydevd._enable_attach(address)
+
+    if ptvsd.server.options.subprocess_notify:
+        ptvsd.server.multiproc.notify_root(ptvsd.options.port)
+
+    return (ptvsd.server.options.host, ptvsd.server.options.port)
 
 
 def attach(address, redirect_output=None, log_dir=None):
@@ -125,29 +108,26 @@ def attach(address, redirect_output=None, log_dir=None):
     ptvsd.server.log.to_file()
     ptvsd.server.log.info('attach{0!r}', (address, redirect_output))
 
-    if redirect_output is not None:
-        ptvsd.server.log.info('redirect_output deprecation warning.')
-        warnings.warn(_redirect_output_deprecation_msg, DeprecationWarning)
-
     if is_attached():
         ptvsd.server.log.info('attach() ignored - already attached.')
-        return
-
-    dbg = get_global_debugger()
-    if bool(dbg):
-        dbg.dap_debugger_attached.clear()
+        return None, None
 
     # Ensure port is int
-    port = address[1]
-    address = (address[0], port if type(port) is int else int(port))
+    host, port = address
+    address = (host, port if type(port) is int else int(port))
 
-    ptvsd_attach(address)
+    ptvsd.server.log.debug('pydevd.settrace()')
+    pydevd.settrace(
+        host=host,
+        port=port,
+        suspend=False,
+        patch_multiprocessing=ptvsd.server.options.multiprocess)
 
 
 def is_attached():
     """Returns ``True`` if debugger is attached, ``False`` otherwise."""
     dbg = get_global_debugger()
-    return bool(dbg) and dbg.dap_debugger_attached.is_set()
+    return bool(dbg) and dbg.is_attached()
 
 
 def break_into_debugger():
