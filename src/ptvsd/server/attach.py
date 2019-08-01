@@ -85,7 +85,7 @@ def enable_attach(
     return (ptvsd.server.options.host, ptvsd.server.options.port)
 
 
-def attach(address, redirect_output=None, log_dir=None):
+def attach(address, log_dir=None):
     """Attaches this process to the debugger listening on a given address.
 
     Parameters
@@ -95,9 +95,6 @@ def attach(address, redirect_output=None, log_dir=None):
         for TCP connections. It is in the same format as used for
         regular sockets of the `socket.AF_INET` family, i.e. a tuple of
         ``(hostname, port)``.
-    redirect_output : bool, optional
-        (Deprecated) Specifies whether any output (on both `stdout` and `stderr`) produced
-        by this program should be sent to the debugger. Default is ``True``.
     log_dir : str, optional
         Name of the directory that debugger will create its log files in.
         If not specified, logging is disabled.
@@ -106,7 +103,7 @@ def attach(address, redirect_output=None, log_dir=None):
     if log_dir:
         ptvsd.common.options.log_dir = log_dir
     ptvsd.server.log.to_file()
-    ptvsd.server.log.info('attach{0!r}', (address, redirect_output))
+    ptvsd.server.log.info('attach{0!r}', (address,))
 
     if is_attached():
         ptvsd.server.log.info('attach() ignored - already attached.')
@@ -126,8 +123,7 @@ def attach(address, redirect_output=None, log_dir=None):
 
 def is_attached():
     """Returns ``True`` if debugger is attached, ``False`` otherwise."""
-    dbg = get_global_debugger()
-    return bool(dbg) and dbg.is_attached()
+    return pydevd._is_attached()
 
 
 def break_into_debugger():

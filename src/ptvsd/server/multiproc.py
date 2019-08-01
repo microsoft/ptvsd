@@ -24,9 +24,7 @@ from ptvsd.server import options
 from ptvsd.server.socket import create_server, create_client
 from ptvsd.server.messaging import JsonIOStream, JsonMessageChannel
 from ptvsd.server._util import new_hidden_thread
-
 from _pydev_bundle import pydev_monkey
-from _pydevd_bundle.pydevd_comm import get_global_debugger
 
 
 subprocess_lock = threading.Lock()
@@ -209,11 +207,8 @@ def notify_root(port):
 
     if not response['incomingConnection']:
         ptvsd.server.log.debug('No IDE connection is expected for this subprocess; unpausing.')
-        debugger = get_global_debugger()
-        while debugger is None:
+        while not ptvsd.is_attached():
             time.sleep(0.1)
-            debugger = get_global_debugger()
-        debugger.ready_to_run = True
 
 
 def patch_args(args):

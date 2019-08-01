@@ -1971,7 +1971,7 @@ def _enable_attach(address):
 def _wait_for_attach():
     '''
     Meant to be called after _enable_attach() -- the current thread will only unblock after a
-    connection is in place and the the DAP (Debug Adapter Protocol) sends the ConfigurationDone
+    connection is in place and the DAP (Debug Adapter Protocol) sends the ConfigurationDone
     request.
     '''
     py_db = get_global_debugger()
@@ -1980,6 +1980,14 @@ def _wait_for_attach():
 
     py_db.block_until_configuration_done()
 
+
+def _is_attached():
+    '''
+    Can be called any time to check if the connection was established and the DAP (Debug Adapter Protocol) has sent
+    the ConfigurationDone request.
+    '''
+    py_db = get_global_debugger()
+    return bool(py_db) and py_db.is_attached()
 
 #=======================================================================================================================
 # settrace
