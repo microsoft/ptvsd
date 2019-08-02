@@ -413,24 +413,14 @@ class WriterThread(PyDBDaemonThread):
 
 
 def create_server_socket(host, port):
-    server = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)
-    if IS_WINDOWS:
-        try:
-            from socket import SIO_LOOPBACK_FAST_PATH
-        except ImportError:
-            pass # Not supported in python 2.* or <3.6
-        else:
-            try:
-                server.ioctl(SIO_LOOPBACK_FAST_PATH, True)
-            except OSError as ose:
-                if ose.winerror != 10045:  # Not supported by OS
-                    raise
-        from socket import SO_EXCLUSIVEADDRUSE
-        server.setsockopt(SOL_SOCKET, SO_EXCLUSIVEADDRUSE, 1)
-    else:
-        server.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-
     try:
+        server = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)
+        if IS_WINDOWS:
+            from socket import SO_EXCLUSIVEADDRUSE
+            server.setsockopt(SOL_SOCKET, SO_EXCLUSIVEADDRUSE, 1)
+        else:
+            server.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+
         server.bind((host, port))
         server.settimeout(None)
     except Exception:
