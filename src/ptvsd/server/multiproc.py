@@ -208,11 +208,12 @@ def notify_root(port):
         # TODO: The code here exists to cancel any wait for attach in an indirect way. We need a cleaner
         # way to cancel wait_for_attach. Ideally, a cancellable wait_for_attach, which ensures that it
         # does not mess up the pydevd internal debugger states.
-        debugger = get_global_debugger()
-        while debugger is None:
-            time.sleep(0.1)
-            debugger = get_global_debugger()
-        debugger.ready_to_run = True
+
+        # debugger = get_global_debugger()
+        # while debugger is None:
+        #     time.sleep(0.1)
+        #     debugger = get_global_debugger()
+        # debugger.ready_to_run = True
 
 
 def patch_args(args):
