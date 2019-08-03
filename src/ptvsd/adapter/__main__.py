@@ -13,12 +13,13 @@ import argparse
 
 def main(args):
     import ptvsd
-    from ptvsd.common import log
+    from ptvsd.common import log, options
     from ptvsd.adapter import channels
 
     if args.cls:
         print("\033c")
 
+    options.log_dir = args.log_dir
     log.stderr_levels |= {"info"}
     log.filename_prefix = "ptvsd.adapter"
     log.to_file()
@@ -73,6 +74,15 @@ def _parse_argv():
         "--cls",
         action='store_true',
         help="clear screen before starting the debuggee",
+    )
+
+    parser.add_argument(
+        "--log-dir",
+        type=str,
+        nargs="?",
+        default=None,
+        metavar="DIR",
+        help="enable logging and use DIR to save adapter logs"
     )
 
     return parser.parse_args()
