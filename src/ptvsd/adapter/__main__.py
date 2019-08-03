@@ -79,8 +79,6 @@ def _parse_argv():
     parser.add_argument(
         "--log-dir",
         type=str,
-        nargs="?",
-        default=None,
         metavar="DIR",
         help="enable logging and use DIR to save adapter logs"
     )
