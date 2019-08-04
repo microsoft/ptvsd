@@ -6,6 +6,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 import functools
 import platform
+import os.path
 
 import ptvsd
 from ptvsd.common import json, log, messaging, singleton

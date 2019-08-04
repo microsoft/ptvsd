@@ -22,7 +22,7 @@ def test_path_with_ampersand(start_method, run_as):
     test_py = bp_root / "a&b" / "test.py"
 
     with debug.Session(start_method) as session:
-        session.initialize(target=(run_as, test_py))
+        session.initialize(target=(run_as, test_py), log_dir="C:\\GIT\\logs")
         session.set_breakpoints(test_py, ["two"])
         session.start_debugging()
 

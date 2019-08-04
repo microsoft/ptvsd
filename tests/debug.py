@@ -25,6 +25,7 @@ from tests.patterns import some
 from tests.timeline import Timeline, Event, Request, Response
 
 PTVSD_DIR = py.path.local(ptvsd.__file__) / ".."
+PTVSD_ADAPTER_DIR = PTVSD_DIR / "adapter"
 PTVSD_PORT = net.get_test_server_port(5678, 5800)
 
 # Added to the environment variables of every new debug.Session - after copying
@@ -144,6 +145,10 @@ class Session(object):
         self.all_occurrences_of = self.timeline.all_occurrences_of
         self.observe_all = self.timeline.observe_all
 
+        # adapter process
+        self._adapter_process = None
+        self._psutil_adapter = None
+
         # This must always be the last attribute set, to avoid issues with __del__
         # trying to cleanup a partially constructed Session.
         self._created = True
@@ -231,6 +236,11 @@ class Session(object):
 
         log.info('{0} closed', self)
 
+    def _get_adapter_args(self):
+        argv = [sys.executable]
+        argv += [PTVSD_ADAPTER_DIR.strpath]
+        return argv
+
     def _get_argv_for_attach_using_import(self):
         argv = [sys.executable]
         return argv
@@ -283,13 +293,15 @@ class Session(object):
         if run_as == 'file':
             self._validate_pyfile(path_or_code)
             argv += [path_or_code]
+            if self.cwd is None:
+                self.cwd = os.path.dirname(path_or_code)
         elif run_as == 'module':
             if os.path.isfile(path_or_code):
                 self._validate_pyfile(path_or_code)
             if os.path.isfile(path_or_code) or os.path.isdir(path_or_code):
                 self.env['PYTHONPATH'] += os.pathsep + os.path.dirname(path_or_code)
                 try:
-                    module = path_or_code[(len(os.path.dirname(path_or_code)) + 1) : -3]
+                    module = path_or_code[(len(os.path.dirname(path_or_code)) + 1): -3]
                 except Exception:
                     module = 'code_to_debug'
                 argv += ['-m', module]
@@ -363,7 +375,6 @@ class Session(object):
         usr_argv = []
 
         if start_method == 'launch':
-            self._listen()
             dbg_argv += self._get_argv_for_launch()
         elif start_method == 'attach_socket_cmdline':
             dbg_argv += self._get_argv_for_attach_using_cmdline()
@@ -383,8 +394,11 @@ class Session(object):
         else:
             pytest.fail()
 
+        adapter_args = self._get_adapter_args()
+
         if self.log_dir:
             dbg_argv += ['--log-dir', self.log_dir]
+            adapter_args += ['--log-dir', self.log_dir]
 
         if self.no_debug:
             dbg_argv += ['--nodebug']
@@ -440,30 +454,47 @@ class Session(object):
             env_str,
         )
 
-        spawn_args = usr_argv if start_method == 'attach_pid' else dbg_argv
+        adapter_args = [make_filename(s) for s in adapter_args]
 
-        # Normalize args to either bytes or unicode, depending on Python version.
-        spawn_args = [make_filename(s) for s in spawn_args]
-
-        log.info('Spawning {0}:\n\n{1}', self, "\n".join((repr(s) for s in spawn_args)))
+        log.info('Spawning adapter {0}:\n\n{1}', self, "\n".join((repr(s) for s in adapter_args)))
         stdio = {}
-        if self.capture_output:
-            stdio["stdin"] = stdio["stdout"] = stdio["stderr"] = subprocess.PIPE
-        self.process = subprocess.Popen(
-            spawn_args,
+        stdio["stdin"] = stdio["stdout"] = subprocess.PIPE
+        self._adapter_process = subprocess.Popen(
+            adapter_args,
             env=env,
             cwd=cwd,
             bufsize=0,
             **stdio
         )
-        self.pid = self.process.pid
-        self.psutil_process = psutil.Process(self.pid)
-        self.is_running = True
-        log.info('Spawned {0} with pid={1}', self, self.pid)
-        watchdog.register_spawn(self.pid, str(self))
+        self._psutil_adapter = psutil.Process(self._adapter_process.pid)
+        log.info('Spawned adapter {0} with pid={1}', self, self._adapter_process.pid)
+        self._setup_adapter_messaging()
+        # watchdog.register_spawn(self._adapter_process.pid, str(self))
 
-        if self.capture_output:
-            self.captured_output.capture(self.process)
+        # spawn_args = usr_argv if start_method == 'attach_pid' else dbg_argv
+
+        # # Normalize args to either bytes or unicode, depending on Python version.
+        # spawn_args = [make_filename(s) for s in spawn_args]
+
+        # log.info('Spawning {0}:\n\n{1}', self, "\n".join((repr(s) for s in spawn_args)))
+        # stdio = {}
+        # if self.capture_output:
+        #     stdio["stdin"] = stdio["stdout"] = stdio["stderr"] = subprocess.PIPE
+        # self.process = subprocess.Popen(
+        #     spawn_args,
+        #     env=env,
+        #     cwd=cwd,
+        #     bufsize=0,
+        #     **stdio
+        # )
+        # self.pid = self.process.pid
+        # self.psutil_process = psutil.Process(self.pid)
+        self.is_running = True
+        # log.info('Spawned {0} with pid={1}', self, self.pid)
+        # watchdog.register_spawn(self.pid, str(self))
+
+        # if self.capture_output:
+        #    self.captured_output.capture(self.process)
 
         if start_method == 'attach_pid':
             # This is a temp process spawned to inject debugger into the debuggee.
@@ -490,7 +521,7 @@ class Session(object):
         self.connected.wait()
 
         assert self.ptvsd_port
-        assert self.socket
+        # assert self.socket
 
         if self.perform_handshake:
             return self.handshake()
@@ -544,7 +575,8 @@ class Session(object):
         if not self.is_running:
             return
 
-        assert self.psutil_process is not None
+        self.send_request('disconnect')
+        assert self._adapter_process is not None
 
         timed_out = []
         def kill_after_timeout():
@@ -552,8 +584,8 @@ class Session(object):
             if self.is_running:
                 log.warning(
                     'wait_for_exit() timed out while waiting for {0} (pid={1})',
-                    self,
-                    self.pid,
+                    'ptvsd.adapter',
+                    self._adapter_process.pid,
                 )
                 timed_out[:] = [True]
                 self.kill_process_tree()
@@ -562,23 +594,23 @@ class Session(object):
             target=kill_after_timeout,
             name=fmt(
                 'wait_for_exit({0!r}, pid={1!r})',
-                self,
-                self.pid,
+                'ptvsd.adapter',
+                self._adapter_process.pid,
             ),
         )
         kill_thread.daemon = True
         kill_thread.start()
 
+        self.is_running = False
+        self.wait_for_termination(close=True)
+
         log.info('Waiting for {0} (pid={1}) to terminate...', self, self.pid)
-        returncode = self.psutil_process.wait()
+        returncode = self._psutil_adapter.wait()
         watchdog.unregister_spawn(self.pid, str(self))
         self.process_exited = True
 
         assert not timed_out, "wait_for_exit() timed out"
         assert returncode == self.expected_returncode
-
-        self.is_running = False
-        self.wait_for_termination(close=True)
 
     def kill_process_tree(self):
         if self.psutil_process is None or self.process_exited:
@@ -696,6 +728,13 @@ class Session(object):
         self.channel.start()
         self.connected.set()
 
+    def _setup_adapter_messaging(self):
+        self.stream = messaging.JsonIOStream.from_process(self._adapter_process, name=str(self))
+        handlers = messaging.MessageHandlers(request=self._process_request, event=self._process_event)
+        self.channel = messaging.JsonMessageChannel(self.stream, handlers)
+        self.channel.start()
+        self.connected.set()
+
     def send_request(self, command, arguments=None, proceed=True):
         if self.timeline.is_frozen and proceed:
             self.proceed()
@@ -732,28 +771,61 @@ class Session(object):
         telemetry = self.wait_for_next_event('output')
         assert telemetry == {
             'category': 'telemetry',
-            'output': 'ptvsd',
+            'output': 'ptvsd.adapter',
             'data': {'version': some.str},
             #'data': {'version': ptvsd.__version__},
         }
 
-        self.request('initialize', {'adapterID': 'test'})
-        self.wait_for_next(Event('initialized'))
+        self.request('initialize', {
+            'adapterID': 'test',
+            'pathFormat': 'path'
+        })
 
         request = 'launch' if self.start_method == 'launch' else 'attach'
         self.start_method_args.update({
             'debugOptions': list(self.debug_options),
             'pathMappings': self.path_mappings,
             'rules': self.rules,
+            'python': sys.executable,
+            'cwd': self.cwd,
         })
+
+        if self.start_method == 'launch':
+            t = self._get_target()
+            try:
+                _, _t = self._get_target()
+            except:
+                _t = t
+
+            run_as, _ = self.target
+            if run_as == 'file':
+                self.start_method_args.update({'program': _t})
+            elif run_as == 'module':
+                self.start_method_args.update({'module': _t})
+            else:
+                self.start_method_args.update({'code': _t})
+
         if self.success_exitcodes is not None:
             self.start_method_args['successExitCodes'] = self.success_exitcodes
-        launch_or_attach_request = self.send_request(request, self.start_method_args)
+        self._launch_or_attach_request = self.send_request(request, self.start_method_args)
+        self.wait_for_next(Event('initialized'))
+
+
+    def start_debugging(self, freeze=True):
+        """Finalizes the configuration stage, and issues a 'configurationDone' request
+        to start running code under debugger.
+
+        After this method returns, ptvsd is running the code in the script file or module
+        that was specified via self.target.
+        """
+
+        configurationDone_request = self.send_request('configurationDone')
+        start = self.wait_for_next(Response(configurationDone_request))
 
         if self.no_debug:
-            launch_or_attach_request.wait_for_response()
+            self._launch_or_attach_request.wait_for_response()
         else:
-            self.wait_for_next(Event('process') & Response(launch_or_attach_request))
+            self.wait_for_next(Event('process') & Response(self._launch_or_attach_request))
 
             # 'process' is expected right after 'launch' or 'attach'.
             self.expect_new(Event('process', {
@@ -770,17 +842,6 @@ class Session(object):
             self.send_request('threads').wait_for_response()
             self.expect_realized(Event('thread'))
 
-    def start_debugging(self, freeze=True):
-        """Finalizes the configuration stage, and issues a 'configurationDone' request
-        to start running code under debugger.
-
-        After this method returns, ptvsd is running the code in the script file or module
-        that was specified via self.target.
-        """
-
-        configurationDone_request = self.send_request('configurationDone')
-        start = self.wait_for_next(Response(configurationDone_request))
-
         if not freeze:
             self.proceed()
 
@@ -790,24 +851,23 @@ class Session(object):
         if event.event == "ptvsd_subprocess":
             pid = event.body["processId"]
             watchdog.register_spawn(pid, fmt("{0}-subprocess-{1}", self, pid))
-
         self.timeline.record_event(event, block=False)
 
-        if event.event == "terminated":
-            # Stop the message loop, since the ptvsd is going to close the connection
-            # from its end shortly after sending this event, and no further messages
-            # are expected.
-            log.info(
-                'Received "terminated" event from {0}; stopping message processing.',
-                self,
-            )
-            self.channel.close()
 
     def _process_request(self, request):
         self.timeline.record_request(request, block=False)
 
     def _process_response(self, request_occ, response):
         self.timeline.record_response(request_occ, response, block=False)
+        if request_occ.command == "disconnect":
+            # Stop the message loop, since the ptvsd is going to close the connection
+            # from its end shortly after sending this event, and no further messages
+            # are expected.
+            log.info(
+                'Received "disconnect" response from {0}; stopping message processing.',
+                'ptvsd.adapter',
+            )
+            raise EOFError(fmt("{0} disconnect", self))
 
     def wait_for_next_event(self, event, body=some.object):
         return self.timeline.wait_for_next(Event(event, body)).body
