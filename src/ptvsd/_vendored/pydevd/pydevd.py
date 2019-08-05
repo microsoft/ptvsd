@@ -1981,7 +1981,7 @@ def _wait_for_attach(cancel=None):
     if cancel is None:
         py_db.block_until_configuration_done()
     else:
-        while not cancel.is_cancel_requested():
+        while not cancel.is_set():
             if py_db.block_until_configuration_done(0.1):
                 break
 

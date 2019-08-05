@@ -238,14 +238,3 @@ def convert_dap_log_message_to_expression(log_message):
         return repr(expression)
     # Note: use '%' to be compatible with Python 2.6.
     return repr(expression) + ' % (' + ', '.join(str(x) for x in expression_vars) + ',)'
-
-
-class CancelWait(object):
-    def __init__(self):
-        self._cancel = threading.Event()
-
-    def __call__(self):
-        self._cancel.set()
-
-    def is_cancel_requested(self):
-        return self._cancel.is_set()
