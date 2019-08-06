@@ -30,6 +30,58 @@ class DebugStartBase(object):
     def stop_debugging(self):
         pass
 
+    def _build_common_args(
+        self,
+        args,
+        showReturnValue=None,
+        justMyCode=True,
+        subProcess=None,
+        django=None,
+        jinja=None,
+        flask=None,
+        pyramid=None,
+        logToFile=None,
+        redirectOutput=True,
+        noDebug=None,
+    ):
+
+        if showReturnValue:
+            args["showReturnValue"] = showReturnValue
+            args["debugOptions"] += ["ShowReturnValue"]
+
+        if redirectOutput:
+            args["redirectOutput"] = redirectOutput
+            args["debugOptions"] += ["RedirectOutput"]
+
+        if justMyCode is False:
+            # default behavior is Just-my-code = true
+            args["justMyCode"] = justMyCode
+            args["debugOptions"] += ["DebugStdLib"]
+
+        if django:
+            args["django"] = django
+            args["debugOptions"] += ["Django"]
+
+        if jinja:
+            args["jinja"] = jinja
+            args["debugOptions"] += ["Jinja"]
+
+        if flask:
+            args["flask"] = flask
+            args["debugOptions"] += ["Flask"]
+
+        if pyramid:
+            args["pyramid"] = pyramid
+            args["debugOptions"] += ["Pyramid"]
+
+        # VS Code uses noDebug in both attach and launch cases. Even though
+        # noDebug on attach does not make any sense.
+        args["noDebug"] = bool(noDebug)
+
+        if subProcess:
+            args["subProcess"] = subProcess
+            args["debugOptions"] += ["Multiprocess"]
+
     def __str__(self):
         return self.method
 
@@ -40,8 +92,9 @@ class Launch(DebugStartBase):
         self._launch_args = None
         self.captured_output = helpers.CapturedOutput(self.session)
 
-    def configure(
+    def _build_launch_args(
         self,
+        launch_args,
         run_as,
         target,
         pythonPath=sys.executable,
@@ -49,85 +102,53 @@ class Launch(DebugStartBase):
         cwd=None,
         env=os.environ.copy(),
         stopOnEntry=None,
-        showReturnValue=None,
-        justMyCode=True,
-        subProcess=None,
         gevent=None,
-        django=None,
-        jinja=None,
-        flask=None,
-        pyramid=None,
         sudo=None,
-        logToFile=None,
-        redirectOutput=True,
-        noDebug=None,
+        waitOnNormalExit=None,
+        waitOnAbnormalExit=None,
+        breakOnSystemExitZero=None,
         console="internalConsole",
         internalConsoleOptions="neverOpen",
+        **kwargs
     ):
         assert console in ("internalConsole", "integratedTerminal", "externalTerminal")
-
         debug_options = []
-        launch_args = {
-            "name": "Terminal",
-            "type": "python",
-            "request": "launch",
-            "console": console,
-            "env": env,
-            "pythonPath": pythonPath,
-            "args": args,
-            "internalConsoleOptions": internalConsoleOptions,
-            "debugOptions": debug_options,
-        }
+        launch_args.update(
+            {
+                "name": "Terminal",
+                "type": "python",
+                "request": "launch",
+                "console": console,
+                "env": env,
+                "pythonPath": pythonPath,
+                "args": args,
+                "internalConsoleOptions": internalConsoleOptions,
+                "debugOptions": debug_options,
+            }
+        )
+
+        if launch_args:
+            args["env"]["PTVSD_LOG_DIR"] = self.session.log_dir
 
         if stopOnEntry:
             launch_args["stopOnEntry"] = stopOnEntry
             debug_options += ["StopOnEntry"]
 
-        if showReturnValue:
-            launch_args["showReturnValue"] = showReturnValue
-            debug_options += ["ShowReturnValue"]
-
-        if logToFile:
-            launch_args["launch_args"] = launch_args
-            launch_args["env"]["PTVSD_LOG_DIR"] = self.session.log_dir
-
-        if redirectOutput:
-            launch_args["redirectOutput"] = redirectOutput
-            debug_options += ["RedirectOutput"]
-
-        if justMyCode is False:
-            # default behavior is Just-my-code = true
-            launch_args["justMyCode"] = justMyCode
-            debug_options += ["DebugStdLib"]
-
         if gevent:
             launch_args["gevent"] = gevent
             launch_args["env"]["GEVENT_SUPPORT"] = "True"
 
-        if django:
-            launch_args["django"] = django
-            debug_options += ["Django"]
-
-        if jinja:
-            launch_args["jinja"] = jinja
-            debug_options += ["Jinja"]
-
-        if flask:
-            launch_args["flask"] = flask
-            debug_options += ["Flask"]
-
-        if pyramid:
-            launch_args["pyramid"] = pyramid
-            debug_options += ["Pyramid"]
-
         if sudo:
             launch_args["sudo"] = sudo
 
-        launch_args["noDebug"] = bool(noDebug)
+        if waitOnNormalExit:
+            debug_options += ["WaitOnNormalExit"]
 
-        if subProcess:
-            launch_args["subProcess"] = subProcess
-            debug_options += ["Multiprocess"]
+        if waitOnAbnormalExit:
+            debug_options += ["WaitOnAbnormalExit"]
+
+        if breakOnSystemExitZero:
+            debug_options += ["BreakOnSystemExitZero"]
 
         target_str = target
         if isinstance(target, py.path.local):
@@ -153,7 +174,7 @@ class Launch(DebugStartBase):
                 env["PYTHONPATH"] += os.pathsep + os.path.dirname(target_str)
                 try:
                     launch_args["module"] = target_str[
-                        (len(os.path.dirname(target_str)) + 1): -3
+                        (len(os.path.dirname(target_str)) + 1) : -3
                     ]
                 except Exception:
                     launch_args["module"] = "code_to_debug"
@@ -165,8 +186,12 @@ class Launch(DebugStartBase):
         else:
             pytest.fail()
 
-        self._launch_args = launch_args
-        self._launch_request = self.session.send_request("launch", launch_args)
+        self._set_common_args(launch_args, **kwargs)
+        return launch_args
+
+    def configure(self, run_as, target, **kwargs):
+        self._launch_args = self._build_launch_args({}, run_as, target, **kwargs)
+        self._launch_request = self.session.send_request("launch", self._launch_args)
         self.session.wait_for_next(Event("initialized"))
 
     def start_debugging(self):
