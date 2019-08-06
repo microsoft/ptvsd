@@ -16,16 +16,13 @@ import tests
 
 import ptvsd
 from ptvsd.common import compat, fmt, log, messaging
-from tests import code, net, watchdog # noqa
+from tests import code, net, watchdog
 from tests.patterns import some
-from tests.timeline import Timeline, Event, Request, Response # noqa
+from tests.timeline import Timeline, Event, Request, Response
 
-StopInfo = collections.namedtuple('StopInfo', [
-    'body',
-    'frames',
-    'thread_id',
-    'frame_id',
-])
+StopInfo = collections.namedtuple(
+    "StopInfo", ["body", "frames", "thread_id", "frame_id"]
+)
 
 PTVSD_DIR = py.path.local(ptvsd.__file__) / ".."
 PTVSD_ADAPTER_DIR = PTVSD_DIR / "adapter"
@@ -33,8 +30,7 @@ PTVSD_PORT = net.get_test_server_port(5678, 5800)
 
 # Added to the environment variables of every new debug.Session - after copying
 # os.environ(), but before setting any session-specific variables.
-PTVSD_ENV = {
-}
+PTVSD_ENV = {}
 
 counter = itertools.count(1)
 WAIT_TIMEOUT_FOR_DA = 5
@@ -45,7 +41,7 @@ make_filename = compat.filename_bytes if sys.version_info < (3,) else compat.fil
 
 
 def kill_process_tree(process):
-    log.info('Killing {0} process tree...', process.pid)
+    log.info("Killing {0} process tree...", process.pid)
 
     procs = [process]
     try:
@@ -65,8 +61,7 @@ def kill_process_tree(process):
             pass
         except Exception:
             log.exception()
-    log.info('Killed {0} process tree', process.pid)
-
+    log.info("Killed {0} process tree", process.pid)
 
 
 class Session(object):
@@ -76,12 +71,14 @@ class Session(object):
         self.start_method = start_method(self)
         self.log_dir = log_dir
 
-        self.timeline = Timeline(ignore_unobserved=[
-            Event('output'),
-            Event('thread', some.dict.containing({'reason': 'exited'})),
-            Event('module'),
-            Event('continued')
-        ])
+        self.timeline = Timeline(
+            ignore_unobserved=[
+                Event("output"),
+                Event("thread", some.dict.containing({"reason": "exited"})),
+                Event("module"),
+                Event("continued"),
+            ]
+        )
         # Expose some common members of timeline directly - these should be the ones
         # that are the most straightforward to use, and are difficult to use incorrectly.
         # Conversely, most tests should restrict themselves to this subset of the API,
@@ -117,10 +114,11 @@ class Session(object):
     def request(self, *args, **kwargs):
         freeze = kwargs.pop("freeze", True)
         raise_if_failed = kwargs.pop("raise_if_failed", True)
-        return self.send_request(*args, **kwargs).wait_for_response(
-            freeze=freeze,
-            raise_if_failed=raise_if_failed,
-        ).body
+        return (
+            self.send_request(*args, **kwargs)
+            .wait_for_response(freeze=freeze, raise_if_failed=raise_if_failed)
+            .body
+        )
 
     def send_request(self, command, arguments=None, proceed=True):
         if self.timeline.is_frozen and proceed:
@@ -131,9 +129,7 @@ class Session(object):
 
         # Register callback after recording the request, so that there's no race
         # between it being recorded, and the response to it being received.
-        message.on_response(
-            lambda response: self._process_response(request, response)
-        )
+        message.on_response(lambda response: self._process_response(request, response))
 
         return request
 
@@ -154,7 +150,7 @@ class Session(object):
             # are expected.
             log.info(
                 'Received "disconnect" response from {0}; stopping message processing.',
-                'ptvsd.adapter',
+                "ptvsd.adapter",
             )
             try:
                 self.channel.close()
@@ -162,55 +158,62 @@ class Session(object):
                 pass
             raise EOFError(fmt("{0} disconnect", self))
 
-
     def _setup_adapter_and_channel(self):
         args = [sys.executable, PTVSD_ADAPTER_DIR]
 
         if self.log_dir is not None:
-            args += ["--log-dir", self.log_dir] 
+            args += ["--log-dir", self.log_dir]
 
         args = [make_filename(s) for s in args]
 
-        log.info('Spawning adapter {0}:\n\n{1}', self, "\n".join((repr(s) for s in args)))
-        self.adapter_process = subprocess.Popen(args, bufsize=0, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        log.info(
+            "Spawning adapter {0}:\n\n{1}", self, "\n".join((repr(s) for s in args))
+        )
+        self.adapter_process = subprocess.Popen(
+            args, bufsize=0, stdin=subprocess.PIPE, stdout=subprocess.PIPE
+        )
         self.psutil_adapter_process = psutil.Process(self.adapter_process.pid)
-        log.info('Spawned adapter {0} with pid={1}', self, self.adapter_process.pid)
-        watchdog.register_spawn(self.adapter_process.pid, 'ptvsd.adapter')
+        log.info("Spawned adapter {0} with pid={1}", self, self.adapter_process.pid)
+        watchdog.register_spawn(self.adapter_process.pid, "ptvsd.adapter")
 
-        stream = messaging.JsonIOStream.from_process(self.adapter_process, name=str(self))
-        handlers = messaging.MessageHandlers(request=self._process_request, event=self._process_event)
+        stream = messaging.JsonIOStream.from_process(
+            self.adapter_process, name=str(self)
+        )
+        handlers = messaging.MessageHandlers(
+            request=self._process_request, event=self._process_event
+        )
         self.channel = messaging.JsonMessageChannel(stream, handlers)
         self.channel.start()
-
 
     def _stop_debug_adapter(self):
         self.channel.close()
         self.timeline.finalize()
         self.timeline.close()
 
-        log.info('Waiting for debug adapter with pid={0} to exit.', self.adapter_process.pid)
+        log.info(
+            "Waiting for debug adapter with pid={0} to exit.", self.adapter_process.pid
+        )
         self.adapter_process.wait()
-        watchdog.unregister_spawn(self.adapter_process.pid, 'ptvsd.adapter')
+        watchdog.unregister_spawn(self.adapter_process.pid, "ptvsd.adapter")
 
     def _handshake(self):
-        telemetry = self.wait_for_next_event('output')
+        telemetry = self.wait_for_next_event("output")
         assert telemetry == {
-            'category': 'telemetry',
-            'output': 'ptvsd.adapter',
-            'data': {'version': some.str},
+            "category": "telemetry",
+            "output": "ptvsd.adapter",
+            "data": {"version": some.str},
         }
 
-        self.send_request('initialize', {
-            'adapterID': 'test',
-            'pathFormat': 'path'
-        }).wait_for_response()
+        self.send_request(
+            "initialize", {"adapterID": "test", "pathFormat": "path"}
+        ).wait_for_response()
 
     def configure(self, run_as, target, **kwargs):
         env = os.environ.copy()
         if "env" in kwargs:
             env.update(PTVSD_ENV)
-            env['PYTHONPATH'] = (tests.root / "DEBUGGEE_PYTHONPATH").strpath
-            env['PTVSD_SESSION_ID'] = str(self.id)
+            env["PYTHONPATH"] = (tests.root / "DEBUGGEE_PYTHONPATH").strpath
+            env["PTVSD_SESSION_ID"] = str(self.id)
 
         self.start_method.configure(run_as, target, env=env, **kwargs)
 
@@ -218,10 +221,10 @@ class Session(object):
         self.start_method.start_debugging()
 
     def request_continue(self):
-        self.request('continue', freeze=False)
+        self.request("continue", freeze=False)
 
     def request_disconnect(self):
-        self.request('disconnect', freeze=False)
+        self.request("disconnect", freeze=False)
 
     def set_breakpoints(self, path, lines):
         """Sets breakpoints in the specified file, and returns the list of all the
@@ -254,16 +257,16 @@ class Session(object):
                 line = get_marked_line_numbers()[marker]
                 descr = fmt("{0} (@{1})", line, marker)
             bp_log.append((line, descr))
-            return {'line': line}
+            return {"line": line}
 
         bp_log = []
         breakpoints = self.request(
-            'setBreakpoints',
+            "setBreakpoints",
             {
-                'source': {'path': path},
-                'breakpoints': [make_breakpoint(line) for line in lines],
+                "source": {"path": path},
+                "breakpoints": [make_breakpoint(line) for line in lines],
             },
-        ).get('breakpoints', [])
+        ).get("breakpoints", [])
 
         bp_log = sorted(bp_log, key=lambda pair: pair[0])
         bp_log = ", ".join((descr for _, descr in bp_log))
@@ -294,7 +297,7 @@ class Session(object):
                 Response(Request("stackTrace"))
             )
             assert stackTrace_responses, (
-                'get_variables() without frame_id requires at least one response '
+                "get_variables() without frame_id requires at least one response "
                 'to a "stackTrace" request in the timeline.'
             )
             stack_trace = stackTrace_responses[-1].body
@@ -319,32 +322,40 @@ class Session(object):
         """
         return self.get_variables(varname, frame_id=frame_id)[0]
 
-    def wait_for_stop(self, reason=some.str, expected_frames=None, expected_text=None, expected_description=None):
-        stopped_event = self.wait_for_next(Event('stopped', some.dict.containing({'reason': reason})))
+    def wait_for_stop(
+        self,
+        reason=some.str,
+        expected_frames=None,
+        expected_text=None,
+        expected_description=None,
+    ):
+        stopped_event = self.wait_for_next(
+            Event("stopped", some.dict.containing({"reason": reason}))
+        )
         stopped = stopped_event.body
 
         if expected_text is not None:
-            assert expected_text == stopped['text']
+            assert expected_text == stopped["text"]
 
         if expected_description is not None:
-            assert expected_description == stopped['description']
+            assert expected_description == stopped["description"]
 
-        tid = stopped['threadId']
+        tid = stopped["threadId"]
         assert tid == some.int
 
-        assert stopped['allThreadsStopped']
-        if stopped['reason'] not in ['step', 'exception', 'breakpoint', 'entry']:
-            assert stopped['preserveFocusHint']
+        assert stopped["allThreadsStopped"]
+        if stopped["reason"] not in ["step", "exception", "breakpoint", "entry"]:
+            assert stopped["preserveFocusHint"]
 
-        stack_trace = self.request('stackTrace', arguments={'threadId': tid})
-        frames = stack_trace['stackFrames'] or []
-        assert len(frames) == stack_trace['totalFrames']
+        stack_trace = self.request("stackTrace", arguments={"threadId": tid})
+        frames = stack_trace["stackFrames"] or []
+        assert len(frames) == stack_trace["totalFrames"]
 
         if expected_frames:
             assert len(expected_frames) <= len(frames)
-            assert expected_frames == frames[0:len(expected_frames)]
+            assert expected_frames == frames[0 : len(expected_frames)]
 
-        fid = frames[0]['id']
+        fid = frames[0]["id"]
         assert fid == some.int
 
         return StopInfo(stopped, frames, tid, fid)

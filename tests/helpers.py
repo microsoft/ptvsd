@@ -7,6 +7,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 import threading
 from ptvsd.common import fmt, log
 
+
 class CapturedOutput(object):
     """Captured stdout and stderr of the debugged process.
     """
@@ -40,8 +41,7 @@ class CapturedOutput(object):
         self._lines[name] = []
 
         thread = threading.Thread(
-            target=lambda: self._worker(pipe, name),
-            name=fmt("{0} {1}", self, name)
+            target=lambda: self._worker(pipe, name), name=fmt("{0} {1}", self, name)
         )
         thread.daemon = True
         thread.start()
@@ -51,7 +51,7 @@ class CapturedOutput(object):
         """Start capturing stdout and stderr of the process.
         """
         assert not self._worker_threads
-        log.info('Capturing {0} stdout and stderr', self.session)
+        log.info("Capturing {0} stdout and stderr", self.session)
         self._capture(process.stdout, "stdout")
         self._capture(process.stderr, "stderr")
 
@@ -60,7 +60,7 @@ class CapturedOutput(object):
         """
         if not self._worker_threads:
             return
-        log.debug('Waiting for remaining {0} stdout and stderr...', self.session)
+        log.debug("Waiting for remaining {0} stdout and stderr...", self.session)
         for t in self._worker_threads:
             t.join(timeout)
         self._worker_threads[:] = []
@@ -71,7 +71,9 @@ class CapturedOutput(object):
         try:
             result = self._lines[which]
         except KeyError:
-            raise AssertionError(fmt("{0} was not captured for {1}", which, self.session))
+            raise AssertionError(
+                fmt("{0} was not captured for {1}", which, self.session)
+            )
 
         # The list might still be appended to concurrently, so take a snapshot of it.
         with self._lock:
@@ -81,7 +83,7 @@ class CapturedOutput(object):
             result = [s.decode(encoding) for s in result]
 
         if not lines:
-            sep = b'' if encoding is None else u''
+            sep = b"" if encoding is None else ""
             result = sep.join(result)
 
         return result
