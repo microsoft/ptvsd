@@ -352,6 +352,6 @@ class Session(object):
     def wait_for_next_event(self, event, body=some.object):
         return self.timeline.wait_for_next(Event(event, body)).body
 
-    def wait(self):
+    def stop_debugging(self):
         self.start_method.stop_debugging()
         self.request_disconnect()
