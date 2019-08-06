@@ -1,18 +1,27 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License. See LICENSE in the project root
+# for license information.
+
+from __future__ import absolute_import, print_function, unicode_literals
+
+
 import os
 import py.path
 import pytest
 import sys
 import tests
 
+from tests import helpers
 from tests.patterns import some
 from tests.timeline import Event, Response
+
 
 class DebugStartBase(object):
     def __init__(self, session, method='base'):
         self.session = session
         self.method = method
 
-    def start_configuring(self, run_as, target, **kwargs):
+    def configure(self, run_as, target, **kwargs):
         pass
 
     def start_debugging(self, **kwargs):
@@ -29,30 +38,12 @@ class Launch(DebugStartBase):
     def __init__(self, session):
         super().__init__(session, 'launch')
         self._launch_args = None
+        self.captured_output = helpers.CapturedOutput(self.session)
 
-    def start_configuring(
-        self,
-        run_as,
-        target,
-        pythonPath=sys.executable,
-        args=[],
-        cwd=None,
-        env=os.environ.copy(),
-        stopOnEntry=None,
-        showReturnValue=None,
-        justMyCode=True,
-        subProcess=None,
-        gevent=None,
-        django=None,
-        jinja=None,
-        flask=None,
-        pyramid=None,
-        sudo=None,
-        logToFile=None,
-        redirectOutput=True,
-        noDebug=None,
-        console="internalConsole",
-        internalConsoleOptions="neverOpen"):
+    def configure(self, run_as, target, pythonPath=sys.executable, args=[], cwd=None, env=os.environ.copy(), stopOnEntry=None,
+                  showReturnValue=None, justMyCode=True, subProcess=None, gevent=None, django=None, jinja=None, flask=None,
+                  pyramid=None, sudo=None, logToFile=None, redirectOutput=True, noDebug=None, console="internalConsole",
+                  internalConsoleOptions="neverOpen"):
         assert console in ("internalConsole", "integratedTerminal", "externalTerminal")
 
         debug_options = []
@@ -161,8 +152,9 @@ class Launch(DebugStartBase):
         if self._launch_args["noDebug"]:
             self._launch_request.wait_for_response()
         else:
-            self.session.wait_for_next(Event('process') & Response(self._launch_request))
-            # 'process' is expected right after 'launch' or 'attach'.
+            self.session.wait_for_next(Event('process'))
+            self.session.wait_for_next(Response(self._launch_request))
+
             self.session.expect_new(Event('process', {
                 'name': some.str,
                 'isLocalProcess': True,
@@ -203,10 +195,10 @@ class CustomClient(DebugStartBase):
 
 
 __all__ = [
-    Launch,  # ptvsd --client ... foo.py
+    Launch,               # ptvsd --client ... foo.py
     AttachSocketCmdLine,  #  ptvsd ... foo.py
-    AttachSocketImport,  #  python foo.py (foo.py must import debug_me)
-    AttachProcessId,  # python foo.py && ptvsd ... --pid
-    CustomClient,  # python foo.py (foo.py has to manually call ptvsd.attach)
-    CustomServer,  # python foo.py (foo.py has to manually call ptvsd.enable_attach)
+    AttachSocketImport,   #  python foo.py (foo.py must import debug_me)
+    AttachProcessId,      # python foo.py && ptvsd ... --pid
+    CustomClient,         # python foo.py (foo.py has to manually call ptvsd.attach)
+    CustomServer,         # python foo.py (foo.py has to manually call ptvsd.enable_attach)
 ]

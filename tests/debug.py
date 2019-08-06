@@ -45,27 +45,27 @@ make_filename = compat.filename_bytes if sys.version_info < (3,) else compat.fil
 
 
 def kill_process_tree(process):
-        log.info('Killing {0} process tree...', process.pid)
+    log.info('Killing {0} process tree...', process.pid)
 
-        procs = [process]
+    procs = [process]
+    try:
+        procs += process.children(recursive=True)
+    except Exception:
+        pass
+
+    for p in procs:
+        log.warning(
+            "Killing {0}process (pid={1})",
+            "" if p.pid == process.pid else "child ",
+            p.pid,
+        )
         try:
-            procs += process.children(recursive=True)
-        except Exception:
+            p.kill()
+        except psutil.NoSuchProcess:
             pass
-
-        for p in procs:
-            log.warning(
-                "Killing {0}process (pid={1})",
-                "" if p.pid == process.pid else "child ",
-                p.pid,
-            )
-            try:
-                p.kill()
-            except psutil.NoSuchProcess:
-                pass
-            except Exception:
-                log.exception()
-        log.info('Killed {0} process tree', process.pid)
+        except Exception:
+            log.exception()
+    log.info('Killed {0} process tree', process.pid)
 
 
 
@@ -205,14 +205,14 @@ class Session(object):
             'pathFormat': 'path'
         }).wait_for_response()
 
-    def start_configuring(self, run_as, target, **kwargs):
+    def configure(self, run_as, target, **kwargs):
         env = os.environ.copy()
         if "env" in kwargs:
             env.update(PTVSD_ENV)
             env['PYTHONPATH'] = (tests.root / "DEBUGGEE_PYTHONPATH").strpath
             env['PTVSD_SESSION_ID'] = str(self.id)
 
-        self.start_method.start_configuring(run_as, target, env=env, **kwargs)
+        self.start_method.configure(run_as, target, env=env, **kwargs)
 
     def start_debugging(self):
         self.start_method.start_debugging()
