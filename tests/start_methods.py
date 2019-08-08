@@ -6,6 +6,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 
 import os
+import ptvsd
 import py.path
 import pytest
 import subprocess
@@ -18,6 +19,7 @@ from tests.timeline import Event, Response
 from tests import net, watchdog
 
 
+PTVSD_DIR = py.path.local(ptvsd.__file__) / ".."
 PTVSD_PORT = net.get_test_server_port(5678, 5800)
 
 # Code that is injected into the debuggee process when it does `import debug_me`,
@@ -61,7 +63,7 @@ class DebugStartBase(object):
         redirectOutput=True,
         noDebug=None,
     ):
-        if logToFile:
+        if logToFile and "env" in args:
             args["env"]["PTVSD_LOG_DIR"] = self.session.log_dir
 
         if showReturnValue:
@@ -107,7 +109,7 @@ class DebugStartBase(object):
 
 class Launch(DebugStartBase):
     def __init__(self, session):
-        super().__init__(session, "launch")
+        super(Launch, self).__init__(session, "launch")
         self._launch_args = None
 
     def _build_launch_args(
@@ -240,21 +242,7 @@ class Launch(DebugStartBase):
 
 class AttachBase(DebugStartBase):
     def __init__(self, session, name):
-        super().__init__(session, name)
-
-    def configure(self, run_as, target, **kwargs):
-        pass
-
-    def start_debugging(self, **kwargs):
-        pass
-
-    def stop_debugging(self):
-        pass
-
-
-class AttachSocketImport(DebugStartBase):
-    def __init__(self, session):
-        super().__init__(session, "attach_socket_import")
+        super(AttachBase, self).__init__(session, name)
         self._attach_args = {}
 
     def get_ignored(self):
@@ -295,48 +283,14 @@ class AttachSocketImport(DebugStartBase):
         self._build_common_args(attach_args, **kwargs)
         return attach_args
 
-    def _check_ready_for_import(self, path_or_code):
-        if os.path.isfile(path_or_code):
-            with open(path_or_code, "rb") as f:
-                code = f.read()
-        elif "\n" in path_or_code:
-            code = path_or_code
-        else:
-            # path_or_code is a module name
-            return
-        assert b"debug_me" in code, fmt(
-            "{0} is started via {1}, but it doesn't import debug_me.",
-            path_or_code,
-            self.method,
-        )
-
-    def configure(
-        self,
-        run_as,
-        target,
-        pythonPath=sys.executable,
-        args=[],
-        cwd=None,
-        env=os.environ.copy(),
-        **kwargs
-    ):
-        self._attach_args = self._build_attach_args({}, run_as, target, **kwargs)
-
-        ptvsd_port = self._attach_args["port"]
-        log_dir = (
-            self.session.log_dir if self._attach_args.get("logToFile", False) else None
-        )
-        env["PTVSD_DEBUG_ME"] = fmt(
-            PTVSD_DEBUG_ME, ptvsd_port=ptvsd_port, log_dir=log_dir
-        )
-
+    def configure(self, run_as, target, **kwargs):
         target_str = target
         if isinstance(target, py.path.local):
             target_str = target.strpath
 
-        self._check_ready_for_import(target_str)
+        env = kwargs.get("env")
 
-        cli_args = [self._attach_args.get("pythonPath", sys.executable)]
+        cli_args = kwargs.get("cli_args")
         if run_as == "program":
             cli_args += [target_str]
         elif run_as == "module":
@@ -355,8 +309,9 @@ class AttachSocketImport(DebugStartBase):
         else:
             pytest.fail()
 
-        cli_args += args
+        cli_args += kwargs.get("args")
 
+        cwd = kwargs.get("cwd")
         if cwd:
             pass
         elif os.path.isfile(target_str) or os.path.isdir(target_str):
@@ -379,8 +334,11 @@ class AttachSocketImport(DebugStartBase):
         self.captured_output.capture(self.debugee_process)
         watchdog.register_spawn(self.debugee_process.pid, fmt("debuggee-{0}", self.session.id))
 
+        # TODO: wait for the server to start
+
         self._attach_request = self.session.send_request("attach", self._attach_args)
         self.session.wait_for_next(Event("initialized"))
+
 
     def start_debugging(self):
         self.session.send_request("configurationDone").wait_for_response()
@@ -415,10 +373,88 @@ class AttachSocketImport(DebugStartBase):
         finally:
             watchdog.unregister_spawn(self.debugee_process.pid, fmt("debuggee-{0}", self.session.id))
 
-
-class AttachSocketCmdLine(DebugStartBase):
+class AttachSocketImport(AttachBase):
     def __init__(self, session):
-        super().__init__(session, "attach_socket_cmdline")
+        super(AttachSocketImport, self).__init__(session, "attach_socket_import")
+
+    def _check_ready_for_import(self, path_or_code):
+        if isinstance(path_or_code, py.path.local):
+            path_or_code = path_or_code.strpath
+
+        if os.path.isfile(path_or_code):
+            with open(path_or_code, "rb") as f:
+                code = f.read()
+        elif "\n" in path_or_code:
+            code = path_or_code
+        else:
+            # path_or_code is a module name
+            return
+        assert b"debug_me" in code, fmt(
+            "{0} is started via {1}, but it doesn't import debug_me.",
+            path_or_code,
+            self.method,
+        )
+
+    def configure(
+        self,
+        run_as,
+        target,
+        pythonPath=sys.executable,
+        args=[],
+        cwd=None,
+        env=os.environ.copy(),
+        **kwargs
+    ):
+        self._attach_args = self._build_attach_args({}, run_as, target, **kwargs)
+
+        ptvsd_port = self._attach_args["port"]
+        log_dir = (
+            self.session.log_dir if self._attach_args.get("logToFile", False) else None
+        )
+        env["PTVSD_DEBUG_ME"] = fmt(
+            PTVSD_DEBUG_ME, ptvsd_port=ptvsd_port, log_dir=log_dir
+        )
+
+        self._check_ready_for_import(target)
+
+        cli_args = [pythonPath]
+        super(AttachSocketImport, self).configure(run_as, target, cwd=cwd, env=env, args=args, cli_args=cli_args, **kwargs)
+
+
+
+class AttachSocketCmdLine(AttachBase):
+    def __init__(self, session):
+        super(AttachSocketCmdLine, self).__init__(session, "attach_socket_cmdline")
+
+
+    def configure(
+        self,
+        run_as,
+        target,
+        pythonPath=sys.executable,
+        args=[],
+        cwd=None,
+        env=os.environ.copy(),
+        **kwargs
+    ):
+        self._attach_args = self._build_attach_args({}, run_as, target, **kwargs)
+
+        cli_args = [pythonPath]
+        cli_args += [PTVSD_DIR.strpath]
+        cli_args += ['--wait']
+        cli_args += ['--host', self._attach_args["host"], '--port', str(self._attach_args["port"])]
+
+        log_dir = (
+            self.session.log_dir if self._attach_args.get("logToFile", False) else None
+        )
+        if log_dir:
+            cli_args += ["--log-dir", log_dir]
+
+        if self._attach_args.get("multiprocess", False):
+            cli_args += ["--multiprocess"]
+
+        super(AttachSocketCmdLine, self).configure(run_as, target, cwd=cwd, env=env, args=args, cli_args=cli_args, **kwargs)
+
 
 
 class AttachProcessId(DebugStartBase):
