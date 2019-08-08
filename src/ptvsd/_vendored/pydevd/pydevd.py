@@ -1995,7 +1995,8 @@ def _wait_for_attach(cancel=None):
     else:
         while not cancel.is_set():
             if py_db.block_until_configuration_done(0.1):
-                break
+                cancel.set() # Set cancel to prevent reuse
+                return
 
 
 def _is_attached():

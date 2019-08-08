@@ -203,8 +203,8 @@ def notify_root(port):
     if not response['incomingConnection']:
         log.debug('No IDE connection is expected for this subprocess; unpausing.')
 
-        if attach._cancel_wait_for_attach is not None:
-            attach._cancel_wait_for_attach.is_set()
+        if hasattr(attach.wait_for_attach, "cancel"):
+            attach.wait_for_attach.cancel()
 
 
 def patch_args(args):
