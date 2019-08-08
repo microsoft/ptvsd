@@ -20,7 +20,7 @@ class _Shared(singleton.ThreadSafeSingleton):
 
     # Only attributes that are set by IDEMessages and marked as readonly before
     # connecting to the server can go in here.
-    threadsafe_attrs = {"start_method", "terminate_on_disconnect", "adapter_id"}
+    threadsafe_attrs = {"start_method", "terminate_on_disconnect", "client_id"}
 
     start_method = None
     """Either "launch" or "attach", depending on the request used."""
@@ -28,7 +28,7 @@ class _Shared(singleton.ThreadSafeSingleton):
     terminate_on_disconnect = True
     """Whether the debuggee process should be terminated on disconnect."""
 
-    adapter_id = None
+    client_id = None
     """ID of the connecting client. This can be 'test' while running tests."""
 
 
@@ -155,8 +155,8 @@ class IDEMessages(Messages):
     def initialize_request(self, request):
         contract.ide.parse(request)
         state.change("initializing")
-        self._shared.adapter_id = request.arguments.get("adapterID")
-        _Shared.readonly_attrs.add("adapter_id")
+        self._shared.client_id = request.arguments.get("clientID", "vscode")
+        _Shared.readonly_attrs.add("client_id")
         return self._INITIALIZE_RESULT
 
     # Handles various attributes common to both "launch" and "attach".
@@ -449,7 +449,7 @@ class ServerMessages(Messages):
 
     @_only_allowed_while("running")
     def continued_event(self, event):
-        if self._shared.adapter_id not in ('visualstudio', 'vsformac'):
+        if self._shared.client_id not in ('visualstudio', 'vsformac'):
             # In visual studio any step/continue action already marks all the
             # threads as running until a suspend, so, the continued is not
             # needed (and can in fact break the UI in some cases -- see:

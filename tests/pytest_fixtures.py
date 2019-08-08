@@ -23,7 +23,7 @@ __all__ = ['run_as', 'start_method', 'with_pydevd_log', 'daemon', 'pyfile']
 # use both run_as and start_method, so the matrix is a cross product of them.
 
 RUN_AS = ['program']
-START_METHODS = [start_methods.Launch]
+START_METHODS = [start_methods.Launch, start_methods.AttachSocketImport]
 
 if os.environ.get('PTVSD_SIMPLE_TESTS', '').lower() not in ('1', 'true'):
     RUN_AS += ['module']

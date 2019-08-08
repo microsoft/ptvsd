@@ -16,7 +16,7 @@ import tests
 
 import ptvsd
 from ptvsd.common import compat, fmt, log, messaging
-from tests import code, net, watchdog
+from tests import code, watchdog
 from tests.patterns import some
 from tests.timeline import Timeline, Event, Request, Response
 
@@ -26,7 +26,6 @@ StopInfo = collections.namedtuple(
 
 PTVSD_DIR = py.path.local(ptvsd.__file__) / ".."
 PTVSD_ADAPTER_DIR = PTVSD_DIR / "adapter"
-PTVSD_PORT = net.get_test_server_port(5678, 5800)
 
 # Added to the environment variables of every new debug.Session - after copying
 # os.environ(), but before setting any session-specific variables.
@@ -65,11 +64,12 @@ def kill_process_tree(process):
 
 
 class Session(object):
-    def __init__(self, start_method, log_dir=None):
+    def __init__(self, start_method, log_dir=None, client_id="vscode"):
         watchdog.start()
         self.id = next(counter)
-        self.start_method = start_method(self)
         self.log_dir = log_dir
+        self.start_method = start_method(self)
+        self.client_id = client_id
 
         self.timeline = Timeline(
             ignore_unobserved=[
@@ -78,6 +78,7 @@ class Session(object):
                 Event("module"),
                 Event("continued"),
             ]
+            + self.start_method.get_ignored()
         )
         # Expose some common members of timeline directly - these should be the ones
         # that are the most straightforward to use, and are difficult to use incorrectly.
@@ -91,6 +92,9 @@ class Session(object):
         self.expect_realized = self.timeline.expect_realized
         self.all_occurrences_of = self.timeline.all_occurrences_of
         self.observe_all = self.timeline.observe_all
+
+    def __str__(self):
+        return fmt("ptvsd-{0}", self.id)
 
     def __enter__(self):
         self._setup_adapter_and_channel()
@@ -174,7 +178,7 @@ class Session(object):
         )
         self.psutil_adapter_process = psutil.Process(self.adapter_process.pid)
         log.info("Spawned adapter {0} with pid={1}", self, self.adapter_process.pid)
-        watchdog.register_spawn(self.adapter_process.pid, "ptvsd.adapter")
+        watchdog.register_spawn(self.adapter_process.pid, fmt("ptvsd.adapter-{0}", self.id))
 
         stream = messaging.JsonIOStream.from_process(
             self.adapter_process, name=str(self)
@@ -205,17 +209,34 @@ class Session(object):
         }
 
         self.send_request(
-            "initialize", {"adapterID": "test", "pathFormat": "path"}
+            "initialize", 
+            {
+                "pathFormat": "path",
+                "clientID": self.client_id,
+                # "clientName":"Visual Studio Code",
+                "adapterID": "test",
+                "linesStartAt1": True,
+                "columnsStartAt1": True,
+                "supportsVariableType": True,
+                "supportsRunInTerminalRequest": True,
+                # "supportsMemoryReferences":true,
+                # "supportsHandshakeRequest":true,
+                # "AdditionalProperties":{}
+            }
         ).wait_for_response()
+        
 
     def configure(self, run_as, target, **kwargs):
-        env = os.environ.copy()
-        if "env" in kwargs:
-            env.update(PTVSD_ENV)
-            env["PYTHONPATH"] = (tests.root / "DEBUGGEE_PYTHONPATH").strpath
-            env["PTVSD_SESSION_ID"] = str(self.id)
+        env = kwargs["env"] if "env" in kwargs else os.environ.copy()
+        env.update(PTVSD_ENV)
+        env["PYTHONPATH"] += os.pathsep + (tests.root / "DEBUGGEE_PYTHONPATH").strpath
+        env["PTVSD_SESSION_ID"] = str(self.id)
 
-        self.start_method.configure(run_as, target, env=env, **kwargs)
+        log_to_file = (self.log_dir is not None) or kwargs.get("logToFile", False)
+
+        self.start_method.configure(
+            run_as, target, env=env, logToFile=log_to_file, **kwargs
+        )
 
     def start_debugging(self):
         self.start_method.start_debugging()
@@ -353,7 +374,7 @@ class Session(object):
 
         if expected_frames:
             assert len(expected_frames) <= len(frames)
-            assert expected_frames == frames[0 : len(expected_frames)]
+            assert expected_frames == frames[0: len(expected_frames)]
 
         fid = frames[0]["id"]
         assert fid == some.int
