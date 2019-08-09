@@ -227,10 +227,12 @@ class Session(object):
             }
         ).wait_for_response()
 
-    def configure(self, run_as, target, **kwargs):
-        env = kwargs["env"] if "env" in kwargs else os.environ.copy()
+    def configure(self, run_as, target, env=os.environ.copy(), **kwargs):
         env.update(PTVSD_ENV)
-        env["PYTHONPATH"] += os.pathsep + (tests.root / "DEBUGGEE_PYTHONPATH").strpath
+        if "PYTHONPATH" in env:
+            env["PYTHONPATH"] += os.pathsep + (tests.root / "DEBUGGEE_PYTHONPATH").strpath
+        else:
+            env["PYTHONPATH"] = (tests.root / "DEBUGGEE_PYTHONPATH").strpath
         env["PTVSD_SESSION_ID"] = str(self.id)
 
         if self.backchannel is not None:
