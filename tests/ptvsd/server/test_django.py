@@ -4,10 +4,7 @@
 
 from __future__ import absolute_import, print_function, unicode_literals
 
-import platform
 import pytest
-import sys
-
 from ptvsd.common import compat
 from tests import code, debug, log, net, test_data, start_methods
 from tests.patterns import some
