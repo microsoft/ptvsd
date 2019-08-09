@@ -7,12 +7,14 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 import os
 import ptvsd
+import psutil
 import py.path
 import pytest
 import subprocess
 import sys
+import time
 
-from ptvsd.common import fmt
+from ptvsd.common import compat, fmt, log
 from tests import helpers
 from tests.patterns import some
 from tests.timeline import Event, Response
@@ -26,9 +28,13 @@ PTVSD_PORT = net.get_test_server_port(5678, 5800)
 # and start_method is attach_socket_*
 PTVSD_DEBUG_ME = """
 import ptvsd
-ptvsd.enable_attach(("localhost", {ptvsd_port}), log_dir={log_dir})
+ptvsd.enable_attach(("127.0.0.1", {ptvsd_port}), log_dir={log_dir})
 ptvsd.wait_for_attach()
 """
+
+# Normalize args to either bytes or unicode, depending on Python version.
+# Assume that values are filenames - it's usually either that, or numbers.
+make_filename = compat.filename_bytes if sys.version_info < (3,) else compat.filename
 
 
 class DebugStartBase(object):
@@ -62,9 +68,14 @@ class DebugStartBase(object):
         logToFile=None,
         redirectOutput=True,
         noDebug=None,
+        maxExceptionStackFrames=None,
+        steppingResumesAllThreads=None,
+        rules=None,
     ):
-        if logToFile and "env" in args:
-            args["env"]["PTVSD_LOG_DIR"] = self.session.log_dir
+        if logToFile:
+            args["logToFile"] = logToFile
+            if "env" in args:
+                args["env"]["PTVSD_LOG_DIR"] = self.session.log_dir
 
         if showReturnValue:
             args["showReturnValue"] = showReturnValue
@@ -103,6 +114,15 @@ class DebugStartBase(object):
             args["subProcess"] = subProcess
             args["debugOptions"] += ["Multiprocess"]
 
+        if maxExceptionStackFrames:
+            args["maxExceptionStackFrames"] = maxExceptionStackFrames
+
+        if steppingResumesAllThreads:
+            args["steppingResumesAllThreads"] = steppingResumesAllThreads
+
+        if rules is not None:
+            args["rules"] = rules
+        
     def __str__(self):
         return self.method
 
@@ -196,7 +216,7 @@ class Launch(DebugStartBase):
                 launch_args["module"] = target_str
         elif run_as == "code":
             with open(target_str, "rb") as f:
-                launch_args["code"] = f.read()
+                launch_args["code"] = f.read().decode("utf-8")
         else:
             pytest.fail()
 
@@ -256,7 +276,6 @@ class AttachBase(DebugStartBase):
         host="127.0.0.1",
         port=PTVSD_PORT,
         pathMappings=None,
-        rules=None,
         **kwargs
     ):
         assert host is not None
@@ -276,9 +295,6 @@ class AttachBase(DebugStartBase):
 
         if pathMappings is not None:
             attach_args["pathMappings"] = pathMappings
-
-        if rules is not None:
-            attach_args["rules"] = rules
 
         self._build_common_args(attach_args, **kwargs)
         return attach_args
@@ -310,6 +326,7 @@ class AttachBase(DebugStartBase):
             pytest.fail()
 
         cli_args += kwargs.get("args")
+        cli_args = [make_filename(s) for s in cli_args]
 
         cwd = kwargs.get("cwd")
         if cwd:
@@ -322,6 +339,19 @@ class AttachBase(DebugStartBase):
         if "pathMappings" not in self._attach_args:
             self._attach_args["pathMappings"] = [{"localRoot": cwd, "remoteRoot": "."}]
 
+        env_str = "\n".join((
+            fmt("{0}={1}", env_name, env[env_name])
+            for env_name in sorted(env.keys())
+        ))
+        log.info(
+            "Spawning debuggee {0}:\n\n{1}\n\n"
+            "cwd:{2}\n\n"
+            "env:{3}\n\n",
+            self.session,
+            "\n".join((repr(s) for s in cli_args)),
+            cwd,
+            env_str
+        )
         self.debugee_process = subprocess.Popen(
             cli_args,
             cwd=cwd,
@@ -334,7 +364,13 @@ class AttachBase(DebugStartBase):
         self.captured_output.capture(self.debugee_process)
         watchdog.register_spawn(self.debugee_process.pid, fmt("debuggee-{0}", self.session.id))
 
-        # TODO: wait for the server to start
+        connected = False
+        pid = self.debugee_process.pid
+        while connected is False:
+            time.sleep(0.1)
+            connections = psutil.net_connections()
+            connected = len(list(p for (_, _, _, _, _, _, p) in connections if p == pid)) > 0
+
 
         self._attach_request = self.session.send_request("attach", self._attach_args)
         self.session.wait_for_next(Event("initialized"))
@@ -364,7 +400,7 @@ class AttachBase(DebugStartBase):
             # rather than at some random time later during the test.
             # Note: it's actually possible that the 'thread' event was sent before the 'threads'
             # request (although the 'threads' will force 'thread' to be sent if it still wasn't).
-            self.session.send_request("threads").wait_for_response()
+            self.session.request("threads").wait_for_response()
             self.session.expect_realized(Event("thread"))
 
     def stop_debugging(self):
@@ -408,9 +444,10 @@ class AttachSocketImport(AttachBase):
         self._attach_args = self._build_attach_args({}, run_as, target, **kwargs)
 
         ptvsd_port = self._attach_args["port"]
-        log_dir = (
-            self.session.log_dir if self._attach_args.get("logToFile", False) else None
-        )
+        log_dir = None
+        if self._attach_args.get("logToFile", False):
+            log_dir = fmt("\"{log_dir}\"", log_dir=self.session.log_dir)
+
         env["PTVSD_DEBUG_ME"] = fmt(
             PTVSD_DEBUG_ME, ptvsd_port=ptvsd_port, log_dir=log_dir
         )

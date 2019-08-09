@@ -16,7 +16,7 @@ import tests
 
 import ptvsd
 from ptvsd.common import compat, fmt, log, messaging
-from tests import code, watchdog
+from tests import code, watchdog, helpers
 from tests.patterns import some
 from tests.timeline import Timeline, Event, Request, Response
 
@@ -64,7 +64,7 @@ def kill_process_tree(process):
 
 
 class Session(object):
-    def __init__(self, start_method, log_dir=None, client_id="vscode"):
+    def __init__(self, start_method, log_dir=None, client_id="vscode", backchannel=False):
         watchdog.start()
         self.id = next(counter)
         self.log_dir = log_dir
@@ -92,6 +92,8 @@ class Session(object):
         self.expect_realized = self.timeline.expect_realized
         self.all_occurrences_of = self.timeline.all_occurrences_of
         self.observe_all = self.timeline.observe_all
+
+        self.backchannel = helpers.BackChannel(self) if backchannel else None
 
     def __str__(self):
         return fmt("ptvsd-{0}", self.id)
@@ -224,13 +226,16 @@ class Session(object):
                 # "AdditionalProperties":{}
             }
         ).wait_for_response()
-        
 
     def configure(self, run_as, target, **kwargs):
         env = kwargs["env"] if "env" in kwargs else os.environ.copy()
         env.update(PTVSD_ENV)
         env["PYTHONPATH"] += os.pathsep + (tests.root / "DEBUGGEE_PYTHONPATH").strpath
         env["PTVSD_SESSION_ID"] = str(self.id)
+
+        if self.backchannel is not None:
+            self.backchannel.listen()
+            env['PTVSD_BACKCHANNEL_PORT'] = str(self.backchannel.port)
 
         log_to_file = (self.log_dir is not None) or kwargs.get("logToFile", False)
 
@@ -386,4 +391,9 @@ class Session(object):
 
     def stop_debugging(self):
         self.start_method.stop_debugging()
+
+        if self.backchannel:
+            self.backchannel.close()
+            self.backchannel = None
+
         self.request_disconnect()
