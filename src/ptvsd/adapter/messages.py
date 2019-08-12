@@ -188,8 +188,8 @@ class IDEMessages(Messages):
         _Shared.readonly_attrs.add("terminate_on_disconnect")
         self._debug_config(request)
 
-        options.host = request("host", json.of_type(unicode), default=options.host)
-        options.port = request("port", json.of_type(int), options.port)
+        options.host = request("host", options.host)
+        options.port = request("port", options.port)
         _channels.connect_to_server(address=(options.host, options.port))
 
         return self._configure(request)
