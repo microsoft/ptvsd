@@ -46,11 +46,7 @@ def _initialize_session(session, multiprocess=False):
     if multiprocess:
         session.debug_options |= {"Multiprocess"}
 
-    session.configure(
-        "module", "flask",
-        cwd=paths.flask1,
-        expected_returncode=some.int,  # No clean way to kill Flask server
-    )
+    session.configure("module", "flask", cwd=paths.flask1)
 
 
 @pytest.mark.parametrize("start_method", [start_methods.Launch, start_methods.AttachSocketCmdLine])
@@ -95,7 +91,9 @@ def test_flask_breakpoint_no_multiproc(start_method, bp_target):
             session.request_continue()
             assert bp_var_content in home_request.response_text()
 
-        session.stop_debugging()
+        session.stop_debugging(
+            exitCode=some.int,  # No clean way to kill Flask server
+        )
 
 
 @pytest.mark.parametrize("start_method", [start_methods.Launch, start_methods.AttachSocketCmdLine])
@@ -150,7 +148,9 @@ def test_flask_template_exception_no_multiproc(start_method):
                 session.wait_for_stop("exception")
                 session.request_continue()
 
-        session.stop_debugging()
+        session.stop_debugging(
+            exitCode=some.int,  # No clean way to kill Flask server
+        )
 
 
 @pytest.mark.parametrize("start_method", [start_methods.Launch, start_methods.AttachSocketCmdLine])
@@ -202,7 +202,9 @@ def test_flask_exception_no_multiproc(start_method, exc_type):
 
             session.request_continue()
 
-        session.stop_debugging()
+        session.stop_debugging(
+            exitCode=some.int,  # No clean way to kill Flask server
+        )
 
 
 @pytest.mark.parametrize("start_method", [start_methods.Launch])
@@ -247,5 +249,7 @@ def test_flask_breakpoint_multiproc(start_method):
                 child_session.request_continue()
                 assert bp_var_content in home_request.response_text()
 
-            child_session.wait_for_termination()
-            parent_session.stop_debugging()
+            child_session.stop_debugging()
+        parent_session.stop_debugging(
+            exitCode=some.int,  # No clean way to kill Flask server
+        )

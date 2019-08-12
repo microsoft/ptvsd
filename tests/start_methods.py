@@ -44,6 +44,7 @@ class DebugStartBase(object):
         self.session = session
         self.method = method
         self.captured_output = helpers.CapturedOutput(self.session)
+        self.debugee_process = None
 
     def get_ignored(self):
         return []
@@ -76,6 +77,7 @@ class DebugStartBase(object):
         maxExceptionStackFrames=None,
         steppingResumesAllThreads=None,
         rules=None,
+        successExitCodes=None,
     ):
         if logToFile:
             args["logToFile"] = logToFile
@@ -127,7 +129,10 @@ class DebugStartBase(object):
 
         if rules is not None:
             args["rules"] = rules
-        
+
+        if successExitCodes:
+            args["successExitCodes"] = successExitCodes
+
     def __str__(self):
         return self.method
 
@@ -261,7 +266,7 @@ class Launch(DebugStartBase):
             self.session.send_request("threads").wait_for_response()
             self.session.expect_realized(Event("thread"))
 
-    def stop_debugging(self, exitCode=some.int, **kwargs):
+    def stop_debugging(self, exitCode=0, **kwargs):
         self.session.wait_for_next(Event("exited", {"exitCode": exitCode}))
         self.session.wait_for_next(Event("terminated"))
         try:

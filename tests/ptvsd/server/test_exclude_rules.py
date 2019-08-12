@@ -44,12 +44,7 @@ def test_exceptions_and_exclude_rules(
     log.info("Rules: {0!j}", rules)
 
     with debug.Session(start_method) as session:
-        session.configure(
-            run_as, code_to_debug,
-            rules=rules,
-            # https://github.com/Microsoft/ptvsd/issues/1278:
-            expected_returncode=some.int,
-        )
+        session.configure(run_as, code_to_debug, rules=rules)
         session.request(
             "setExceptionBreakpoints", {"filters": ["raised", "uncaught"]}
         )
@@ -91,12 +86,7 @@ def test_exceptions_and_partial_exclude_rules(pyfile, start_method, run_as, scen
 
     with debug.Session(start_method, backchannel=True) as session:
         backchannel = session.backchannel
-        session.configure(
-            run_as, code_to_debug,
-            rules=rules,
-            # https://github.com/Microsoft/ptvsd/issues/1278:
-            expected_returncode=some.int,
-        )
+        session.configure(run_as, code_to_debug, rules=rules)
         session.request(
             "setExceptionBreakpoints", {"filters": ["raised", "uncaught"]}
         )

@@ -37,7 +37,6 @@ def _initialize_session(session, multiprocess=False):
     session.configure(
         "program", paths.app_py,
         cwd=paths.django1,
-        expected_returncode=some.int,  # No clean way to kill Django server
     )
 
 
@@ -83,7 +82,9 @@ def test_django_breakpoint_no_multiproc(start_method, bp_target):
             session.request_continue()
             assert bp_var_content in home_request.response_text()
 
-        session.stop_debugging()
+        session.stop_debugging(
+            exitCode=some.int,  # No clean way to kill Django server
+        )
 
 
 @pytest.mark.parametrize("start_method", [start_methods.Launch, start_methods.AttachSocketCmdLine])
@@ -130,7 +131,9 @@ def test_django_template_exception_no_multiproc(start_method):
             session.wait_for_stop("exception")
             session.request_continue()
 
-        session.stop_debugging()
+        session.stop_debugging(
+            exitCode=some.int,  # No clean way to kill Django server
+        )
 
 
 @pytest.mark.parametrize("start_method", [start_methods.Launch, start_methods.AttachSocketCmdLine])
@@ -182,7 +185,9 @@ def test_django_exception_no_multiproc(start_method, exc_type):
 
             session.request_continue()
 
-        session.stop_debugging()
+        session.stop_debugging(
+            exitCode=some.int,  # No clean way to kill Django server
+        )
 
 
 @pytest.mark.parametrize("start_method", [start_methods.Launch])
@@ -224,5 +229,5 @@ def test_django_breakpoint_multiproc(start_method):
                 child_session.request_continue()
                 assert bp_var_content in home_request.response_text()
 
-            child_session.wait_for_termination()
-            parent_session.stop_debugging()
+            child_session.stop_debugging()
+        parent_session.stop_debugging(exitCode=some.int)

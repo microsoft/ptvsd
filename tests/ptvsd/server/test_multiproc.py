@@ -249,12 +249,13 @@ def test_autokill(pyfile, start_method, run_as):
         parent_session.configure(run_as, parent)
         parent_session.start_debugging()
 
+        expected_exit_code = 0
         with parent_session.attach_to_next_subprocess() as child_session:
             child_session.start_debugging()
 
-            if parent_session.start_method == "launch":
+            if parent_session.start_method.method == "launch":
                 # In launch scenario, terminate the parent process by disconnecting from it.
-                parent_session.expected_returncode = some.int
+                expected_exit_code = some.int
                 try:
                     parent_session.request("disconnect")
                 except messaging.NoMoreMessages:
@@ -263,11 +264,11 @@ def test_autokill(pyfile, start_method, run_as):
                 parent_session.wait_for_disconnect()
             else:
                 # In attach scenario, just let the parent process run to completion.
-                parent_session.expected_returncode = 0
+                expected_exit_code = 0
                 parent_backchannel.send(None)
 
-            child_session.wait_for_termination()
-            parent_session.stop_debugging()
+            child_session.stop_debugging()
+            parent_session.stop_debugging(exitCode=expected_exit_code)
 
 
 @pytest.mark.skipif(

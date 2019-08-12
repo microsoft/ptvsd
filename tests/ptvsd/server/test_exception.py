@@ -95,10 +95,7 @@ def test_vsc_exception_options_raise_without_except(
     filters += ["uncaught"] if uncaught == "uncaughtOn" else []
     with debug.Session(start_method) as session:
         session.ignore_unobserved += [Event("stopped")]
-        session.configure(
-            run_as, code_to_debug,
-            expected_returncode=some.int,
-        )
+        session.configure(run_as, code_to_debug)
         session.send_request(
             "setExceptionBreakpoints", {"filters": filters}
         ).wait_for_response()
@@ -163,7 +160,7 @@ def test_vsc_exception_options_raise_without_except(
             assert resp_exc_info.body == expected
             session.request_continue()
 
-        session.stop_debugging()
+        session.stop_debugging(exitCode=some.int)
 
 
 @pytest.mark.parametrize("raised", ["raised", ""])
@@ -196,10 +193,7 @@ def test_systemexit(pyfile, start_method, run_as, raised, uncaught, zero, exit_c
         session.program_args = [repr(exit_code)]
         if zero:
             session.debug_options |= {"BreakOnSystemExitZero"}
-        session.configure(
-            run_as, code_to_debug,
-            expected_returncode=some.int,
-        )
+        session.configure(run_as, code_to_debug)
         session.send_request(
             "setExceptionBreakpoints", {"filters": filters}
         ).wait_for_response()
@@ -227,7 +221,7 @@ def test_systemexit(pyfile, start_method, run_as, raised, uncaught, zero, exit_c
             assert hit.frames[0]["line"] == line_numbers["unhandled"]
             session.request_continue()
 
-        session.stop_debugging()
+        session.stop_debugging(exitCode=some.int)
 
 
 @pytest.mark.parametrize(
@@ -287,10 +281,7 @@ def test_raise_exception_options(pyfile, start_method, run_as, exceptions, break
 
     with debug.Session(start_method) as session:
         session.ignore_unobserved += [Event("stopped")]
-        session.configure(
-            run_as, code_to_debug,
-            expected_returncode=some.int,
-        )
+        session.configure(run_as, code_to_debug)
         path = [{"names": ["Python Exceptions"]}]
         if exceptions:
             path.append({"names": exceptions})
@@ -314,7 +305,7 @@ def test_raise_exception_options(pyfile, start_method, run_as, exceptions, break
             assert hit.frames[0]["line"] == code_to_debug.lines[expected_exception]
             session.request_continue()
 
-        session.stop_debugging()
+        session.stop_debugging(exitCode=some.int)
 
 
 @pytest.mark.parametrize("exit_code", [0, 3])
@@ -329,12 +320,7 @@ def test_success_exitcodes(pyfile, start_method, run_as, exit_code):
         sys.exit(exit_code)
 
     with debug.Session(start_method) as session:
-        session.program_args = [repr(exit_code)]
-        session.success_exitcodes = [3]
-        session.configure(
-            run_as, code_to_debug,
-            expected_returncode=exit_code,
-        )
+        session.configure(run_as, code_to_debug, args=[repr(exit_code)], successExitCodes=[3])
         session.send_request(
             "setExceptionBreakpoints", {"filters": ["uncaught"]}
         ).wait_for_response()
@@ -344,7 +330,7 @@ def test_success_exitcodes(pyfile, start_method, run_as, exit_code):
             session.wait_for_stop("exception")
             session.request_continue()
 
-        session.stop_debugging()
+        session.stop_debugging(exitCode=some.int)
 
 
 @pytest.mark.parametrize("max_frames", ["default", "all", 10])
@@ -382,7 +368,6 @@ def test_exception_stack(pyfile, start_method, run_as, max_frames):
     with debug.Session(start_method) as session:
         session.configure(
             run_as, code_to_debug,
-            expected_returncode=some.int,
             maxExceptionStackFrames=maxFrames,
         )
         session.send_request(
@@ -418,4 +403,4 @@ def test_exception_stack(pyfile, start_method, run_as, max_frames):
 
         session.request_continue()
 
-        session.stop_debugging()
+        session.stop_debugging(exitCode=some.int)

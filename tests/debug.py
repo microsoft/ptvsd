@@ -110,6 +110,10 @@ class Session(object):
         self._stop_debug_adapter()
 
     @property
+    def process(self):
+        return self.start_method.debugee_process
+
+    @property
     def ignore_unobserved(self):
         return self.timeline.ignore_unobserved
 
