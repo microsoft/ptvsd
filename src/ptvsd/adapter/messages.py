@@ -467,7 +467,7 @@ class ServerMessages(Messages):
             debuggee.register_subprocess(sub_pid)
         except Exception as exc:
             raise event.cant_handle("{0}", exc)
-        self._hold(event)
+        self._ide.propagate(event)
 
     def terminated_event(self, event):
         # Do not propagate this, since we'll report our own.
