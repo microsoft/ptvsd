@@ -36,6 +36,8 @@ ptvsd.wait_for_attach()
 # Assume that values are filenames - it's usually either that, or numbers.
 make_filename = compat.filename_bytes if sys.version_info < (3,) else compat.filename
 
+class CommandNotSupported(Exception):
+    pass
 
 class DebugStartBase(object):
     def __init__(self, session, method="base"):
@@ -54,6 +56,9 @@ class DebugStartBase(object):
 
     def stop_debugging(self, **kwargs):
         pass
+
+    def run_in_terminal(self, **kwargs):
+        raise CommandNotSupported()
 
     def _build_common_args(
         self,
@@ -147,7 +152,7 @@ class Launch(DebugStartBase):
         waitOnNormalExit=None,
         waitOnAbnormalExit=None,
         breakOnSystemExitZero=None,
-        console="internalConsole",
+        console="externalTerminal",
         internalConsoleOptions="neverOpen",
         **kwargs
     ):
@@ -227,13 +232,14 @@ class Launch(DebugStartBase):
         self._launch_args = self._build_launch_args({}, run_as, target, **kwargs)
         self._launch_request = self.session.send_request("launch", self._launch_args)
         self.session.wait_for_next(Event("initialized"))
+        if self._launch_args["noDebug"]:
+            self.session.wait_for_next(Event("process"))
 
     def start_debugging(self):
         self.session.send_request("configurationDone").wait_for_response()
         if self._launch_args["noDebug"]:
             self._launch_request.wait_for_response()
         else:
-            self.session.wait_for_next(Event("process"))
             self.session.wait_for_next(Response(self._launch_request))
 
             self.session.expect_new(
@@ -258,6 +264,47 @@ class Launch(DebugStartBase):
     def stop_debugging(self, exitCode=some.int, **kwargs):
         self.session.wait_for_next(Event("exited", {"exitCode": exitCode}))
         self.session.wait_for_next(Event("terminated"))
+        try:
+            self.debugee_process.wait()
+        finally:
+            watchdog.unregister_spawn(self.debugee_process.pid, fmt("debuggee-{0}", self.session.id))
+
+    def run_in_terminal(self, request):
+        kind = request.arguments["kind"]
+        assert kind in ("integrated", "external")
+        args = request.arguments["args"]
+        cwd = request.arguments["cwd"]
+        env = request.arguments["env"]
+
+        env_str = "\n".join((
+            fmt("{0}={1}", env_name, env[env_name])
+            for env_name in sorted(env.keys())
+        ))
+
+        log.info(
+            "Spawning debuggee {0} via runInTerminal:\n\n{1}\n\n"
+            "kind:{2}\n\n"
+            "cwd:{3}\n\n"
+            "env:{4}\n\n",
+            self.session,
+            "\n".join((repr(s) for s in args)),
+            kind,
+            cwd,
+            env_str
+        )
+
+        self.debugee_process = subprocess.Popen(
+            args,
+            cwd=cwd,
+            env=env,
+            bufsize=0,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        self.captured_output.capture(self.debugee_process)
+        watchdog.register_spawn(self.debugee_process.pid, fmt("debuggee-{0}", self.session.id))
+        request.respond({"processId": self.debugee_process.pid})
 
 
 class AttachBase(DebugStartBase):
@@ -400,7 +447,7 @@ class AttachBase(DebugStartBase):
             # rather than at some random time later during the test.
             # Note: it's actually possible that the 'thread' event was sent before the 'threads'
             # request (although the 'threads' will force 'thread' to be sent if it still wasn't).
-            self.session.request("threads").wait_for_response()
+            self.session.send_request("threads").wait_for_response()
             self.session.expect_realized(Event("thread"))
 
     def stop_debugging(self, **kwargs):
@@ -446,7 +493,7 @@ class AttachSocketImport(AttachBase):
         ptvsd_port = self._attach_args["port"]
         log_dir = None
         if self._attach_args.get("logToFile", False):
-            log_dir = fmt("\"{log_dir}\"", log_dir=self.session.log_dir)
+            log_dir = "\"" + self.session.log_dir + "\""
 
         env["PTVSD_DEBUG_ME"] = fmt(
             PTVSD_DEBUG_ME, ptvsd_port=ptvsd_port, log_dir=log_dir

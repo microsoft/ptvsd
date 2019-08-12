@@ -345,7 +345,7 @@ class MessageDict(collections.OrderedDict):
     def __repr__(self):
         return fmt("{0!j}", self)
 
-    def __call__(self, key, validate, optional=False):
+    def __call__(self, key, validate, optional=False, default=()):
         """Like get(), but with validation.
 
         The item is first retrieved as if with self.get(key, default=()) - the default
@@ -374,7 +374,7 @@ class MessageDict(collections.OrderedDict):
         elif isinstance(validate, type) or isinstance(validate, tuple):
             validate = json.of_type(validate)
 
-        value = self.get(key, ())
+        value = self.get(key, default)
         try:
             value = validate(value)
         except (TypeError, ValueError) as exc:

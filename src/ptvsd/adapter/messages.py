@@ -188,8 +188,8 @@ class IDEMessages(Messages):
         _Shared.readonly_attrs.add("terminate_on_disconnect")
         self._debug_config(request)
 
-        options.host = request("host", options.host)
-        options.port = request("port", options.port)
+        options.host = request("host", json.of_type(unicode), default=options.host)
+        options.port = request("port", json.of_type(int), options.port)
         _channels.connect_to_server(address=(options.host, options.port))
 
         return self._configure(request)
@@ -418,16 +418,19 @@ class ServerMessages(Messages):
             "Requests from the debug server to the IDE are not allowed."
         )
 
-    # Generic event handler, used if there's no specific handler below.
-    def event(self, event):
-        # NOTE: This is temporary until debug server is updated to follow
-        # DAP spec so we don't receive debugger events before configuration
-        # done is finished.
+    def _hold_or_propagate(self, event):
         with self._lock:
             if self._hold_messages:
                 self._saved_messages.append(event)
             else:
                 self._ide.propagate(event)
+
+    # Generic event handler, used if there's no specific handler below.
+    def event(self, event):
+        # NOTE: This is temporary until debug server is updated to follow
+        # DAP spec so we don't receive debugger events before configuration
+        # done is finished.
+        self._hold_or_propagate(event)
 
     def initialized_event(self, event):
         # NOTE: This should be suppressed from server, if we want to remove
@@ -444,7 +447,7 @@ class ServerMessages(Messages):
                 # If we couldn't retrieve or validate PID, we can't safely continue
                 # debugging, so shut everything down.
                 self.disconnect()
-        self._ide.propagate(event)
+        self._hold_or_propagate(event)
 
     @_only_allowed_while("running")
     def continued_event(self, event):
@@ -464,7 +467,7 @@ class ServerMessages(Messages):
             debuggee.register_subprocess(sub_pid)
         except Exception as exc:
             raise event.cant_handle("{0}", exc)
-        self._ide.propagate(event)
+        self._hold(event)
 
     def terminated_event(self, event):
         # Do not propagate this, since we'll report our own.

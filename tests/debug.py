@@ -147,6 +147,8 @@ class Session(object):
 
     def _process_request(self, request):
         self.timeline.record_request(request, block=False)
+        if request.command == "runInTerminal":
+            self.start_method.run_in_terminal(request)
 
     def _process_response(self, request, response):
         self.timeline.record_response(request, response, block=False)
@@ -162,7 +164,6 @@ class Session(object):
                 self.channel.close()
             except Exception:
                 pass
-            raise EOFError(fmt("{0} disconnect", self))
 
     def _setup_adapter_and_channel(self):
         args = [sys.executable, PTVSD_ADAPTER_DIR]
@@ -390,6 +391,21 @@ class Session(object):
 
     def wait_for_next_event(self, event, body=some.object):
         return self.timeline.wait_for_next(Event(event, body)).body
+
+    def output(self, category):
+        """Returns all output of a given category as a single string, assembled from
+        all the "output" events received for that category so far.
+        """
+        events = self.all_occurrences_of(
+            Event("output", some.dict.containing({"category": category}))
+        )
+        return "".join(event.body["output"] for event in events)
+
+    def captured_stdout(self, encoding=None):
+        return self.start_method.captured_output.stdout(encoding)
+
+    def captured_stderr(self, encoding=None):
+        return self.start_method.captured_output.stderr(encoding)
 
     def stop_debugging(self, **kwargs):
         self.start_method.stop_debugging(**kwargs)

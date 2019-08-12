@@ -19,8 +19,8 @@ from pydevd_file_utils import get_abs_path_real_path_and_base_from_file, get_abs
 def _get_dont_trace_patterns():
     ptvsd_path, _, _ = get_abs_path_real_path_and_base_from_file(ptvsd.__file__)
     ptvsd_path = os.path.dirname(ptvsd_path)
-    start_patterns = [ptvsd_path]
-    end_patterns = ["ptvsd_launcher.py"]
+    start_patterns = (ptvsd_path,)
+    end_patterns = ("ptvsd_launcher.py",)
     log.info('Dont trace patterns: {0!r}, {1!r}', start_patterns, end_patterns)
     return (start_patterns, end_patterns)
 
