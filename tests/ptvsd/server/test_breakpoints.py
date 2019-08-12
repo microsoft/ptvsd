@@ -278,7 +278,7 @@ def test_package_launch():
         )
 
         session.request_continue()
-        session.stop_debugging()
+        session.stop_debugging(exitCode=42)
 
 
 def test_add_and_remove_breakpoint(pyfile, start_method, run_as):

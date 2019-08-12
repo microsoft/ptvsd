@@ -391,8 +391,8 @@ class Session(object):
     def wait_for_next_event(self, event, body=some.object):
         return self.timeline.wait_for_next(Event(event, body)).body
 
-    def stop_debugging(self):
-        self.start_method.stop_debugging()
+    def stop_debugging(self, **kwargs):
+        self.start_method.stop_debugging(**kwargs)
 
         if self.backchannel:
             self.backchannel.close()

@@ -52,7 +52,7 @@ class DebugStartBase(object):
     def start_debugging(self, **kwargs):
         pass
 
-    def stop_debugging(self):
+    def stop_debugging(self, **kwargs):
         pass
 
     def _build_common_args(
@@ -255,8 +255,8 @@ class Launch(DebugStartBase):
             self.session.send_request("threads").wait_for_response()
             self.session.expect_realized(Event("thread"))
 
-    def stop_debugging(self):
-        self.session.wait_for_next(Event("exited"))
+    def stop_debugging(self, exitCode=some.int, **kwargs):
+        self.session.wait_for_next(Event("exited", {"exitCode": exitCode}))
         self.session.wait_for_next(Event("terminated"))
 
 
@@ -403,7 +403,7 @@ class AttachBase(DebugStartBase):
             self.session.request("threads").wait_for_response()
             self.session.expect_realized(Event("thread"))
 
-    def stop_debugging(self):
+    def stop_debugging(self, **kwargs):
         try:
             self.debugee_process.wait()
         finally:
