@@ -58,11 +58,13 @@ def spawn_and_connect(request):
     Caller is responsible for calling start() on the returned channel.
     """
 
-    channel = channels.Channels().accept_connection_from_server(
-        ("127.0.0.1", 0),
-        before_accept=lambda address: _parse_request_and_spawn(request, address),
-    )
-    return channel
+    if request("noDebug", False):
+        _parse_request_and_spawn(request, (None, None))
+    else:
+        channels.Channels().accept_connection_from_server(
+            ("127.0.0.1", 0),
+            before_accept=lambda address: _parse_request_and_spawn(request, address),
+        )
 
 
 def _parse_request_and_spawn(request, address):
@@ -165,16 +167,19 @@ def _parse_request(request, address):
     if property_or_debug_option("waitOnAbnormalExit", "WaitOnAbnormalExit"):
         cmdline += ["--wait-on-abnormal"]
 
-    ptvsd_args = request("ptvsdArgs", json.array(unicode))
-    cmdline += [
-        "--",
-        compat.filename(ptvsd.__main__.__file__),
-        "--client",
-        "--host",
-        host,
-        "--port",
-        str(port),
-    ] + ptvsd_args
+    if request("noDebug", False):
+        cmdline += ["--"]
+    else:
+        ptvsd_args = request("ptvsdArgs", json.array(unicode))
+        cmdline += [
+            "--",
+            compat.filename(ptvsd.__main__.__file__),
+            "--client",
+            "--host",
+            host,
+            "--port",
+            str(port),
+        ] + ptvsd_args
 
     program = module = code = ()
     if "program" in request:
