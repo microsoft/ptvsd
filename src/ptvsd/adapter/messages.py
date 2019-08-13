@@ -123,6 +123,9 @@ class IDEMessages(Messages):
     # "launch" or "attach" request that started debugging.
     _start_request = None
 
+    # "noDebug" flag is set when user selects run without debugging.
+    _no_debug = False
+
     # A decorator to add the message to initial_messages if needed before handling it.
     # Must be applied to the handler for every message that can be received before
     # connection to the debug server can be established while handling attach/launch,
@@ -147,7 +150,8 @@ class IDEMessages(Messages):
 
     # Generic request handler, used if there's no specific handler below.
     def request(self, request):
-        return self._server.delegate(request)
+        if self._no_debug is False:
+            return self._server.delegate(request)
 
     @_replay_to_server
     @_only_allowed_while("starting")
@@ -176,15 +180,16 @@ class IDEMessages(Messages):
     def launch_request(self, request):
         self._debug_config(request)
 
-        # TODO: nodebug
         debuggee.spawn_and_connect(request)
-
         return self._configure(request)
 
     @_replay_to_server
     @_only_allowed_while("initializing")
     def attach_request(self, request):
-        self._shared.terminate_on_disconnect = False
+        if request("noDebug", False):
+            raise request.isnt_valid('"noDebug" is not valid for Attach')
+
+            self._shared.terminate_on_disconnect = False
         _Shared.readonly_attrs.add("terminate_on_disconnect")
         self._debug_config(request)
 
@@ -222,26 +227,30 @@ class IDEMessages(Messages):
     # https://github.com/microsoft/vscode/issues/4902#issuecomment-368583522
     def _configure(self, request):
         assert request.is_request("launch", "attach")
-        log.debug("Replaying previously received messages to server.")
+        self._no_debug = request("noDebug", False)
 
-        assert len(self._initial_messages)
-        initialize = self._initial_messages.pop(0)
-        assert initialize.is_request("initialize")
+        if self._no_debug is False:
+            log.debug("Replaying previously received messages to server.")
 
-        # We want to make sure that no other server message handler can execute until
-        # we receive and parse the response to "initialize", to avoid race conditions
-        # with those handlers accessing contract.server. Thus, we send the request and
-        # register the callback first, and only then start the server message loop.
-        server_initialize = self._server.propagate(initialize)
-        server_initialize.on_response(lambda response: contract.server.parse(response))
-        self._server.start()
-        server_initialize.wait_for_response()
+            assert len(self._initial_messages)
+            initialize = self._initial_messages.pop(0)
+            assert initialize.is_request("initialize")
 
-        for msg in self._initial_messages:
-            # TODO: validate server response to ensure it matches our own earlier.
-            self._server.propagate(msg)
+            # We want to make sure that no other server message handler can execute until
+            # we receive and parse the response to "initialize", to avoid race conditions
+            # with those handlers accessing contract.server. Thus, we send the request and
+            # register the callback first, and only then start the server message loop.
+            server_initialize = self._server.propagate(initialize)
+            server_initialize.on_response(lambda response: contract.server.parse(response))
+            self._server.start()
+            server_initialize.wait_for_response()
 
-        log.debug("Finished replaying messages to server.")
+            for msg in self._initial_messages:
+                # TODO: validate server response to ensure it matches our own earlier.
+                self._server.propagate(msg)
+
+            log.debug("Finished replaying messages to server.")
+
         self._initial_messages = None
         self._start_request = request
 
@@ -256,10 +265,11 @@ class IDEMessages(Messages):
             # before it had a chance to send the event - so wake up periodically, and
             # check whether server channel is still alive.
             while not debuggee.wait_for_pid(1):
-                if _channels.server() is None:
+                if self._no_debug is False and _channels.server() is None:
                     raise request.cant_handle("Debug server disconnected unexpectedly.")
 
-        self._set_debugger_properties(request)
+        if self._no_debug is False:
+            self._set_debugger_properties(request)
 
         # Let the IDE know that it can begin configuring the adapter.
         state.change("configuring")
@@ -270,7 +280,7 @@ class IDEMessages(Messages):
     def configurationDone_request(self, request):
         assert self._start_request is not None
 
-        result = self._server.delegate(request)
+        result = {} if self._no_debug else self._server.delegate(request)
         state.change("running")
         ServerMessages().release_events()
         request.respond(result)
@@ -302,7 +312,10 @@ class IDEMessages(Messages):
         else:
             if server is not None:
                 try:
-                    result = server.delegate(request)
+                    if self._no_debug is False:
+                        result = server.delegate(request)
+                    else:
+                        result = {}
                 except messaging.MessageHandlingError as exc:
                     # If the server was there, but failed to handle the request, we want
                     # to propagate that failure back to the IDE - but only after we have
@@ -330,18 +343,23 @@ class IDEMessages(Messages):
     @_only_allowed_while("running")
     def pause_request(self, request):
         request.arguments["threadId"] = "*"
-        self._server.delegate(request)
+        if self._no_debug is False:
+            self._server.delegate(request)
         return {}
 
     @_only_allowed_while("running")
     def continue_request(self, request):
         request.arguments["threadId"] = "*"
-        self._server.delegate(request)
+        if self._no_debug is False:
+            self._server.delegate(request)
         return {"allThreadsContinued": True}
 
     @_only_allowed_while("configuring", "running")
     def ptvsd_systemInfo_request(self, request):
         result = {"ptvsd": {"version": ptvsd.__version__}}
+        if self._no_debug:
+            return result
+
         server = _channels.server()
         if server is not None:
             try:
