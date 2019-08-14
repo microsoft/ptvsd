@@ -186,7 +186,7 @@ class IDEMessages(Messages):
     @_replay_to_server
     @_only_allowed_while("initializing")
     def attach_request(self, request):
-        if request("noDebug", False):
+        if request("noDebug", json.default(False)):
             raise request.isnt_valid('"noDebug" is not valid for Attach')
 
         self._shared.terminate_on_disconnect = False
@@ -227,7 +227,7 @@ class IDEMessages(Messages):
     # https://github.com/microsoft/vscode/issues/4902#issuecomment-368583522
     def _configure(self, request):
         assert request.is_request("launch", "attach")
-        self._no_debug = request("noDebug", False)
+        self._no_debug = request("noDebug", json.default(False))
 
         if self._no_debug is False:
             log.debug("Replaying previously received messages to server.")
@@ -277,14 +277,13 @@ class IDEMessages(Messages):
             return messaging.NO_RESPONSE  # will respond on "configurationDone"
         else:
             state.change("running_nodebug")
-            ServerMessages().release_events()
             self._start_request.respond({})
 
     @_only_allowed_while("configuring")
     def configurationDone_request(self, request):
         assert self._start_request is not None
 
-        result = {} if self._no_debug else self._server.delegate(request)
+        result = self._server.delegate(request)
         state.change("running")
         ServerMessages().release_events()
         request.respond(result)

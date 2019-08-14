@@ -58,7 +58,7 @@ def spawn_and_connect(request):
     Caller is responsible for calling start() on the returned channel.
     """
 
-    if request("noDebug", False):
+    if request("noDebug", json.default(False)):
         _parse_request_and_spawn(request, (None, None))
     else:
         channels.Channels().accept_connection_from_server(
@@ -167,7 +167,7 @@ def _parse_request(request, address):
     if property_or_debug_option("waitOnAbnormalExit", "WaitOnAbnormalExit"):
         cmdline += ["--wait-on-abnormal"]
 
-    if request("noDebug", False):
+    if request("noDebug", json.default(False)):
         cmdline += ["--"]
     else:
         ptvsd_args = request("ptvsdArgs", json.array(unicode))
