@@ -189,7 +189,7 @@ class IDEMessages(Messages):
         if request("noDebug", False):
             raise request.isnt_valid('"noDebug" is not valid for Attach')
 
-            self._shared.terminate_on_disconnect = False
+        self._shared.terminate_on_disconnect = False
         _Shared.readonly_attrs.add("terminate_on_disconnect")
         self._debug_config(request)
 
@@ -268,13 +268,17 @@ class IDEMessages(Messages):
                 if self._no_debug is False and _channels.server() is None:
                     raise request.cant_handle("Debug server disconnected unexpectedly.")
 
+
         if self._no_debug is False:
             self._set_debugger_properties(request)
-
-        # Let the IDE know that it can begin configuring the adapter.
-        state.change("configuring")
-        self._ide.send_event("initialized")
-        return messaging.NO_RESPONSE  # will respond on "configurationDone"
+            # Let the IDE know that it can begin configuring the adapter.
+            state.change("configuring")
+            self._ide.send_event("initialized")
+            return messaging.NO_RESPONSE  # will respond on "configurationDone"
+        else:
+            state.change("running_nodebug")
+            ServerMessages().release_events()
+            self._start_request.respond({})
 
     @_only_allowed_while("configuring")
     def configurationDone_request(self, request):
@@ -343,15 +347,12 @@ class IDEMessages(Messages):
     @_only_allowed_while("running")
     def pause_request(self, request):
         request.arguments["threadId"] = "*"
-        if self._no_debug is False:
-            self._server.delegate(request)
-        return {}
+        self._server.delegate(request)
 
     @_only_allowed_while("running")
     def continue_request(self, request):
         request.arguments["threadId"] = "*"
-        if self._no_debug is False:
-            self._server.delegate(request)
+        self._server.delegate(request)
         return {"allThreadsContinued": True}
 
     @_only_allowed_while("configuring", "running")
