@@ -22,7 +22,7 @@ import threading
 
 import ptvsd.__main__
 from ptvsd.adapter import channels, contract
-from ptvsd.common import compat, fmt, json, launcher, messaging, log, singleton
+from ptvsd.common import compat, fmt, json, launcher, messaging, log, singleton, socket
 from ptvsd.common.compat import unicode
 
 
@@ -71,7 +71,7 @@ def spawn_and_connect(request):
     Caller is responsible for calling start() on the returned channel.
     """
 
-    if request("noDebug", False):
+    if request("noDebug", json.default(False)):
         _parse_request_and_spawn(request, (None, None))
     else:
         channels.Channels().accept_connection_from_server(
@@ -180,7 +180,7 @@ def _parse_request(request, address):
     if property_or_debug_option("waitOnAbnormalExit", "WaitOnAbnormalExit"):
         cmdline += ["--wait-on-abnormal"]
 
-    if request("noDebug", False):
+    if request("noDebug", json.default(False)):
         cmdline += ["--"]
     else:
         ptvsd_args = request("ptvsdArgs", json.array(unicode))
@@ -237,6 +237,8 @@ def _parse_request(request, address):
 
 
 def _spawn_popen(request, spawn_info):
+    assert spawn_info.pid_server is None
+
     env = os.environ.copy()
     env.update(spawn_info.env)
 
@@ -347,37 +349,21 @@ def _spawn_terminal(request, spawn_info):
     except messaging.MessageHandlingError as exc:
         exc.propagate(request)
 
-    # Although "runInTerminal" response has "processId", it's optional, and in practice
-    # it is not used by VSCode: https://github.com/microsoft/vscode/issues/61640.
-    # Thus, we can only retrieve the PID via the "process" event, and only then we can
-    # start tracking it. Until then, nothing else to do.
-    pass
-
-
-def parse_pid(process_event):
-    assert process_event.is_event("process")
-
-    if _got_pid.is_set():
-        # If we already have the PID, there's nothing to do.
-        return
-
-    global pid
-    sys_pid = process_event("systemProcessId", int)
-
     def after_exit(code):
         global exit_code
         exit_code = code
         _exited.set()
 
+    global pid
     try:
-        pid = sys_pid
+        pid = spawn_info.pid_server.wait_for_pid()
         _got_pid.set()
         ProcessTracker().track(pid, after_exit=after_exit)
     except Exception as exc:
-        # If we can't track it, we won't be able to detect if it exited or retrieve
-        # the exit code, so fail immediately.
-        raise process_event.cant_handle(
-            "Couldn't get debuggee process handle: {0}", str(exc)
+        # If we can't track it, we won't be able to terminate it if asked; but aside
+        # from that, it does not prevent debugging.
+        log.exception(
+            "Unable to track debuggee process with PID={0}: {1}.", pid, str(exc), category="warning"
         )
 
 

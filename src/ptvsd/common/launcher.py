@@ -6,6 +6,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 __all__ = ["main"]
 
+import os
 import os.path
 import subprocess
 import sys
@@ -35,6 +36,7 @@ def main(argv=sys.argv):
         sys.exit(2)
 
     p = subprocess.Popen(args=process_args)
+    _send_pid(p.pid)
     exit_code = p.wait()
 
     if _wait_on_normal_exit and exit_code == 0:
@@ -78,5 +80,21 @@ def parse(argv):
     return it
 
 
+def _send_pid(pid):
+    if "PTVSD_PID_SERVER_PORT" not in os.environ:
+        return
+
+    from ptvsd.common import socket
+    port = int(os.environ["PTVSD_PID_SERVER_PORT"])
+    with socket.create_client() as sock:
+        sock.connect(("127.0.0.1", port))
+        sock.sendall(str(pid).encode("ascii"))
+
+
 if __name__ == "__main__":
+    # This is so we can correctly import socket from ptvsd.common
+    if "ptvsd" not in sys.modules:
+        sys.path[0] = os.path.dirname(__file__) + "/../../"
+        __import__("ptvsd")
+        del sys.path[0]
     main()
