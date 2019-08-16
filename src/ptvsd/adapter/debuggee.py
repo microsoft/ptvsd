@@ -237,10 +237,11 @@ def _parse_request(request, address):
 
 
 def _spawn_popen(request, spawn_info):
-    assert spawn_info.pid_server is None
-
     env = os.environ.copy()
     env.update(spawn_info.env)
+
+    pid_server_port = start_process_pid_server()
+    env["PTVSD_PID_SERVER_PORT"] = str(pid_server_port)
 
     if sys.version_info < (3,):
         # env is all Unicode strings at this point, but Popen() expects bytes, so we
@@ -250,6 +251,7 @@ def _spawn_popen(request, spawn_info):
         env = {encode(k): encode(v) for k, v in env.items()}
 
     close_fds = set()
+
     try:
         if spawn_info.redirect_output:
             # subprocess.PIPE behavior can vary substantially depending on Python version
@@ -280,12 +282,9 @@ def _spawn_popen(request, spawn_info):
                 spawn_info.cmdline,
             )
 
-        log.info("Spawned debuggee process with PID={0}.", proc.pid)
-
-        global pid
+        log.info("Spawned launcher process with PID={0}.", proc.pid)
         try:
-            pid = proc.pid
-            _got_pid.set()
+            wait_for_pid()
             ProcessTracker().track(pid)
         except Exception:
             # If we can't track it, we won't be able to terminate it if asked; but aside
@@ -335,6 +334,9 @@ def _spawn_popen(request, spawn_info):
 
 
 def _spawn_terminal(request, spawn_info):
+    pid_server_port = start_process_pid_server()
+    spawn_info.env["PTVSD_PID_SERVER_PORT"] = str(pid_server_port)
+
     kinds = {"integratedTerminal": "integrated", "externalTerminal": "external"}
     body = {
         "kind": kinds[spawn_info.console],
@@ -354,10 +356,8 @@ def _spawn_terminal(request, spawn_info):
         exit_code = code
         _exited.set()
 
-    global pid
     try:
-        pid = spawn_info.pid_server.wait_for_pid()
-        _got_pid.set()
+        wait_for_pid()
         ProcessTracker().track(pid, after_exit=after_exit)
     except Exception as exc:
         # If we can't track it, we won't be able to terminate it if asked; but aside
@@ -598,3 +598,37 @@ class CaptureOutput(object):
 
         # Flush any remaining data in the incremental decoder.
         self._send_output_event(b"", final=True)
+
+
+def start_process_pid_server():
+    listener = socket.create_server("127.0.0.1", 0)
+    host, port = listener.getsockname()
+    log.info(
+        "Adapter waiting for connection from launcher on {0}:{1}...", host, port
+    )
+
+    def _worker():
+        try:
+            sock, (l_host, l_port) = listener.accept()
+        finally:
+            listener.close()
+        log.info("Launcher connection accepted from {0}:{1}.", l_host, l_port)
+        data = b''
+        try:
+            while True:
+                d = sock.recv(10)
+                if d == b'':
+                    break
+                data += d
+        except OSError:
+            pass
+
+        global pid
+        pid = -1 if data == b'' else int(data.decode("ascii"))
+        _got_pid.set()
+        log.info("Debuggee process Id received: {0}", pid)
+
+    wait_thread = threading.Thread(target=_worker, name="Process Pid Server")
+    wait_thread.daemon = True
+    wait_thread.start()
+    return port
