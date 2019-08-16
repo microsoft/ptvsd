@@ -613,18 +613,13 @@ def start_process_pid_server():
         finally:
             listener.close()
         log.info("Launcher connection accepted from {0}:{1}.", l_host, l_port)
-        data = b''
-        try:
-            while True:
-                d = sock.recv(10)
-                if d == b'':
-                    break
-                data += d
-        except OSError:
-            pass
 
+        try:
+            data = sock.makefile().read()
+        finally:
+            sock.close()
         global pid
-        pid = -1 if data == b'' else int(data.decode("ascii"))
+        pid = -1 if data == b'' else int(data)
         _got_pid.set()
         log.info("Debuggee process Id received: {0}", pid)
 
