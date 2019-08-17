@@ -22,12 +22,14 @@ INTERNAL_PORT_SWITCH = "--internal-port"
 
 _wait_on_normal_exit = False
 _wait_on_abnormal_exit = False
-_internal_pid_server_port = None 
+_internal_pid_server_port = None
 
 
 HELP = """Usage: launcher [{normal}] [{abnormal}] <args>
 python launcher.py {normal} {abnormal} -- <python args go here>
-""".format(normal=WAIT_ON_NORMAL_SWITCH, abnormal=WAIT_ON_ABNORMAL_SWITCH)
+""".format(
+    normal=WAIT_ON_NORMAL_SWITCH, abnormal=WAIT_ON_ABNORMAL_SWITCH
+)
 
 
 def main(argv=sys.argv):
@@ -88,6 +90,7 @@ def parse(argv):
 
 def _send_pid(pid):
     from ptvsd.common import socket
+
     assert _internal_pid_server_port is not None
     with socket.create_client() as sock:
         sock.connect(("127.0.0.1", _internal_pid_server_port))

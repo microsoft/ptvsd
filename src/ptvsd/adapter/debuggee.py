@@ -363,7 +363,10 @@ def _spawn_terminal(request, spawn_info):
         # If we can't track it, we won't be able to terminate it if asked; but aside
         # from that, it does not prevent debugging.
         log.exception(
-            "Unable to track debuggee process with PID={0}: {1}.", pid, str(exc), category="warning"
+            "Unable to track debuggee process with PID={0}: {1}.",
+            pid,
+            str(exc),
+            category="warning",
         )
 
 
@@ -603,9 +606,7 @@ class CaptureOutput(object):
 def start_process_pid_server():
     listener = socket.create_server("127.0.0.1", 0)
     host, port = listener.getsockname()
-    log.info(
-        "Adapter waiting for connection from launcher on {0}:{1}...", host, port
-    )
+    log.info("Adapter waiting for connection from launcher on {0}:{1}...", host, port)
 
     def _worker():
         try:
@@ -619,7 +620,7 @@ def start_process_pid_server():
         finally:
             sock.close()
         global pid
-        pid = -1 if data == b'' else int(data)
+        pid = -1 if data == b"" else int(data)
         _got_pid.set()
         log.info("Debuggee process Id received: {0}", pid)
 

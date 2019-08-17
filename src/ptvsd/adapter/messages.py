@@ -246,7 +246,9 @@ class IDEMessages(Messages):
             # with those handlers accessing contract.server. Thus, we send the request and
             # register the callback first, and only then start the server message loop.
             server_initialize = self._server.propagate(initialize)
-            server_initialize.on_response(lambda response: contract.server.parse(response))
+            server_initialize.on_response(
+                lambda response: contract.server.parse(response)
+            )
             self._server.start()
             server_initialize.wait_for_response()
 
@@ -272,7 +274,6 @@ class IDEMessages(Messages):
             while not debuggee.wait_for_pid(1):
                 if not self._no_debug and _channels.server() is None:
                     raise request.cant_handle("Debug server disconnected unexpectedly.")
-
 
         if not self._no_debug:
             self._set_debugger_properties(request)
