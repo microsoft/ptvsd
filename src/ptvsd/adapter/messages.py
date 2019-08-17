@@ -150,8 +150,13 @@ class IDEMessages(Messages):
 
     # Generic request handler, used if there's no specific handler below.
     def request(self, request):
-        if self._no_debug is False:
+        server = _channels.server()
+        if not self._no_debug or server is not None:
             return self._server.delegate(request)
+        if self._no_debug:
+            raise request.isnt_valid("when running without debugger.")
+        if not server:
+            raise request.isnt_valid("when debug server not ready.")
 
     @_replay_to_server
     @_only_allowed_while("starting")
@@ -229,7 +234,7 @@ class IDEMessages(Messages):
         assert request.is_request("launch", "attach")
         self._no_debug = request("noDebug", json.default(False))
 
-        if self._no_debug is False:
+        if not self._no_debug:
             log.debug("Replaying previously received messages to server.")
 
             assert len(self._initial_messages)
@@ -265,11 +270,11 @@ class IDEMessages(Messages):
             # before it had a chance to send the event - so wake up periodically, and
             # check whether server channel is still alive.
             while not debuggee.wait_for_pid(1):
-                if self._no_debug is False and _channels.server() is None:
+                if not self._no_debug and _channels.server() is None:
                     raise request.cant_handle("Debug server disconnected unexpectedly.")
 
 
-        if self._no_debug is False:
+        if not self._no_debug:
             self._set_debugger_properties(request)
             # Let the IDE know that it can begin configuring the adapter.
             state.change("configuring")
@@ -277,7 +282,7 @@ class IDEMessages(Messages):
             return messaging.NO_RESPONSE  # will respond on "configurationDone"
         else:
             state.change("running_nodebug")
-            self._start_request.respond({})
+            return {}
 
     @_only_allowed_while("configuring")
     def configurationDone_request(self, request):
@@ -315,7 +320,7 @@ class IDEMessages(Messages):
         else:
             if server is not None:
                 try:
-                    if self._no_debug is False:
+                    if not self._no_debug:
                         result = server.delegate(request)
                     else:
                         result = {}
@@ -357,9 +362,6 @@ class IDEMessages(Messages):
     @_only_allowed_while("configuring", "running")
     def ptvsd_systemInfo_request(self, request):
         result = {"ptvsd": {"version": ptvsd.__version__}}
-        if self._no_debug:
-            return result
-
         server = _channels.server()
         if server is not None:
             try:

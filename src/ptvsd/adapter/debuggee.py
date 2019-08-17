@@ -72,7 +72,7 @@ def spawn_and_connect(request):
     """
 
     if request("noDebug", json.default(False)):
-        _parse_request_and_spawn(request, (None, None))
+        _parse_request_and_spawn(request, None)
     else:
         channels.Channels().accept_connection_from_server(
             ("127.0.0.1", 0),
@@ -119,7 +119,6 @@ def _parse_request(request, address):
     """
 
     assert request.is_request("launch")
-    host, port = address
     debug_options = set(request("debugOptions", json.array(unicode)))
 
     # Handling of properties that can also be specified as legacy "debugOptions" flags.
@@ -180,9 +179,13 @@ def _parse_request(request, address):
     if property_or_debug_option("waitOnAbnormalExit", "WaitOnAbnormalExit"):
         cmdline += ["--wait-on-abnormal"]
 
+    pid_server_port = start_process_pid_server()
+    cmdline += ["--internal-port", str(pid_server_port)]
+
     if request("noDebug", json.default(False)):
         cmdline += ["--"]
     else:
+        host, port = address
         ptvsd_args = request("ptvsdArgs", json.array(unicode))
         cmdline += [
             "--",
@@ -334,9 +337,6 @@ def _spawn_popen(request, spawn_info):
 
 
 def _spawn_terminal(request, spawn_info):
-    pid_server_port = start_process_pid_server()
-    spawn_info.env["PTVSD_PID_SERVER_PORT"] = str(pid_server_port)
-
     kinds = {"integratedTerminal": "integrated", "externalTerminal": "external"}
     body = {
         "kind": kinds[spawn_info.console],
@@ -377,14 +377,14 @@ def wait_for_pid(timeout=None):
 
 
 def wait_for_exit(timeout=None):
-    """Waits for the debugee process to exit.
+    """Waits for the debuggee process to exit.
 
     Returns True if the process exited, False if the wait timed out. If it returned
     True, then exit_code is guaranteed to be set.
     """
 
     if pid is None:
-        # Debugee was launched with "runInTerminal", but the debug session fell apart
+        # Debuggee was launched with "runInTerminal", but the debug session fell apart
         # before we got a "process" event and found out what its PID is. It's not a
         # fatal error, but there's nothing to wait on. Debuggee process should have
         # exited (or crashed) by now in any case.
@@ -402,12 +402,12 @@ def wait_for_exit(timeout=None):
 
 
 def terminate(after=0):
-    """Waits for the debugee process to exit for the specified number of seconds. If
+    """Waits for the debuggee process to exit for the specified number of seconds. If
     the process or any subprocesses are still alive after that time, force-kills them.
 
     If any errors occur while trying to kill any process, logs and swallows them.
 
-    If the debugee process hasn't been spawned yet, does nothing.
+    If the debuggee process hasn't been spawned yet, does nothing.
     """
 
     if _exited is None:

@@ -17,10 +17,12 @@ __file__ = os.path.abspath(__file__)
 
 WAIT_ON_NORMAL_SWITCH = "--wait-on-normal"
 WAIT_ON_ABNORMAL_SWITCH = "--wait-on-abnormal"
+INTERNAL_PORT_SWITCH = "--internal-port"
 
 
 _wait_on_normal_exit = False
 _wait_on_abnormal_exit = False
+_internal_pid_server_port = None 
 
 
 HELP = """Usage: launcher [{normal}] [{abnormal}] <args>
@@ -61,34 +63,35 @@ def _wait_for_user():
             msvcrt.getch()
 
 
-def parse_arg(arg):
+def parse_arg(arg, it):
     if arg == WAIT_ON_NORMAL_SWITCH:
         global _wait_on_normal_exit
         _wait_on_normal_exit = True
     elif arg == WAIT_ON_ABNORMAL_SWITCH:
         global _wait_on_abnormal_exit
         _wait_on_abnormal_exit = True
+    elif arg == INTERNAL_PORT_SWITCH:
+        global _internal_pid_server_port
+        _internal_pid_server_port = int(next(it))
     else:
         raise AssertionError("Invalid argument passed to launcher.")
+
 
 def parse(argv):
     it = iter(argv)
     arg = next(it)
     while arg != "--":
-        parse_arg(arg)
+        parse_arg(arg, it)
         arg = next(it)
     return it
 
 
 def _send_pid(pid):
-    if "PTVSD_PID_SERVER_PORT" not in os.environ:
-        return
-
     from ptvsd.common import socket
-    port = int(os.environ["PTVSD_PID_SERVER_PORT"])
+    assert _internal_pid_server_port is not None
     with socket.create_client() as sock:
-        sock.connect(("127.0.0.1", port))
-        sock.sendall(str(pid).encode("ascii"))
+        sock.connect(("127.0.0.1", _internal_pid_server_port))
+        sock.sendall(b"%d" % pid)
 
 
 if __name__ == "__main__":
