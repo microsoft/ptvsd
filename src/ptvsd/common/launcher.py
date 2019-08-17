@@ -8,6 +8,7 @@ __all__ = ["main"]
 
 import os
 import os.path
+import socket
 import subprocess
 import sys
 
@@ -89,18 +90,11 @@ def parse(argv):
 
 
 def _send_pid(pid):
-    from ptvsd.common import socket
-
     assert _internal_pid_server_port is not None
-    with socket.create_client() as sock:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.connect(("127.0.0.1", _internal_pid_server_port))
         sock.sendall(b"%d" % pid)
 
 
 if __name__ == "__main__":
-    # This is so we can correctly import socket from ptvsd.common
-    if "ptvsd" not in sys.modules:
-        sys.path[0] = os.path.dirname(__file__) + "/../../"
-        __import__("ptvsd")
-        del sys.path[0]
     main()

@@ -16,13 +16,14 @@ import locale
 import os
 import platform
 import signal
+import socket
 import subprocess
 import sys
 import threading
 
 import ptvsd.__main__
 from ptvsd.adapter import channels, contract
-from ptvsd.common import compat, fmt, json, launcher, messaging, log, singleton, socket
+from ptvsd.common import compat, fmt, json, launcher, messaging, log, singleton
 from ptvsd.common.compat import unicode
 
 
@@ -604,7 +605,9 @@ class CaptureOutput(object):
 
 
 def start_process_pid_server():
-    listener = socket.create_server("127.0.0.1", 0)
+    listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    listener.bind(("127.0.0.1", 0))
+    listener.listen(1)
     host, port = listener.getsockname()
     log.info("Adapter waiting for connection from launcher on {0}:{1}...", host, port)
 

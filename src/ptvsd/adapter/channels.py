@@ -7,7 +7,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 import os
 import sys
 
-from ptvsd.common import log, messaging, singleton, socket
+from ptvsd.common import log, messaging, singleton, sockets
 
 
 class Channels(singleton.ThreadSafeSingleton):
@@ -60,7 +60,7 @@ class Channels(singleton.ThreadSafeSingleton):
             sys.stdin = open(os.devnull, "r")
         else:
             host, port = address
-            listener = socket.create_server(host, port)
+            listener = sockets.create_server(host, port)
             try:
                 log.info(
                     "Adapter waiting for connection from IDE on {0}:{1}...", host, port
@@ -92,7 +92,7 @@ class Channels(singleton.ThreadSafeSingleton):
         from ptvsd.adapter import messages
 
         host, port = address
-        sock = socket.create_client()
+        sock = sockets.create_client()
         sock.connect(address)
 
         server_stream = messaging.JsonIOStream.from_socket(sock, "server")
@@ -122,7 +122,7 @@ class Channels(singleton.ThreadSafeSingleton):
         from ptvsd.adapter import messages
 
         host, port = address
-        listener = socket.create_server(host, port)
+        listener = sockets.create_server(host, port)
         host, port = listener.getsockname()
         log.info(
             "Adapter waiting for connection from debug server on {0}:{1}...", host, port
