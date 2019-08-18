@@ -80,6 +80,47 @@ def spawn_and_connect(request):
             before_accept=lambda address: _parse_request_and_spawn(request, address),
         )
 
+def connect_to_process(request):
+    """Start server to receive connection from the debug server injected into the
+    debuggee process.
+    """
+
+    channels.Channels().accept_connection_from_server(
+        ("127.0.0.1", 0),
+        before_accept=lambda address: _parse_request_and_inject(request, address),
+    )
+
+
+def _parse_request_and_inject(request, address):
+    cmdline = [sys.executable]
+
+    host, port = address
+    ptvsd_args = request("ptvsdArgs", json.array(unicode))
+    cmdline += [
+        compat.filename(ptvsd.__main__.__file__),
+        "--client",
+        "--host",
+        host,
+        "--port",
+        str(port),
+        "--pid",
+        str(request("processId", int))
+    ] + ptvsd_args
+
+    try:
+        # This process will immediately exit after injecting debug server
+        subprocess.Popen(
+            cmdline,
+            bufsize=0,
+        )
+    except Exception as exc:
+        raise request.cant_handle(
+            "Error launching debug process: {0}\n\nCommand line:{1!r}",
+            exc,
+            cmdline,
+        )
+    
+
 
 def _parse_request_and_spawn(request, address):
     spawn_info = _parse_request(request, address)
