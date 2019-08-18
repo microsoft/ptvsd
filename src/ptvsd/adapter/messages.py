@@ -12,6 +12,7 @@ from ptvsd.common import json, log, messaging, singleton
 from ptvsd.common.compat import unicode
 from ptvsd.adapter import channels, debuggee, contract, options, state
 
+WAIT_FOR_PID_TIMEOUT = 10
 
 class _Shared(singleton.ThreadSafeSingleton):
     """Global state shared between IDE and server handlers, other than contracts.
@@ -271,7 +272,7 @@ class IDEMessages(Messages):
             # However, we can't block forever, because the debug server can also crash
             # before it had a chance to send the event - so wake up periodically, and
             # check whether server channel is still alive.
-            while not debuggee.wait_for_pid(1):
+            if not debuggee.wait_for_pid(WAIT_FOR_PID_TIMEOUT):
                 if not self._no_debug and _channels.server() is None:
                     raise request.cant_handle("Debug server disconnected unexpectedly.")
 

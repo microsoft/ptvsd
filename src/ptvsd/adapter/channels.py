@@ -9,6 +9,7 @@ import sys
 
 from ptvsd.common import log, messaging, singleton, sockets
 
+ACCEPT_CONNECTIONS_TIMEOUT = 10
 
 class Channels(singleton.ThreadSafeSingleton):
     _ide = None
@@ -122,7 +123,7 @@ class Channels(singleton.ThreadSafeSingleton):
         from ptvsd.adapter import messages
 
         host, port = address
-        listener = sockets.create_server(host, port)
+        listener = sockets.create_server(host, port, ACCEPT_CONNECTIONS_TIMEOUT)
         host, port = listener.getsockname()
         log.info(
             "Adapter waiting for connection from debug server on {0}:{1}...", host, port
