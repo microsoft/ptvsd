@@ -171,7 +171,7 @@ def notify_root(port):
     assert server_opts.subprocess_of
 
     log.debug('Subprocess (PID={0}) notifying root process at port {1}', os.getpid(), server_opts.subprocess_notify)
-    conn = socket.create_client()
+    conn = sockets.create_client()
     conn.connect(('localhost', server_opts.subprocess_notify))
     stream = messaging.JsonIOStream.from_socket(conn, 'root-process')
     channel = messaging.JsonMessageChannel(stream)
