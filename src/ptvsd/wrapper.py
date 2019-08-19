@@ -1291,6 +1291,10 @@ class VSCodeMessageProcessor(VSCLifecycleMsgProcessor):
             # https://github.com/microsoft/ptvsd/issues/1530.
             self.send_event('continued', **body)
 
+    @pydevd_events.handler(pydevd_comm.CMD_EXIT)
+    def on_pydevd_cmd_exit(self, seq, args):
+        pass  # no-op
+
     @pydevd_events.handler(pydevd_comm.CMD_WRITE_TO_CONSOLE)
     def on_pydevd_cmd_write_to_console2(self, seq, args):
         """Handle console output"""
