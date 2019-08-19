@@ -200,7 +200,7 @@ class IDEMessages(Messages):
         self._debug_config(request)
 
         if "processId" in request:
-            debuggee.connect_to_process(request)
+            debuggee.attach_by_pid(request)
         else:
             options.host = request("host", options.host)
             options.port = request("port", options.port)
