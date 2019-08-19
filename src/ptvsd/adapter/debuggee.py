@@ -109,14 +109,13 @@ def attach_by_pid(request):
                 bufsize=0,
             )
         except Exception as exc:
-            raise request.cant_handle(
-                "Error launching debug process: {0}\n\nCommand line:{1!r}",
-                exc,
-                cmdline,
-            )
+            raise request.cant_handle("Error launching debug process: {0}", exc)
         proc.wait()
         if proc.returncode != 0:
-            raise request.cant_handle("Failed to inject debugger with error code: {0}", proc.returncode)
+            raise request.cant_handle(
+                "Failed to inject debugger with error code: {0}",
+                proc.returncode,
+            )
 
     channels.Channels().accept_connection_from_server(
         ("127.0.0.1", 0),
