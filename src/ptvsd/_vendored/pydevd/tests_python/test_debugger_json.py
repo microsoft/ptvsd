@@ -2175,7 +2175,11 @@ def test_process_autoreload_cherrypy(case_setup_multiprocessing, tmpdir):
 
     tmplt = '''
 import cherrypy
-cherrypy.config.update({'server.socket_port': %(port)s})
+cherrypy.config.update({
+    'engine.autoreload.on': True,
+    'checker.on': False,
+    'server.socket_port': %(port)s,
+})
 class HelloWorld(object):
 
     @cherrypy.expose
@@ -2285,7 +2289,7 @@ cherrypy.quickstart(HelloWorld())
         f.write(tmplt % dict(port=port, str='NEW'))
 
         secondary_process_thread_communication.join(10)
-        if secondary_process_thread_communication.isAlive():
+        if secondary_process_thread_communication.is_alive():
             raise AssertionError('The SecondaryProcessThreadCommunication did not finish')
         writer.finished_ok = True
 

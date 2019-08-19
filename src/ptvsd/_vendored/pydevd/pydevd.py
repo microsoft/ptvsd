@@ -224,7 +224,7 @@ class CheckAliveThread(PyDBDaemonThread):
 
     def join(self, timeout=None):
         # If someone tries to join this thread, mark it to be killed.
-        # This is the case for CherryPy when auto-reload it turned on.
+        # This is the case for CherryPy when auto-reload is turned on.
         self.do_kill_pydev_thread()
         PyDBDaemonThread.join(self, timeout=timeout)
 
