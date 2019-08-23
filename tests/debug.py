@@ -64,6 +64,7 @@ class Session(object):
         timeline.Event("continued"),
         timeline.Event("exited"),
         timeline.Event("terminated"),
+        timeline.Event("thread", some.dict.containing({"reason": "started"})),
         timeline.Event("thread", some.dict.containing({"reason": "exited"})),
         timeline.Event("output", some.dict.containing({"category": "stdout"})),
         timeline.Event("output", some.dict.containing({"category": "stderr"})),
