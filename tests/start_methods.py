@@ -16,7 +16,7 @@ import time
 
 from ptvsd.common import compat, fmt, json, log
 from ptvsd.common.compat import unicode
-from tests import helpers, net, timeline, watchdog
+from tests import helpers, net, watchdog
 from tests.patterns import some
 
 

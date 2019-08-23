@@ -8,7 +8,6 @@ import pytest
 
 from ptvsd.common import messaging
 from tests import debug
-from tests.timeline import Event
 
 
 expected_at_line = {
