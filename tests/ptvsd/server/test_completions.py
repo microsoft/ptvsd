@@ -54,7 +54,6 @@ def test_completions_scope(pyfile, bp_label, start_method, run_as):
     expected = expected_at_line[bp_label]
 
     with debug.Session(start_method) as session:
-        session.ignore_unobserved += [Event("stopped")]
         session.configure(run_as, code_to_debug)
 
         session.set_breakpoints(code_to_debug, [code_to_debug.lines[bp_label]])
