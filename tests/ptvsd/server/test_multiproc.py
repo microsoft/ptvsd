@@ -170,11 +170,9 @@ def test_subprocess(pyfile, start_method, run_as):
         )
         process.wait()
 
-    with debug.Session(start_method) as parent_session:
-        parent_backchannel = parent_session.setup_backchannel()
-        parent_session.program_args += [child]
-        parent_session.debug_options |= {"Multiprocess"}
-        parent_session.configure(run_as, parent)
+    with debug.Session(start_method, backchannel=True) as parent_session:
+        parent_backchannel = parent_session.backchannel
+        parent_session.configure(run_as, parent, subProcess=True, args=[child])
         parent_session.start_debugging()
 
         root_start_request, = parent_session.all_occurrences_of(
@@ -207,7 +205,7 @@ def test_subprocess(pyfile, start_method, run_as):
             child_argv = parent_backchannel.receive()
             assert child_argv == [child, "--arg1", "--arg2", "--arg3"]
 
-            child_session.wait_for_termination()
+            child_session.stop_debugging()
             parent_session.stop_debugging()
 
 
@@ -242,20 +240,24 @@ def test_autokill(pyfile, start_method, run_as):
         )
         backchannel.receive()
 
-    with debug.Session(start_method) as parent_session:
-        parent_backchannel = parent_session.setup_backchannel()
-        parent_session.program_args += [child]
-        parent_session.debug_options |= {"Multiprocess"}
-        parent_session.configure(run_as, parent, exit_code=expected_exit_code)
+    with debug.Session(start_method, backchannel=True) as parent_session:
+        parent_backchannel = parent_session.backchannel
+        expected_exit_code = some.int if parent_session.start_method.method == "launch" else 0
+        parent_session.configure(
+            run_as,
+            parent,
+            exit_code=expected_exit_code,
+            subProcess=True,
+            args=[child],
+        )
         parent_session.start_debugging()
 
-        expected_exit_code = 0
+        
         with parent_session.attach_to_next_subprocess() as child_session:
             child_session.start_debugging()
 
             if parent_session.start_method.method == "launch":
                 # In launch scenario, terminate the parent process by disconnecting from it.
-                expected_exit_code = some.int
                 try:
                     parent_session.request("disconnect")
                 except messaging.NoMoreMessages:
@@ -264,7 +266,6 @@ def test_autokill(pyfile, start_method, run_as):
                 parent_session.wait_for_disconnect()
             else:
                 # In attach scenario, just let the parent process run to completion.
-                expected_exit_code = 0
                 parent_backchannel.send(None)
 
             child_session.stop_debugging()

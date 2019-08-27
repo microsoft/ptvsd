@@ -42,9 +42,6 @@ class DebugStartBase(object):
         self.debuggee_process = None
         self.exit_code = None
 
-    def configure(self, run_as, target, **kwargs):
-        pass
-
     def start_debugging(self, **kwargs):
         pass
 
