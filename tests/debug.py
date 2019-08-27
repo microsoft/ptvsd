@@ -128,7 +128,11 @@ class Session(object):
 
     @property
     def process(self):
-        return self.start_method.debugee_process
+        return self.start_method.debuggee_process
+
+    @property
+    def pid(self):
+        return self.process.pid
 
     @property
     def ignore_unobserved(self):
@@ -250,7 +254,7 @@ class Session(object):
         ).wait_for_response()
 
     def configure(self, run_as, target, env=None, **kwargs):
-        env = {} if env is None else dict(env)
+        env = os.environ if env is None else dict(env)
         env.update(PTVSD_ENV)
 
         pythonpath = env.get("PYTHONPATH", "")
@@ -395,6 +399,7 @@ class Session(object):
             "exception",
             "breakpoint",
             "entry",
+            "goto"
         ]:
             expected_stopped["preserveFocusHint"] = True
         assert stopped == some.dict.containing(expected_stopped)
@@ -431,6 +436,8 @@ class Session(object):
     def captured_stderr(self, encoding=None):
         return self.start_method.captured_output.stderr(encoding)
 
-    def stop_debugging(self, exit_code=None):
-        self.start_method.wait_for_debuggee(exit_code)
+    def stop_debugging(self):
+        self.start_method.wait_for_debuggee()
         self.request_disconnect()
+
+

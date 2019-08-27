@@ -60,6 +60,7 @@ def test_wait_on_abnormal_exit_enabled(pyfile, start_method, run_as):
         session.configure(
             run_as, code_to_debug,
             waitOnAbnormalExit=True,
+            exit_code=12345,
         )
         session.start_debugging()
 
@@ -69,7 +70,7 @@ def test_wait_on_abnormal_exit_enabled(pyfile, start_method, run_as):
         assert backchannel.receive() == "done"
 
         session.process.stdin.write(b" \r\n")
-        session.stop_debugging(exitCode=12345)
+        session.stop_debugging()
 
         assert any(s.startswith("Press") for s in session.stdout_lines("utf-8"))
 

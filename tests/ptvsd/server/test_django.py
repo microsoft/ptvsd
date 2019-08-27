@@ -25,7 +25,7 @@ class lines:
     app_py = code.get_marked_line_numbers(paths.app_py)
 
 
-def _initialize_session(session, multiprocess=False):
+def _initialize_session(session, multiprocess=False, exit_code=0):
     session.program_args = ["runserver", "--", str(django.port)]
     if not multiprocess:
         session.program_args[1:1] = ["--noreload"]
@@ -37,6 +37,7 @@ def _initialize_session(session, multiprocess=False):
     session.configure(
         "program", paths.app_py,
         cwd=paths.django1,
+        exitCode=exit_code,
     )
 
 
@@ -196,7 +197,7 @@ def test_django_breakpoint_multiproc(start_method):
     bp_var_content = compat.force_str("Django-Django-Test")
 
     with debug.Session(start_method) as parent_session:
-        _initialize_session(parent_session, multiprocess=True)
+        _initialize_session(parent_session, multiprocess=True, exit_code=some.int)
         parent_session.set_breakpoints(paths.app_py, [bp_line])
         parent_session.start_debugging()
 
@@ -230,4 +231,4 @@ def test_django_breakpoint_multiproc(start_method):
                 assert bp_var_content in home_request.response_text()
 
             child_session.stop_debugging()
-        parent_session.stop_debugging(exitCode=some.int)
+        parent_session.stop_debugging()

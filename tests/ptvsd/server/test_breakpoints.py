@@ -266,7 +266,7 @@ def test_package_launch():
     test_py = cwd / "pkg1" / "__main__.py"
 
     with debug.Session(start_methods.Launch) as session:
-        session.configure("module", "pkg1", cwd=cwd)
+        session.configure("module", "pkg1", cwd=cwd, exit_code=42)
         session.set_breakpoints(test_py, ["two"])
         session.start_debugging()
 
@@ -278,7 +278,7 @@ def test_package_launch():
         )
 
         session.request_continue()
-        session.stop_debugging(exitCode=42)
+        session.stop_debugging()
 
 
 def test_add_and_remove_breakpoint(pyfile, start_method, run_as):

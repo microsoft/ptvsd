@@ -246,7 +246,7 @@ def test_autokill(pyfile, start_method, run_as):
         parent_backchannel = parent_session.setup_backchannel()
         parent_session.program_args += [child]
         parent_session.debug_options |= {"Multiprocess"}
-        parent_session.configure(run_as, parent)
+        parent_session.configure(run_as, parent, exit_code=expected_exit_code)
         parent_session.start_debugging()
 
         expected_exit_code = 0
@@ -268,7 +268,7 @@ def test_autokill(pyfile, start_method, run_as):
                 parent_backchannel.send(None)
 
             child_session.stop_debugging()
-            parent_session.stop_debugging(exitCode=expected_exit_code)
+            parent_session.stop_debugging()
 
 
 @pytest.mark.skipif(

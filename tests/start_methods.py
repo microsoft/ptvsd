@@ -40,6 +40,7 @@ class DebugStartBase(object):
         self.method = method
         self.captured_output = helpers.CapturedOutput(self.session)
         self.debuggee_process = None
+        self.exit_code = None
 
     def configure(self, run_as, target, **kwargs):
         pass
@@ -47,10 +48,11 @@ class DebugStartBase(object):
     def start_debugging(self, **kwargs):
         pass
 
-    def wait_for_debuggee(self, exit_code):
-        if exit_code is not None:
+    def wait_for_debuggee(self):
+        # TODO: Exit should not be restricted to launch tests only
+        if self.exit_code is not None and 'launch' in self.method:
             exited = self.session.wait_for_next_event("exited", freeze=False)
-            assert exited == some.dict.containing({"exitCode": exit_code})
+            assert exited == some.dict.containing({"exitCode": self.exit_code})
 
         self.session.wait_for_next_event("terminated")
 
@@ -68,6 +70,9 @@ class DebugStartBase(object):
 
     def run_in_terminal(self, request, **kwargs):
         raise request.isnt_valid("not supported")
+
+    def configure(self, exit_code=0):
+        self.exit_code = exit_code
 
     def _build_common_args(
         self,
@@ -253,7 +258,8 @@ class Launch(DebugStartBase):
         }
         return process_body
 
-    def configure(self, run_as, target, **kwargs):
+    def configure(self, run_as, target, exit_code=0, **kwargs):
+        super(Launch, self).configure(exit_code=exit_code)
         self._launch_args = self._build_launch_args({}, run_as, target, **kwargs)
         self.no_debug = self._launch_args.get("noDebug", False)
 
@@ -273,9 +279,6 @@ class Launch(DebugStartBase):
 
         self._launch_request.wait_for_response(freeze=False)
         self._wait_for_process_event()
-
-    def wait_for_debuggee(self, exit_code=0):
-        super(Launch, self).wait_for_debuggee(exit_code)
 
     def run_in_terminal(self, request):
         args = request("args", json.array(unicode))
@@ -347,7 +350,8 @@ class AttachBase(DebugStartBase):
         self._build_common_args(attach_args, **kwargs)
         return attach_args
 
-    def configure(self, run_as, target, **kwargs):
+    def configure(self, run_as, target, exit_code=0, **kwargs):
+        super(AttachBase, self).configure(exit_code=exit_code)
         target_str = target
         if isinstance(target, py.path.local):
             target_str = target.strpath
@@ -470,6 +474,7 @@ class AttachSocketImport(AttachBase):
         args=(),
         cwd=None,
         env=None,
+        exit_code=0,
         **kwargs
     ):
         env = {} if env is None else dict(env)
@@ -488,7 +493,7 @@ class AttachSocketImport(AttachBase):
 
         cli_args = [pythonPath]
         super(AttachSocketImport, self).configure(
-            run_as, target, cwd=cwd, env=env, args=args, cli_args=cli_args, **kwargs
+            run_as, target, cwd=cwd, env=env, args=args, cli_args=cli_args, exit_code=exit_code, **kwargs
         )
 
 
@@ -504,6 +509,7 @@ class AttachSocketCmdLine(AttachBase):
         args=[],
         cwd=None,
         env=os.environ.copy(),
+        exit_code=0,
         **kwargs
     ):
         self._attach_args = self._build_attach_args({}, run_as, target, **kwargs)
@@ -528,7 +534,7 @@ class AttachSocketCmdLine(AttachBase):
             cli_args += ["--multiprocess"]
 
         super(AttachSocketCmdLine, self).configure(
-            run_as, target, cwd=cwd, env=env, args=args, cli_args=cli_args, **kwargs
+            run_as, target, cwd=cwd, env=env, args=args, cli_args=cli_args, exit_code=exit_code, **kwargs
         )
 
 
