@@ -132,11 +132,7 @@ def test_multiprocessing(pyfile, start_method, run_as):
 
                 parent_backchannel.send("continue")
 
-                grandchild_session.stop_debugging()
-                child_session.stop_debugging()
-
-                assert parent_backchannel.receive() == "done"
-                parent_session.stop_debugging()
+        assert parent_backchannel.receive() == "done"
 
 
 @pytest.mark.timeout(30)
@@ -205,9 +201,6 @@ def test_subprocess(pyfile, start_method, run_as):
             child_argv = parent_backchannel.receive()
             assert child_argv == [child, "--arg1", "--arg2", "--arg3"]
 
-            child_session.stop_debugging()
-            parent_session.stop_debugging()
-
 
 @pytest.mark.timeout(30)
 @pytest.mark.skipif(
@@ -268,9 +261,6 @@ def test_autokill(pyfile, start_method, run_as):
                 # In attach scenario, just let the parent process run to completion.
                 parent_backchannel.send(None)
 
-            child_session.stop_debugging()
-            parent_session.stop_debugging()
-
 
 @pytest.mark.skipif(
     sys.version_info < (3, 0) and (platform.system() != "Windows"), reason="Bug #935"
@@ -328,5 +318,3 @@ def test_argv_quoting(pyfile, start_method, run_as):
         expected_args = backchannel.receive()
         actual_args = backchannel.receive()
         assert expected_args == actual_args
-
-        session.stop_debugging()

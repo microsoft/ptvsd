@@ -44,5 +44,3 @@ def test_stop_on_entry(pyfile, run_as, breakpoint):
 
         session.request_continue()
         assert backchannel.receive() == "done"
-
-        session.stop_debugging()

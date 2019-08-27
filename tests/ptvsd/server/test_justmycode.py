@@ -52,5 +52,3 @@ def test_justmycode_frames(pyfile, start_method, run_as, jmc):
 
             # 'continue' should terminate the debuggee
             session.request_continue()
-
-        session.stop_debugging()

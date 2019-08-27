@@ -49,7 +49,6 @@ def test_stack_format(pyfile, start_method, run_as, module, line):
         assert module == (frames[0]["name"].find("test_module") > -1)
 
         session.request_continue()
-        session.stop_debugging()
 
 
 def test_module_events(pyfile, start_method, run_as):
@@ -89,4 +88,3 @@ def test_module_events(pyfile, start_method, run_as):
         ]
 
         session.request_continue()
-        session.stop_debugging()

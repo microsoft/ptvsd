@@ -72,8 +72,6 @@ def test_vsc_exception_options_raise_with_except(
 
         # uncaught should not 'stop' matter since the exception is caught
 
-        session.stop_debugging()
-
 
 @pytest.mark.parametrize("raised", ["raisedOn", "raisedOff"])
 @pytest.mark.parametrize("uncaught", ["uncaughtOn", "uncaughtOff"])
@@ -160,8 +158,6 @@ def test_vsc_exception_options_raise_without_except(
             assert resp_exc_info.body == expected
             session.request_continue()
 
-        session.stop_debugging()
-
 
 @pytest.mark.parametrize("raised", ["raised", ""])
 @pytest.mark.parametrize("uncaught", ["uncaught", ""])
@@ -217,8 +213,6 @@ def test_systemexit(pyfile, start_method, run_as, raised, uncaught, zero, exit_c
             hit = session.wait_for_stop("exception")
             assert hit.frames[0]["line"] == line_numbers["unhandled"]
             session.request_continue()
-
-        session.stop_debugging()
 
 
 @pytest.mark.parametrize(
@@ -302,8 +296,6 @@ def test_raise_exception_options(pyfile, start_method, run_as, exceptions, break
             assert hit.frames[0]["line"] == code_to_debug.lines[expected_exception]
             session.request_continue()
 
-        session.stop_debugging()
-
 
 @pytest.mark.parametrize("exit_code", [0, 3])
 def test_success_exitcodes(pyfile, start_method, run_as, exit_code):
@@ -326,8 +318,6 @@ def test_success_exitcodes(pyfile, start_method, run_as, exit_code):
         if exit_code == 0:
             session.wait_for_stop("exception")
             session.request_continue()
-
-        session.stop_debugging()
 
 
 @pytest.mark.parametrize("max_frames", ["default", "all", 10])
@@ -400,5 +390,3 @@ def test_exception_stack(pyfile, start_method, run_as, max_frames):
         assert min_expected_lines <= stack_line_count <= max_expected_lines
 
         session.request_continue()
-
-        session.stop_debugging()

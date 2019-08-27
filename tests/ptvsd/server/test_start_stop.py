@@ -35,9 +35,8 @@ def test_wait_on_normal_exit_enabled(pyfile, start_method, run_as):
         session.request_continue()
 
         session.process.stdin.write(b" \r\n")
-        session.stop_debugging()
 
-        assert any(s.startswith("Press") for s in session.stdout_lines("utf-8"))
+    assert any(s.startswith("Press") for s in session.stdout_lines("utf-8"))
 
 
 @pytest.mark.parametrize("start_method", [start_methods.Launch])
@@ -70,9 +69,8 @@ def test_wait_on_abnormal_exit_enabled(pyfile, start_method, run_as):
         assert backchannel.receive() == "done"
 
         session.process.stdin.write(b" \r\n")
-        session.stop_debugging()
 
-        assert any(s.startswith("Press") for s in session.stdout_lines("utf-8"))
+    assert any(s.startswith("Press") for s in session.stdout_lines("utf-8"))
 
 
 @pytest.mark.parametrize("start_method", [start_methods.Launch])
@@ -97,4 +95,3 @@ def test_exit_normally_with_wait_on_abnormal_exit_enabled(pyfile, start_method, 
 
         session.wait_for_termination()
         assert backchannel.receive() == "done"
-        session.stop_debugging()

@@ -120,6 +120,11 @@ class Session(object):
             # Log the error, in case another one happens during shutdown.
             log.exception(exc_info=(exc_type, exc_val, exc_tb))
 
+        try:
+            self.wait_for_exit()
+        except Exception:
+            raise log.exception()
+
         self._stop_adapter()
 
         if self.backchannel:
@@ -436,8 +441,6 @@ class Session(object):
     def captured_stderr(self, encoding=None):
         return self.start_method.captured_output.stderr(encoding)
 
-    def stop_debugging(self):
+    def wait_for_exit(self):
         self.start_method.wait_for_debuggee()
         self.request_disconnect()
-
-

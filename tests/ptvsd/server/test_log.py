@@ -37,7 +37,6 @@ def test_log_cli(pyfile, tmpdir, start_method, run_as, cli):
                 session.env["PTVSD_LOG_DIR"] = str(tmpdir)
             session.configure(run_as, code_to_debug)
             session.start_debugging()
-            session.stop_debugging()
 
 
 @pytest.mark.parametrize("start_method", [start_methods.CustomServer])
@@ -60,4 +59,3 @@ def test_log_api(pyfile, tmpdir, start_method, run_as):
         with check_logs(tmpdir, session):
             session.configure(run_as, code_to_debug)
             session.start_debugging()
-            session.stop_debugging()
