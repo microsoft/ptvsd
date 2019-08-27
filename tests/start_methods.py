@@ -505,10 +505,11 @@ class AttachSocketCmdLine(AttachBase):
         pythonPath=sys.executable,
         args=[],
         cwd=None,
-        env=os.environ.copy(),
+        env=None,
         exit_code=0,
         **kwargs
     ):
+        env = {} if env is None else dict(env)
         self._attach_args = self._build_attach_args({}, run_as, target, **kwargs)
 
         cli_args = [pythonPath]
