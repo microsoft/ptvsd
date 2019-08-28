@@ -29,24 +29,22 @@ class lines:
 
 
 def _initialize_session(session, multiprocess=False, exit_code=0):
-    session.env.update({
+    env = {
         "FLASK_APP": paths.app_py,
         "FLASK_ENV": "development",
         "FLASK_DEBUG": "1" if multiprocess else "0",
-    })
+    }
     if platform.system() != "Windows":
         locale = "en_US.utf8" if platform.system() == "Linux" else "en_US.UTF-8"
-        session.env.update({"LC_ALL": locale, "LANG": locale})
+        env.update({"LC_ALL": locale, "LANG": locale})
 
-    session.program_args = ["run", "--port", str(flask.port)]
+    args = ["run"]
     if not multiprocess:
-        session.program_args[1:1] = ["--no-debugger", "--no-reload", "--with-threads"]
+        args += ["--no-debugger", "--no-reload", "--with-threads"]
+    args += ["--port", str(flask.port)]
 
-    session.debug_options |= {"Jinja"}
-    if multiprocess:
-        session.debug_options |= {"Multiprocess"}
-
-    session.configure("module", "flask", cwd=paths.flask1, exit_code=exit_code)
+    session.exit_code = exit_code
+    session.configure("module", "flask", cwd=paths.flask1, jinja=True, multiprocess=multiprocess, args=args, env=env)
 
 
 @pytest.mark.parametrize("start_method", [start_methods.Launch, start_methods.AttachSocketCmdLine])

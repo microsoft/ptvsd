@@ -143,6 +143,14 @@ class Session(object):
     def ignore_unobserved(self):
         return self.timeline.ignore_unobserved
 
+    @property
+    def exit_code(self):
+        return self.start_method.exit_code
+
+    @exit_code.setter
+    def exit_code(self, value):
+        self.start_method.exit_code = value
+
     def request(self, *args, **kwargs):
         freeze = kwargs.pop("freeze", True)
         raise_if_failed = kwargs.pop("raise_if_failed", True)

@@ -236,10 +236,10 @@ def test_autokill(pyfile, start_method, run_as):
     with debug.Session(start_method, backchannel=True) as parent_session:
         parent_backchannel = parent_session.backchannel
         expected_exit_code = some.int if parent_session.start_method.method == "launch" else 0
+        parent_session.exit_code = expected_exit_code
         parent_session.configure(
             run_as,
             parent,
-            exit_code=expected_exit_code,
             subProcess=True,
             args=[child],
         )

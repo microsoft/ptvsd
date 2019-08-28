@@ -56,10 +56,10 @@ def test_wait_on_abnormal_exit_enabled(pyfile, start_method, run_as):
 
     with debug.Session(start_method, backchannel=True) as session:
         backchannel = session.backchannel
+        session.exit_code = 12345
         session.configure(
             run_as, code_to_debug,
             waitOnAbnormalExit=True,
-            exit_code=12345,
         )
         session.start_debugging()
 

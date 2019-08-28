@@ -45,7 +45,8 @@ def test_exit_on_disconnect_for_launch(pyfile, start_method, run_as):
             print("Should not continue after disconnect on launch", file=f)
 
     with debug.Session(start_method) as session:
-        session.configure(run_as, code_to_debug, exit_code=some.int)
+        session.exit_code = some.int
+        session.configure(run_as, code_to_debug)
         session.set_breakpoints(code_to_debug, code_to_debug.lines["bp"])
         session.start_debugging()
         hit = session.wait_for_stop("breakpoint")

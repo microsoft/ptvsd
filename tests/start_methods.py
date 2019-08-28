@@ -68,9 +68,6 @@ class DebugStartBase(object):
     def run_in_terminal(self, request, **kwargs):
         raise request.isnt_valid("not supported")
 
-    def configure(self, exit_code=0):
-        self.exit_code = exit_code
-
     def _build_common_args(
         self,
         args,
@@ -255,8 +252,7 @@ class Launch(DebugStartBase):
         }
         return process_body
 
-    def configure(self, run_as, target, exit_code=0, **kwargs):
-        super(Launch, self).configure(exit_code=exit_code)
+    def configure(self, run_as, target, **kwargs):
         self._launch_args = self._build_launch_args({}, run_as, target, **kwargs)
         self.no_debug = self._launch_args.get("noDebug", False)
 
@@ -347,8 +343,7 @@ class AttachBase(DebugStartBase):
         self._build_common_args(attach_args, **kwargs)
         return attach_args
 
-    def configure(self, run_as, target, exit_code=0, **kwargs):
-        super(AttachBase, self).configure(exit_code=exit_code)
+    def configure(self, run_as, target, **kwargs):
         target_str = target
         if isinstance(target, py.path.local):
             target_str = target.strpath
@@ -471,7 +466,6 @@ class AttachSocketImport(AttachBase):
         args=(),
         cwd=None,
         env=None,
-        exit_code=0,
         **kwargs
     ):
         env = {} if env is None else dict(env)
@@ -490,7 +484,7 @@ class AttachSocketImport(AttachBase):
 
         cli_args = [pythonPath]
         super(AttachSocketImport, self).configure(
-            run_as, target, cwd=cwd, env=env, args=args, cli_args=cli_args, exit_code=exit_code, **kwargs
+            run_as, target, cwd=cwd, env=env, args=args, cli_args=cli_args, **kwargs
         )
 
 
@@ -506,7 +500,6 @@ class AttachSocketCmdLine(AttachBase):
         args=[],
         cwd=None,
         env=None,
-        exit_code=0,
         **kwargs
     ):
         env = {} if env is None else dict(env)
@@ -532,7 +525,7 @@ class AttachSocketCmdLine(AttachBase):
             cli_args += ["--multiprocess"]
 
         super(AttachSocketCmdLine, self).configure(
-            run_as, target, cwd=cwd, env=env, args=args, cli_args=cli_args, exit_code=exit_code, **kwargs
+            run_as, target, cwd=cwd, env=env, args=args, cli_args=cli_args, **kwargs
         )
 
 

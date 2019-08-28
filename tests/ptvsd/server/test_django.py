@@ -26,18 +26,18 @@ class lines:
 
 
 def _initialize_session(session, multiprocess=False, exit_code=0):
-    session.program_args = ["runserver", "--", str(django.port)]
+    args = ["runserver"]
     if not multiprocess:
-        session.program_args[1:1] = ["--noreload"]
+        args += ["--noreload"]
+    args += ["--", str(django.port)]
 
-    session.debug_options |= {"Django"}
-    if multiprocess:
-        session.debug_options |= {"Multiprocess"}
-
+    session.exit_code = exit_code
     session.configure(
         "program", paths.app_py,
         cwd=paths.django1,
-        exit_code=exit_code,
+        multiprocess=multiprocess,
+        args=args,
+        django=True
     )
 
 
