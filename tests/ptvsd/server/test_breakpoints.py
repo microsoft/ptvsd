@@ -260,7 +260,7 @@ def test_package_launch():
     test_py = cwd / "pkg1" / "__main__.py"
 
     with debug.Session(start_methods.Launch) as session:
-        session.exit_code = 42
+        session.expected_exit_code = 42
         session.configure("module", "pkg1", cwd=cwd)
         session.set_breakpoints(test_py, ["two"])
         session.start_debugging()

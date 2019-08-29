@@ -40,16 +40,16 @@ class DebugStartBase(object):
         self.method = method
         self.captured_output = helpers.CapturedOutput(self.session)
         self.debuggee_process = None
-        self.exit_code = None
+        self.expected_exit_code = None
 
     def start_debugging(self, **kwargs):
         pass
 
     def wait_for_debuggee(self):
         # TODO: Exit should not be restricted to launch tests only
-        if self.exit_code is not None and 'launch' in self.method:
+        if self.expected_exit_code is not None and 'launch' in self.method:
             exited = self.session.wait_for_next_event("exited", freeze=False)
-            assert exited == some.dict.containing({"exitCode": self.exit_code})
+            assert exited == some.dict.containing({"exitCode": self.expected_exit_code})
 
         self.session.wait_for_next_event("terminated")
 

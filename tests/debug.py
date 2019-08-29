@@ -27,8 +27,7 @@ StopInfo = collections.namedtuple(
 PTVSD_DIR = py.path.local(ptvsd.__file__) / ".."
 PTVSD_ADAPTER_DIR = PTVSD_DIR / "adapter"
 
-# Added to the environment variables of every new debug.Session - after copying
-# os.environ(), but before setting any session-specific variables.
+# Added to the environment variables of every new debug.Session
 PTVSD_ENV = {"PYTHONUNBUFFERED": "1"}
 
 
@@ -144,12 +143,12 @@ class Session(object):
         return self.timeline.ignore_unobserved
 
     @property
-    def exit_code(self):
-        return self.start_method.exit_code
+    def expected_exit_code(self):
+        return self.start_method.expected_exit_code
 
-    @exit_code.setter
-    def exit_code(self, value):
-        self.start_method.exit_code = value
+    @expected_exit_code.setter
+    def expected_exit_code(self, value):
+        self.start_method.expected_exit_code = value
 
     def request(self, *args, **kwargs):
         freeze = kwargs.pop("freeze", True)

@@ -43,7 +43,7 @@ def _initialize_session(session, multiprocess=False, exit_code=0):
         args += ["--no-debugger", "--no-reload", "--with-threads"]
     args += ["--port", str(flask.port)]
 
-    session.exit_code = exit_code
+    session.expected_exit_code = exit_code
     session.configure("module", "flask", cwd=paths.flask1, jinja=True, multiprocess=multiprocess, args=args, env=env)
 
 

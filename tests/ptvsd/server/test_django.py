@@ -31,7 +31,7 @@ def _initialize_session(session, multiprocess=False, exit_code=0):
         args += ["--noreload"]
     args += ["--", str(django.port)]
 
-    session.exit_code = exit_code
+    session.expected_exit_code = exit_code
     session.configure(
         "program", paths.app_py,
         cwd=paths.django1,
