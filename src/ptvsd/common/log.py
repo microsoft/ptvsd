@@ -222,7 +222,8 @@ def describe_environment(header):
 
         expr = None
         if not callable(get_paths):
-            get_paths = lambda: util.evaluate(get_paths)
+            expr = get_paths
+            get_paths = lambda: util.evaluate(expr)
         try:
             paths = get_paths()
         except AttributeError:
