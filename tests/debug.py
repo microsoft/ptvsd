@@ -267,13 +267,14 @@ class Session(object):
         ).wait_for_response()
 
     def configure(self, run_as, target, env=None, **kwargs):
-        env = os.environ if env is None else dict(env)
+        env = {} if env is None else dict(env)
         env.update(PTVSD_ENV)
 
         pythonpath = env.get("PYTHONPATH", "")
         if pythonpath:
             pythonpath += os.pathsep
         pythonpath += (tests.root / "DEBUGGEE_PYTHONPATH").strpath
+        pythonpath += os.pathsep + (PTVSD_DIR / "..").strpath
         env["PYTHONPATH"] = pythonpath
 
         env["PTVSD_SESSION_ID"] = str(self.id)
