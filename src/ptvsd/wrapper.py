@@ -546,7 +546,7 @@ class VSCodeMessageProcessorBase(ipcjson.SocketIO, ipcjson.IpcChannel):
             'output',
             category='telemetry',
             output='ptvsd',
-            data={'version': __version__},
+            data={'dbgversion': __version__},
         )
         self.readylock.release()
 
@@ -735,7 +735,16 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
         self.send_response(request, **INITIALIZE_RESPONSE)
         self.send_event('initialized')
 
+    def send_telemetry(self, event_name, data):
+        self.send_event(
+            'output',
+            category='telemetry',
+            output=event_name,
+            data=data
+        )
+
     def on_attach(self, request, args):
+        self.send_telemetry('ptvsd.attach', {'console': None})
         multiproc.root_start_request = request
         self.start_reason = 'attach'
         self._set_debug_options(args)
@@ -743,6 +752,7 @@ class VSCLifecycleMsgProcessor(VSCodeMessageProcessorBase):
         self.send_response(request)
 
     def on_launch(self, request, args):
+        self.send_telemetry('ptvsd.launch', {'console': args.get('console', None)})
         multiproc.root_start_request = request
         self.start_reason = 'launch'
         self._set_debug_options(args)

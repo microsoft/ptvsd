@@ -372,7 +372,7 @@ class DebugSession(object):
         assert telemetry == Event('output', {
             'category': 'telemetry',
             'output': 'ptvsd',
-            'data': {'version': ptvsd.__version__},
+            'data': {'dbgversion': ptvsd.__version__},
         })
 
         if self.perform_handshake:
