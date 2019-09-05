@@ -301,15 +301,17 @@ sys.path.remove(script_path);
 host = decode({host});
 log_dir = decode({log_dir}) or None;
 attach_pid_injected.attach(port={port}, host=host, client={client}, log_dir=log_dir)
-'''.replace('\r\n', '').replace('\r', '').replace('\n', '')
+'''.replace('\r', '').replace('\n', '')
 
         python_code = python_code.format(**setup)
         log.info("Code to be injected: \n{0}", python_code.replace(';', '\r\n'))
 
-        # pydevd requires injected code to not contain any single quotes nor new lines and
-        # double quotes must be escaped properly.
+        # pydevd requires injected code to not contain any single quotes, double quotes or
+        # new lines.
         assert "'" not in python_code, "Injected code should not contain any single quotes"
+        assert "\"" not in python_code, "Injected code should not contain any double quotes"
         assert "\n" not in python_code, "Injected code should not contain any new lines"
+        assert "\r" not in python_code, "Injected code should not contain any "
 
         pydevd_attach_to_process_path = os.path.join(
             os.path.dirname(pydevd.__file__),

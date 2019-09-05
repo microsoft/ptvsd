@@ -35,10 +35,13 @@ def attach(host, port, client, log_dir=None):
                 assert os.path.exists(pydevd_attach_to_process_path)
                 sys.path.insert(0, pydevd_attach_to_process_path)
 
-                # Note that it's not a part of the pydevd PYTHONPATH
+                # NOTE: that it's not a part of the pydevd PYTHONPATH
                 import attach_script
                 attach_script.fix_main_thread_id(
                     on_warn=on_warn, on_exception=on_exception, on_critical=on_critical)
+
+                # NOTE: At this point it should be safe to remove this.
+                sys.path.remove(pydevd_attach_to_process_path)
             except:
                 import traceback
                 traceback.print_exc()
@@ -46,7 +49,11 @@ def attach(host, port, client, log_dir=None):
 
         sys.path.insert(0, _ptvsd_dir)
         import ptvsd
-        sys.path.remove(_ptvsd_dir)
+
+        # NOTE: Don't do sys.path.remove here it will remove all instances of that path
+        # and the user may have set that to ptvsd path via PYTHONPATH
+        assert sys.path[0] == _ptvsd_dir
+        del sys.path[0]
 
         from ptvsd.common import options as common_opts
         from ptvsd.server import options
