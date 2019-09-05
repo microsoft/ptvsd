@@ -276,57 +276,56 @@ def attach_to_pid():
     if log_dir is None:
         log_dir = ""
 
-    attach_script_ptvsd_pid_dirname = os.path.join(os.path.dirname(ptvsd.__file__), 'common')
-    assert os.path.exists(attach_script_ptvsd_pid_dirname)
-
-
-    log_dir = log_dir.replace('\\', '/')
-    setup = {'host': host, 'port': port, 'client': client, 'log_dir': log_dir, 'pid': pid}
-
-    # We need to be able to import attach_script_ptvsd_pid without importing ptvsd first.
-    if sys.platform == 'win32':
-        setup['pythonpath'] = attach_script_ptvsd_pid_dirname.replace('\\', '/')
-
-        python_code = '''import sys;
-sys.path.insert(0, "%(pythonpath)s");
-import attach_script_ptvsd_pid;
-del sys.path[0];
-attach_script_ptvsd_pid.attach(port=%(port)s, host="%(host)s", client=%(client)s, log_dir="%(log_dir)s");
-'''.replace('\r\n', '').replace('\r', '').replace('\n', '')
-    else:
-        setup['pythonpath'] = attach_script_ptvsd_pid_dirname
-
-        # We have to pass it a bit differently for gdb
-        python_code = '''import sys;
-sys.path.insert(0, \\\"%(pythonpath)s\\\");
-import attach_script_ptvsd_pid;
-del sys.path[0];
-attach_script_ptvsd_pid.attach(port=%(port)s, host=\\\"%(host)s\\\", client=%(client)s, log_dir=\\\"%(log_dir)s\\\");
-'''.replace('\r\n', '').replace('\r', '').replace('\n', '')
-
-    python_code = python_code % setup
-    log.info("Code to be injected: \n{0}", python_code.replace(';', '\r\n'))
-
-    # pydevd requires injected code to not contain any single quotes nor new lines and
-    # double quotes must be escaped properly.
-    assert "'" not in python_code, "Injected code should not contain any single quotes"
-    assert "\n" not in python_code, "Injected code should not contain any new lines"
-
-    pydevd_attach_to_process_path = os.path.join(
-        os.path.dirname(pydevd.__file__),
-        'pydevd_attach_to_process')
-
-    assert os.path.exists(pydevd_attach_to_process_path)
-    sys.path.append(pydevd_attach_to_process_path)
-
     try:
+        attach_pid_injected_dirname = os.path.join(os.path.dirname(ptvsd.__file__), 'server')
+        assert os.path.exists(attach_pid_injected_dirname)
+
+        log_dir = log_dir.replace('\\', '/')
+
+        encode = lambda s: list(bytearray(s.encode("utf-8")))
+        setup = {
+            'script': encode(attach_pid_injected_dirname),
+            'host': encode(host),
+            'port': port,
+            'client': client,
+            'log_dir': encode(log_dir),
+        }
+
+        python_code = '''import sys;
+import codecs;
+decode = lambda s: codecs.utf_8_decode(bytearray(s))[0];
+script_path = decode({script});
+sys.path.insert(0, script_path);
+import attach_pid_injected;
+sys.path.remove(script_path);
+host = decode({host});
+log_dir = decode({log_dir}) or None;
+attach_pid_injected.attach(port={port}, host=host, client={client}, log_dir=log_dir)
+'''.replace('\r\n', '').replace('\r', '').replace('\n', '')
+
+        python_code = python_code.format(**setup)
+        log.info("Code to be injected: \n{0}", python_code.replace(';', '\r\n'))
+
+        # pydevd requires injected code to not contain any single quotes nor new lines and
+        # double quotes must be escaped properly.
+        assert "'" not in python_code, "Injected code should not contain any single quotes"
+        assert "\n" not in python_code, "Injected code should not contain any new lines"
+
+        pydevd_attach_to_process_path = os.path.join(
+            os.path.dirname(pydevd.__file__),
+            'pydevd_attach_to_process')
+
+        assert os.path.exists(pydevd_attach_to_process_path)
+        sys.path.append(pydevd_attach_to_process_path)
+
+    
         import add_code_to_python_process  # noqa
         show_debug_info_on_target_process = 0  # hard-coded (1 to debug)
         log.info('Code injector begin')
         add_code_to_python_process.run_python_code(
             pid, python_code, connect_debugger_tracing=True, show_debug_info=show_debug_info_on_target_process)
     except:
-        log.exception()
+        raise log.exception()
     log.info('Code injector exiting')
 
 

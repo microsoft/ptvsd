@@ -4,30 +4,27 @@
 
 from __future__ import absolute_import, print_function, unicode_literals
 
-import os.path
+import os
 
 
 __file__ = os.path.abspath(__file__)
 _ptvsd_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 
 
-def attach(port, host, client, log_dir):
+def attach(host, port, client, log_dir=None):
     try:
         import sys
         if 'threading' not in sys.modules:
             try:
 
                 def on_warn(msg):
-                    from ptvsd.commom import log
-                    log.warn(msg)
+                    print(msg, file=sys.stderr)
 
                 def on_exception(msg):
-                    from ptvsd.common import log
-                    log.exception(msg)
+                    print(msg, file=sys.stderr)
 
                 def on_critical(msg):
-                    from ptvsd.common import log
-                    log.error(msg)
+                    print(msg, file=sys.stderr)
 
                 pydevd_attach_to_process_path = os.path.join(
                     _ptvsd_dir,
@@ -36,25 +33,20 @@ def attach(port, host, client, log_dir):
                     'pydevd',
                     'pydevd_attach_to_process')
                 assert os.path.exists(pydevd_attach_to_process_path)
-                sys.path.append(pydevd_attach_to_process_path)
+                sys.path.insert(0, pydevd_attach_to_process_path)
 
                 # Note that it's not a part of the pydevd PYTHONPATH
                 import attach_script
                 attach_script.fix_main_thread_id(
                     on_warn=on_warn, on_exception=on_exception, on_critical=on_critical)
             except:
-                from ptvsd.common import log
-                log.exception()
+                import traceback
+                traceback.print_exc()
+                raise
 
-        if not log_dir:
-            log_dir = None
-
-
-        
         sys.path.insert(0, _ptvsd_dir)
         import ptvsd
-        assert sys.path[0] == _ptvsd_dir
-        del sys.path[0]
+        sys.path.remove(_ptvsd_dir)
 
         from ptvsd.common import options as common_opts
         from ptvsd.server import options
@@ -67,12 +59,13 @@ def attach(port, host, client, log_dir):
         log.to_file()
         log.info("Debugger injection begin")
 
-        if client:
-            ptvsd.attach((host, port))
+        if options.client:
+            ptvsd.attach((options.host, options.port))
         else:
-            ptvsd.enable_attach((host, port))
+            ptvsd.enable_attach((options.host, options.port))
 
         log.info("Debugger successfully injected")
     except:
         import traceback
         traceback.print_exc()
+        raise log.exception()

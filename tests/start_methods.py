@@ -413,7 +413,7 @@ class AttachBase(DebugStartBase):
                 time.sleep(0.1)
                 connections = psutil.net_connections()
                 connected = (
-                    len(list(p for (_, _, _, _, _, _, p) in connections if p == pid)) > 0
+                    any(p for (_, _, _, _, _, _, p) in connections if p == pid)
                 )
 
         self._attach_request = self.session.send_request("attach", self._attach_args)
@@ -534,7 +534,7 @@ class AttachSocketCmdLine(AttachBase):
 
 class AttachProcessId(AttachBase):
     def __init__(self, session):
-        super().__init__(session, "attach_pid")
+        super(AttachProcessId, self).__init__(session, "attach_pid")
 
 
     def configure(
