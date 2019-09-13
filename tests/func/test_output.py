@@ -62,15 +62,19 @@ def test_non_ascii_output(pyfile, run_as, start_method):
     @pyfile
     def code_to_debug():
         from dbgimporter import import_and_enable_debugger
-        from _pydevd_bundle.pydevd_constants import IS_PY2
+        from _pydevd_bundle.pydevd_constants import IS_PY3K
         import_and_enable_debugger()
-        a = 'é à ö ù'
+        a = b'\xc3\xa9 \xc3\xa0 \xc3\xb6 \xc3\xb9'
+        if IS_PY3K:
+            a = a.decode('utf8')
         print(a)
         # Break here so we are sure to get the output event.
         a = 1  # @bp1
 
     line_numbers = get_marked_line_numbers(code_to_debug)
     with DebugSession() as session:
+        from _pydevd_bundle.pydevd_constants import IS_PY3K
+
         session.initialize(
             target=(run_as, code_to_debug),
             start_method=start_method,
@@ -88,7 +92,10 @@ def test_non_ascii_output(pyfile, run_as, start_method):
         output = session.all_occurrences_of(Event('output', ANY.dict_with({'category': 'stdout'})))
         output_str = ''.join(o.body['output'] for o in output)
         print(type("#######################", output_str))
-        assert output_str == 'é à ö ù'
+        assertion_value = b'\xc3\xa9 \xc3\xa0 \xc3\xb6 \xc3\xb9'
+        if IS_PY3K:
+            assertion_value = assertion_value.decode('utf8')
+        assert output_str == assertion_value
 
 
 @pytest.mark.parametrize('redirect', ['RedirectOutput', ''])
