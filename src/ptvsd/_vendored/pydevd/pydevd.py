@@ -2069,6 +2069,8 @@ class _CustomWriter(object):
                 if isinstance(s, unicode):  # noqa
                     # Note: python 2.6 does not accept the "errors" keyword.
                     s = s.encode('utf-8', 'replace')
+                else:
+                    s = s.decode(self.encoding, 'replace').encode('utf8', 'replace')
             else:
                 # Need s in str
                 if isinstance(s, bytes):

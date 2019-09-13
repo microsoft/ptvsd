@@ -1,3 +1,4 @@
+# coding:utf-8
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License. See LICENSE in the project root
 # for license information.
@@ -9,7 +10,6 @@ from tests.helpers import get_marked_line_numbers
 from tests.helpers.session import DebugSession
 from tests.helpers.timeline import Event
 from tests.helpers.pattern import ANY
-
 
 def test_with_no_output(pyfile, run_as, start_method):
 
@@ -56,6 +56,39 @@ def test_with_tab_in_output(pyfile, run_as, start_method):
         output = session.all_occurrences_of(Event('output', ANY.dict_with({'category': 'stdout'})))
         output_str = ''.join(o.body['output'] for o in output)
         assert output_str.startswith('Hello\tWorld')
+
+def test_non_ascii_output(pyfile, run_as, start_method):
+
+    @pyfile
+    def code_to_debug():
+        from dbgimporter import import_and_enable_debugger
+        from _pydevd_bundle.pydevd_constants import IS_PY2
+        import_and_enable_debugger()
+        a = 'é à ö ù'
+        print(a)
+        # Break here so we are sure to get the output event.
+        a = 1  # @bp1
+
+    line_numbers = get_marked_line_numbers(code_to_debug)
+    with DebugSession() as session:
+        session.initialize(
+            target=(run_as, code_to_debug),
+            start_method=start_method,
+            env={'PYTHONIOENCODING': 'utf-8'}
+        )
+
+        session.set_breakpoints(code_to_debug, [line_numbers['bp1']])
+        session.start_debugging()
+
+        # Breakpoint at the end just to make sure we get all output events.
+        session.wait_for_thread_stopped()
+        session.send_request('continue').wait_for_response(freeze=False)
+        session.wait_for_exit()
+
+        output = session.all_occurrences_of(Event('output', ANY.dict_with({'category': 'stdout'})))
+        output_str = ''.join(o.body['output'] for o in output)
+        print(type("#######################", output_str))
+        assert output_str == 'é à ö ù'
 
 
 @pytest.mark.parametrize('redirect', ['RedirectOutput', ''])
