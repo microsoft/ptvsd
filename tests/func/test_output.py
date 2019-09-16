@@ -11,6 +11,9 @@ from tests.helpers.session import DebugSession
 from tests.helpers.timeline import Event
 from tests.helpers.pattern import ANY
 
+from _pydevd_bundle.pydevd_constants import IS_PY3K, IS_PY2
+
+
 def test_with_no_output(pyfile, run_as, start_method):
 
     @pyfile
@@ -57,24 +60,29 @@ def test_with_tab_in_output(pyfile, run_as, start_method):
         output_str = ''.join(o.body['output'] for o in output)
         assert output_str.startswith('Hello\tWorld')
 
-def test_non_ascii_output(pyfile, run_as, start_method):
 
-    @pyfile
-    def code_to_debug():
-        from dbgimporter import import_and_enable_debugger
-        from _pydevd_bundle.pydevd_constants import IS_PY3K
-        import_and_enable_debugger()
-        a = b'\xc3\xa9 \xc3\xa0 \xc3\xb6 \xc3\xb9'
-        if IS_PY3K:
-            a = a.decode('utf8')
-        print(a)
-        # Break here so we are sure to get the output event.
-        a = 1  # @bp1
+def test_non_ascii_output(pyfile, run_as, start_method):
+    if IS_PY2:
+        @pyfile
+        def code_to_debug():
+            from dbgimporter import import_and_enable_debugger
+            import_and_enable_debugger()
+            a = b'\xc3\xa9 \xc3\xa0 \xc3\xb6 \xc3\xb9'
+            print(a)
+            # Break here so we are sure to get the output event.
+            a = 1  # @bp1
+    else:
+        @pyfile
+        def code_to_debug():
+            from dbgimporter import import_and_enable_debugger
+            import_and_enable_debugger()
+            a = b'\xc3\xa9 \xc3\xa0 \xc3\xb6 \xc3\xb9'.decode('utf-8')
+            print(a)
+            # Break here so we are sure to get the output event.
+            a = 1  # @bp1
 
     line_numbers = get_marked_line_numbers(code_to_debug)
     with DebugSession() as session:
-        from _pydevd_bundle.pydevd_constants import IS_PY3K
-
         session.initialize(
             target=(run_as, code_to_debug),
             start_method=start_method,
@@ -90,11 +98,11 @@ def test_non_ascii_output(pyfile, run_as, start_method):
         session.wait_for_exit()
 
         output = session.all_occurrences_of(Event('output', ANY.dict_with({'category': 'stdout'})))
-        output_str = ''.join(o.body['output'] for o in output)
-        print(type("#######################", output_str))
+        output_str = ''.join(o.body['output'] for o in output).strip()
         assertion_value = b'\xc3\xa9 \xc3\xa0 \xc3\xb6 \xc3\xb9'
         if IS_PY3K:
-            assertion_value = assertion_value.decode('utf8')
+            assertion_value = assertion_value.decode('utf-8')
+        assert isinstance(output_str, str), 'output_str is of type {}'.format(type(output_str))
         assert output_str == assertion_value
 
 
