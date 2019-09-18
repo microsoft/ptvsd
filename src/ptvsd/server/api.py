@@ -18,12 +18,7 @@ from _pydevd_bundle.pydevd_constants import get_global_debugger
 from pydevd_file_utils import get_abs_path_real_path_and_base_from_file
 
 
-_ADAPTER_START_TIMEOUT = 10
-_dap_listener = None
-
-
-class EnableAttachError(Exception):
-    pass
+_QUEUE_TIMEOUT = 10
 
 
 def wait_for_attach():
@@ -78,7 +73,7 @@ def _starts_debugging(func):
 @_starts_debugging
 def enable_attach(dont_trace_start_patterns, dont_trace_end_patterns):
     if hasattr(enable_attach, "called"):
-        raise EnableAttachError("'enable_attach' can only be called once per process.")
+        raise RuntimeError("'enable_attach' can only be called once per process.")
 
     host, port = pydevd._enable_attach(
         ("127.0.0.1", 0),
@@ -98,7 +93,7 @@ def enable_attach(dont_trace_start_patterns, dont_trace_end_patterns):
             try:
                 if msg["command"] == "setDebuggerProperty":
                     port_queue.put(msg["arguments"]["adapterPort"])
-            except:
+            except KeyError:
                 pass
 
     pydevd.add_dap_messages_listener(_DAPMessagesListener())
@@ -128,8 +123,7 @@ def enable_attach(dont_trace_start_patterns, dont_trace_end_patterns):
         # TODO: Add adapter PID to ignore list https://github.com/microsoft/ptvsd/issues/1786
         subprocess.Popen(adapter_args, bufsize=0)
 
-    if server_opts.port == 0:
-        server_opts.port = port_queue.get()
+    server_opts.port = port_queue.get(True, _QUEUE_TIMEOUT)
 
     enable_attach.called = True
     log.info("ptvsd debug server running at: {0}:{1}", server_opts.host, server_opts.port)
