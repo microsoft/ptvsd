@@ -232,12 +232,14 @@ class IDE(components.Component):
         if self.session.no_debug:
             raise request.isnt_valid('"noDebug" is not supported for "attach"')
 
-        if self.server is not None:
-            # we are already connected to the debug server
-            return
+        
 
         pid = request("processId", int, optional=True)
         if pid == ():
+            if self.server is not None:
+                # we are already connected to the debug server
+                return
+
             host = request("host", "127.0.0.1")
             port = request("port", int)
             if request("listen", False):
@@ -246,6 +248,9 @@ class IDE(components.Component):
             else:
                 self.session.connect_to_server((host, port))
         else:
+            if self.server is not None:
+                raise request.isnt_valid("Session is already started")
+
             ptvsd_args = request("ptvsdArgs", json.array(unicode))
             self.session.inject_server(pid, ptvsd_args)
 

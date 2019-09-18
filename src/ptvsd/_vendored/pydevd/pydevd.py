@@ -1123,8 +1123,8 @@ class PyDB(object):
         if curr_writer:
             curr_writer.do_kill_pydev_thread()
 
-        self.writer = WriterThread(sock, terminate_on_socket_close=terminate_on_socket_close)
-        self.reader = ReaderThread(sock, terminate_on_socket_close=terminate_on_socket_close)
+        self.writer = WriterThread(sock, self, terminate_on_socket_close=terminate_on_socket_close)
+        self.reader = ReaderThread(sock, self, terminate_on_socket_close=terminate_on_socket_close)
         self.writer.start()
         self.reader.start()
 
@@ -2424,7 +2424,7 @@ def _locked_settrace(
             debugger.connect(host, port)  # Note: connect can raise error.
         else:
             # Create a dummy writer and wait for the real connection.
-            debugger.writer = WriterThread(NULL, terminate_on_socket_close=False)
+            debugger.writer = WriterThread(NULL, debugger, terminate_on_socket_close=False)
             debugger.create_wait_for_connection_thread()
 
         if dont_trace_start_patterns or dont_trace_end_paterns:

@@ -39,11 +39,11 @@ def main(args):
         # If in debugServer mode, log everything to stderr.
         log.stderr_levels |= set(log.LEVELS)
 
-        if args.connect_to_port is not None:
-            session.connect_to_server(("127.0.0.1", args.connect_to_port))
+        if args.for_server_on_port is not None:
+            session.connect_to_server(("127.0.0.1", args.for_server_on_port))
         with session.accept_connection_from_ide((args.host, args.port)) as (_, port):
             try:
-                session.server.set_debugger_property(adapterPort=port)
+                session.server.set_debugger_property({"adapterPort": port})
             except AttributeError:
                 pass
     session.wait_for_completion()
@@ -55,9 +55,7 @@ def _parse_argv(argv):
     parser.add_argument(
         "--port",
         type=int,
-        nargs="?",
         default=None,
-        const=8765,
         metavar="PORT",
         help="start the adapter in debugServer mode on the specified port",
     )
@@ -65,21 +63,17 @@ def _parse_argv(argv):
     parser.add_argument(
         "--host",
         type=str,
-        nargs="?",
         default="127.0.0.1",
-        const="127.0.0.1",
         metavar="HOST",
         help="start the adapter in debugServer mode on the specified host",
     )
 
     parser.add_argument(
-        "--connect-to-port",
+        "--for-server-on-port",
         type=int,
-        nargs="?",
         default=None,
-        const=5678,
         metavar="PORT",
-        help="FOR INTERNAL USE ONLY. Connect to local debug server",
+        help=argparse.SUPPRESS
     )
 
     parser.add_argument(
