@@ -136,7 +136,7 @@ class IDE(components.Component):
             assert request.is_request("launch", "attach")
             if self._initialize_request is None:
                 raise request.isnt_valid("Session is not initialized yet")
-            if self.launcher or self.server:
+            if self.launcher:
                 raise request.isnt_valid("Session is already started")
 
             self.session.no_debug = request("noDebug", json.default(False))
@@ -231,6 +231,10 @@ class IDE(components.Component):
     def attach_request(self, request):
         if self.session.no_debug:
             raise request.isnt_valid('"noDebug" is not supported for "attach"')
+
+        if self.server is not None:
+            # we are already connected to the debug server
+            return
 
         pid = request("processId", int, optional=True)
         if pid == ():

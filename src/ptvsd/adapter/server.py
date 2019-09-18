@@ -5,6 +5,7 @@
 from __future__ import absolute_import, print_function, unicode_literals
 
 from ptvsd.adapter import components
+from ptvsd.common import messaging
 
 
 class Server(components.Component):
@@ -59,6 +60,10 @@ class Server(components.Component):
         request = self.channel.propagate(request)
         request.wait_for_response()
         self.capabilities = self.Capabilities(self, request.response)
+
+    def set_debugger_property(self, **kwargs):
+        request = self.channel.send_request("setDebuggerProperty", arguments=kwargs)
+        request.wait_for_response()
 
     # Generic request handler, used if there's no specific handler below.
     @message_handler
