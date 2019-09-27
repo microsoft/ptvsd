@@ -36,27 +36,29 @@ def start_flask(run):
         if multiprocess:
             pytest.skip("https://github.com/microsoft/ptvsd/issues/1706")
 
-        env = {
+        # No clean way to kill Flask server, expect non-zero exit code
+        session.expected_exit_code = some.int
+
+        session.config.env.update({
             "FLASK_APP": paths.app_py,
             "FLASK_ENV": "development",
             "FLASK_DEBUG": "1" if multiprocess else "0",
-        }
+        })
         if platform.system() != "Windows":
             locale = "en_US.utf8" if platform.system() == "Linux" else "en_US.UTF-8"
-            env.update({"LC_ALL": locale, "LANG": locale})
+            session.config.env.update({"LC_ALL": locale, "LANG": locale})
 
-        # No clean way to kill Flask server, expect non-zero exit code
-        session.expected_exit_code = some.int
         session.config.update({
             "jinja": True,
             "subProcess": bool(multiprocess),
-            "env": env
         })
 
         args = ["run"]
         if not multiprocess:
             args += ["--no-debugger", "--no-reload", "--with-threads"]
         args += ["--port", str(flask_server.port)]
+
+
 
         return run(session, targets.Module("flask", args), cwd=paths.flask1)
 

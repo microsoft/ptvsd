@@ -23,7 +23,7 @@ def test_variables_and_evaluate(pyfile, target, run):
 
     with debug.Session() as session:
         with run(session, target(code_to_debug)):
-            session.set_breakpoints(code_to_debug, [code_to_debug.lines["bp"]])
+            session.set_breakpoints(code_to_debug, all)
 
         hit = session.wait_for_stop()
 
@@ -180,7 +180,7 @@ def test_variable_sort(pyfile, target, run):
 
     with debug.Session() as session:
         with run(session, target(code_to_debug)):
-            session.set_breakpoints(code_to_debug, [code_to_debug.lines["bp"]])
+            session.set_breakpoints(code_to_debug, all)
         hit = session.wait_for_stop()
 
         resp_scopes = session.send_request(
@@ -287,7 +287,7 @@ def test_return_values(pyfile, target, run, retval):
     with debug.Session() as session:
         session.config["showReturnValue"] = bool(retval)
         with run(session, target(code_to_debug)):
-            session.set_breakpoints(code_to_debug, [code_to_debug.lines["bp"]])
+            session.set_breakpoints(code_to_debug, all)
 
         hit = session.wait_for_stop()
 
@@ -384,7 +384,7 @@ def test_hex_numbers(pyfile, target, run):
 
     with debug.Session() as session:
         with run(session, target(code_to_debug)):
-            session.set_breakpoints(code_to_debug, [code_to_debug.lines["bp"]])
+            session.set_breakpoints(code_to_debug, all)
         hit = session.wait_for_stop()
 
         resp_scopes = session.send_request(

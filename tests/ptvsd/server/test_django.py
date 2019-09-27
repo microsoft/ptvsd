@@ -35,6 +35,7 @@ def start_django(run):
 
         # No clean way to kill Django server, expect non-zero exit code
         session.expected_exit_code = some.int
+
         session.config.update({"django": True, "subProcess": bool(multiprocess)})
 
         args = ["runserver"]
