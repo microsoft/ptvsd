@@ -7,6 +7,8 @@ import sys
 from _pydevd_bundle.pydevd_constants import IS_CPYTHON, IS_WINDOWS
 import pytest
 import os
+import subprocess
+import time
 
 
 def test_is_main_thread():
@@ -305,7 +307,6 @@ def test_find_main_thread_id():
     _check_in_separate_process('check_win_threads', '_pydevd_test_find_main_thread_id')
     _check_in_separate_process('check_fix_main_thread_id_multiple_threads', '_pydevd_test_find_main_thread_id')
 
-    import subprocess
     import pydevd
     cwd, environ = _build_launch_env()
 
@@ -327,12 +328,38 @@ def test_find_main_thread_id():
 @pytest.mark.skipif(not IS_WINDOWS, reason='Windows-only test.')
 def test_get_ppid():
     from _pydevd_bundle.pydevd_api import PyDevdAPI
+    from _pydevd_bundle import pydevd_api
     api = PyDevdAPI()
     if IS_PY3K:
         # On python 3 we can check that our internal api which is used for Python 2 gives the
         # same result as os.getppid.
         ppid = os.getppid()
         assert api._get_windows_ppid() == ppid
+        assert pydevd_api._list_ppid_and_pid(filter_pid=os.getpid(), force_wmic=True) == [
+            (ppid, os.getpid())]
+
     else:
         assert api._get_windows_ppid() is not None
+        assert len(pydevd_api._list_ppid_and_pid(filter_pid=os.getpid(), force_wmic=True)) == 1
+
+    class MyThread(threading.Thread):
+
+        def run(self):
+            self.popen = subprocess.Popen([sys.executable, '-c', 'import time;time.sleep(20)'])
+
+    assert pydevd_api._list_ppid_and_pid(filter_pid=os.getpid(), force_wmic=True) == \
+        pydevd_api._list_ppid_and_pid(filter_pid=os.getpid(), force_wmic=False)
+
+    for force_wmic in [True, False]:
+        t = MyThread()
+        t.setDaemon(True)
+        t.start()
+        for _ in range(20):
+            if hasattr(t, 'popen'):
+                break
+            time.sleep(.1)
+
+        assert (os.getpid(), t.popen.pid) in pydevd_api._list_ppid_and_pid(
+            filter_ppid=os.getpid(), force_wmic=force_wmic)
+        t.popen.kill()
 

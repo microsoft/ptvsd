@@ -25,6 +25,7 @@ from pydevd_tracing import get_exception_traceback_str
 import os
 import subprocess
 import ctypes
+import time
 
 try:
     import dis
@@ -815,7 +816,10 @@ class PyDevdAPI(object):
 
         try:
             ppid = os.getppid()
-        except AttributeError:
+        except:
+            # On windows we could have errors in CreateToolhelp32Snapshot (so, use
+            # our own version if it fails).
+            # i.e.: https://github.com/python/cpython/blob/master/Modules/posixmodule.c - win32_getppid()
             pass
 
         if ppid is None and IS_WINDOWS:
@@ -824,12 +828,16 @@ class PyDevdAPI(object):
         return ppid
 
     def _get_windows_ppid(self):
-        this_pid = os.getpid()
-        for ppid, pid in _list_ppid_and_pid():
-            if pid == this_pid:
-                return ppid
+        try:
+            return PyDevdAPI._windows_ppid_
+        except AttributeError:
+            this_pid = os.getpid()
+            for ppid, _pid in _list_ppid_and_pid(filter_pid=this_pid):
+                # We should have only one entry when filtering for this pid.
+                PyDevdAPI._windows_ppid_ = ppid
+                break
 
-        return None
+        return getattr(PyDevdAPI, '_windows_ppid_', None)
 
     def _terminate_child_processes_windows(self, dont_terminate_child_pids):
         this_pid = os.getpid()
@@ -839,10 +847,9 @@ class PyDevdAPI(object):
             # list immediate children, kill that tree and then exit this process.
 
             children_pids = []
-            for ppid, pid in _list_ppid_and_pid():
-                if ppid == this_pid:
-                    if pid not in dont_terminate_child_pids:
-                        children_pids.append(pid)
+            for _ppid, pid in _list_ppid_and_pid(filter_ppid=this_pid):
+                if pid not in dont_terminate_child_pids:
+                    children_pids.append(pid)
 
             if not children_pids:
                 break
@@ -869,7 +876,7 @@ class PyDevdAPI(object):
                     stderr=subprocess.PIPE
                 )
 
-            list_popen = self._popen(
+            list_popen = _popen(
                 ['pgrep', '-P', str(initial_pid)],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE
@@ -908,14 +915,6 @@ class PyDevdAPI(object):
             if not found_new:
                 break
 
-    def _popen(self, cmdline, **kwargs):
-        try:
-            return subprocess.Popen(cmdline, **kwargs)
-        except:
-            if DebugInfoHolder.DEBUG_TRACE_LEVEL >= 1:
-                pydev_log.exception('Error running: %s' % (' '.join(cmdline)))
-            return None
-
     def _call(self, cmdline, **kwargs):
         try:
             subprocess.check_call(cmdline, **kwargs)
@@ -953,8 +952,106 @@ class PyDevdAPI(object):
         run_as_pydevd_daemon_thread(py_db, self._terminate_if_commands_processed, py_db)
 
 
-def _list_ppid_and_pid():
-    _TH32CS_SNAPPROCESS = 0x00000002
+def _popen(cmdline, **kwargs):
+    try:
+        return subprocess.Popen(cmdline, **kwargs)
+    except:
+        if DebugInfoHolder.DEBUG_TRACE_LEVEL >= 1:
+            pydev_log.exception('Error running: %s' % (' '.join(cmdline)))
+        return None
+
+
+def _list_ppid_and_pid(filter_ppid=None, filter_pid=None, force_wmic=False):
+    '''
+    :param int filter_ppid:
+        The ppid which should be used for filtering.
+
+    :param int filter_pid:
+        The pid which should be used for filtering.
+
+    :param force_wmic:
+        Only for testing usage (forces the usage of wmic).
+
+    :note: either filter_ppid or filter_pid must be specified.
+
+    :return list(tuple(int,int)):
+        Return [(ppid,pid), (ppid,pid), ...] with entries filtered for the ppid or pid.
+    '''
+
+    # Note: this was once simple, but because of
+    # https://github.com/microsoft/ptvsd/issues/1877#issuecomment-548164501
+    # the code was hardened to retry CreateToolhelp32Snapshot and fallback to wmic if retries fail.
+    last_error_msg = ''
+    if not force_wmic:
+        assert filter_ppid or filter_pid, 'Either filter_ppid or filter_pid must be specified.'
+
+        for _i in range(20):
+            ppid_and_pids, last_error_msg = _list_ppid_and_pid_tool_help_snapshot()
+            if not last_error_msg:
+                return _filter_ppid_and_pid(ppid_and_pids, filter_ppid, filter_pid)
+
+            pydev_log.debug('Unable to get process list (%s), retrying...' % (last_error_msg,))
+            time.sleep(.01)
+
+        # If it still didn't work, do a last pass to get the last error.
+        ppid_and_pids, last_error_msg = _list_ppid_and_pid_tool_help_snapshot()
+        if not last_error_msg:
+            return _filter_ppid_and_pid(ppid_and_pids, filter_ppid, filter_pid)
+
+    # Using CreateToolhelp32Snapshot did not work, fallback to using wmic.
+    if filter_ppid:
+        child_ids_wmic = _list_child_processes_windows_wmic(ppid=filter_ppid)
+        if child_ids_wmic is None:
+            if last_error_msg:
+                # Note that we report the original error from CreateToolhelp32Snapshot
+                # and not the one from wmic.
+                pydev_log.critical(last_error_msg)
+            return []
+        return [(filter_ppid, pid_wmic) for pid_wmic in child_ids_wmic]
+
+    if filter_pid:
+        ppid_wmic = _get_windows_ppid_wmic()
+        if ppid_wmic is None:
+            if last_error_msg:
+                # Note that we report the original error from CreateToolhelp32Snapshot
+                # and not the one from wmic.
+                pydev_log.critical(last_error_msg)
+            return []
+        else:
+            return [(ppid_wmic, os.getpid())]
+
+
+def _filter_ppid_and_pid(ppid_and_pids, ppid_filter=None, pid_filter=None):
+    if ppid_filter:
+        return [(ppid, pid) for (ppid, pid) in ppid_and_pids if ppid == ppid_filter]
+
+    if pid_filter:
+        return [(ppid, pid) for (ppid, pid) in ppid_and_pids if pid == pid_filter]
+
+    raise AssertionError('Either ppid_filter or pid_filter must be specified.')
+
+
+def _make_last_error_msg(msg):
+    last_error = ctypes.GetLastError()
+    if last_error:
+        error_as_str = ctypes.FormatError(last_error)
+    else:
+        error_as_str = '<no error>'
+    return msg + ' Error (%s): %s' % (
+            last_error, error_as_str
+        )
+
+
+def _list_ppid_and_pid_tool_help_snapshot():
+    '''
+    :return tuple(list(tuple(int,int)),str):
+        Returns a tuple with ([(ppid,pid), (ppid,pid), ...], error_message), with all the processes
+        in the system -- the error message is an empty string if everything worked properly.
+    '''
+    # Note: this is similar to win32_getppid() in https://github.com/python/cpython/blob/master/Modules/posixmodule.c
+    # (but called through ctypes).
+    TH32CS_SNAPPROCESS = 0x00000002
+    INVALID_HANDLE_VALUE = -1
 
     class PROCESSENTRY32(ctypes.Structure):
         _fields_ = [("dwSize", ctypes.c_ulong),
@@ -969,13 +1066,20 @@ def _list_ppid_and_pid():
                     ("szExeFile", ctypes.c_char * 260)]
 
     kernel32 = ctypes.windll.kernel32
-    snapshot = kernel32.CreateToolhelp32Snapshot(_TH32CS_SNAPPROCESS, 0)
+
     ppid_and_pids = []
+
+    snapshot = kernel32.CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0)
+    if snapshot == INVALID_HANDLE_VALUE:
+        # i.e.: Don't close invalid handle.
+        # Note: docs say to retry on ERROR_BAD_LENGTH (we do that on the caller of this function).
+        return ppid_and_pids, _make_last_error_msg('CreateToolhelp32Snapshot failed (handle: %s).' % (snapshot,))
+
     try:
         process_entry = PROCESSENTRY32()
         process_entry.dwSize = ctypes.sizeof(PROCESSENTRY32)
         if not kernel32.Process32First(snapshot, ctypes.byref(process_entry)):
-            pydev_log.critical('Process32First failed (getting process from CreateToolhelp32Snapshot).')
+            return ppid_and_pids, _make_last_error_msg('Process32First failed (getting process from CreateToolhelp32Snapshot - handle: %s).' % (snapshot,))
         else:
             while True:
                 ppid_and_pids.append((process_entry.th32ParentProcessID, process_entry.th32ProcessID))
@@ -983,5 +1087,60 @@ def _list_ppid_and_pid():
                     break
     finally:
         kernel32.CloseHandle(snapshot)
-        
-    return ppid_and_pids
+
+    return ppid_and_pids, ''  # Ok (no error message).
+
+
+def _get_windows_ppid_wmic():
+    '''
+    Note: should not usually be used. Only used if CreateToolhelp32Snapshot fails.
+    See: https://github.com/microsoft/ptvsd/issues/1877#issuecomment-548164501
+    '''
+    this_pid = os.getpid()
+
+    list_popen = _popen(
+        ['wmic', 'process', 'where', '(ProcessId=%s)' % (this_pid,), 'get', 'ParentProcessId'],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT
+    )
+    if list_popen is None:
+        return None  # We couldn't create the process.
+
+    stdout, _ = list_popen.communicate()
+    for line in stdout.splitlines():
+        line = line.strip()
+        if line and line != b'ParentProcessId':
+            try:
+                return int(line)
+            except ValueError:
+                pass
+
+    return None
+
+
+def _list_child_processes_windows_wmic(ppid):
+    '''
+    Note: should not usually be used. Only used if CreateToolhelp32Snapshot fails.
+    See: https://github.com/microsoft/ptvsd/issues/1877#issuecomment-548164501
+    '''
+    list_popen = _popen(
+        ['wmic', 'process', 'where', '(ParentProcessId=%s)' % (ppid,), 'get', 'ProcessId'],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT
+    )
+    if list_popen is None:
+        return None  # We couldn't create the process.
+
+    stdout, _ = list_popen.communicate()
+    children_pids = []
+    for line in stdout.splitlines():
+        line = line.strip()
+        if line and line != b'ProcessId':
+            try:
+                pid = int(line)
+            except ValueError:
+                pass
+            else:
+                if pid != list_popen.pid:
+                    children_pids.append(pid)
+    return children_pids
