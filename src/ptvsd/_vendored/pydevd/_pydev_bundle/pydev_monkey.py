@@ -4,10 +4,11 @@ import re
 import sys
 from _pydev_imps._pydev_saved_modules import threading
 from _pydevd_bundle.pydevd_constants import get_global_debugger, IS_WINDOWS, IS_JYTHON, get_current_thread_id, \
-    NULL
+    NULL, DebugInfoHolder
 from _pydev_bundle import pydev_log
 from contextlib import contextmanager
 from _pydevd_bundle import pydevd_constants
+import socket
 
 try:
     xrange
@@ -399,6 +400,29 @@ def create_warn_multiproc(original_name):
     return new_warn_multiproc
 
 
+def _close_debugger_connection():
+    '''
+    os.exec* functions will replace the current running program for a new program
+    with a new stack. In these cases, close the connection to the current debugger
+    so that clients know about the replacement (the client should shortly receive
+    a new connection from the new running program with the same pid).
+    '''
+    py_db = get_global_debugger()
+    if py_db:
+        writer = py_db.writer
+        if writer:
+            try:
+                writer.sock.shutdown(socket.SHUT_WR)
+            except:
+                if DebugInfoHolder.DEBUG_TRACE_LEVEL >= 2:
+                    pydev_log.exception()
+            try:
+                writer.sock.close()
+            except:
+                if DebugInfoHolder.DEBUG_TRACE_LEVEL >= 2:
+                    pydev_log.exception()
+
+
 def create_execl(original_name):
 
     def new_execl(path, *args):
@@ -411,6 +435,8 @@ def create_execl(original_name):
         if _get_apply_arg_patching():
             args = patch_args(args)
             send_process_created_message()
+
+        _close_debugger_connection()
 
         return getattr(os, original_name)(path, *args)
 
@@ -428,6 +454,8 @@ def create_execv(original_name):
             args = patch_args(args)
             send_process_created_message()
 
+        _close_debugger_connection()
+
         return getattr(os, original_name)(path, args)
 
     return new_execv
@@ -443,6 +471,8 @@ def create_execve(original_name):
         if _get_apply_arg_patching():
             args = patch_args(args)
             send_process_created_message()
+
+        _close_debugger_connection()
 
         return getattr(os, original_name)(path, args, env)
 
