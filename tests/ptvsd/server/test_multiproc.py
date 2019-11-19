@@ -98,6 +98,7 @@ def test_multiprocessing(pyfile, target, run, start_method):
         expected_child_config = dict(parent_session.config)
         expected_child_config.update(
             {
+                "name": some.str,
                 "request": "attach",
                 "subProcessId": some.int,
                 "host": some.str,
@@ -116,6 +117,7 @@ def test_multiprocessing(pyfile, target, run, start_method):
             expected_grandchild_config = dict(child_session.config)
             expected_grandchild_config.update(
                 {
+                    "name": some.str,
                     "request": "attach",
                     "subProcessId": some.int,
                     "host": some.str,
@@ -174,6 +176,7 @@ def test_subprocess(pyfile, target, run):
         expected_child_config = dict(parent_session.config)
         expected_child_config.update(
             {
+                "name": some.str,
                 "request": "attach",
                 "subProcessId": some.int,
                 "host": some.str,
@@ -191,6 +194,7 @@ def test_subprocess(pyfile, target, run):
 
             child_pid = backchannel.receive()
             assert child_pid == child_config["subProcessId"]
+            assert str(child_pid) in child_config["name"]
 
             ptvsd_file = backchannel.receive()
             assert ptvsd_file == ptvsd.__file__

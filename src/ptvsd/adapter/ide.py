@@ -9,7 +9,7 @@ import platform
 import sys
 
 import ptvsd
-from ptvsd.common import json, log, messaging, sockets
+from ptvsd.common import fmt, json, log, messaging, sockets
 from ptvsd.common.compat import unicode
 from ptvsd.adapter import components, servers, sessions
 
@@ -421,6 +421,7 @@ class IDE(components.Component, sockets.ClientConnection):
             body = dict(self.start_request.arguments)
             self._known_subprocesses.add(conn)
 
+        body["name"] = fmt("Subprocess {0}", conn.pid)
         body["request"] = "attach"
         if "host" not in body:
             body["host"] = "127.0.0.1"
