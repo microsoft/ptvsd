@@ -43,6 +43,7 @@ class BackChannel(object):
 
             try:
                 sock, _ = server_socket.accept()
+                sock.setblocking(True)  # override any inherited timeout
             except socket.timeout:
                 if self._server_socket is None:
                     return

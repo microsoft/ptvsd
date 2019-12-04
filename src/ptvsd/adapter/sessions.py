@@ -161,6 +161,7 @@ class Session(util.Observable):
 
         try:
             sock, (other_host, other_port) = listener.accept()
+            sock.setblocking(True)  # override any inherited timeout
         finally:
             listener.close()
         log.info(

@@ -86,6 +86,7 @@ class ClientConnection(object):
             while True:
                 try:
                     sock, (other_host, other_port) = cls.listener.accept()
+                    sock.setblocking(True)  # override any inherited timeout
                 except OSError:
                     # Listener socket has been closed.
                     break
