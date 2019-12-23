@@ -79,6 +79,9 @@ class DebugOptions(object):
         if 'flask' in args:
             self.flask_debug = bool_parser(args['flask'])
 
+        if 'jinja' in args:
+            self.flask_debug = bool_parser(args['jinja'])
+
         if 'stopOnEntry' in args:
             self.stop_on_entry = bool_parser(args['stopOnEntry'])
 
