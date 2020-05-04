@@ -2,7 +2,9 @@
 
 A replacement implementation of DAP for Python is [debugpy](https://pypi.org/project/debugpy/), which is based on the development branch (5.x) of ptvsd. All future development is going to be happening in debugpy; there will be no further commits to or releases of ptvsd.
 
-If you're using the [Python extension for Visual Studio Code](https://github.com/microsoft/vscode-python), you should be switched to debugpy automatically. Please file any bug reports directly in the [debugpy repository](https://github.com/microsoft/debugpy).
+If you're using the [Python extension for Visual Studio Code](https://github.com/microsoft/vscode-python), you should be switched to debugpy automatically, so long as you're using an up-to-date version of the extension. Please file any bug reports directly in the [debugpy repository](https://github.com/microsoft/debugpy).
+
+If you're using Visual Studio 2019 16.5 or later, you should be switched to debugpy automatically. Visual Studio 2019 16.4 or earlier, including Visual Studio 2017, are not compatible with debugpy. We recommend that you upgrade to the latest version of Visual Studio in order to migrate to debugpy. 
 
 If you're using ptvsd directly, consider migrating to debugpy. This is required for continued support from the Python extension, and to receive any bug fixes. Issues with ptvsd that can also be reproduced in debugpy should be filed directly in the [debugpy repository](https://github.com/microsoft/debugpy). Any issues that are specific to ptvsd, and cannot be reproduced with debugpy, will not be fixed in ptvsd.
 
